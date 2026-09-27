@@ -3,7 +3,7 @@
 //  TheSilverScreen
 //
 //  Movies, TV, and the mixed list. Media spans the width under the title.
-//  Window and sort live in the Filters menu. The star is its own control.
+//  Window and sort live in the Filters menu. The list control is its own button.
 //
 
 import SwiftUI
@@ -11,8 +11,8 @@ import SwiftUI
 struct BrowseListView: View {
     @Bindable var viewModel: BrowseListViewModel
     let imageLoader: ImageLoader
-    let favorites: FavoritesRepository
-    let favoritesIndex: FavoritesIndex
+    let lists: ListsRepository
+    let listsIndex: ListsIndex
     var router: NavigationRouter?
 
     @State private var scrolledID: String?
@@ -142,14 +142,12 @@ struct BrowseListView: View {
                     }
                     .buttonStyle(.plain)
 
-                    CellFavoriteStar(
-                        name: row.title,
-                        isFavorite: favoritesIndex.contains(
-                            row.mediaID,
-                            kind: row.media == .movie ? .movie : .tv
-                        )
+                    ListMembershipButton(
+                        draft: row.listItem(),
+                        lists: lists,
+                        index: listsIndex
                     ) {
-                        Task { await toggleFavorite(row) }
+                        viewModel.noteListSaveFailed()
                     }
                 }
                 .id(row.id)
@@ -180,19 +178,6 @@ struct BrowseListView: View {
             router?.push(.movieDetail(id: row.mediaID))
         case .tv:
             router?.push(.tvSeries(id: row.mediaID))
-        }
-    }
-
-    private func toggleFavorite(_ row: BrowseRow) async {
-        do {
-            switch row.media {
-            case .movie:
-                try await favorites.toggle(movie: row.asMovie())
-            case .tv:
-                try await favorites.toggle(tv: row.asSeries())
-            }
-        } catch {
-            viewModel.noteFavoriteSaveFailed()
         }
     }
 }

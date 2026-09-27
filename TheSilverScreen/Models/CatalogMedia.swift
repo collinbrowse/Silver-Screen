@@ -52,7 +52,8 @@ struct CatalogMovieRow: Sendable, Identifiable, Equatable, Hashable {
             posterPath: posterPath,
             releaseDate: releaseDate,
             voteAverage: voteAverage,
-            genreIDs: genreIDs
+            genreIDs: genreIDs,
+            popularity: popularity
         )
     }
 }
@@ -65,6 +66,8 @@ struct CatalogTVRow: Sendable, Identifiable, Equatable, Hashable {
     let formattedFirstAirDate: String
     let genreIDs: [Int]
     let firstAirDate: Date?
+    /// TMDB user score copied onto a list entry. Zero when the payload omitted it.
+    let voteAverage: Double
     /// Keeps a name search in popularity order after later pages arrive.
     let popularity: Double
     /// Personal score, when this series has one.
@@ -79,6 +82,7 @@ struct CatalogTVRow: Sendable, Identifiable, Equatable, Hashable {
         genreIDs = series.genreIDs
         genreNames = TVGenreCatalog.names(for: series.genreIDs)
         firstAirDate = series.firstAirDate
+        voteAverage = series.voteAverage
         popularity = series.popularity
         formattedFirstAirDate = DisplayDate.day(series.firstAirDate)
         formattedUserScore = nil
@@ -90,16 +94,6 @@ struct CatalogTVRow: Sendable, Identifiable, Equatable, Hashable {
         copy.formattedUserScore = saved?.formatted
         copy.formattedRatedOn = saved?.ratedOn
         return copy
-    }
-
-    func asSeries() -> FavoriteTVSeries {
-        FavoriteTVSeries(
-            id: id,
-            name: name,
-            posterPath: posterPath,
-            releaseDate: firstAirDate,
-            genreIDs: genreIDs
-        )
     }
 }
 
@@ -134,14 +128,5 @@ struct CatalogPersonRow: Sendable, Identifiable, Equatable, Hashable {
             .trimmingCharacters(in: .whitespacesAndNewlines)
         knownForDepartment = (department?.isEmpty == false) ? department : nil
         popularity = person.popularity
-    }
-
-    func asPerson() -> FavoritePerson {
-        FavoritePerson(
-            id: id,
-            name: name,
-            profilePath: profilePath,
-            knownForDepartment: knownForDepartment
-        )
     }
 }

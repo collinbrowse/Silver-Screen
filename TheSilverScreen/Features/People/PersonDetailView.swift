@@ -7,7 +7,8 @@ import SwiftUI
 
 struct PersonDetailView: View {
     @Bindable var viewModel: PersonDetailViewModel
-    let favoritesIndex: FavoritesIndex
+    let lists: ListsRepository
+    let listsIndex: ListsIndex
     let imageLoader: ImageLoader
     var router: NavigationRouter?
     var showsToolbarFavorite: Bool = true
@@ -43,11 +44,12 @@ struct PersonDetailView: View {
         .toolbar {
             if showsToolbarFavorite, case .loaded(let content, _) = viewModel.state {
                 ToolbarItem(placement: .topBarTrailing) {
-                    CellFavoriteStar(
-                        name: content.detail.name,
-                        isFavorite: favoritesIndex.contains(content.detail.id, kind: .person)
+                    ListMembershipButton(
+                        draft: content.detail.listItem(),
+                        lists: lists,
+                        index: listsIndex
                     ) {
-                        Task { await viewModel.toggleFavorite() }
+                        viewModel.noteListSaveFailed()
                     }
                 }
             }
@@ -365,7 +367,7 @@ struct PersonDetailView: View {
             )
             .carouselCard(width: portraitCardWidth, aspectRatio: 2 / 3)
             .overlay(alignment: .topTrailing) {
-                creditFavoriteStar(credit)
+                creditListControl(credit)
                     .padding(DesignSpacing.xs)
             }
 
@@ -391,24 +393,9 @@ struct PersonDetailView: View {
         .accessibilityElement(children: .contain)
     }
 
-    /// Favorite star for a credit card, mapping the credit to the matching favorite kind.
-    @ViewBuilder
-    private func creditFavoriteStar(_ credit: PersonCredit) -> some View {
-        switch credit.mediaType {
-        case .movie:
-            CellFavoriteStar(
-                name: credit.title,
-                isFavorite: favoritesIndex.contains(credit.mediaID, kind: .movie)
-            ) {
-                Task { await viewModel.toggleFavorite(movie: credit.asMovie()) }
-            }
-        case .tv:
-            CellFavoriteStar(
-                name: credit.title,
-                isFavorite: favoritesIndex.contains(credit.mediaID, kind: .tv)
-            ) {
-                Task { await viewModel.toggleFavorite(tv: credit.asFavoriteTVSeries()) }
-            }
+    private func creditListControl(_ credit: PersonCredit) -> some View {
+        ListMembershipButton(draft: credit.listItem(), lists: lists, index: listsIndex) {
+            viewModel.noteListSaveFailed()
         }
     }
 

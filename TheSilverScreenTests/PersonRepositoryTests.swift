@@ -79,7 +79,8 @@ final class PersonRepositoryTests: XCTestCase {
                 genreIDs: [18],
                 character: nil,
                 job: "Director",
-                popularity: 10
+                popularity: 10,
+                voteAverage: nil
             ),
             PersonCombinedCreditDTO(
                 id: 1,
@@ -92,7 +93,8 @@ final class PersonRepositoryTests: XCTestCase {
                 genreIDs: [18],
                 character: nil,
                 job: "Writer",
-                popularity: 12
+                popularity: 12,
+                voteAverage: nil
             ),
         ]
 

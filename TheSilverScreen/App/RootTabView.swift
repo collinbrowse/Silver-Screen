@@ -10,11 +10,12 @@ struct RootTabView: View {
     let movies: MovieRepository
     let shows: TVRepository
     let people: PersonRepository
-    let favorites: FavoritesRepository
-    let favoritesIndex: FavoritesIndex
+    let lists: ListsRepository
+    let listsIndex: ListsIndex
+    let listChanges: ListChangeNotice
     let annotations: AnnotationsRepository
     let imageLoader: ImageLoader
-    let favoritesListViewModel: FavoritesListViewModel
+    let libraryHomeViewModel: LibraryHomeViewModel
 
     @State private var browseViewModel: BrowseListViewModel
     @State private var searchViewModel: SearchViewModel
@@ -24,21 +25,23 @@ struct RootTabView: View {
         movies: MovieRepository,
         shows: TVRepository,
         people: PersonRepository,
-        favorites: FavoritesRepository,
-        favoritesIndex: FavoritesIndex,
+        lists: ListsRepository,
+        listsIndex: ListsIndex,
+        listChanges: ListChangeNotice,
         annotations: AnnotationsRepository,
         imageLoader: ImageLoader,
-        favoritesListViewModel: FavoritesListViewModel
+        libraryHomeViewModel: LibraryHomeViewModel
     ) {
         self.router = router
         self.movies = movies
         self.shows = shows
         self.people = people
-        self.favorites = favorites
-        self.favoritesIndex = favoritesIndex
+        self.lists = lists
+        self.listsIndex = listsIndex
+        self.listChanges = listChanges
         self.annotations = annotations
         self.imageLoader = imageLoader
-        self.favoritesListViewModel = favoritesListViewModel
+        self.libraryHomeViewModel = libraryHomeViewModel
         _browseViewModel = State(
             initialValue: BrowseListViewModel(movies: movies, shows: shows, annotations: annotations)
         )
@@ -62,8 +65,8 @@ struct RootTabView: View {
                     movies: movies,
                     shows: shows,
                     people: people,
-                    favorites: favorites,
-                    favoritesIndex: favoritesIndex,
+                    lists: lists,
+                    listsIndex: listsIndex,
                     annotations: annotations
                 )
             }
@@ -76,25 +79,57 @@ struct RootTabView: View {
                     movies: movies,
                     shows: shows,
                     people: people,
-                    favorites: favorites,
-                    favoritesIndex: favoritesIndex,
+                    lists: lists,
+                    listsIndex: listsIndex,
                     annotations: annotations
                 )
             }
 
-            Tab("Favorites", systemImage: "heart", value: AppTab.favorites) {
-                FavoritesTabRoot(
+            Tab("Library", systemImage: "books.vertical", value: AppTab.library) {
+                LibraryTabRoot(
                     router: router.favorites,
-                    viewModel: favoritesListViewModel,
+                    viewModel: libraryHomeViewModel,
                     imageLoader: imageLoader,
-                    favorites: favorites,
-                    favoritesIndex: favoritesIndex,
+                    lists: lists,
+                    listsIndex: listsIndex,
                     annotations: annotations,
                     movies: movies,
                     shows: shows,
                     people: people
                 )
             }
+        }
+        .environment(listChanges)
+        .overlay(alignment: .bottom) {
+            ListChangeBanner(notice: listChanges)
+        }
+    }
+}
+
+/// Confirmation after adding or removing a title. Undo sits above the tab bar.
+private struct ListChangeBanner: View {
+    @Bindable var notice: ListChangeNotice
+
+    var body: some View {
+        if let message = notice.message {
+            HStack(spacing: DesignSpacing.md) {
+                Text(message)
+                    .font(DesignTypography.metadata)
+                    .foregroundStyle(DesignTheme.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: DesignSpacing.sm)
+                Button("Undo") {
+                    Task { await notice.undo() }
+                }
+                .font(DesignTypography.metadata.weight(.semibold))
+                .frame(minHeight: 44)
+            }
+            .padding(.horizontal, DesignSpacing.lg)
+            .padding(.vertical, DesignSpacing.sm)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DesignRadius.card, style: .continuous))
+            .padding(.horizontal, DesignSpacing.lg)
+            .padding(.bottom, 56)
+            .accessibilityElement(children: .contain)
         }
     }
 }
@@ -106,8 +141,8 @@ private struct BrowseTabRoot: View {
     let movies: MovieRepository
     let shows: TVRepository
     let people: PersonRepository
-    let favorites: FavoritesRepository
-    let favoritesIndex: FavoritesIndex
+    let lists: ListsRepository
+    let listsIndex: ListsIndex
     let annotations: AnnotationsRepository
 
     var body: some View {
@@ -115,8 +150,8 @@ private struct BrowseTabRoot: View {
             BrowseListView(
                 viewModel: viewModel,
                 imageLoader: imageLoader,
-                favorites: favorites,
-                favoritesIndex: favoritesIndex,
+                lists: lists,
+                listsIndex: listsIndex,
                 router: router
             )
             .navigationDestination(for: Route.self) { route in
@@ -125,8 +160,8 @@ private struct BrowseTabRoot: View {
                     movies: movies,
                     shows: shows,
                     people: people,
-                    favorites: favorites,
-                    favoritesIndex: favoritesIndex,
+                    lists: lists,
+                    listsIndex: listsIndex,
                     annotations: annotations,
                     imageLoader: imageLoader,
                     router: router
@@ -143,8 +178,8 @@ private struct SearchTabRoot: View {
     let movies: MovieRepository
     let shows: TVRepository
     let people: PersonRepository
-    let favorites: FavoritesRepository
-    let favoritesIndex: FavoritesIndex
+    let lists: ListsRepository
+    let listsIndex: ListsIndex
     let annotations: AnnotationsRepository
 
     var body: some View {
@@ -152,8 +187,8 @@ private struct SearchTabRoot: View {
             SearchView(
                 viewModel: viewModel,
                 imageLoader: imageLoader,
-                favorites: favorites,
-                favoritesIndex: favoritesIndex,
+                lists: lists,
+                listsIndex: listsIndex,
                 router: router
             )
             .navigationDestination(for: Route.self) { route in
@@ -162,8 +197,8 @@ private struct SearchTabRoot: View {
                     movies: movies,
                     shows: shows,
                     people: people,
-                    favorites: favorites,
-                    favoritesIndex: favoritesIndex,
+                    lists: lists,
+                    listsIndex: listsIndex,
                     annotations: annotations,
                     imageLoader: imageLoader,
                     router: router
@@ -173,12 +208,12 @@ private struct SearchTabRoot: View {
     }
 }
 
-private struct FavoritesTabRoot: View {
+private struct LibraryTabRoot: View {
     @Bindable var router: NavigationRouter
-    @Bindable var viewModel: FavoritesListViewModel
+    @Bindable var viewModel: LibraryHomeViewModel
     let imageLoader: ImageLoader
-    let favorites: FavoritesRepository
-    let favoritesIndex: FavoritesIndex
+    let lists: ListsRepository
+    let listsIndex: ListsIndex
     let annotations: AnnotationsRepository
     let movies: MovieRepository
     let shows: TVRepository
@@ -186,25 +221,20 @@ private struct FavoritesTabRoot: View {
 
     var body: some View {
         NavigationStack(path: $router.path) {
-            FavoritesListView(
-                viewModel: viewModel,
-                imageLoader: imageLoader
-            )
-            .navigationTitle("Favorites")
-            .toolbarTitleDisplayMode(.inlineLarge)
-            .navigationDestination(for: Route.self) { route in
-                AppRouteDestination(
-                    route: route,
-                    movies: movies,
-                    shows: shows,
-                    people: people,
-                    favorites: favorites,
-                    favoritesIndex: favoritesIndex,
-                    annotations: annotations,
-                    imageLoader: imageLoader,
-                    router: router
-                )
-            }
+            LibraryHomeView(viewModel: viewModel)
+                .navigationDestination(for: Route.self) { route in
+                    AppRouteDestination(
+                        route: route,
+                        movies: movies,
+                        shows: shows,
+                        people: people,
+                        lists: lists,
+                        listsIndex: listsIndex,
+                        annotations: annotations,
+                        imageLoader: imageLoader,
+                        router: router
+                    )
+                }
         }
     }
 }

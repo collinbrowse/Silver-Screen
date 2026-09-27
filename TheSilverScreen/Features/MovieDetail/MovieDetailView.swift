@@ -7,7 +7,8 @@ import SwiftUI
 
 struct MovieDetailView: View {
     @State var viewModel: MovieDetailViewModel
-    let favoritesIndex: FavoritesIndex
+    let lists: ListsRepository
+    let listsIndex: ListsIndex
     let imageLoader: ImageLoader
     var router: NavigationRouter?
     var showsToolbarFavorite: Bool = true
@@ -60,11 +61,12 @@ struct MovieDetailView: View {
         .toolbar {
             if showsToolbarFavorite, case .loaded(let content, _) = viewModel.state {
                 ToolbarItem(placement: .topBarTrailing) {
-                    CellFavoriteStar(
-                        name: content.detail.title,
-                        isFavorite: favoritesIndex.contains(content.detail.id, kind: .movie)
+                    ListMembershipButton(
+                        draft: content.detail.listItem(),
+                        lists: lists,
+                        index: listsIndex
                     ) {
-                        Task { await viewModel.toggleFavorite() }
+                        viewModel.noteListSaveFailed()
                     }
                 }
             }
@@ -185,9 +187,6 @@ struct MovieDetailView: View {
                     .accessibilityLabel("\(error.title). \(error.message)")
             }
         }
-        .accessibilityAction(.magicTap) {
-            Task { await viewModel.toggleFavorite() }
-        }
     }
 
     private func metadataBlock(_ content: MovieDetailContent) -> some View {
@@ -253,20 +252,12 @@ struct MovieDetailView: View {
                 .buttonStyle(.plain)
                 .disabled(router == nil)
                 .overlay(alignment: .topTrailing) {
-                    PersonFavoriteStar(
-                        name: member.name,
-                        isFavorite: favoritesIndex.contains(member.personID, kind: .person)
+                    ListMembershipButton(
+                        draft: member.listItem(),
+                        lists: lists,
+                        index: listsIndex
                     ) {
-                        Task {
-                            await viewModel.toggleFavorite(
-                                person: FavoritePerson(
-                                    id: member.personID,
-                                    name: member.name,
-                                    profilePath: member.profilePath,
-                                    knownForDepartment: member.knownForDepartment
-                                )
-                            )
-                        }
+                        viewModel.noteListSaveFailed()
                     }
                     .padding(DesignSpacing.xs)
                 }
@@ -315,21 +306,7 @@ struct MovieDetailView: View {
                 .buttonStyle(.plain)
                 .disabled(router == nil)
                 .overlay(alignment: .topTrailing) {
-                    PersonFavoriteStar(
-                        name: person.name,
-                        isFavorite: favoritesIndex.contains(person.id, kind: .person)
-                    ) {
-                        Task {
-                            await viewModel.toggleFavorite(
-                                person: FavoritePerson(
-                                    id: person.id,
-                                    name: person.name,
-                                    profilePath: person.profilePath,
-                                    knownForDepartment: person.knownForDepartment
-                                )
-                            )
-                        }
-                    }
+                    listControl(person.listItem())
                     .padding(DesignSpacing.xs)
                 }
                 .accessibilityElement(children: .contain)
@@ -373,12 +350,7 @@ struct MovieDetailView: View {
                 width: portraitCardWidth
             )
             .overlay(alignment: .topTrailing) {
-                CellFavoriteStar(
-                    name: item.movie.title,
-                    isFavorite: favoritesIndex.contains(item.movie.id, kind: .movie)
-                ) {
-                    Task { await viewModel.toggleFavorite(movie: item.movie) }
-                }
+                listControl(item.movie.listItem())
                 .padding(DesignSpacing.xs)
             }
 
@@ -425,12 +397,7 @@ struct MovieDetailView: View {
                 width: portraitCardWidth
             )
             .overlay(alignment: .topTrailing) {
-                CellFavoriteStar(
-                    name: movie.title,
-                    isFavorite: favoritesIndex.contains(movie.id, kind: .movie)
-                ) {
-                    Task { await viewModel.toggleFavorite(movie: movie) }
-                }
+                listControl(movie.listItem())
                 .padding(DesignSpacing.xs)
             }
 
@@ -459,6 +426,12 @@ struct MovieDetailView: View {
     }
 
     // MARK: - Reviews
+
+    private func listControl(_ draft: ListItemDraft) -> some View {
+        ListMembershipButton(draft: draft, lists: lists, index: listsIndex) {
+            viewModel.noteListSaveFailed()
+        }
+    }
 
     private func reviewsSection(
         _ section: MovieDetailContent.ReviewsSection,

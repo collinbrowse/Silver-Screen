@@ -26,8 +26,8 @@ and my own intuition modeling the app after the AppleTV app which has a clean, i
   large part of the effort and shaped how every story was implemented.
 - **Features:** after the required stories (in order), I let the same judgment the
   harness enforces drive scope: go deep where it makes the app feel finished —
-  detail and people screens, and favorites that stay in sync across every
-  screen — rather than chase completion count across the backlog.
+  detail and people screens, and a library of lists that stays in sync across
+  every screen — rather than chase completion count across the backlog.
 
 ## Process
 
@@ -70,7 +70,7 @@ Strict layering, one direction only:
   (with its own `path`) per tab. Views push routes, never construct
   destinations.
 - **Minimal protocols**: only where a real boundary needs substitution —
-  `HTTPClient` (network), the Favorites persistence store (disk), and
+  `HTTPClient` (network), the Library lists store (disk), and
   `AppLogging`. No `MovieRepositoryProtocol`, no protocol-per-type.
 
 ## AI Infrastructure / Harness
@@ -101,8 +101,8 @@ The harness lives in the repo under `.cursor/` and is part of the workflow:
 
 ## Testing
 
-Unit tests cover the completed work (repositories, view models, favorites
-logic) under `TheSilverScreenTests/`. Tests substitute only real external boundaries
+Unit tests cover the completed work (repositories, view models, library
+lists) under `TheSilverScreenTests/`. Tests substitute only real external boundaries
 (HTTP, disk) — repositories and view models are not hidden behind a protocol and faked. 
 
 

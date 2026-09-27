@@ -5,7 +5,7 @@
 
 import Foundation
 
-/// Static TMDB movie genre id → name map. IDs are stable; avoids a network round-trip for favorites snapshots.
+/// Static TMDB movie genre id → name map. IDs are stable; avoids a network round-trip when a list is saved.
 enum MovieGenreCatalog {
     static let namesByID: [Int: String] = [
         28: "Action",

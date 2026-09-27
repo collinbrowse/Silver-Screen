@@ -10,6 +10,7 @@ import Foundation
 final class AppRouter {
     var selectedTab: AppTab = .browse
     let browse: NavigationRouter
+    /// Library tab stack. The persisted key stays `favoritesPath` so a saved path still restores.
     let favorites: NavigationRouter
     let search: NavigationRouter
 
@@ -25,8 +26,8 @@ final class AppRouter {
         self.search = search
     }
 
-    func openFavorites() {
-        selectedTab = .favorites
+    func openLibrary() {
+        selectedTab = .library
     }
 
     /// Serializable navigation state for scene restoration.

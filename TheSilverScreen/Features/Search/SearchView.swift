@@ -12,8 +12,8 @@ import UIKit
 struct SearchView: View {
     @Bindable var viewModel: SearchViewModel
     let imageLoader: ImageLoader
-    let favorites: FavoritesRepository
-    let favoritesIndex: FavoritesIndex
+    let lists: ListsRepository
+    let listsIndex: ListsIndex
     var router: NavigationRouter?
 
     @State private var scrollIDs: [SearchScope: Int] = [:]
@@ -136,9 +136,7 @@ struct SearchView: View {
                             imageLoader: imageLoader
                         )
                     } star: {
-                        favoriteStar(name: row.title, id: row.id, kind: .movie) {
-                            await toggleFavorite { try await favorites.toggle(movie: row.asMovie()) }
-                        }
+                        listControl(row.listItem())
                     }
                 }
             case .tv(let rows):
@@ -157,9 +155,7 @@ struct SearchView: View {
                             imageLoader: imageLoader
                         )
                     } star: {
-                        favoriteStar(name: row.name, id: row.id, kind: .tv) {
-                            await toggleFavorite { try await favorites.toggle(tv: row.asSeries()) }
-                        }
+                        listControl(row.listItem())
                     }
                 }
             case .people(let rows):
@@ -177,9 +173,7 @@ struct SearchView: View {
                             imageLoader: imageLoader
                         )
                     } star: {
-                        favoriteStar(name: row.name, id: row.id, kind: .person) {
-                            await toggleFavorite { try await favorites.toggle(person: row.asPerson()) }
-                        }
+                        listControl(row.listItem())
                     }
                 }
             }
@@ -234,25 +228,9 @@ struct SearchView: View {
         }
     }
 
-    private func toggleFavorite(_ save: () async throws -> Void) async {
-        do {
-            try await save()
-        } catch {
-            viewModel.noteFavoriteSaveFailed()
-        }
-    }
-
-    private func favoriteStar(
-        name: String,
-        id: Int,
-        kind: FavoriteKind,
-        toggle: @escaping () async -> Void
-    ) -> some View {
-        CellFavoriteStar(
-            name: name,
-            isFavorite: favoritesIndex.contains(id, kind: kind)
-        ) {
-            Task { await toggle() }
+    private func listControl(_ draft: ListItemDraft) -> some View {
+        ListMembershipButton(draft: draft, lists: lists, index: listsIndex) {
+            viewModel.noteListSaveFailed()
         }
     }
 }

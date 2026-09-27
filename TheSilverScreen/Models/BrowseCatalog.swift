@@ -349,6 +349,8 @@ struct BrowseRow: Sendable, Equatable, Identifiable {
     let date: Date?
     let voteAverage: Double
     let genreIDs: [Int]
+    /// TMDB popularity copied onto a list entry. Zero when the payload omitted it.
+    var popularity: Double = 0
     /// Personal score, when this title has one. Nil until the list reads annotations.
     var formattedUserScore: String?
     /// Day that score was chosen.
@@ -376,6 +378,7 @@ struct BrowseRow: Sendable, Equatable, Identifiable {
         date = candidate.date
         voteAverage = candidate.voteAverage
         genreIDs = candidate.genreIDs
+        popularity = candidate.popularity
         formattedUserScore = nil
         formattedRatedOn = nil
     }
@@ -394,17 +397,8 @@ struct BrowseRow: Sendable, Equatable, Identifiable {
             posterPath: posterPath,
             releaseDate: date,
             voteAverage: voteAverage,
-            genreIDs: genreIDs
-        )
-    }
-
-    func asSeries() -> FavoriteTVSeries {
-        FavoriteTVSeries(
-            id: mediaID,
-            name: title,
-            posterPath: posterPath,
-            releaseDate: date,
-            genreIDs: genreIDs
+            genreIDs: genreIDs,
+            popularity: popularity
         )
     }
 }

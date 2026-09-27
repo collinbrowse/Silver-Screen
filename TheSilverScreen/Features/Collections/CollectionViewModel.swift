@@ -65,6 +65,11 @@ final class CollectionViewModel {
         await load()
     }
 
+    func noteListSaveFailed() {
+        guard case .loaded(let content, _) = state else { return }
+        state = .loaded(content, activity: .failed(.persistence))
+    }
+
     /// Writes saved scores onto the parts already on screen.
     func reloadDisplayedScores() async {
         guard case .loaded(let content, let activity) = state else { return }
