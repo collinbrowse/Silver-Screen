@@ -112,7 +112,26 @@ struct MovieDetailView: View {
         scrollTo: @escaping (String) -> Void
     ) -> some View {
         let bleedsToTop = content.images?.items.isEmpty == false
-        return ScrollView {
+        return GeometryReader { proxy in
+            detailScroll(
+                content: content,
+                activity: activity,
+                scrollTo: scrollTo,
+                width: proxy.size.width
+            )
+            .frame(width: proxy.size.width, height: proxy.size.height)
+        }
+        .heroStatusBarBleed(enabled: bleedsToTop)
+        .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
+    }
+
+    private func detailScroll(
+        content: MovieDetailContent,
+        activity: LoadActivity,
+        scrollTo: @escaping (String) -> Void,
+        width: CGFloat
+    ) -> some View {
+        ScrollView {
             VStack(alignment: .leading, spacing: DesignSpacing.xl) {
                 DetailHero(
                     title: content.detail.title,
@@ -153,12 +172,10 @@ struct MovieDetailView: View {
                 }
             }
             .padding(.bottom, DesignSpacing.lg)
-            .frame(maxWidth: 700)
+            .frame(width: min(width, 700))
             .frame(maxWidth: .infinity)
             .coordinateSpace(.named("detailScroll"))
         }
-        .heroStatusBarBleed(enabled: bleedsToTop)
-        .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
         .overlay(alignment: .top) {
             if case .failed(let error) = activity {
                 Text("\(error.title): \(error.message)")

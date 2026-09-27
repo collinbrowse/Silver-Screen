@@ -181,7 +181,6 @@ private struct SearchTabRoot: View {
     let lists: ListsRepository
     let listsIndex: ListsIndex
     let annotations: AnnotationsRepository
-    @State private var searchFieldPresented = false
 
     var body: some View {
         NavigationStack(path: $router.path) {
@@ -190,7 +189,6 @@ private struct SearchTabRoot: View {
                 imageLoader: imageLoader,
                 lists: lists,
                 listsIndex: listsIndex,
-                isSearchPresented: $searchFieldPresented,
                 router: router
             )
             .navigationDestination(for: Route.self) { route in

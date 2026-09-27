@@ -7,16 +7,19 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct SearchView: View {
     @Bindable var viewModel: SearchViewModel
     let imageLoader: ImageLoader
     let lists: ListsRepository
     let listsIndex: ListsIndex
-    var isSearchPresented: Binding<Bool> = .constant(false)
     var router: NavigationRouter?
 
     @State private var scrollIDs: [SearchScope: Int] = [:]
+    /// Mirrors the system search field's focus. Not passed into `.searchable`,
+    /// because binding `isPresented` clears the visible query after a pop.
+    @State private var fieldPresented = false
 
     var body: some View {
         Group {
@@ -27,7 +30,7 @@ struct SearchView: View {
             case .empty:
                 if viewModel.showsFocusedPlaceholder {
                     Button {
-                        isSearchPresented.wrappedValue = false
+                        dismissSearchKeyboard()
                     } label: {
                         emptyState
                     }
@@ -60,9 +63,13 @@ struct SearchView: View {
         }
         .navigationTitle("Search")
         .toolbarTitleDisplayMode(.inlineLarge)
+        .background {
+            SearchFocusObserver { focused in
+                fieldPresented = focused
+            }
+        }
         .searchable(
             text: $viewModel.query,
-            isPresented: isSearchPresented,
             placement: .navigationBarDrawer(displayMode: .always),
             prompt: searchPrompt
         )
@@ -73,7 +80,7 @@ struct SearchView: View {
         .onChange(of: viewModel.scope) { _, _ in
             Task { await viewModel.reloadForScopeChange() }
         }
-        .onChange(of: isSearchPresented.wrappedValue) { _, focused in
+        .onChange(of: fieldPresented) { _, focused in
             viewModel.setFieldFocused(focused)
         }
         .onAppear {
@@ -187,10 +194,14 @@ struct SearchView: View {
         }
     }
 
-    /// Leaves the field so Back returns to the results instead of a focused search.
+    /// Dismisses the keyboard, then pushes the result. The query stays in the field.
     private func open(_ route: Route) {
-        isSearchPresented.wrappedValue = false
+        dismissSearchKeyboard()
         router?.push(route)
+    }
+
+    private func dismissSearchKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 
     private func resultButton<Label: View, Star: View>(
@@ -221,5 +232,21 @@ struct SearchView: View {
         ListMembershipButton(draft: draft, lists: lists, index: listsIndex) {
             viewModel.noteListSaveFailed()
         }
+    }
+}
+
+/// Reads whether the system search field is focused. Lives under `.searchable`
+/// so it can see `isSearching`, which the search screen itself cannot.
+private struct SearchFocusObserver: View {
+    var onChange: (Bool) -> Void
+    @Environment(\.isSearching) private var isSearching
+
+    var body: some View {
+        Color.clear
+            .frame(width: 0, height: 0)
+            .onAppear { onChange(isSearching) }
+            .onChange(of: isSearching) { _, focused in
+                onChange(focused)
+            }
     }
 }
