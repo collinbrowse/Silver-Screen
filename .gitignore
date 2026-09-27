@@ -4,6 +4,10 @@
 # Local secrets (copy from Secrets.example.xcconfig)
 Secrets.xcconfig
 
+# App Store Connect API keys
+*.p8
+AuthKey_*
+
 # Xcode
 #
 # gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore

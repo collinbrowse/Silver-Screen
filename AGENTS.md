@@ -32,4 +32,5 @@ Do **not** try to finish the backlog. Judgment and craft matter more than comple
 - Skills: [`.cursor/skills/implement-story/`](.cursor/skills/implement-story/SKILL.md), [`.cursor/skills/visual-qa/`](.cursor/skills/visual-qa/SKILL.md)
 - Hooks: [`.cursor/hooks.json`](.cursor/hooks.json)
 - Harness gates: [`scripts/validate-rules.py`](scripts/validate-rules.py), [`scripts/validate-tests.py`](scripts/validate-tests.py) (empty tests banned; Done requires test changes), [`scripts/validate-pr-body.py`](scripts/validate-pr-body.py) (PR template sections required)
+- Releases: [`RELEASE.md`](RELEASE.md) and [`scripts/release.py`](scripts/release.py) — dev, TestFlight, and App Store share [`Version.xcconfig`](Version.xcconfig)
 - PR template: [`.github/pull_request_template.md`](.github/pull_request_template.md)

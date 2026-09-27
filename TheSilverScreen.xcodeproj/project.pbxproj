@@ -151,6 +151,7 @@
 		A10000052788B823003D8011 /* TMDBFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TMDBFixtures.swift; sourceTree = "<group>"; };
 		A10000072788B823003D8011 /* FakeHTTPClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeHTTPClientTests.swift; sourceTree = "<group>"; };
 		B10000012788B823003D8011 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		B10004012788B823003D8011 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 		B10000022788B823003D8011 /* Secrets.example.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.example.xcconfig; sourceTree = "<group>"; };
 		B10000112788B823003D8011 /* AppError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppError.swift; sourceTree = "<group>"; };
 		B10000132788B823003D8011 /* AppLogging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogging.swift; sourceTree = "<group>"; };
@@ -468,6 +469,7 @@
 			isa = PBXGroup;
 			children = (
 				B10000012788B823003D8011 /* Config.xcconfig */,
+				B10004012788B823003D8011 /* Version.xcconfig */,
 				B10000022788B823003D8011 /* Secrets.example.xcconfig */,
 				C77D45302788B821003D8011 /* TheSilverScreen */,
 				C77D45472788B823003D8011 /* TheSilverScreenTests */,
@@ -1043,11 +1045,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 84XX2W7G34;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TheSilverScreen/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Silver Screen";
+				INFOPLIST_KEY_CFBundleDisplayName = "Silver Dev";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
@@ -1057,8 +1058,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.1.1;
-				PRODUCT_BUNDLE_IDENTIFIER = com.collinbrowse.thesilverscreen;
+				PRODUCT_BUNDLE_IDENTIFIER = com.collinbrowse.thesilverscreen.dev;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
@@ -1073,7 +1073,6 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 84XX2W7G34;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TheSilverScreen/Info.plist;
@@ -1087,7 +1086,6 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.collinbrowse.thesilverscreen;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

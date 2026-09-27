@@ -1,0 +1,22 @@
+---
+description: Version and git workflow for dev, TestFlight, and the App Store.
+alwaysApply: true
+---
+
+# Releases
+
+[`Version.xcconfig`](Version.xcconfig) is the only shipping version. The runbook is [`RELEASE.md`](RELEASE.md). Commands live in [`scripts/release.py`](scripts/release.py).
+
+## Channels
+
+- **Dev** is a Debug run. Bundle id `com.collinbrowse.thesilverscreen.dev`, display name Silver Dev. It does not advance the build number.
+- **TestFlight** is an archive of the commit tagged `testflight/<marketing>+<build>`.
+- **App Store** is that same commit, tagged `v<marketing>`. Promote it. Do not archive a second binary for the store.
+
+## Rules
+
+- Change versions with `python3 scripts/release.py`. Leave `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` out of the app target in `project.pbxproj` — those lines override the xcconfig. Test targets keep their own numbers.
+- A feature commit does not bump the version. `bump` is for the next marketing version. `cut` is the only thing that advances the build.
+- `cut` and `promote` commit or tag from a clean tree. Do not hand-tag, and do not retarget `v*` without `promote --retarget`.
+- Upload uses an App Store Connect API key from the environment. Never commit a `.p8` file.
+- No Fastlane and no other third-party release tool. Archive with `scripts/release.py archive`.
