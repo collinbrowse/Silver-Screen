@@ -45,6 +45,8 @@ struct TrailerChip: View {
                 }
                 Text(title)
                     .multilineTextAlignment(.leading)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .font(DesignTypography.chip)
