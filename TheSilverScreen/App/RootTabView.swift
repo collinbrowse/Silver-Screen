@@ -146,7 +146,6 @@ private struct SearchTabRoot: View {
     let favorites: FavoritesRepository
     let favoritesIndex: FavoritesIndex
     let annotations: AnnotationsRepository
-    @State private var searchFieldPresented = false
 
     var body: some View {
         NavigationStack(path: $router.path) {
@@ -155,7 +154,6 @@ private struct SearchTabRoot: View {
                 imageLoader: imageLoader,
                 favorites: favorites,
                 favoritesIndex: favoritesIndex,
-                isSearchPresented: $searchFieldPresented,
                 router: router
             )
             .navigationDestination(for: Route.self) { route in
