@@ -8,8 +8,8 @@ import SwiftUI
 struct TVEpisodeView: View {
     @Bindable var viewModel: TVEpisodeViewModel
     let imageLoader: ImageLoader
-    let favorites: FavoritesRepository
-    let favoritesIndex: FavoritesIndex
+    let lists: ListsRepository
+    let listsIndex: ListsIndex
     let seriesID: Int
     let seriesName: String
     let seasonNumber: Int
@@ -62,21 +62,21 @@ struct TVEpisodeView: View {
         .background(DesignTheme.canvas)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                CellFavoriteStar(
-                    name: seriesName,
-                    isFavorite: favoritesIndex.contains(seriesID, kind: .tv)
+                ListMembershipButton(
+                    draft: ListItemDraft(
+                        id: seriesID,
+                        kind: .tv,
+                        title: seriesName,
+                        imagePath: nil,
+                        releaseDate: nil,
+                        genreNames: [],
+                        voteAverage: 0,
+                        popularity: 0
+                    ),
+                    lists: lists,
+                    index: listsIndex
                 ) {
-                    Task {
-                        _ = try? await favorites.toggle(
-                            tv: FavoriteTVSeries(
-                                id: seriesID,
-                                name: seriesName,
-                                posterPath: nil,
-                                releaseDate: nil,
-                                genreIDs: []
-                            )
-                        )
-                    }
+                    viewModel.noteListSaveFailed()
                 }
             }
         }

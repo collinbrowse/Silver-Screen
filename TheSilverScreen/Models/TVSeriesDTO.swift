@@ -191,6 +191,7 @@ struct TVSeriesDetailDTO: Decodable, Sendable {
     let aggregateCredits: TVAggregateCreditsDTO?
     let recommendations: TVSeriesResultsDTO?
     let voteAverage: Double?
+    let popularity: Double?
     /// Appended sections that were present but could not be decoded.
     let sectionFailures: [String]
 
@@ -208,6 +209,7 @@ struct TVSeriesDetailDTO: Decodable, Sendable {
         case aggregateCredits = "aggregate_credits"
         case recommendations
         case voteAverage = "vote_average"
+        case popularity
     }
 
     init(from decoder: Decoder) throws {
@@ -222,6 +224,7 @@ struct TVSeriesDetailDTO: Decodable, Sendable {
         createdBy = try container.decodeIfPresent([TVCreatorDTO].self, forKey: .createdBy)
         seasons = try container.decodeIfPresent([TVSeasonSummaryDTO].self, forKey: .seasons)
         voteAverage = try container.decodeIfPresent(Double.self, forKey: .voteAverage)
+        popularity = try container.decodeIfPresent(Double.self, forKey: .popularity)
         var failures: [String] = []
         images = Self.optionalSection(MovieImagesDTO.self, from: container, key: .images, failures: &failures)
         aggregateCredits = Self.optionalSection(TVAggregateCreditsDTO.self, from: container, key: .aggregateCredits, failures: &failures)

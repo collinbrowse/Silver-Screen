@@ -8,8 +8,8 @@ import SwiftUI
 struct TVSeriesView: View {
     @Bindable var viewModel: TVSeriesViewModel
     let imageLoader: ImageLoader
-    let favorites: FavoritesRepository
-    let favoritesIndex: FavoritesIndex
+    let lists: ListsRepository
+    let listsIndex: ListsIndex
     var router: NavigationRouter?
 
     @Namespace private var heroTransition
@@ -60,11 +60,12 @@ struct TVSeriesView: View {
         .toolbar {
             if case .loaded(let content, _) = viewModel.state {
                 ToolbarItem(placement: .topBarTrailing) {
-                    CellFavoriteStar(
-                        name: content.detail.name,
-                        isFavorite: favoritesIndex.contains(content.detail.id, kind: .tv)
+                    ListMembershipButton(
+                        draft: content.detail.listItem(),
+                        lists: lists,
+                        index: listsIndex
                     ) {
-                        Task { await toggleFavorite(content.detail) }
+                        viewModel.noteListSaveFailed()
                     }
                 }
             }
@@ -204,18 +205,6 @@ struct TVSeriesView: View {
             )
         }
         .padding(.horizontal, DesignSpacing.lg)
-    }
-
-    private func toggleFavorite(_ detail: TVSeriesDetail) async {
-        _ = try? await favorites.toggle(
-            tv: FavoriteTVSeries(
-                id: detail.id,
-                name: detail.name,
-                posterPath: detail.posterPath,
-                releaseDate: detail.firstAirDate,
-                genreIDs: detail.genres.map(\.id)
-            )
-        )
     }
 
     private func seasonsCarousel(_ content: TVSeriesContent) -> some View {

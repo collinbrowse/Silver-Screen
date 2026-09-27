@@ -101,18 +101,15 @@ final class MovieDetailViewModel {
 
     private let movieID: Int
     private let movies: MovieRepository
-    private let favorites: FavoritesRepository
     private let annotations: AnnotationsRepository
 
     init(
         movieID: Int,
         movies: MovieRepository,
-        favorites: FavoritesRepository,
         annotations: AnnotationsRepository
     ) {
         self.movieID = movieID
         self.movies = movies
-        self.favorites = favorites
         self.annotations = annotations
     }
 
@@ -139,10 +136,6 @@ final class MovieDetailViewModel {
                 personal: personal.detail
             )
             state = .loaded(content, activity: personal.activity)
-            // Keep a persisted favorite's snapshot from going stale against fresh TMDB data.
-            // No-op unless this movie is already favorited; failures here don't affect the screen.
-            let refreshed = detail.asMovie()
-            Task { try? await favorites.refresh(movie: refreshed) }
         } catch is CancellationError {
             return
         } catch let error as AppError {
@@ -215,56 +208,13 @@ final class MovieDetailViewModel {
         state = .loaded(content.withPersonal(personal), activity: AnnotationActivity.afterSuccess(activity))
     }
 
+    func noteListSaveFailed() {
+        markPersistenceFailure()
+    }
+
     private func markPersistenceFailure() {
         guard case .loaded(let content, _) = state else { return }
         state = .loaded(content, activity: .failed(.persistence))
-    }
-
-    func toggleFavorite() async {
-        guard case .loaded(let content, _) = state else { return }
-
-        do {
-            try await favorites.toggle(movie: content.detail.asMovie())
-            state = .loaded(content, activity: .none)
-        } catch is CancellationError {
-            return
-        } catch let error as AppError {
-            state = .loaded(content, activity: .failed(error))
-        } catch {
-            state = .loaded(content, activity: .failed(.unknown))
-        }
-    }
-
-    /// Favorites or unfavorites a person from a cast/crew card without changing movie favorite state.
-    func toggleFavorite(person: FavoritePerson) async {
-        guard case .loaded(let content, _) = state else { return }
-
-        do {
-            try await favorites.toggle(person: person)
-            state = .loaded(content, activity: .none)
-        } catch is CancellationError {
-            return
-        } catch let error as AppError {
-            state = .loaded(content, activity: .failed(error))
-        } catch {
-            state = .loaded(content, activity: .failed(.unknown))
-        }
-    }
-
-    /// Favorites or unfavorites a movie from a similar/collection card.
-    func toggleFavorite(movie: Movie) async {
-        guard case .loaded(let content, _) = state else { return }
-
-        do {
-            try await favorites.toggle(movie: movie)
-            state = .loaded(content, activity: .none)
-        } catch is CancellationError {
-            return
-        } catch let error as AppError {
-            state = .loaded(content, activity: .failed(error))
-        } catch {
-            state = .loaded(content, activity: .failed(.unknown))
-        }
     }
 
     func loadMoreReviews() async {

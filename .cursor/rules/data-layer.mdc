@@ -38,7 +38,7 @@ struct Movie: Sendable, Identifiable, Hashable {
 
 ## Repositories
 
-- One repository per domain area (`MovieRepository`, `FavoritesRepository`), exposing `async throws` methods that return domain models. Repositories are concrete types, not protocols.
+- One repository per domain area (`MovieRepository`, `ListsRepository`), exposing `async throws` methods that return domain models. Repositories are concrete types, not protocols.
 - The repository owns its API service, mapping, caching, and persistence. Callers cannot tell where the data came from.
 - Repositories reach the network through an injected `HTTPClient`, never `URLSession.shared`. That protocol is the only network seam and the only thing tests fake.
 

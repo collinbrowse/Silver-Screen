@@ -8,8 +8,8 @@ import SwiftUI
 struct TVSeasonView: View {
     @Bindable var viewModel: TVSeasonViewModel
     let imageLoader: ImageLoader
-    let favorites: FavoritesRepository
-    let favoritesIndex: FavoritesIndex
+    let lists: ListsRepository
+    let listsIndex: ListsIndex
     var router: NavigationRouter?
     @State private var playingTrailer: MediaTrailer?
     @State private var loadingTrailerID: String?
@@ -62,11 +62,12 @@ struct TVSeasonView: View {
         .toolbar {
             if case .loaded(let content, _) = viewModel.state {
                 ToolbarItem(placement: .topBarTrailing) {
-                    CellFavoriteStar(
-                        name: content.seriesName,
-                        isFavorite: favoritesIndex.contains(seriesID, kind: .tv)
+                    ListMembershipButton(
+                        draft: seriesDraft(named: content.seriesName, posterPath: content.posterPath),
+                        lists: lists,
+                        index: listsIndex
                     ) {
-                        Task { await toggleSeries(content) }
+                        viewModel.noteListSaveFailed()
                     }
                 }
             }
@@ -174,15 +175,17 @@ struct TVSeasonView: View {
         .padding(.horizontal, DesignSpacing.lg)
     }
 
-    private func toggleSeries(_ content: TVSeasonContent) async {
-        _ = try? await favorites.toggle(
-            tv: FavoriteTVSeries(
-                id: seriesID,
-                name: content.seriesName,
-                posterPath: content.posterPath,
-                releaseDate: nil,
-                genreIDs: []
-            )
+    /// Season and episode screens save the series, using whatever series fields are already on screen.
+    private func seriesDraft(named name: String, posterPath: String?) -> ListItemDraft {
+        ListItemDraft(
+            id: seriesID,
+            kind: .tv,
+            title: name,
+            imagePath: posterPath,
+            releaseDate: nil,
+            genreNames: [],
+            voteAverage: 0,
+            popularity: 0
         )
     }
 

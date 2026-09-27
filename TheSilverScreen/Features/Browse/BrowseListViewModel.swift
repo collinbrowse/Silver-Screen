@@ -92,7 +92,7 @@ final class BrowseListViewModel {
         await reload(keepVisible: false)
     }
 
-    func noteFavoriteSaveFailed() {
+    func noteListSaveFailed() {
         guard case .loaded(let rows, _) = state else { return }
         state = .loaded(rows, activity: .failed(.persistence))
     }

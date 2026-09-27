@@ -151,10 +151,10 @@ final class BrowseListViewModelTests: XCTestCase {
         XCTAssertTrue(rows[1].genreNames.isEmpty)
     }
 
-    func test_noteFavoriteSaveFailed_setsPersistenceActivity() async {
+    func test_noteListSaveFailed_setsPersistenceActivity() async {
         let viewModel = makeViewModel()
         await viewModel.load()
-        viewModel.noteFavoriteSaveFailed()
+        viewModel.noteListSaveFailed()
         guard case .loaded(_, activity: .failed(let error)) = viewModel.state else {
             return XCTFail("Expected loaded rows with a persistence failure, got \(viewModel.state)")
         }

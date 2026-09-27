@@ -143,6 +143,10 @@ final class TVSeasonViewModel {
         state = .loaded(content.withPersonal(personal), activity: AnnotationActivity.afterSuccess(activity))
     }
 
+    func noteListSaveFailed() {
+        markPersistenceFailure()
+    }
+
     private func markPersistenceFailure() {
         guard case .loaded(let content, _) = state else { return }
         state = .loaded(content, activity: .failed(.persistence))

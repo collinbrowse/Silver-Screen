@@ -206,7 +206,7 @@ final class SearchViewModel {
         state = .loaded(stamped, activity: activity)
     }
 
-    func noteFavoriteSaveFailed() {
+    func noteListSaveFailed() {
         guard case .loaded(let listing, _) = state else { return }
         state = .loaded(listing, activity: .failed(.persistence))
     }

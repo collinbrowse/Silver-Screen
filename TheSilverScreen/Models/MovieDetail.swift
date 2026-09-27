@@ -17,6 +17,8 @@ struct MovieDetail: Sendable, Identifiable, Equatable, Hashable {
     let posterPath: String?
     let releaseDate: Date?
     let voteAverage: Double
+    /// TMDB popularity copied onto a list entry. Zero when the payload omitted it.
+    let popularity: Double
     let genres: [MovieGenre]
     /// Official YouTube trailers, in TMDB order.
     let trailers: [MediaTrailer]
@@ -28,7 +30,7 @@ struct MovieDetail: Sendable, Identifiable, Equatable, Hashable {
     let similar: [Movie]
     let collection: MovieCollectionRef?
 
-    /// Summary used when toggling favorites from detail.
+    /// Domain movie for this detail, including popularity saved on a list.
     func asMovie() -> Movie {
         Movie(
             id: id,
@@ -36,7 +38,8 @@ struct MovieDetail: Sendable, Identifiable, Equatable, Hashable {
             posterPath: posterPath,
             releaseDate: releaseDate,
             voteAverage: voteAverage,
-            genreIDs: genres.map(\.id)
+            genreIDs: genres.map(\.id),
+            popularity: popularity
         )
     }
 }

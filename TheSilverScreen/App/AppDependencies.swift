@@ -10,8 +10,9 @@ struct AppDependencies {
     let movies: MovieRepository
     let shows: TVRepository
     let people: PersonRepository
-    let favorites: FavoritesRepository
-    let favoritesIndex: FavoritesIndex
+    let lists: ListsRepository
+    let listsIndex: ListsIndex
+    let listChanges: ListChangeNotice
     let annotations: AnnotationsRepository
     let imageLoader: ImageLoader
     let router: AppRouter
@@ -36,14 +37,14 @@ struct AppDependencies {
             apiKey: apiKey,
             logger: logger
         )
-        let favoritesStoreURL = try FileFavoritesStore.applicationSupportURL()
-        let favoritesStore = FileFavoritesStore(fileURL: favoritesStoreURL)
-        let favoritesIndex = FavoritesIndex()
-        let favorites = FavoritesRepository(
-            store: favoritesStore,
+        let listsStoreURL = try FileListsStore.applicationSupportURL()
+        let listsIndex = ListsIndex()
+        let lists = ListsRepository(
+            store: FileListsStore(fileURL: listsStoreURL),
             logger: logger,
-            index: favoritesIndex
+            index: listsIndex
         )
+        let listChanges = ListChangeNotice()
         let annotationsStoreURL = try FileAnnotationsStore.applicationSupportURL()
         let annotations = AnnotationsRepository(
             store: FileAnnotationsStore(fileURL: annotationsStoreURL),
@@ -55,8 +56,9 @@ struct AppDependencies {
             movies: movies,
             shows: shows,
             people: people,
-            favorites: favorites,
-            favoritesIndex: favoritesIndex,
+            lists: lists,
+            listsIndex: listsIndex,
+            listChanges: listChanges,
             annotations: annotations,
             imageLoader: imageLoader,
             router: router,

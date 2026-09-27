@@ -77,6 +77,8 @@ struct TVSeriesDetail: Sendable, Identifiable, Equatable {
     let trailers: [MediaTrailer]
     /// TMDB user score, 0–10. Zero when the payload omitted it.
     let voteAverage: Double
+    /// TMDB popularity copied onto a list entry. Zero when the payload omitted it.
+    let popularity: Double
     let creators: [String]
     let images: [MovieImage]
     /// Seasons sorted by season number, earliest first.

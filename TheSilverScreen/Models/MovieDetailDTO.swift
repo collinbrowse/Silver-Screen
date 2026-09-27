@@ -137,6 +137,7 @@ struct MovieDetailDTO: Decodable, Sendable {
     let posterPath: String?
     let releaseDate: String?
     let voteAverage: Double
+    let popularity: Double?
     let genres: [MovieGenreDTO]?
     let budget: Int?
     let revenue: Int?
@@ -152,6 +153,7 @@ struct MovieDetailDTO: Decodable, Sendable {
         case posterPath = "poster_path"
         case releaseDate = "release_date"
         case voteAverage = "vote_average"
+        case popularity
         case genres
         case budget
         case revenue
