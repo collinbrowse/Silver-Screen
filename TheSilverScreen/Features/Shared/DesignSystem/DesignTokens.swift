@@ -102,6 +102,36 @@ extension View {
             }
         }
     }
+
+    /// Hides a separator that does not sit between two cells.
+    /// The first row drops the line above it; the last row drops the line below it.
+    @ViewBuilder
+    func listRowSeparatorBetweenCells(isFirst: Bool, isLast: Bool) -> some View {
+        if isFirst, isLast {
+            listRowSeparator(.hidden)
+        } else if isFirst {
+            listRowSeparator(.hidden, edges: .top)
+        } else if isLast {
+            listRowSeparator(.hidden, edges: .bottom)
+        } else {
+            self
+        }
+    }
+
+    /// Hides the section hairline at the start or end of a list.
+    /// A section that meets another section keeps that shared edge.
+    @ViewBuilder
+    func listSectionSeparatorBetweenCells(isFirstSection: Bool, isLastSection: Bool) -> some View {
+        if isFirstSection, isLastSection {
+            listSectionSeparator(.hidden)
+        } else if isFirstSection {
+            listSectionSeparator(.hidden, edges: .top)
+        } else if isLastSection {
+            listSectionSeparator(.hidden, edges: .bottom)
+        } else {
+            self
+        }
+    }
 }
 
 enum DesignTypography {

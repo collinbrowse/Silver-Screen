@@ -51,8 +51,9 @@ struct CollectionView: View {
     }
 
     private func loaded(_ content: CollectionContent) -> some View {
-        List {
-            if hasPoster(content) || !content.overview.isEmpty || !content.name.isEmpty {
+        let showsHeader = hasPoster(content) || !content.overview.isEmpty || !content.name.isEmpty
+        return List {
+            if showsHeader {
                 Section {
                     VStack(alignment: .leading, spacing: DesignSpacing.md) {
                         HStack(alignment: .top, spacing: DesignSpacing.md) {
@@ -79,12 +80,14 @@ struct CollectionView: View {
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel(headerLabel(content))
                     .coordinateSpace(.named("detailScroll"))
+                    .listRowSeparatorBetweenCells(isFirst: true, isLast: content.parts.isEmpty)
                 }
+                .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: content.parts.isEmpty)
             }
 
             if !content.parts.isEmpty {
                 Section {
-                    ForEach(content.parts) { row in
+                    ForEach(Array(content.parts.enumerated()), id: \.element.id) { index, row in
                         HStack(alignment: .center, spacing: DesignSpacing.sm) {
                             Button {
                                 router?.push(.movieDetail(id: row.id))
@@ -109,8 +112,13 @@ struct CollectionView: View {
                                 viewModel.noteListSaveFailed()
                             }
                         }
+                        .listRowSeparatorBetweenCells(
+                            isFirst: !showsHeader && index == 0,
+                            isLast: index == content.parts.count - 1
+                        )
                     }
                 }
+                .listSectionSeparatorBetweenCells(isFirstSection: !showsHeader, isLastSection: true)
             }
         }
         .listStyle(.plain)

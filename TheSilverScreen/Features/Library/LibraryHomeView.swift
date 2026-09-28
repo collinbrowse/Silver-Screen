@@ -130,15 +130,24 @@ struct LibraryHomeView: View {
                 List {
                     if !system.isEmpty {
                         Section {
-                            ForEach(system) { list in
+                            ForEach(Array(system.enumerated()), id: \.element.id) { index, list in
                                 listLink(list)
+                                    .listRowSeparatorBetweenCells(
+                                        isFirst: index == 0,
+                                        isLast: custom.isEmpty && index == system.count - 1
+                                    )
                             }
                         }
+                        .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: custom.isEmpty)
                     }
                     if !custom.isEmpty {
                         Section {
-                            ForEach(custom) { list in
+                            ForEach(Array(custom.enumerated()), id: \.element.id) { index, list in
                                 listLink(list)
+                                    .listRowSeparatorBetweenCells(
+                                        isFirst: system.isEmpty && index == 0,
+                                        isLast: index == custom.count - 1
+                                    )
                                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
                                         Button("Rename") {
                                             beginRename(list)
@@ -162,6 +171,7 @@ struct LibraryHomeView: View {
                                 Task { await viewModel.moveLists(from: source, to: destination) }
                             } : nil)
                         }
+                        .listSectionSeparatorBetweenCells(isFirstSection: system.isEmpty, isLastSection: true)
                     }
                 }
                 .listStyle(.plain)

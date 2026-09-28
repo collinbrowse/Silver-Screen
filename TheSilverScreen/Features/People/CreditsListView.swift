@@ -44,10 +44,17 @@ struct CreditsListView: View {
                 )
             case .loaded(let content, _):
                 List {
-                    ForEach(content.items) { item in
-                        creditRow(item)
-                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                    Section {
+                        ForEach(Array(content.items.enumerated()), id: \.element.id) { index, item in
+                            creditRow(item)
+                                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                                .listRowSeparatorBetweenCells(
+                                    isFirst: index == 0,
+                                    isLast: index == content.items.count - 1
+                                )
+                        }
                     }
+                    .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
                 }
                 .listStyle(.plain)
             case .failed(let error):

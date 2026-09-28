@@ -124,46 +124,53 @@ struct BrowseListView: View {
 
     private func list(_ rows: [BrowseRow], activity: LoadActivity) -> some View {
         List {
-            ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                HStack(alignment: .center, spacing: DesignSpacing.sm) {
-                    Button {
-                        open(row)
-                    } label: {
-                        CatalogRowView(
-                            title: row.title,
-                            subtitle: row.genreLine,
-                            metadata: row.formattedDate,
-                            userScore: row.formattedUserScore,
-                            imagePath: row.posterPath,
-                            imageKind: .poster,
-                            placeholderSystemImage: row.media == .movie ? "film" : "tv",
-                            imageLoader: imageLoader
-                        )
-                    }
-                    .buttonStyle(.plain)
+            Section {
+                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                    HStack(alignment: .center, spacing: DesignSpacing.sm) {
+                        Button {
+                            open(row)
+                        } label: {
+                            CatalogRowView(
+                                title: row.title,
+                                subtitle: row.genreLine,
+                                metadata: row.formattedDate,
+                                userScore: row.formattedUserScore,
+                                imagePath: row.posterPath,
+                                imageKind: .poster,
+                                placeholderSystemImage: row.media == .movie ? "film" : "tv",
+                                imageLoader: imageLoader
+                            )
+                        }
+                        .buttonStyle(.plain)
 
-                    ListMembershipButton(
-                        draft: row.listItem(),
-                        lists: lists,
-                        index: listsIndex
-                    ) {
-                        viewModel.noteListSaveFailed()
+                        ListMembershipButton(
+                            draft: row.listItem(),
+                            lists: lists,
+                            index: listsIndex
+                        ) {
+                            viewModel.noteListSaveFailed()
+                        }
+                    }
+                    .id(row.id)
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 8))
+                    .listRowSeparatorBetweenCells(
+                        isFirst: index == 0,
+                        isLast: index == rows.count - 1 && activity != .loadingMore
+                    )
+                    .onAppear {
+                        if index == rows.count - 1 {
+                            Task { await viewModel.loadMore() }
+                        }
                     }
                 }
-                .id(row.id)
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 8))
-                .onAppear {
-                    if index == rows.count - 1 {
-                        Task { await viewModel.loadMore() }
-                    }
+
+                if activity == .loadingMore {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .listRowSeparator(.hidden)
                 }
             }
-
-            if activity == .loadingMore {
-                ProgressView()
-                    .frame(maxWidth: .infinity)
-                    .listRowSeparator(.hidden)
-            }
+            .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
         }
         .listStyle(.plain)
         .scrollPosition(id: $scrolledID)

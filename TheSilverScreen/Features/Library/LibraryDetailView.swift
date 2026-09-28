@@ -87,18 +87,25 @@ struct LibraryDetailView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List {
-                    ForEach(entries) { entry in
-                        entryLink(entry)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                Button("Remove", role: .destructive) {
-                                    Task { await remove(entry) }
+                    Section {
+                        ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+                            entryLink(entry)
+                                .listRowSeparatorBetweenCells(
+                                    isFirst: index == 0,
+                                    isLast: index == entries.count - 1
+                                )
+                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    Button("Remove", role: .destructive) {
+                                        Task { await remove(entry) }
+                                    }
+                                    .accessibilityLabel("Remove \(entry.title)")
                                 }
-                                .accessibilityLabel("Remove \(entry.title)")
-                            }
+                        }
+                        .onMove(perform: viewModel.allowsReorder ? { source, destination in
+                            Task { await viewModel.moveEntries(from: source, to: destination) }
+                        } : nil)
                     }
-                    .onMove(perform: viewModel.allowsReorder ? { source, destination in
-                        Task { await viewModel.moveEntries(from: source, to: destination) }
-                    } : nil)
+                    .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
                 }
                 .listStyle(.plain)
                 .environment(\.editMode, viewModel.allowsReorder ? $editMode : .constant(.inactive))

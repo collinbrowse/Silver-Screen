@@ -86,44 +86,51 @@ struct AwardTitlesView: View {
 
     private func list(_ rows: [AwardTitleRow], activity: LoadActivity) -> some View {
         List {
-            ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                HStack(alignment: .center, spacing: DesignSpacing.sm) {
-                    Button {
-                        router?.push(row.route)
-                    } label: {
-                        CatalogRowView(
-                            title: row.title,
-                            subtitle: row.awardYear,
-                            metadata: row.genreLine,
-                            userScore: row.userScore,
-                            imagePath: row.imagePath,
-                            imageKind: row.artwork == .still ? .backdrop : .poster,
-                            placeholderSystemImage: row.artwork == .still ? "tv" : "film",
-                            imageLoader: imageLoader
-                        )
-                    }
-                    .buttonStyle(.plain)
+            Section {
+                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                    HStack(alignment: .center, spacing: DesignSpacing.sm) {
+                        Button {
+                            router?.push(row.route)
+                        } label: {
+                            CatalogRowView(
+                                title: row.title,
+                                subtitle: row.awardYear,
+                                metadata: row.genreLine,
+                                userScore: row.userScore,
+                                imagePath: row.imagePath,
+                                imageKind: row.artwork == .still ? .backdrop : .poster,
+                                placeholderSystemImage: row.artwork == .still ? "tv" : "film",
+                                imageLoader: imageLoader
+                            )
+                        }
+                        .buttonStyle(.plain)
 
-                    if let draft = row.listDraft {
-                        ListMembershipButton(
-                            draft: draft,
-                            lists: lists,
-                            index: listsIndex
-                        )
+                        if let draft = row.listDraft {
+                            ListMembershipButton(
+                                draft: draft,
+                                lists: lists,
+                                index: listsIndex
+                            )
+                        }
+                    }
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 8))
+                    .listRowSeparatorBetweenCells(
+                        isFirst: index == 0,
+                        isLast: index == rows.count - 1 && activity != .loadingMore
+                    )
+                    .onAppear {
+                        if index == rows.count - 1 {
+                            Task { await viewModel.loadMore() }
+                        }
                     }
                 }
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 8))
-                .onAppear {
-                    if index == rows.count - 1 {
-                        Task { await viewModel.loadMore() }
-                    }
+                if activity == .loadingMore {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .listRowSeparator(.hidden)
                 }
             }
-            if activity == .loadingMore {
-                ProgressView()
-                    .frame(maxWidth: .infinity)
-                    .listRowSeparator(.hidden)
-            }
+            .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
         }
         .listStyle(.plain)
         .overlay(alignment: .top) {

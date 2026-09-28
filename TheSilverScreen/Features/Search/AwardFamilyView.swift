@@ -28,32 +28,39 @@ struct AwardFamilyView: View {
                 )
             case .loaded(let categories, _):
                 List {
-                    ForEach(categories) { category in
-                        Button {
-                            router?.push(
-                                .awardTitles(
-                                    AwardTitleRequest(family: viewModel.family, category: category.name)
+                    Section {
+                        ForEach(Array(categories.enumerated()), id: \.element.id) { index, category in
+                            Button {
+                                router?.push(
+                                    .awardTitles(
+                                        AwardTitleRequest(family: viewModel.family, category: category.name)
+                                    )
                                 )
-                            )
-                        } label: {
-                            HStack {
-                                Text(category.name)
-                                    .font(DesignTypography.body)
-                                    .foregroundStyle(DesignTheme.textPrimary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                Spacer(minLength: DesignSpacing.sm)
-                                Image(systemName: "chevron.right")
-                                    .font(DesignTypography.chip.weight(.semibold))
-                                    .foregroundStyle(DesignTheme.textSecondary)
-                                    .accessibilityHidden(true)
+                            } label: {
+                                HStack {
+                                    Text(category.name)
+                                        .font(DesignTypography.body)
+                                        .foregroundStyle(DesignTheme.textPrimary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    Spacer(minLength: DesignSpacing.sm)
+                                    Image(systemName: "chevron.right")
+                                        .font(DesignTypography.chip.weight(.semibold))
+                                        .foregroundStyle(DesignTheme.textSecondary)
+                                        .accessibilityHidden(true)
+                                }
+                                .contentShape(Rectangle())
+                                .frame(minHeight: 44)
                             }
-                            .contentShape(Rectangle())
-                            .frame(minHeight: 44)
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(category.name)
+                            .accessibilityHint("Shows winners and nominees")
+                            .listRowSeparatorBetweenCells(
+                                isFirst: index == 0,
+                                isLast: index == categories.count - 1
+                            )
                         }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(category.name)
-                        .accessibilityHint("Shows winners and nominees")
                     }
+                    .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
                 }
                 .listStyle(.plain)
             case .failed(let error):

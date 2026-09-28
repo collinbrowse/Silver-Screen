@@ -164,70 +164,73 @@ struct SearchView: View {
     @ViewBuilder
     private func results(_ listing: SearchListing, activity: LoadActivity) -> some View {
         List {
-            switch listing {
-            case .movies(let rows):
-                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                    resultButton(index: index, count: rows.count, rowID: row.id) {
-                        open(.movieDetail(id: row.id))
-                    } label: {
-                        CatalogRowView(
-                            title: row.title,
-                            subtitle: row.genreNames.joined(separator: ", "),
-                            metadata: row.formattedReleaseDate,
-                            userScore: row.formattedUserScore,
-                            imagePath: row.posterPath,
-                            imageKind: .poster,
-                            placeholderSystemImage: "film",
-                            imageLoader: imageLoader
-                        )
-                    } star: {
-                        listControl(row.listItem())
+            Section {
+                switch listing {
+                case .movies(let rows):
+                    ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                        resultButton(index: index, count: rows.count, showsLoadingRow: activity == .loadingMore, rowID: row.id) {
+                            open(.movieDetail(id: row.id))
+                        } label: {
+                            CatalogRowView(
+                                title: row.title,
+                                subtitle: row.genreNames.joined(separator: ", "),
+                                metadata: row.formattedReleaseDate,
+                                userScore: row.formattedUserScore,
+                                imagePath: row.posterPath,
+                                imageKind: .poster,
+                                placeholderSystemImage: "film",
+                                imageLoader: imageLoader
+                            )
+                        } star: {
+                            listControl(row.listItem())
+                        }
+                    }
+                case .tv(let rows):
+                    ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                        resultButton(index: index, count: rows.count, showsLoadingRow: activity == .loadingMore, rowID: row.id) {
+                            open(.tvSeries(id: row.id))
+                        } label: {
+                            CatalogRowView(
+                                title: row.name,
+                                subtitle: row.genreNames.joined(separator: ", "),
+                                metadata: row.formattedFirstAirDate,
+                                userScore: row.formattedUserScore,
+                                imagePath: row.posterPath,
+                                imageKind: .poster,
+                                placeholderSystemImage: "tv",
+                                imageLoader: imageLoader
+                            )
+                        } star: {
+                            listControl(row.listItem())
+                        }
+                    }
+                case .people(let rows):
+                    ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                        resultButton(index: index, count: rows.count, showsLoadingRow: activity == .loadingMore, rowID: row.id) {
+                            open(.person(id: row.id))
+                        } label: {
+                            CatalogRowView(
+                                title: row.name,
+                                subtitle: "",
+                                metadata: row.knownForDepartment ?? "",
+                                imagePath: row.profilePath,
+                                imageKind: .profile,
+                                placeholderSystemImage: "person.fill",
+                                imageLoader: imageLoader
+                            )
+                        } star: {
+                            listControl(row.listItem())
+                        }
                     }
                 }
-            case .tv(let rows):
-                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                    resultButton(index: index, count: rows.count, rowID: row.id) {
-                        open(.tvSeries(id: row.id))
-                    } label: {
-                        CatalogRowView(
-                            title: row.name,
-                            subtitle: row.genreNames.joined(separator: ", "),
-                            metadata: row.formattedFirstAirDate,
-                            userScore: row.formattedUserScore,
-                            imagePath: row.posterPath,
-                            imageKind: .poster,
-                            placeholderSystemImage: "tv",
-                            imageLoader: imageLoader
-                        )
-                    } star: {
-                        listControl(row.listItem())
-                    }
-                }
-            case .people(let rows):
-                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                    resultButton(index: index, count: rows.count, rowID: row.id) {
-                        open(.person(id: row.id))
-                    } label: {
-                        CatalogRowView(
-                            title: row.name,
-                            subtitle: "",
-                            metadata: row.knownForDepartment ?? "",
-                            imagePath: row.profilePath,
-                            imageKind: .profile,
-                            placeholderSystemImage: "person.fill",
-                            imageLoader: imageLoader
-                        )
-                    } star: {
-                        listControl(row.listItem())
-                    }
-                }
-            }
 
-            if activity == .loadingMore {
-                ProgressView()
-                    .frame(maxWidth: .infinity)
-                    .listRowSeparator(.hidden)
+                if activity == .loadingMore {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .listRowSeparator(.hidden)
+                }
             }
+            .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
         }
         .listStyle(.plain)
         .scrollPosition(id: Binding(
@@ -252,6 +255,7 @@ struct SearchView: View {
     private func resultButton<Label: View, Star: View>(
         index: Int,
         count: Int,
+        showsLoadingRow: Bool,
         rowID: Int,
         action: @escaping () -> Void,
         @ViewBuilder label: () -> Label,
@@ -266,6 +270,7 @@ struct SearchView: View {
         }
         .id(rowID)
         .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 8))
+        .listRowSeparatorBetweenCells(isFirst: index == 0, isLast: index == count - 1 && !showsLoadingRow)
         .onAppear {
             if index == count - 1 {
                 Task { await viewModel.loadMore() }
