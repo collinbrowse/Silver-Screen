@@ -142,8 +142,7 @@ struct MovieDetailView: View {
                     transitionNamespace: heroTransition,
                     onOpenPoster: { viewModel.openPoster() },
                     onOpenImage: { viewModel.openImages(initialID: $0) },
-                    genreNames: content.detail.genres.map(\.name),
-                    awardLabels: viewModel.awardLabels
+                    genreNames: content.detail.genres.map(\.name)
                 ) {
                     if !content.detail.trailers.isEmpty {
                         MediaMetadataPills(
@@ -208,6 +207,9 @@ struct MovieDetailView: View {
                 onDelete: { await viewModel.deleteUserNote() }
             )
             factsCard(content)
+            if !viewModel.awardRows.isEmpty {
+                AwardRowsSection(rows: viewModel.awardRows)
+            }
         }
         .padding(.horizontal, DesignSpacing.lg)
     }

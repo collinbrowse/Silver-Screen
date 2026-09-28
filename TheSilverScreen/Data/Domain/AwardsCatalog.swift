@@ -2,7 +2,7 @@
 //  AwardsCatalog.swift
 //  TheSilverScreen
 //
-//  Bundled award credits. Shelves and detail pills read this file; the weekly
+//  Bundled award credits. Shelves and detail rows read this file; the weekly
 //  job rebuilds it from Wikidata and leaves already-resolved TMDB ids in place.
 //
 
@@ -68,23 +68,18 @@ enum AwardFamily: String, Codable, Hashable, Sendable, CaseIterable {
     }
 }
 
-/// One detail pill: which prize the trophy depicts, and the words beside it.
-struct AwardPill: Hashable, Sendable, Identifiable {
-    var family: AwardFamily
-    /// Category name, or “category nominee” when the title has no wins.
-    var title: String
-
-    var id: String { "\(family.rawValue)|\(title)" }
-
-    /// Prize body plus category. Nominations keep the word “nominee”.
-    var accessibilityName: String {
-        let nominee = " nominee"
-        if title.hasSuffix(nominee) {
-            let category = title.dropLast(nominee.count)
-            return "\(family.shortName) nominee for \(category)"
-        }
-        return "\(family.shortName) for \(title)"
-    }
+/// One row in the awards card on a person screen or a title screen.
+struct AwardRow: Hashable, Sendable, Equatable, Identifiable {
+    let id: String
+    let family: AwardFamily
+    /// Category name. Nominations keep the word "nominee".
+    let categoryLabel: String
+    /// Work and year for a person, or the people and year for a title.
+    let detailLine: String
+    /// Prize body, category, and the second line. The trophy is decorative.
+    let accessibilityName: String
+    /// Title to open. Rows on a title screen stay put, so this is nil there.
+    let route: Route?
 }
 
 /// How a credit is opened. Matches the ids detail screens already use.
@@ -258,7 +253,7 @@ struct PersonAward: Hashable, Sendable, Equatable, Identifiable {
 
     var id: String { key }
 
-    /// Category name. Nominations keep the word "nominee", same as a title pill.
+    /// Category name. Nominations keep the word "nominee".
     var categoryLabel: String {
         won ? category : "\(category) nominee"
     }
@@ -274,6 +269,18 @@ struct PersonAward: Hashable, Sendable, Equatable, Identifiable {
             ? "\(family.shortName) for \(category)"
             : "\(family.shortName) nominee for \(category)"
         return "\(prize), \(workTitle), \(year)"
+    }
+
+    /// Same card row movie and TV screens use.
+    var row: AwardRow {
+        AwardRow(
+            id: key,
+            family: family,
+            categoryLabel: categoryLabel,
+            detailLine: workLine,
+            accessibilityName: accessibilityName,
+            route: route
+        )
     }
 }
 
@@ -350,35 +357,62 @@ struct AwardCreditPage: Sendable, Equatable {
     let hasMore: Bool
 }
 
-/// Win and nomination pills. Wins replace nominations; the trophy is never the only signal.
-enum AwardPillCopy {
-    static let nominationLimit = 3
-
-    static func labels(from credits: [AwardCredit]) -> [AwardPill] {
-        let wins = uniqueCategories(credits.filter(\.won))
-        if !wins.isEmpty {
-            return wins.map { AwardPill(family: $0.family, title: $0.category) }
-        }
-        return uniqueCategories(credits.filter { !$0.won })
-            .prefix(nominationLimit)
-            .map { AwardPill(family: $0.family, title: "\($0.category) nominee") }
-    }
-
-    /// Newest ceremony first. One pill per prize body and category, so two bodies
-    /// that share a name (Best Actor) each keep a trophy.
-    private static func uniqueCategories(_ credits: [AwardCredit]) -> [AwardCredit] {
+/// Newest ceremony first, then wins, prize body, category, title, and key.
+enum AwardCreditOrder {
+    static func sorted(_ credits: [AwardCredit]) -> [AwardCredit] {
         let familyOrder = Dictionary(
             uniqueKeysWithValues: AwardFamily.allCases.enumerated().map { ($1, $0) }
         )
-        let sorted = credits.sorted { lhs, rhs in
+        return credits.sorted { lhs, rhs in
             if lhs.year != rhs.year { return lhs.year > rhs.year }
+            if lhs.won != rhs.won { return lhs.won }
             let leftFamily = familyOrder[lhs.family] ?? 0
             let rightFamily = familyOrder[rhs.family] ?? 0
             if leftFamily != rightFamily { return leftFamily < rightFamily }
-            return lhs.category < rhs.category
+            if lhs.category != rhs.category { return lhs.category < rhs.category }
+            let titleOrder = lhs.title.localizedStandardCompare(rhs.title)
+            if titleOrder != .orderedSame { return titleOrder == .orderedAscending }
+            return lhs.key < rhs.key
         }
-        var seen: Set<String> = []
-        return sorted.filter { seen.insert("\($0.family.rawValue)|\($0.category)").inserted }
+    }
+}
+
+/// Prizes for one movie, series, season, or episode. Same card as a person, with the people named on the prize.
+enum TitleAwardList {
+    /// Newest ceremony first. A win drops the nomination for that same category and year.
+    static func rows(from credits: [AwardCredit]) -> [AwardRow] {
+        let matched = credits.filter { !$0.category.isEmpty }
+        let wins = Set(matched.filter(\.won).map(suppressionKey))
+        let visible = matched.filter { credit in
+            credit.won || !wins.contains(suppressionKey(credit))
+        }
+        return AwardCreditOrder.sorted(visible).map(row)
+    }
+
+    private static func suppressionKey(_ credit: AwardCredit) -> String {
+        "\(credit.family.rawValue)|\(credit.category)|\(credit.year)"
+    }
+
+    private static func row(_ credit: AwardCredit) -> AwardRow {
+        let names = credit.recipients.map(\.name).filter { !$0.isEmpty }
+        let categoryLabel = credit.won ? credit.category : "\(credit.category) nominee"
+        let detailLine = names.isEmpty
+            ? String(credit.year)
+            : "\(names.joined(separator: ", ")) · \(credit.year)"
+        let prize = credit.won
+            ? "\(credit.family.shortName) for \(credit.category)"
+            : "\(credit.family.shortName) nominee for \(credit.category)"
+        let spokenDetail = names.isEmpty
+            ? String(credit.year)
+            : "\(names.joined(separator: ", ")), \(credit.year)"
+        return AwardRow(
+            id: credit.key,
+            family: credit.family,
+            categoryLabel: categoryLabel,
+            detailLine: detailLine,
+            accessibilityName: "\(prize), \(spokenDetail)",
+            route: nil
+        )
     }
 }
 
@@ -398,21 +432,7 @@ enum PersonAwardList {
         let visible = matched.filter { credit in
             credit.won || !wins.contains(suppressionKey(credit))
         }
-        let familyOrder = Dictionary(
-            uniqueKeysWithValues: AwardFamily.allCases.enumerated().map { ($1, $0) }
-        )
-        return visible.sorted { lhs, rhs in
-            if lhs.year != rhs.year { return lhs.year > rhs.year }
-            if lhs.won != rhs.won { return lhs.won }
-            let leftFamily = familyOrder[lhs.family] ?? 0
-            let rightFamily = familyOrder[rhs.family] ?? 0
-            if leftFamily != rightFamily { return leftFamily < rightFamily }
-            if lhs.category != rhs.category { return lhs.category < rhs.category }
-            let titleOrder = lhs.title.localizedStandardCompare(rhs.title)
-            if titleOrder != .orderedSame { return titleOrder == .orderedAscending }
-            return lhs.key < rhs.key
-        }
-        .map { credit in
+        return AwardCreditOrder.sorted(visible).map { credit in
             PersonAward(
                 key: credit.key,
                 family: credit.family,

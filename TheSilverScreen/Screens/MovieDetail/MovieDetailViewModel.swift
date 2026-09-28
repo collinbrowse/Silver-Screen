@@ -98,8 +98,8 @@ struct FullscreenImages: Sendable, Equatable, Identifiable {
 @MainActor
 final class MovieDetailViewModel {
     private(set) var state: LoadState<MovieDetailContent> = .idle
-    /// Win pills, or up to three nomination pills when this movie has no wins.
-    private(set) var awardLabels: [AwardPill] = []
+    /// Prizes for this movie, newest ceremony first. The section is hidden when empty.
+    private(set) var awardRows: [AwardRow] = []
 
     private let movieID: Int
     private let movies: MovieRepository
@@ -143,7 +143,7 @@ final class MovieDetailViewModel {
                 reviews: await reviewsSection,
                 personal: personal.detail
             )
-            awardLabels = await awards.pillLabels(movieID: movieID)
+            awardRows = await awards.movieAwards(movieID: movieID)
             state = .loaded(content, activity: personal.activity)
             if personal.detail.formattedUserScore != nil {
                 await ensureOnWatched(detail.listItem(), at: personal.watchedAt ?? Date())

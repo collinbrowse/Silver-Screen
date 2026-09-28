@@ -59,16 +59,14 @@ final class AwardsRepositoryTests: XCTestCase {
         XCTAssertEqual(names, ["Best Picture"])
     }
 
-    func test_pillLabels_prefersEveryWinOverNominations() async {
+    func test_movieAwards_listsEachPrizeNewestFirst() async {
         let repository = AwardsRepository(catalog: Self.sampleCatalog)
-        let labels = await repository.pillLabels(movieID: 238)
-        XCTAssertEqual(labels, [
-            AwardPill(family: .academy, title: "Best Actor"),
-            AwardPill(family: .academy, title: "Best Picture"),
-        ])
+        let rows = await repository.movieAwards(movieID: 238)
+        XCTAssertEqual(rows.map(\.categoryLabel), ["Best Actor", "Best Picture"])
+        XCTAssertEqual(rows.map(\.detailLine), ["1973", "1973"])
     }
 
-    func test_pillLabels_keepsEachPrizeBodyWhenTheCategoryNameMatches() async {
+    func test_movieAwards_keepsEachPrizeBodyWhenTheCategoryNameMatches() async {
         let repository = AwardsRepository(catalog: AwardsCatalog(
             generatedAt: Date(timeIntervalSince1970: 1),
             credits: [
@@ -93,12 +91,60 @@ final class AwardsRepositoryTests: XCTestCase {
             ]
         ))
 
-        let labels = await repository.pillLabels(movieID: 1)
+        let rows = await repository.movieAwards(movieID: 1)
 
-        XCTAssertEqual(labels, [
-            AwardPill(family: .academy, title: "Best Actor"),
-            AwardPill(family: .bafta, title: "Best Actor"),
+        XCTAssertEqual(rows.map(\.id), ["oscar-actor", "bafta-actor"])
+        XCTAssertEqual(rows.map(\.family), [.academy, .bafta])
+        XCTAssertEqual(rows[1].accessibilityName, "BAFTA for Best Actor, 2024")
+    }
+
+    func test_movieAwards_dropsOnlyTheNominationForACategoryThatWasWon() async {
+        let murphy = AwardRecipient(name: "Cillian Murphy", wikidataID: "Q202589", imdbID: "nm0614165")
+        let repository = AwardsRepository(catalog: AwardsCatalog(
+            generatedAt: Date(timeIntervalSince1970: 1),
+            credits: [
+                Self.credit(
+                    "actor-nom",
+                    title: "Oppenheimer",
+                    category: "Best Actor",
+                    year: 2024,
+                    won: false,
+                    movieID: 872585,
+                    recipients: [murphy]
+                ),
+                Self.credit(
+                    "actor-win",
+                    title: "Oppenheimer",
+                    category: "Best Actor",
+                    year: 2024,
+                    won: true,
+                    movieID: 872585,
+                    recipients: [murphy]
+                ),
+                Self.credit(
+                    "director-nom",
+                    title: "Oppenheimer",
+                    category: "Best Director",
+                    year: 2024,
+                    won: false,
+                    movieID: 872585,
+                    recipients: [AwardRecipient(name: "Christopher Nolan", wikidataID: "Q25191", imdbID: "nm0634240")]
+                ),
+            ]
+        ))
+
+        let rows = await repository.movieAwards(movieID: 872585)
+
+        XCTAssertEqual(rows.map(\.id), ["actor-win", "director-nom"])
+        XCTAssertEqual(rows.map(\.detailLine), [
+            "Cillian Murphy · 2024",
+            "Christopher Nolan · 2024",
         ])
+        XCTAssertEqual(rows.map(\.categoryLabel), ["Best Actor", "Best Director nominee"])
+        XCTAssertEqual(
+            rows[0].accessibilityName,
+            "Oscar for Best Actor, Cillian Murphy, 2024"
+        )
     }
 
     func test_personAwards_listsPrizesGivenToThisPersonNewestFirst() async {
@@ -247,38 +293,23 @@ final class AwardsRepositoryTests: XCTestCase {
         XCTAssertFalse(encoded.contains("recipients"))
     }
 
-    func test_pill_namesThePrizeBodyForVoiceOver() {
-        XCTAssertEqual(
-            AwardPill(family: .academy, title: "Best Original Music").accessibilityName,
-            "Oscar for Best Original Music"
-        )
-        XCTAssertEqual(
-            AwardPill(family: .bafta, title: "Best Film nominee").accessibilityName,
-            "BAFTA nominee for Best Film"
-        )
-        XCTAssertEqual(
-            AwardPill(family: .emmy, title: "Outstanding Drama Series").accessibilityName,
-            "Emmy for Outstanding Drama Series"
-        )
+    func test_movieAwards_listsEveryNominationWhenThereAreNoWins() async {
+        let repository = AwardsRepository(catalog: Self.sampleCatalog)
+        let rows = await repository.movieAwards(movieID: 278)
+        XCTAssertEqual(rows.map(\.categoryLabel), [
+            "Best Picture nominee",
+            "Best Actor nominee",
+            "Best Director nominee",
+            "Best Adapted Screenplay nominee",
+        ])
+        XCTAssertEqual(rows.map(\.detailLine), ["1995", "1994", "1993", "1992"])
+        XCTAssertEqual(rows[0].accessibilityName, "Oscar nominee for Best Picture, 1995")
     }
 
-    func test_pillLabels_capsNominationsAtThreeWhenThereAreNoWins() async {
+    func test_movieAwards_unknownMovieIsEmpty() async {
         let repository = AwardsRepository(catalog: Self.sampleCatalog)
-        let labels = await repository.pillLabels(movieID: 278)
-        XCTAssertEqual(
-            labels,
-            [
-                AwardPill(family: .academy, title: "Best Picture nominee"),
-                AwardPill(family: .academy, title: "Best Actor nominee"),
-                AwardPill(family: .academy, title: "Best Director nominee"),
-            ]
-        )
-    }
-
-    func test_pillLabels_unknownMovieIsEmpty() async {
-        let repository = AwardsRepository(catalog: Self.sampleCatalog)
-        let labels = await repository.pillLabels(movieID: 999)
-        XCTAssertEqual(labels, [])
+        let rows = await repository.movieAwards(movieID: 999)
+        XCTAssertEqual(rows, [])
     }
 
     func test_prepare_prefersNewerCachedFile() async throws {

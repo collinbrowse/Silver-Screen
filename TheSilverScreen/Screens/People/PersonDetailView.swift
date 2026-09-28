@@ -137,7 +137,7 @@ struct PersonDetailView: View {
                 factsCard(content)
             }
             if !content.awards.isEmpty {
-                PersonAwardsSection(awards: content.awards) { route in
+                AwardRowsSection(rows: content.awards.map(\.row)) { route in
                     router?.push(route)
                 }
             }
@@ -456,92 +456,3 @@ private struct BiographySection: View {
     }
 }
 
-/// Trophy, category, and the title a personal prize was for.
-private struct PersonAwardsSection: View {
-    let awards: [PersonAward]
-    let open: (Route) -> Void
-
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @ScaledMetric(relativeTo: .body) private var trophyHeight: CGFloat = 36
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: DesignSpacing.sm) {
-            Text("Awards")
-                .font(DesignTypography.section)
-                .foregroundStyle(DesignTheme.textPrimary)
-                .accessibilityAddTraits(.isHeader)
-
-            SurfaceCard {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(awards.enumerated()), id: \.element.id) { index, award in
-                        if index > 0 {
-                            Divider()
-                                .padding(.vertical, DesignSpacing.md)
-                        }
-                        awardRow(award)
-                    }
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func awardRow(_ award: PersonAward) -> some View {
-        let row = rowContents(award)
-            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-            .contentShape(Rectangle())
-
-        if let route = award.route {
-            Button {
-                open(route)
-            } label: {
-                row
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(award.accessibilityName)
-            .accessibilityHint("Opens this title")
-        } else {
-            row
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(award.accessibilityName)
-        }
-    }
-
-    @ViewBuilder
-    private func rowContents(_ award: PersonAward) -> some View {
-        let trophy = AwardTrophy(family: award.family)
-            .frame(
-                width: trophyHeight * CGFloat(award.family.trophyAspect),
-                height: trophyHeight
-            )
-        let text = VStack(alignment: .leading, spacing: DesignSpacing.xs) {
-            Text(award.categoryLabel)
-                .font(DesignTypography.body.weight(.semibold))
-                .foregroundStyle(DesignTheme.textPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-            Text(award.workLine)
-                .font(DesignTypography.metadata)
-                .foregroundStyle(DesignTheme.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-
-        if dynamicTypeSize.isAccessibilitySize {
-            VStack(alignment: .leading, spacing: DesignSpacing.sm) {
-                trophy
-                text
-            }
-        } else {
-            HStack(alignment: .center, spacing: DesignSpacing.md) {
-                trophy
-                text
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                if award.route != nil {
-                    Image(systemName: "chevron.right")
-                        .font(DesignTypography.chip.weight(.semibold))
-                        .foregroundStyle(DesignTheme.textMuted)
-                        .accessibilityHidden(true)
-                }
-            }
-        }
-    }
-}

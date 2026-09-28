@@ -104,6 +104,10 @@ struct TVSeasonView: View {
             VStack(alignment: .leading, spacing: DesignSpacing.xl) {
                 seasonHero(content)
                 seasonFacts(content)
+                if !viewModel.awardRows.isEmpty {
+                    AwardRowsSection(rows: viewModel.awardRows)
+                        .padding(.horizontal, DesignSpacing.lg)
+                }
                 if !content.cast.isEmpty {
                     TVCreditCarousel(title: "Cast", people: content.cast, imageLoader: imageLoader) { person in
                         router?.push(.person(id: person.id))
@@ -139,8 +143,7 @@ struct TVSeasonView: View {
             imageLoader: imageLoader,
             transitionNamespace: heroTransition,
             onOpenPoster: { viewModel.openPoster() },
-            onOpenImage: { viewModel.openImages(initialID: $0) },
-            awardLabels: viewModel.awardLabels
+            onOpenImage: { viewModel.openImages(initialID: $0) }
         ) {
             Text(content.formattedAirDate)
                 .font(DesignTypography.metadata)

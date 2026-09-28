@@ -113,6 +113,10 @@ struct TVEpisodeView: View {
             VStack(alignment: .leading, spacing: DesignSpacing.xl) {
                 episodeHero(content, images: images)
                 episodeFacts(content)
+                if !viewModel.awardRows.isEmpty {
+                    AwardRowsSection(rows: viewModel.awardRows)
+                        .padding(.horizontal, DesignSpacing.lg)
+                }
                 if !content.otherEpisodes.isEmpty {
                     otherEpisodes(content.otherEpisodes)
                 }
@@ -157,8 +161,7 @@ struct TVEpisodeView: View {
             imageLoader: imageLoader,
             transitionNamespace: heroTransition,
             onOpenPoster: {},
-            onOpenImage: { viewModel.openImages(initialID: $0) },
-            awardLabels: viewModel.awardLabels
+            onOpenImage: { viewModel.openImages(initialID: $0) }
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.sm) {
                 Text(content.episodeNumberText)

@@ -34,8 +34,6 @@ struct DetailHero<Metadata: View>: View {
     let onOpenImage: (String) -> Void
     /// Genre names across the full width under the poster. Trailers stay in `metadata`, under the title.
     var genreNames: [String] = []
-    /// Wins, or up to three nominations when the title has no wins. Hidden when empty.
-    var awardLabels: [AwardPill] = []
     @ViewBuilder let metadata: () -> Metadata
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -62,11 +60,6 @@ struct DetailHero<Metadata: View>: View {
                 .padding(.top, hasPoster && !images.isEmpty ? DesignSpacing.sm : 0)
             if !genreNames.isEmpty {
                 GenreChipRow(names: genreNames)
-                    .padding(.horizontal, DesignSpacing.lg)
-                    .padding(.top, DesignSpacing.md)
-            }
-            if !awardLabels.isEmpty {
-                AwardChipRow(labels: awardLabels)
                     .padding(.horizontal, DesignSpacing.lg)
                     .padding(.top, DesignSpacing.md)
             }

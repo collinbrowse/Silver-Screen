@@ -20,7 +20,16 @@ final class AwardDetailLabelTests: XCTestCase {
 
         await viewModel.load()
 
-        XCTAssertEqual(viewModel.awardLabels, [AwardPill(family: .academy, title: "Best Picture")])
+        XCTAssertEqual(viewModel.awardRows, [
+            AwardRow(
+                id: "movie-win",
+                family: .academy,
+                categoryLabel: "Best Picture",
+                detailLine: "1995",
+                accessibilityName: "Oscar for Best Picture, 1995",
+                route: nil
+            ),
+        ])
     }
 
     func test_movie_unknownID_hasNoAwardLabels() async {
@@ -37,7 +46,7 @@ final class AwardDetailLabelTests: XCTestCase {
         guard case .loaded = viewModel.state else {
             return XCTFail("Expected the movie to load, got \(viewModel.state)")
         }
-        XCTAssertEqual(viewModel.awardLabels, [])
+        XCTAssertEqual(viewModel.awardRows, [])
     }
 
     func test_series_knownID_setsAwardLabels() async {
@@ -54,10 +63,16 @@ final class AwardDetailLabelTests: XCTestCase {
 
         await viewModel.load()
 
-        XCTAssertEqual(
-            viewModel.awardLabels,
-            [AwardPill(family: .emmy, title: "Outstanding Drama Series")]
-        )
+        XCTAssertEqual(viewModel.awardRows, [
+            AwardRow(
+                id: "series-win",
+                family: .emmy,
+                categoryLabel: "Outstanding Drama Series",
+                detailLine: "2014",
+                accessibilityName: "Emmy for Outstanding Drama Series, 2014",
+                route: nil
+            ),
+        ])
     }
 
     func test_season_knownID_setsNominationLabels() async {
@@ -72,10 +87,16 @@ final class AwardDetailLabelTests: XCTestCase {
 
         await viewModel.load()
 
-        XCTAssertEqual(
-            viewModel.awardLabels,
-            [AwardPill(family: .emmy, title: "Outstanding Drama Series nominee")]
-        )
+        XCTAssertEqual(viewModel.awardRows, [
+            AwardRow(
+                id: "season-nom",
+                family: .emmy,
+                categoryLabel: "Outstanding Drama Series nominee",
+                detailLine: "2009",
+                accessibilityName: "Emmy nominee for Outstanding Drama Series, 2009",
+                route: nil
+            ),
+        ])
     }
 
     func test_episode_knownID_setsAwardLabels() async {
@@ -90,10 +111,16 @@ final class AwardDetailLabelTests: XCTestCase {
 
         await viewModel.load()
 
-        XCTAssertEqual(
-            viewModel.awardLabels,
-            [AwardPill(family: .emmy, title: "Outstanding Writing for a Drama Series")]
-        )
+        XCTAssertEqual(viewModel.awardRows, [
+            AwardRow(
+                id: "episode-win",
+                family: .emmy,
+                categoryLabel: "Outstanding Writing for a Drama Series",
+                detailLine: "2014",
+                accessibilityName: "Emmy for Outstanding Writing for a Drama Series, 2014",
+                route: nil
+            ),
+        ])
     }
 
     func test_episode_unknownID_hasNoAwardLabels() async {
@@ -111,7 +138,7 @@ final class AwardDetailLabelTests: XCTestCase {
         guard case .loaded = viewModel.state else {
             return XCTFail("Expected the episode to load, got \(viewModel.state)")
         }
-        XCTAssertEqual(viewModel.awardLabels, [])
+        XCTAssertEqual(viewModel.awardRows, [])
     }
 
     private static let catalog = AwardsCatalog(

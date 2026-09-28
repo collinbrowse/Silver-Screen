@@ -41,8 +41,8 @@ struct TVEpisodeContent: Sendable, Equatable {
 @MainActor
 final class TVEpisodeViewModel {
     private(set) var state: LoadState<TVEpisodeContent> = .idle
-    /// Win pills, or up to three nomination pills when this episode has no wins.
-    private(set) var awardLabels: [AwardPill] = []
+    /// Prizes for this episode, newest ceremony first. The section is hidden when empty.
+    private(set) var awardRows: [AwardRow] = []
 
     private let seriesID: Int
     private let seasonNumber: Int
@@ -79,7 +79,7 @@ final class TVEpisodeViewModel {
             let episode = try await episodeCall
             let others = try await othersCall
             let personal = try await personalDetail()
-            awardLabels = await awards.pillLabels(
+            awardRows = await awards.episodeAwards(
                 seriesID: seriesID,
                 seasonNumber: seasonNumber,
                 episodeNumber: episodeNumber
