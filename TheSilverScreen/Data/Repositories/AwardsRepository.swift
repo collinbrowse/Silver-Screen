@@ -167,20 +167,22 @@ actor AwardsRepository {
         return PersonAwardList.awards(from: catalog.credits, imdbID: imdbID)
     }
 
-    func pillLabels(movieID: Int) async -> [AwardPill] {
-        await labels { $0.work?.matches(movieID: movieID) == true }
+    /// Prizes for this movie, in the same row order as a person card.
+    func movieAwards(movieID: Int) async -> [AwardRow] {
+        await titleAwards { $0.work?.matches(movieID: movieID) == true }
     }
 
-    func pillLabels(seriesID: Int) async -> [AwardPill] {
-        await labels { $0.work?.matches(seriesID: seriesID) == true }
+    /// Prizes stored on the series itself. Season and episode prizes stay on those screens.
+    func seriesAwards(seriesID: Int) async -> [AwardRow] {
+        await titleAwards { $0.work?.matches(seriesID: seriesID) == true }
     }
 
-    func pillLabels(seriesID: Int, seasonNumber: Int) async -> [AwardPill] {
-        await labels { $0.work?.matches(seriesID: seriesID, seasonNumber: seasonNumber) == true }
+    func seasonAwards(seriesID: Int, seasonNumber: Int) async -> [AwardRow] {
+        await titleAwards { $0.work?.matches(seriesID: seriesID, seasonNumber: seasonNumber) == true }
     }
 
-    func pillLabels(seriesID: Int, seasonNumber: Int, episodeNumber: Int) async -> [AwardPill] {
-        await labels {
+    func episodeAwards(seriesID: Int, seasonNumber: Int, episodeNumber: Int) async -> [AwardRow] {
+        await titleAwards {
             $0.work?.matches(
                 seriesID: seriesID,
                 seasonNumber: seasonNumber,
@@ -203,9 +205,9 @@ actor AwardsRepository {
         }
     }
 
-    private func labels(matching predicate: (AwardCredit) -> Bool) async -> [AwardPill] {
+    private func titleAwards(matching predicate: (AwardCredit) -> Bool) async -> [AwardRow] {
         await ensureLoaded()
-        return AwardPillCopy.labels(from: catalog.credits.filter(predicate))
+        return TitleAwardList.rows(from: catalog.credits.filter(predicate))
     }
 
     private func loadLocalCatalog() -> AwardsCatalog {

@@ -110,6 +110,10 @@ struct TVSeriesView: View {
             VStack(alignment: .leading, spacing: DesignSpacing.xl) {
                 seriesHero(content)
                 seriesFacts(content)
+                if !viewModel.awardRows.isEmpty {
+                    AwardRowsSection(rows: viewModel.awardRows)
+                        .padding(.horizontal, DesignSpacing.lg)
+                }
                 if !content.seasons.isEmpty {
                     seasonsCarousel(content)
                 }
@@ -166,8 +170,7 @@ struct TVSeriesView: View {
             transitionNamespace: heroTransition,
             onOpenPoster: { viewModel.openPoster() },
             onOpenImage: { viewModel.openImages(initialID: $0) },
-            genreNames: content.detail.genres.map(\.name),
-            awardLabels: viewModel.awardLabels
+            genreNames: content.detail.genres.map(\.name)
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.sm) {
                 Text("First aired \(content.formattedFirstAirDate)")

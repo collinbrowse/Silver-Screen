@@ -1,6 +1,6 @@
 # Awards shelves and catalog
 
-Search’s empty field is a shelf of award lists. Movie, series, season, and episode detail screens show those wins as pills under genres. The lists come from a JSON catalog in the app. Wikidata is compiled during development and on a Monday job. The phone never queries Wikidata.
+Search’s empty field is a shelf of award lists. Movie, series, season, and episode detail screens show those prizes in the same card a person screen uses. The lists come from a JSON catalog in the app. Wikidata is compiled during development and on a Monday job. The phone never queries Wikidata.
 
 TMDB has no awards endpoint and no Oscars filter. Movie details do not include wins or nominations. The Academy’s database is the record of truth and has no public API, so the catalog is a Wikidata snapshot joined to TMDB by IMDb id.
 
@@ -10,8 +10,8 @@ TMDB has no awards endpoint and no Oscars filter. Movie details do not include w
 2. A card opens that prize body’s categories (Best Picture, Outstanding Drama Series, and so on).
 3. A category opens a title list with a Winners / Nominees control. Newest ceremony year is first. Each page is 20 credits.
 4. A row matches a Browse row, with the ceremony year directly under the title, then genres, then a personal rating when one exists, then the list button. The release date is omitted. Tapping a row uses the existing movie, series, season, or episode route.
-5. On a detail screen, wins sit in a second pill row under genres. Each pill shows that prize’s trophy to the left of the category name (`Best Picture`), so an Oscar and a BAFTA are not just two similar strings. When the title has no wins, up to three nominations appear, and the word `nominee` is in the label. The row is hidden when there is nothing to show. VoiceOver reads one “Awards: …” label and names the prize body, because the trophy is decorative.
-6. On a person screen, prizes given to that person sit under the biography. Each row shows the trophy, the category (`Best Supporting Actor`, or `Best Supporting Actor nominee`), and the title plus ceremony year (`A Real Pain · 2025`). Best Picture and other title prizes are not listed. The section is hidden when the person’s IMDb id matches nothing. A win hides the nomination for that same title, category, and year. Tapping a row opens the title when the catalog has a TMDB id.
+5. On a movie, series, season, or episode screen, prizes for that title sit in the same card as a person screen, after the facts. Each row shows the trophy, the category (`Best Picture`, or `Best Picture nominee`), and a second line. When the prize names people, that line is their names and the ceremony year (`Cillian Murphy · 2024`). A title prize such as Best Picture shows only the year. A win hides the nomination for that same category and year. Other nominations stay. The section is hidden when nothing matches. These rows are not buttons. VoiceOver names the prize body, because the trophy is decorative.
+6. On a person screen, prizes given to that person sit under the biography, in that same card. Each row shows the trophy, the category (`Best Supporting Actor`, or `Best Supporting Actor nominee`), and the title plus ceremony year (`A Real Pain · 2025`). Best Picture and other title prizes are not listed. The section is hidden when the person’s IMDb id matches nothing. A win hides the nomination for that same title, category, and year. Tapping a row opens the title when the catalog has a TMDB id.
 
 A category with fewer than eight resolved credits stays off the menu. Eight is `AwardsRepository.minimumListedCredits`. A short stub would look like the whole history.
 
@@ -124,19 +124,19 @@ Category names in the file drop a leading “Academy Award for ”, “BAFTA Awa
 - `python3 scripts/test_build_awards_catalog.py`
 - `xcodebuild test -scheme TheSilverScreen -only-testing:TheSilverScreenTests/AwardsRepositoryTests -only-testing:TheSilverScreenTests/AwardTitlesViewModelTests -only-testing:TheSilverScreenTests/AwardDetailLabelTests -only-testing:TheSilverScreenTests/SearchViewModelTests`
 
-On device, use the iPhone 17e. Empty Search shows the three cards. A family lists categories. A category lists winners with the ceremony year under the title. A known title, such as Oppenheimer, shows award pills under genres.
+On device, use the iPhone 17e. Empty Search shows the three cards. A family lists categories. A category lists winners with the ceremony year under the title. A known title, such as Oppenheimer, shows the awards card after the facts. A person with a matching IMDb id shows the same card under the biography.
 
 ## Files
 
 | Piece | Path |
 | --- | --- |
 | Catalog JSON | `TheSilverScreen/Data/Resources/AwardsCatalog.json` |
-| Model, shelves, pill copy | `TheSilverScreen/Data/Domain/AwardsCatalog.swift` |
+| Model, shelves, row copy | `TheSilverScreen/Data/Domain/AwardsCatalog.swift` |
 | Load, filter, weekly download | `TheSilverScreen/Data/Repositories/AwardsRepository.swift` |
 | Search home | `TheSilverScreen/Screens/Search/SearchView.swift`, `SearchViewModel.swift` |
 | Category list | `TheSilverScreen/Screens/Search/AwardFamilyView.swift` |
 | Title list | `TheSilverScreen/Screens/Search/AwardTitlesView.swift`, `AwardTitlesViewModel.swift` |
-| Detail pills | `TheSilverScreen/Design/MediaMetadataPills.swift` (`AwardChipRow`), `TheSilverScreen/Screens/MovieDetail/MovieDetailHero.swift` |
+| Detail rows | `TheSilverScreen/Screens/Shared/AwardRowsSection.swift` |
 | Routes | `TheSilverScreen/Navigation/Route.swift` (`.awardFamily`, `.awardTitles`) |
 | Builder and tests | `scripts/build_awards_catalog.py`, `scripts/test_build_awards_catalog.py` |
 | Monday job | `.github/workflows/awards-catalog.yml` |
