@@ -29,6 +29,85 @@ final class PersonDetailViewModelTests: XCTestCase {
         XCTAssertFalse(content.creditSections[0].showsViewAll)
         XCTAssertEqual(content.creditSections[1].preview.count, 1)
         XCTAssertEqual(content.detail.imdbID, "nm0000151")
+        XCTAssertEqual(content.awards, [])
+    }
+
+    func test_load_showsAwardsGivenToThisPerson() async {
+        let awards = AwardsRepository(catalog: AwardsCatalog(
+            generatedAt: Date(timeIntervalSince1970: 1),
+            credits: [
+                AwardCredit(
+                    key: "support",
+                    family: .academy,
+                    category: "Best Supporting Actor",
+                    categoryID: "Q106291",
+                    won: true,
+                    year: 1995,
+                    title: "The Shawshank Redemption",
+                    imdbID: "tt0111161",
+                    wikidataID: "Q172975",
+                    work: AwardWork(kind: .movie, movieID: 278),
+                    recipients: [
+                        AwardRecipient(name: "Morgan Freeman", wikidataID: "Q48337", imdbID: "nm0000151"),
+                    ]
+                ),
+                AwardCredit(
+                    key: "picture",
+                    family: .academy,
+                    category: "Best Picture",
+                    categoryID: "Q102427",
+                    won: true,
+                    year: 1995,
+                    title: "The Shawshank Redemption",
+                    imdbID: "tt0111161",
+                    wikidataID: "Q172975",
+                    work: AwardWork(kind: .movie, movieID: 278)
+                ),
+            ]
+        ))
+        let people = PersonRepository.test(client: FakeHTTPClient(stub: .success(TMDBFixtures.personDetailMorganFreeman)))
+        let viewModel = PersonDetailViewModel(personID: 1922, people: people, awards: awards)
+
+        await viewModel.load()
+
+        guard case .loaded(let content, _) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        XCTAssertEqual(content.awards.map(\.categoryLabel), ["Best Supporting Actor"])
+        XCTAssertEqual(content.awards.map(\.workLine), ["The Shawshank Redemption · 1995"])
+        XCTAssertEqual(content.awards.first?.family, .academy)
+    }
+
+    func test_load_hidesAwardsWhenThePersonHasNoIMDbId() async {
+        let awards = AwardsRepository(catalog: AwardsCatalog(
+            generatedAt: Date(timeIntervalSince1970: 1),
+            credits: [
+                AwardCredit(
+                    key: "actor",
+                    family: .academy,
+                    category: "Best Actor",
+                    categoryID: "Q103916",
+                    won: true,
+                    year: 2020,
+                    title: "Film",
+                    imdbID: "tt1",
+                    wikidataID: "Q1",
+                    work: AwardWork(kind: .movie, movieID: 1),
+                    recipients: [
+                        AwardRecipient(name: "Sparse", wikidataID: "Q2", imdbID: "nm0000151"),
+                    ]
+                ),
+            ]
+        ))
+        let people = PersonRepository.test(client: FakeHTTPClient(stub: .success(TMDBFixtures.personDetailSparse)))
+        let viewModel = PersonDetailViewModel(personID: 1922, people: people, awards: awards)
+
+        await viewModel.load()
+
+        guard case .loaded(let content, _) = viewModel.state else {
+            return XCTFail("Expected loaded")
+        }
+        XCTAssertEqual(content.awards, [])
     }
 
     func test_load_whenSparse_hidesSectionsAndOptionalFacts() async {

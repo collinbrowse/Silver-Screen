@@ -159,6 +159,14 @@ actor AwardsRepository {
         )
     }
 
+    /// Prizes that name this person, with the title they were for.
+    /// A missing IMDb id returns nothing.
+    func personAwards(imdbID: String?) async -> [PersonAward] {
+        await ensureLoaded()
+        guard let imdbID else { return [] }
+        return PersonAwardList.awards(from: catalog.credits, imdbID: imdbID)
+    }
+
     func pillLabels(movieID: Int) async -> [AwardPill] {
         await labels { $0.work?.matches(movieID: movieID) == true }
     }

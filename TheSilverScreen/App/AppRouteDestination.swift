@@ -36,6 +36,7 @@ struct AppRouteDestination: View {
                 people: people,
                 lists: lists,
                 listsIndex: listsIndex,
+                awards: awards,
                 imageLoader: imageLoader,
                 router: router
             )
@@ -177,13 +178,15 @@ struct PersonDetailRouteView: View {
         people: PersonRepository,
         lists: ListsRepository,
         listsIndex: ListsIndex,
+        awards: AwardsRepository,
         imageLoader: ImageLoader,
         router: NavigationRouter
     ) {
         _viewModel = State(
             initialValue: PersonDetailViewModel(
                 personID: personID,
-                people: people
+                people: people,
+                awards: awards
             )
         )
         self.lists = lists

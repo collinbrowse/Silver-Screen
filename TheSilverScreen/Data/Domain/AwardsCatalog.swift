@@ -156,6 +156,14 @@ struct AwardWork: Codable, Hashable, Sendable, Equatable {
     }
 }
 
+/// Someone a prize was given to. Title awards such as Best Picture have none.
+struct AwardRecipient: Codable, Hashable, Sendable, Equatable {
+    let name: String
+    let wikidataID: String
+    /// IMDb name id (`nm…`). Person screens match on this.
+    let imdbID: String?
+}
+
 /// One nomination or win. `key` is stable across weekly rebuilds so resolved ids are reused.
 struct AwardCredit: Codable, Hashable, Sendable, Equatable, Identifiable {
     let key: String
@@ -169,8 +177,104 @@ struct AwardCredit: Codable, Hashable, Sendable, Equatable, Identifiable {
     let imdbID: String?
     let wikidataID: String?
     let work: AwardWork?
+    /// People this prize names. Empty when the prize belongs to the title.
+    let recipients: [AwardRecipient]
 
     var id: String { key }
+
+    init(
+        key: String,
+        family: AwardFamily,
+        category: String,
+        categoryID: String,
+        won: Bool,
+        year: Int,
+        title: String,
+        imdbID: String?,
+        wikidataID: String?,
+        work: AwardWork?,
+        recipients: [AwardRecipient] = []
+    ) {
+        self.key = key
+        self.family = family
+        self.category = category
+        self.categoryID = categoryID
+        self.won = won
+        self.year = year
+        self.title = title
+        self.imdbID = imdbID
+        self.wikidataID = wikidataID
+        self.work = work
+        self.recipients = recipients
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        key = try container.decode(String.self, forKey: .key)
+        family = try container.decode(AwardFamily.self, forKey: .family)
+        category = try container.decode(String.self, forKey: .category)
+        categoryID = try container.decode(String.self, forKey: .categoryID)
+        won = try container.decode(Bool.self, forKey: .won)
+        year = try container.decode(Int.self, forKey: .year)
+        title = try container.decode(String.self, forKey: .title)
+        imdbID = try container.decodeIfPresent(String.self, forKey: .imdbID)
+        wikidataID = try container.decodeIfPresent(String.self, forKey: .wikidataID)
+        work = try container.decodeIfPresent(AwardWork.self, forKey: .work)
+        recipients = try container.decodeIfPresent([AwardRecipient].self, forKey: .recipients) ?? []
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(key, forKey: .key)
+        try container.encode(family, forKey: .family)
+        try container.encode(category, forKey: .category)
+        try container.encode(categoryID, forKey: .categoryID)
+        try container.encode(won, forKey: .won)
+        try container.encode(year, forKey: .year)
+        try container.encode(title, forKey: .title)
+        try container.encodeIfPresent(imdbID, forKey: .imdbID)
+        try container.encodeIfPresent(wikidataID, forKey: .wikidataID)
+        try container.encodeIfPresent(work, forKey: .work)
+        if !recipients.isEmpty {
+            try container.encode(recipients, forKey: .recipients)
+        }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case key, family, category, categoryID, won, year, title, imdbID, wikidataID, work, recipients
+    }
+}
+
+/// A prize given to a person for a specific title.
+struct PersonAward: Hashable, Sendable, Equatable, Identifiable {
+    let key: String
+    let family: AwardFamily
+    let category: String
+    let won: Bool
+    let year: Int
+    let workTitle: String
+    /// Detail screen for the title, when the catalog resolved a TMDB id.
+    let route: Route?
+
+    var id: String { key }
+
+    /// Category name. Nominations keep the word "nominee", same as a title pill.
+    var categoryLabel: String {
+        won ? category : "\(category) nominee"
+    }
+
+    /// Movie or episode, then the ceremony year.
+    var workLine: String {
+        "\(workTitle) · \(year)"
+    }
+
+    /// Prize body, category, title, and year. The trophy is decorative.
+    var accessibilityName: String {
+        let prize = won
+            ? "\(family.shortName) for \(category)"
+            : "\(family.shortName) nominee for \(category)"
+        return "\(prize), \(workTitle), \(year)"
+    }
 }
 
 /// The JSON document in the bundle and in Application Support.
@@ -275,6 +379,71 @@ enum AwardPillCopy {
         }
         var seen: Set<String> = []
         return sorted.filter { seen.insert("\($0.family.rawValue)|\($0.category)").inserted }
+    }
+}
+
+/// Prizes named on a person, not prizes named on a title they appeared in.
+enum PersonAwardList {
+    /// Newest ceremony first. A win drops the nomination for that same title, category, and year.
+    static func awards(from credits: [AwardCredit], imdbID: String) -> [PersonAward] {
+        let needle = imdbID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !needle.isEmpty else { return [] }
+        let matched = credits.filter { credit in
+            guard !credit.title.isEmpty else { return false }
+            return credit.recipients.contains { recipient in
+                recipient.imdbID?.caseInsensitiveCompare(needle) == .orderedSame
+            }
+        }
+        let wins = Set(matched.filter(\.won).map(suppressionKey))
+        let visible = matched.filter { credit in
+            credit.won || !wins.contains(suppressionKey(credit))
+        }
+        let familyOrder = Dictionary(
+            uniqueKeysWithValues: AwardFamily.allCases.enumerated().map { ($1, $0) }
+        )
+        return visible.sorted { lhs, rhs in
+            if lhs.year != rhs.year { return lhs.year > rhs.year }
+            if lhs.won != rhs.won { return lhs.won }
+            let leftFamily = familyOrder[lhs.family] ?? 0
+            let rightFamily = familyOrder[rhs.family] ?? 0
+            if leftFamily != rightFamily { return leftFamily < rightFamily }
+            if lhs.category != rhs.category { return lhs.category < rhs.category }
+            let titleOrder = lhs.title.localizedStandardCompare(rhs.title)
+            if titleOrder != .orderedSame { return titleOrder == .orderedAscending }
+            return lhs.key < rhs.key
+        }
+        .map { credit in
+            PersonAward(
+                key: credit.key,
+                family: credit.family,
+                category: credit.category,
+                won: credit.won,
+                year: credit.year,
+                workTitle: credit.title,
+                route: credit.work?.route(fallbackSeriesName: credit.title)
+            )
+        }
+    }
+
+    private static func suppressionKey(_ credit: AwardCredit) -> String {
+        "\(credit.family.rawValue)|\(credit.category)|\(credit.year)|\(workIdentity(credit))"
+    }
+
+    private static func workIdentity(_ credit: AwardCredit) -> String {
+        if let work = credit.work {
+            switch work.kind {
+            case .movie:
+                return "m:\(work.movieID ?? -1)"
+            case .series:
+                return "s:\(work.seriesID ?? -1)"
+            case .season:
+                return "sn:\(work.seriesID ?? -1):\(work.seasonNumber ?? -1)"
+            case .episode:
+                return "ep:\(work.seriesID ?? -1):\(work.seasonNumber ?? -1):\(work.episodeNumber ?? -1)"
+            }
+        }
+        if let imdbID = credit.imdbID { return "imdb:\(imdbID)" }
+        return "title:\(credit.wikidataID ?? credit.title)"
     }
 }
 

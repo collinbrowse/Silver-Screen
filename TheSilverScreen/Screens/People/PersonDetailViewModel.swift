@@ -30,6 +30,8 @@ struct PersonDetailContent: Sendable, Equatable {
     let images: ImagesSection?
     /// Carousels in display order. The work this person is known for leads.
     let creditSections: [CreditsSection]
+    /// Prizes given to this person for a title. The section is hidden when empty.
+    let awards: [PersonAward]
 
     /// Non-nil while the image lightbox is open.
     var fullscreenImages: FullscreenImages?
@@ -42,10 +44,16 @@ final class PersonDetailViewModel {
 
     private let personID: Int
     private let people: PersonRepository
+    private let awards: AwardsRepository
 
-    init(personID: Int, people: PersonRepository) {
+    init(
+        personID: Int,
+        people: PersonRepository,
+        awards: AwardsRepository = AwardsRepository(catalog: .empty)
+    ) {
         self.personID = personID
         self.people = people
+        self.awards = awards
     }
 
     func load() async {
@@ -53,7 +61,8 @@ final class PersonDetailViewModel {
 
         do {
             let detail = try await people.personDetail(id: personID)
-            let content = Self.makeContent(detail: detail)
+            let personAwards = await awards.personAwards(imdbID: detail.imdbID)
+            let content = Self.makeContent(detail: detail, awards: personAwards)
             state = .loaded(content)
         } catch is CancellationError {
             return
@@ -102,7 +111,7 @@ final class PersonDetailViewModel {
         state = .loaded(content.withFullscreen(nil), activity: activity)
     }
 
-    static func makeContent(detail: PersonDetail) -> PersonDetailContent {
+    static func makeContent(detail: PersonDetail, awards: [PersonAward] = []) -> PersonDetailContent {
         let images = detail.images.isEmpty
             ? nil
             : PersonDetailContent.ImagesSection(items: detail.images)
@@ -122,6 +131,7 @@ final class PersonDetailViewModel {
             placeOfBirth: detail.placeOfBirth,
             images: images,
             creditSections: creditSections,
+            awards: awards,
             fullscreenImages: nil
         )
     }
@@ -269,6 +279,7 @@ private extension PersonDetailContent {
             placeOfBirth: placeOfBirth,
             images: images,
             creditSections: creditSections,
+            awards: awards,
             fullscreenImages: fullscreenImages ?? self.fullscreenImages
         )
     }
