@@ -26,21 +26,21 @@ jobs:
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
         run: |
           python3 scripts/build_awards_catalog.py \
-            --output TheSilverScreen/Resources/AwardsCatalog.json \
+            --output TheSilverScreen/Data/Resources/AwardsCatalog.json \
             --summary-out /tmp/awards-summary.md
 
       - name: Open a pull request when credits change
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if git diff --quiet -- TheSilverScreen/Resources/AwardsCatalog.json; then
+          if git diff --quiet -- TheSilverScreen/Data/Resources/AwardsCatalog.json; then
             echo "Catalog unchanged"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -B awards-catalog
-          git add TheSilverScreen/Resources/AwardsCatalog.json
+          git add TheSilverScreen/Data/Resources/AwardsCatalog.json
           git commit -m "Update the awards catalog from Wikidata."
           git push --force-with-lease -u origin awards-catalog
           body="$(PYTHONPATH=scripts python3 -c 'import build_awards_catalog as builder, pathlib; print(builder.render_pr_body(pathlib.Path("/tmp/awards-summary.md").read_text()))')"

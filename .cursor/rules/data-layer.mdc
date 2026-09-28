@@ -1,6 +1,6 @@
 ---
 description: TheSilverScreen data layer — API models separated from domain models, repositories, and mapping.
-globs: TheSilverScreen/Networking/**/*.swift,TheSilverScreen/Models/**/*.swift,TheSilverScreen/**/*Repository.swift
+globs: TheSilverScreen/Data/**/*.swift,TheSilverScreen/**/*Repository.swift
 alwaysApply: false
 ---
 

@@ -1,6 +1,6 @@
 ---
 description: Accessibility requirements for TheSilverScreen screens and cells.
-globs: TheSilverScreen/Features/**/*.swift,TheSilverScreen/Views/**/*.swift,TheSilverScreen/**/*View.swift,TheSilverScreen/**/*Cell.swift
+globs: TheSilverScreen/Screens/**/*.swift,TheSilverScreen/Design/**/*.swift,TheSilverScreen/**/*View.swift,TheSilverScreen/**/*Cell.swift
 alwaysApply: false
 ---
 

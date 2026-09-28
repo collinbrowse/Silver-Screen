@@ -11,7 +11,7 @@ import Foundation
 /// In-memory award lookup. The weekly file download is the only network call.
 actor AwardsRepository {
     static let remoteCatalogURL = URL(
-        string: "https://raw.githubusercontent.com/collinbrowse/The-Silver-Screen/main/TheSilverScreen/Resources/AwardsCatalog.json"
+        string: "https://raw.githubusercontent.com/collinbrowse/The-Silver-Screen/main/TheSilverScreen/Data/Resources/AwardsCatalog.json"
     )!
     static let pageSize = 20
     /// Fewer resolved credits than this is a stub, not a history worth listing.

@@ -9,6 +9,24 @@ Each layer knows only the layer below it:
 
 `View (SwiftUI)` → `ViewModel` → `Repository` → `Service (TMDB, persistence)`
 
+## Folders
+
+The source tree follows that arrow. A screen may use domain types and an injected repository. It does not own DTOs, request building, or a disk store.
+
+- `App/` — composition root, plus `AppDelegate` and `SceneDelegate`.
+- `Screens/<Feature>/` — the view, its view model, and subviews that exist for that screen.
+- `Screens/Shared/` — empty, error, and other chrome reused across screens.
+- `Design/` — tokens and visual primitives.
+- `Navigation/` — tabs, routes, and routers.
+- `Data/Domain/` — models the rest of the app is allowed to see.
+- `Data/Repositories/` — mapping, paging, and the API screens call.
+- `Data/Networking/` — the HTTP client, TMDB requests, and DTOs.
+- `Data/Persistence/` — disk stores.
+- `Data/Resources/` — bundled data, including the awards catalog.
+- `Support/` — `AppError`, `LoadState`, logging, and `ImageLoader`.
+
+Tests use the same split under `TheSilverScreenTests/` (`Screens`, `Data`, `Navigation`, `Support`).
+
 ## MVVM
 
 - One view model per screen: `@Observable @MainActor final class MovieListViewModel`.

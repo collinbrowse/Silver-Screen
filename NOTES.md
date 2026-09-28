@@ -118,7 +118,7 @@ lists) under `TheSilverScreenTests/`. Tests substitute only real external bounda
   - Advanced Search
   - Now Playing / Upcoming
 - Snapshot tests for the design-system components in
-  `Features/Shared/DesignSystem/`.
+  `Design/`.
 - Add a network reachability service to monitor for no-service scenarios, so the
   UI can react to connectivity changes proactively rather than only on a failed
   request.
