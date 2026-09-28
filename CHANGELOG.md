@@ -5,6 +5,8 @@ moves them under a `version+build` heading that matches the git tag.
 
 ## [Unreleased]
 
+## [0.1.1+2] - 2026-09-28
+
 - Browse Oscar, BAFTA, and Emmy winners from Search, and see those awards on the title.
 - Save movies, series, and people to a Library of lists: Watched, Watchlist, and lists you create. Favorites is gone, and an existing favorites file is not imported.
 - Search keeps the query after you open a result.
