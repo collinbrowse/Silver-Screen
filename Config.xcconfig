@@ -1,5 +1,7 @@
 // Shared build settings. Secrets.xcconfig is optional so a fresh clone
 // without a key still opens the project; the app fails clearly at launch.
+// Version.xcconfig is required: it is the only shipping version.
 #include? "Secrets.xcconfig"
+#include "Version.xcconfig"
 
 TMDBAPIKey = $(TMDB_API_KEY)
