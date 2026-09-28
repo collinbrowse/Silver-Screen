@@ -24,9 +24,10 @@ final class PersonDetailViewModelTests: XCTestCase {
         XCTAssertEqual(content.placeOfBirth, "Memphis, Tennessee, USA")
         XCTAssertNotNil(content.images)
         XCTAssertEqual(content.images?.items.count, 2)
-        XCTAssertEqual(content.cast?.preview.count, 2)
-        XCTAssertFalse(content.cast?.showsViewAll ?? true)
-        XCTAssertEqual(content.crew?.preview.count, 1)
+        XCTAssertEqual(content.creditSections.map(\.title), ["Acting", "Crew"])
+        XCTAssertEqual(content.creditSections[0].preview.count, 2)
+        XCTAssertFalse(content.creditSections[0].showsViewAll)
+        XCTAssertEqual(content.creditSections[1].preview.count, 1)
         XCTAssertEqual(content.detail.imdbID, "nm0000151")
         XCTAssertEqual(content.awards, [])
     }
@@ -118,8 +119,7 @@ final class PersonDetailViewModelTests: XCTestCase {
             return XCTFail("Expected loaded")
         }
         XCTAssertNil(content.images)
-        XCTAssertNil(content.cast)
-        XCTAssertNil(content.crew)
+        XCTAssertTrue(content.creditSections.isEmpty)
         XCTAssertNil(content.formattedBirthday)
         XCTAssertNil(content.formattedDeathday)
         XCTAssertNil(content.placeOfBirth)
@@ -135,9 +135,10 @@ final class PersonDetailViewModelTests: XCTestCase {
             return XCTFail("Expected loaded")
         }
         XCTAssertEqual(content.formattedDeathday, "Dec 31, 2020")
-        XCTAssertEqual(content.cast?.totalCount, 12)
-        XCTAssertTrue(content.cast?.showsViewAll ?? false)
-        XCTAssertEqual(content.cast?.preview.count, 5)
+        XCTAssertEqual(content.creditSections.map(\.title), ["Acting"])
+        XCTAssertEqual(content.creditSections[0].totalCount, 12)
+        XCTAssertTrue(content.creditSections[0].showsViewAll)
+        XCTAssertEqual(content.creditSections[0].preview.count, 5)
     }
 
     func test_load_whenOffline_setsFailedOffline() async {
@@ -192,6 +193,120 @@ final class PersonDetailViewModelTests: XCTestCase {
         XCTAssertEqual(content.fullscreenImages?.images.count, 1)
     }
 
+    func test_load_whenKnownForDirecting_ordersDirectingThenActingThenCrew() async {
+        let viewModel = makeViewModel(stub: .success(TMDBFixtures.personDetailDirector))
+
+        await viewModel.load()
+
+        guard case .loaded(let content, _) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        XCTAssertEqual(content.creditSections.map(\.title), ["Directing", "Acting", "Crew"])
+        XCTAssertEqual(content.creditSections[0].preview.map(\.title), ["Inception", "Interstellar"])
+        XCTAssertEqual(content.creditSections[0].preview.map(\.roleLabel), ["Director", "Director"])
+        XCTAssertEqual(content.creditSections[2].preview.map(\.roleLabel), ["Screenplay", "Producer"])
+    }
+
+    func test_makeContent_whenKnownForDirecting_leadsWithDirectedFilms() {
+        let content = PersonDetailViewModel.makeContent(detail: person(
+            knownFor: "Directing",
+            cast: [credit(id: 3, title: "Cameo", popularity: 10, role: "Man")],
+            crew: [
+                credit(id: 1, title: "Inception", popularity: 100, jobs: [
+                    PersonCreditJob(department: "Directing", job: "Director"),
+                    PersonCreditJob(department: "Writing", job: "Screenplay"),
+                ]),
+                credit(id: 2, title: "Interstellar", popularity: 80, jobs: [
+                    PersonCreditJob(department: "Directing", job: "Director"),
+                ]),
+                credit(id: 4, title: "Produced", popularity: 50, jobs: [
+                    PersonCreditJob(department: "Production", job: "Producer"),
+                ]),
+            ]
+        ))
+
+        XCTAssertEqual(content.creditSections.map(\.title), ["Directing", "Acting", "Crew"])
+        XCTAssertEqual(content.creditSections[0].preview.map(\.title), ["Inception", "Interstellar"])
+        XCTAssertEqual(content.creditSections[0].preview.map(\.roleLabel), ["Director", "Director"])
+        XCTAssertEqual(content.creditSections[1].preview.map(\.title), ["Cameo"])
+        XCTAssertEqual(content.creditSections[2].preview.map(\.title), ["Inception", "Produced"])
+        XCTAssertEqual(content.creditSections[2].preview.map(\.roleLabel), ["Screenplay", "Producer"])
+    }
+
+    func test_makeContent_whenKnownForWriting_leadsWithWritingCredits() {
+        let content = PersonDetailViewModel.makeContent(detail: person(
+            knownFor: "Writing",
+            cast: [],
+            crew: [
+                credit(id: 1, title: "Inception", popularity: 90, jobs: [
+                    PersonCreditJob(department: "Directing", job: "Director"),
+                    PersonCreditJob(department: "Writing", job: "Screenplay"),
+                ]),
+                credit(id: 2, title: "Memento", popularity: 40, jobs: [
+                    PersonCreditJob(department: "Writing", job: "Story"),
+                    PersonCreditJob(department: "Writing", job: "Script Coordinator"),
+                ]),
+            ]
+        ))
+
+        XCTAssertEqual(content.creditSections.map(\.title), ["Writing", "Crew"])
+        XCTAssertEqual(content.creditSections[0].preview.map(\.title), ["Inception", "Memento"])
+        XCTAssertEqual(content.creditSections[0].preview.map(\.roleLabel), ["Screenplay", "Story"])
+        XCTAssertEqual(content.creditSections[1].preview.map(\.roleLabel), ["Director", "Script Coordinator"])
+    }
+
+    func test_makeContent_whenKnownForProduction_leadsWithThatDepartment() {
+        let content = PersonDetailViewModel.makeContent(detail: person(
+            knownFor: "Production",
+            cast: [credit(id: 2, title: "Cameo", popularity: 5, role: "Guest")],
+            crew: [
+                credit(id: 1, title: "Dune", popularity: 70, jobs: [
+                    PersonCreditJob(department: "Production", job: "Producer"),
+                    PersonCreditJob(department: "Directing", job: "Director"),
+                ]),
+            ]
+        ))
+
+        XCTAssertEqual(content.creditSections.map(\.title), ["Production", "Acting", "Crew"])
+        XCTAssertEqual(content.creditSections[0].department, .named("Production"))
+        XCTAssertEqual(content.creditSections[0].preview.map(\.roleLabel), ["Producer"])
+        XCTAssertEqual(content.creditSections[2].preview.map(\.roleLabel), ["Director"])
+    }
+
+    func test_makeContent_whenDirectorHasNoDirectorJobs_fallsBackToActingThenCrew() {
+        let content = PersonDetailViewModel.makeContent(detail: person(
+            knownFor: "Directing",
+            cast: [credit(id: 2, title: "Cameo", popularity: 5, role: "Man")],
+            crew: [
+                credit(id: 1, title: "Second Unit", popularity: 20, jobs: [
+                    PersonCreditJob(department: "Directing", job: "Assistant Director"),
+                ]),
+            ]
+        ))
+
+        XCTAssertEqual(content.creditSections.map(\.title), ["Acting", "Crew"])
+        XCTAssertEqual(content.creditSections[1].preview.map(\.roleLabel), ["Assistant Director"])
+    }
+
+    func test_makeContent_viewAllThresholdIsPerSection() {
+        let directed = (1...12).map { index in
+            credit(id: index, title: "Film \(index)", popularity: Double(100 - index), jobs: [
+                PersonCreditJob(department: "Directing", job: "Director"),
+            ])
+        }
+        let content = PersonDetailViewModel.makeContent(detail: person(
+            knownFor: "Directing",
+            cast: [credit(id: 99, title: "Cameo", popularity: 1, role: "Man")],
+            crew: directed
+        ))
+
+        XCTAssertEqual(content.creditSections.map(\.title), ["Directing", "Acting"])
+        XCTAssertEqual(content.creditSections[0].preview.count, 5)
+        XCTAssertEqual(content.creditSections[0].totalCount, 12)
+        XCTAssertTrue(content.creditSections[0].showsViewAll)
+        XCTAssertFalse(content.creditSections[1].showsViewAll)
+    }
+
     func test_genreNames_usesTVCatalogForTVCredits() {
         let credit = PersonCredit(
             mediaType: .tv,
@@ -211,6 +326,49 @@ final class PersonDetailViewModelTests: XCTestCase {
     }
 
     // MARK: - Helpers
+
+    private func person(
+        knownFor: String?,
+        cast: [PersonCredit],
+        crew: [PersonCredit]
+    ) -> PersonDetail {
+        PersonDetail(
+            id: 1,
+            name: "Person",
+            biography: "",
+            birthday: nil,
+            deathday: nil,
+            placeOfBirth: nil,
+            profilePath: nil,
+            knownForDepartment: knownFor,
+            imdbID: nil,
+            images: [],
+            castCredits: cast,
+            crewCredits: crew,
+            popularity: 0
+        )
+    }
+
+    private func credit(
+        id: Int,
+        title: String,
+        popularity: Double,
+        role: String = "",
+        jobs: [PersonCreditJob] = []
+    ) -> PersonCredit {
+        PersonCredit(
+            mediaType: .movie,
+            mediaID: id,
+            title: title,
+            posterPath: nil,
+            releaseDate: nil,
+            genreIDs: [],
+            roleLabel: role,
+            jobs: jobs,
+            popularity: popularity,
+            voteAverage: 0
+        )
+    }
 
     private func makeViewModel(stub: FakeHTTPClient.Stub) -> PersonDetailViewModel {
         let people = PersonRepository.test(client: FakeHTTPClient(stub: stub))

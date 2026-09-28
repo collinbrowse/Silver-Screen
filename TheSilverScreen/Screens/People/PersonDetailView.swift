@@ -101,18 +101,10 @@ struct PersonDetailView: View {
                 if let images = content.images {
                     imagesCarousel(images)
                 }
-                if let cast = content.cast {
+                ForEach(content.creditSections) { section in
                     creditsCarousel(
-                        title: "Acting",
-                        section: cast,
-                        personID: content.detail.id,
-                        personName: content.detail.name
-                    )
-                }
-                if let crew = content.crew {
-                    creditsCarousel(
-                        title: "Crew",
-                        section: crew,
+                        title: section.title,
+                        section: section,
                         personID: content.detail.id,
                         personName: content.detail.name
                     )

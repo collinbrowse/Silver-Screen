@@ -443,6 +443,84 @@ enum TMDBFixtures {
         """.utf8
     )
 
+    /// Director who also writes, produces, and has one acting credit.
+    static let personDetailDirector = Data(
+        """
+        {
+          "id": 525,
+          "name": "Christopher Nolan",
+          "biography": "Directs.",
+          "birthday": "1970-07-30",
+          "deathday": null,
+          "place_of_birth": "London, England, UK",
+          "profile_path": "/nolan.jpg",
+          "known_for_department": "Directing",
+          "images": {"profiles": []},
+          "external_ids": {"imdb_id": "nm0634240"},
+          "combined_credits": {
+            "cast": [
+              {
+                "id": 27205,
+                "media_type": "movie",
+                "title": "Inception",
+                "poster_path": "/inc.jpg",
+                "release_date": "2010-07-16",
+                "genre_ids": [28],
+                "character": "Man",
+                "popularity": 40.0
+              }
+            ],
+            "crew": [
+              {
+                "id": 27205,
+                "media_type": "movie",
+                "title": "Inception",
+                "poster_path": "/inc.jpg",
+                "release_date": "2010-07-16",
+                "genre_ids": [28],
+                "department": "Directing",
+                "job": "Director",
+                "popularity": 100.0
+              },
+              {
+                "id": 27205,
+                "media_type": "movie",
+                "title": "Inception",
+                "poster_path": "/inc.jpg",
+                "release_date": "2010-07-16",
+                "genre_ids": [28],
+                "department": "Writing",
+                "job": "Screenplay",
+                "popularity": 100.0
+              },
+              {
+                "id": 157336,
+                "media_type": "movie",
+                "title": "Interstellar",
+                "poster_path": "/int.jpg",
+                "release_date": "2014-11-07",
+                "genre_ids": [18],
+                "department": "Directing",
+                "job": "Director",
+                "popularity": 80.0
+              },
+              {
+                "id": 49026,
+                "media_type": "movie",
+                "title": "The Dark Knight Rises",
+                "poster_path": "/dkr.jpg",
+                "release_date": "2012-07-20",
+                "genre_ids": [28],
+                "department": "Production",
+                "job": "Producer",
+                "popularity": 70.0
+              }
+            ]
+          }
+        }
+        """.utf8
+    )
+
     /// Deceased person with many cast credits (>10) for View All threshold tests.
     static let personDetailManyCredits: Data = {
         let castItems = (1...12).map { i in

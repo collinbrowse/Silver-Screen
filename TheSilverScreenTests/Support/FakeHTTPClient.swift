@@ -183,7 +183,7 @@ actor BlockingHTTPClient: HTTPClient {
     }
 }
 
-/// Routes stubs by URL path fragment — use when one screen hits multiple endpoints.
+/// Routes stubs by URL path fragment, or by an exact `name=value` query key when the path does not contain the key.
 actor RoutingHTTPClient: HTTPClient {
     private var routes: [String: FakeHTTPClient.Stub]
     private let fallback: FakeHTTPClient.Stub
@@ -197,12 +197,18 @@ actor RoutingHTTPClient: HTTPClient {
     func data(for request: URLRequest) async throws -> (Data, HTTPURLResponse) {
         requests.append(request)
         let path = request.url?.path ?? ""
+        let items = URLComponents(url: request.url ?? URL(string: "https://example.invalid")!, resolvingAgainstBaseURL: false)?
+            .queryItems ?? []
         let match = routes
             .compactMap { key, stub -> (key: String, stub: FakeHTTPClient.Stub, score: Int)? in
-                guard let range = path.range(of: key) else { return nil }
-                // Prefer matches that end later in the path, then longer keys.
-                let end = path.distance(from: path.startIndex, to: range.upperBound)
-                return (key, stub, end * 1_000 + key.count)
+                if let range = path.range(of: key) {
+                    // Prefer matches that end later in the path, then longer keys.
+                    let end = path.distance(from: path.startIndex, to: range.upperBound)
+                    return (key, stub, end * 1_000 + key.count)
+                }
+                let exactQuery = items.contains { "\($0.name)=\($0.value ?? "")" == key }
+                guard exactQuery else { return nil }
+                return (key, stub, key.count)
             }
             .max(by: { $0.score < $1.score })
         let stub = match?.stub ?? fallback

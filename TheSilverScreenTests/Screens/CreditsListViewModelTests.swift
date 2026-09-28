@@ -53,6 +53,45 @@ final class CreditsListViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.navigationTitle, "Crew Roles")
     }
 
+    func test_load_directing_returnsOnlyDirectorJobs() async {
+        let viewModel = CreditsListViewModel(
+            personID: 525,
+            personName: "Christopher Nolan",
+            department: .directing,
+            people: PersonRepository.test(
+                client: FakeHTTPClient(stub: .success(TMDBFixtures.personDetailDirector))
+            )
+        )
+
+        await viewModel.load()
+
+        guard case .loaded(let content, _) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        XCTAssertEqual(viewModel.navigationTitle, "Directing")
+        XCTAssertEqual(content.items.map(\.credit.title), ["Inception", "Interstellar"])
+        XCTAssertEqual(content.items.map(\.credit.roleLabel), ["Director", "Director"])
+    }
+
+    func test_load_crew_forDirectorOmitsDirectedFilms() async {
+        let viewModel = CreditsListViewModel(
+            personID: 525,
+            personName: "Christopher Nolan",
+            department: .crew,
+            people: PersonRepository.test(
+                client: FakeHTTPClient(stub: .success(TMDBFixtures.personDetailDirector))
+            )
+        )
+
+        await viewModel.load()
+
+        guard case .loaded(let content, _) = viewModel.state else {
+            return XCTFail("Expected loaded")
+        }
+        XCTAssertEqual(content.items.map(\.credit.title), ["Inception", "The Dark Knight Rises"])
+        XCTAssertEqual(content.items.map(\.credit.roleLabel), ["Screenplay", "Producer"])
+    }
+
     func test_load_whenNoCredits_setsEmpty() async {
         let viewModel = CreditsListViewModel(
             personID: 1,
