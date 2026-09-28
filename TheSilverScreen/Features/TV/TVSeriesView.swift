@@ -166,7 +166,8 @@ struct TVSeriesView: View {
             transitionNamespace: heroTransition,
             onOpenPoster: { viewModel.openPoster() },
             onOpenImage: { viewModel.openImages(initialID: $0) },
-            genreNames: content.detail.genres.map(\.name)
+            genreNames: content.detail.genres.map(\.name),
+            awardLabels: viewModel.awardLabels
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.sm) {
                 Text("First aired \(content.formattedFirstAirDate)")

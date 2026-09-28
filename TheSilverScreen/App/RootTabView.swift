@@ -14,6 +14,7 @@ struct RootTabView: View {
     let listsIndex: ListsIndex
     let listChanges: ListChangeNotice
     let annotations: AnnotationsRepository
+    let awards: AwardsRepository
     let imageLoader: ImageLoader
     let libraryHomeViewModel: LibraryHomeViewModel
 
@@ -29,6 +30,7 @@ struct RootTabView: View {
         listsIndex: ListsIndex,
         listChanges: ListChangeNotice,
         annotations: AnnotationsRepository,
+        awards: AwardsRepository,
         imageLoader: ImageLoader,
         libraryHomeViewModel: LibraryHomeViewModel
     ) {
@@ -40,6 +42,7 @@ struct RootTabView: View {
         self.listsIndex = listsIndex
         self.listChanges = listChanges
         self.annotations = annotations
+        self.awards = awards
         self.imageLoader = imageLoader
         self.libraryHomeViewModel = libraryHomeViewModel
         _browseViewModel = State(
@@ -50,7 +53,8 @@ struct RootTabView: View {
                 movies: movies,
                 shows: shows,
                 people: people,
-                annotations: annotations
+                annotations: annotations,
+                awards: awards
             )
         )
     }
@@ -67,7 +71,8 @@ struct RootTabView: View {
                     people: people,
                     lists: lists,
                     listsIndex: listsIndex,
-                    annotations: annotations
+                    annotations: annotations,
+                    awards: awards
                 )
             }
 
@@ -81,7 +86,8 @@ struct RootTabView: View {
                     people: people,
                     lists: lists,
                     listsIndex: listsIndex,
-                    annotations: annotations
+                    annotations: annotations,
+                    awards: awards
                 )
             }
 
@@ -93,6 +99,7 @@ struct RootTabView: View {
                     lists: lists,
                     listsIndex: listsIndex,
                     annotations: annotations,
+                    awards: awards,
                     movies: movies,
                     shows: shows,
                     people: people
@@ -144,6 +151,7 @@ private struct BrowseTabRoot: View {
     let lists: ListsRepository
     let listsIndex: ListsIndex
     let annotations: AnnotationsRepository
+    let awards: AwardsRepository
 
     var body: some View {
         NavigationStack(path: $router.path) {
@@ -163,6 +171,7 @@ private struct BrowseTabRoot: View {
                     lists: lists,
                     listsIndex: listsIndex,
                     annotations: annotations,
+                    awards: awards,
                     imageLoader: imageLoader,
                     router: router
                 )
@@ -181,6 +190,7 @@ private struct SearchTabRoot: View {
     let lists: ListsRepository
     let listsIndex: ListsIndex
     let annotations: AnnotationsRepository
+    let awards: AwardsRepository
 
     var body: some View {
         NavigationStack(path: $router.path) {
@@ -200,6 +210,7 @@ private struct SearchTabRoot: View {
                     lists: lists,
                     listsIndex: listsIndex,
                     annotations: annotations,
+                    awards: awards,
                     imageLoader: imageLoader,
                     router: router
                 )
@@ -215,6 +226,7 @@ private struct LibraryTabRoot: View {
     let lists: ListsRepository
     let listsIndex: ListsIndex
     let annotations: AnnotationsRepository
+    let awards: AwardsRepository
     let movies: MovieRepository
     let shows: TVRepository
     let people: PersonRepository
@@ -231,6 +243,7 @@ private struct LibraryTabRoot: View {
                         lists: lists,
                         listsIndex: listsIndex,
                         annotations: annotations,
+                        awards: awards,
                         imageLoader: imageLoader,
                         router: router
                     )

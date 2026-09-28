@@ -139,7 +139,8 @@ struct TVSeasonView: View {
             imageLoader: imageLoader,
             transitionNamespace: heroTransition,
             onOpenPoster: { viewModel.openPoster() },
-            onOpenImage: { viewModel.openImages(initialID: $0) }
+            onOpenImage: { viewModel.openImages(initialID: $0) },
+            awardLabels: viewModel.awardLabels
         ) {
             Text(content.formattedAirDate)
                 .font(DesignTypography.metadata)

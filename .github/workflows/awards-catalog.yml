@@ -1,0 +1,56 @@
+name: Awards catalog
+
+on:
+  schedule:
+    # 10:00 UTC Monday. 4:00 AM America/Denver during daylight time, 3:00 AM in winter.
+    - cron: "0 10 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  rebuild:
+    name: Rebuild catalog
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test builder
+        run: python3 scripts/test_build_awards_catalog.py
+
+      - name: Rebuild catalog
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: |
+          python3 scripts/build_awards_catalog.py \
+            --output TheSilverScreen/Resources/AwardsCatalog.json \
+            --summary-out /tmp/awards-summary.md
+
+      - name: Open a pull request when credits change
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- TheSilverScreen/Resources/AwardsCatalog.json; then
+            echo "Catalog unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B awards-catalog
+          git add TheSilverScreen/Resources/AwardsCatalog.json
+          git commit -m "Update the awards catalog from Wikidata."
+          git push --force-with-lease -u origin awards-catalog
+          body="$(PYTHONPATH=scripts python3 -c 'import build_awards_catalog as builder, pathlib; print(builder.render_pr_body(pathlib.Path("/tmp/awards-summary.md").read_text()))')"
+          if gh pr view awards-catalog --json url >/dev/null 2>&1; then
+            gh pr edit awards-catalog --body "$body"
+          else
+            gh pr create \
+              --base main \
+              --head awards-catalog \
+              --title "Update awards catalog" \
+              --body "$body"
+          fi
+

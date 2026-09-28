@@ -12,10 +12,11 @@ final class SearchViewModelTests: XCTestCase {
     func test_reloadAndRefresh_stampSavedMovieScore() async throws {
         let annotations = AnnotationsRepository.empty()
         let viewModel = makeViewModel(
-            routes: ["movie/popular": .success(TMDBFixtures.topMoviesPage1)],
+            routes: ["search/movie": .success(TMDBFixtures.topMoviesPage1)],
             annotations: annotations
         )
-        await viewModel.load()
+        viewModel.query = "shawshank"
+        await viewModel.submit()
         try await annotations.saveScore(8, for: .movie(278))
 
         await viewModel.reloadDisplayedScores()
@@ -33,18 +34,28 @@ final class SearchViewModelTests: XCTestCase {
         XCTAssertEqual(refreshed.first { $0.id == 278 }?.formattedUserScore, "8.0 / 10")
     }
 
-    func test_load_showsPopularMovies() async {
-        let viewModel = makeViewModel(
-            routes: ["movie/popular": .success(TMDBFixtures.topMoviesPage1)]
+    func test_load_emptyQuery_exposesAwardShelves() async {
+        let client = RoutingHTTPClient(routes: [
+            "movie/popular": .success(TMDBFixtures.topMoviesPage1),
+        ])
+        let viewModel = SearchViewModel(
+            movies: MovieRepository.test(client: client),
+            shows: TVRepository.test(client: client),
+            people: PersonRepository.test(client: client),
+            annotations: AnnotationsRepository.empty(),
+            sleeper: NoopSleeper()
         )
 
         await viewModel.load()
 
-        guard case .loaded(.movies(let rows), activity: .none) = viewModel.state else {
-            return XCTFail("Expected popular movies, got \(viewModel.state)")
-        }
-        XCTAssertEqual(rows.map(\.id), [278, 238])
-        XCTAssertEqual(rows[0].genreNames, ["Drama", "Crime"])
+        XCTAssertTrue(viewModel.showsAwardShelves)
+        XCTAssertFalse(viewModel.showsScopePicker)
+        XCTAssertEqual(
+            viewModel.shelves.map(\.title),
+            ["Oscar Winners", "BAFTAs", "Emmys"]
+        )
+        let count = await client.requestCount
+        XCTAssertEqual(count, 0)
     }
 
     func test_commitQueryChange_searchesMovies() async {
@@ -78,14 +89,15 @@ final class SearchViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.query, "godfather")
     }
 
-    func test_scopeChange_loadsPopularTV() async {
+    func test_scopeChange_loadsTVForTheSameQuery() async {
         let viewModel = makeViewModel(
             routes: [
-                "movie/popular": .success(TMDBFixtures.topMoviesPage1),
-                "tv/popular": .success(TMDBFixtures.popularTVPage),
+                "search/movie": .success(TMDBFixtures.topMoviesPage1),
+                "search/tv": .success(TMDBFixtures.popularTVPage),
             ]
         )
-        await viewModel.load()
+        viewModel.query = "breaking"
+        await viewModel.submit()
         viewModel.scope = .tv
 
         await viewModel.reloadForScopeChange()
@@ -128,7 +140,8 @@ final class SearchViewModelTests: XCTestCase {
             sleeper: NoopSleeper()
         )
 
-        await viewModel.load()
+        viewModel.query = "shawshank"
+        await viewModel.submit()
         await viewModel.loadMore()
 
         guard case .loaded(.movies(let rows), activity: .none) = viewModel.state else {
@@ -150,6 +163,7 @@ final class SearchViewModelTests: XCTestCase {
             sleeper: NoopSleeper()
         )
         await viewModel.load()
+        XCTAssertTrue(viewModel.showsAwardShelves)
         viewModel.query = "a"
 
         await viewModel.submit()
@@ -164,8 +178,8 @@ final class SearchViewModelTests: XCTestCase {
 
     func test_scopeChange_reusesTheSegmentCache() async {
         let client = RoutingHTTPClient(routes: [
-            "movie/popular": .success(TMDBFixtures.topMoviesPage1),
-            "tv/popular": .success(TMDBFixtures.popularTVPage),
+            "search/movie": .success(TMDBFixtures.topMoviesPage1),
+            "search/tv": .success(TMDBFixtures.popularTVPage),
         ])
         let viewModel = SearchViewModel(
             movies: MovieRepository.test(client: client),
@@ -174,7 +188,8 @@ final class SearchViewModelTests: XCTestCase {
             annotations: AnnotationsRepository.empty(),
             sleeper: NoopSleeper()
         )
-        await viewModel.load()
+        viewModel.query = "shawshank"
+        await viewModel.submit()
         viewModel.scope = .tv
         await viewModel.reloadForScopeChange()
         viewModel.scope = .movies
@@ -186,7 +201,7 @@ final class SearchViewModelTests: XCTestCase {
             return XCTFail("Expected the cached movie list")
         }
         XCTAssertEqual(rows.map(\.id), [278, 238])
-        XCTAssertEqual(viewModel.query, "")
+        XCTAssertEqual(viewModel.query, "shawshank")
     }
 
     func test_emptyQuery_doesNotRefetchPopular() async {
@@ -208,11 +223,11 @@ final class SearchViewModelTests: XCTestCase {
         await viewModel.submit()
 
         let popularCount = await client.requests.filter { $0.url?.path.contains("movie/popular") == true }.count
-        XCTAssertEqual(popularCount, 1)
-        guard case .loaded(.movies(let rows), _) = viewModel.state else {
-            return XCTFail("Expected popular movies back from the cache")
-        }
-        XCTAssertEqual(rows.map(\.id), [278, 238])
+        let searchCount = await client.requests.filter { $0.url?.path.contains("search/movie") == true }.count
+        XCTAssertEqual(popularCount, 0)
+        XCTAssertEqual(searchCount, 1)
+        XCTAssertTrue(viewModel.showsAwardShelves)
+        XCTAssertFalse(viewModel.showsScopePicker)
     }
 
     func test_submit_whileTheFieldIsFocusedAndEmpty_keepsThePlaceholder() async {
@@ -239,10 +254,8 @@ final class SearchViewModelTests: XCTestCase {
 
         viewModel.restoreAfterDismiss()
 
-        guard case .loaded(.movies(let rows), _) = viewModel.state else {
-            return XCTFail("Expected the search results back, got \(viewModel.state)")
-        }
-        XCTAssertEqual(rows.map(\.id), [240])
+        XCTAssertTrue(viewModel.showsAwardShelves)
+        XCTAssertFalse(viewModel.showsFocusedPlaceholder)
         XCTAssertEqual(viewModel.query, "")
     }
 
@@ -261,6 +274,7 @@ final class SearchViewModelTests: XCTestCase {
         viewModel.restoreAfterDismiss()
 
         XCTAssertFalse(viewModel.showsFocusedPlaceholder)
+        XCTAssertTrue(viewModel.showsAwardShelves)
         XCTAssertEqual(viewModel.state, loaded)
         XCTAssertEqual(viewModel.query, "")
     }

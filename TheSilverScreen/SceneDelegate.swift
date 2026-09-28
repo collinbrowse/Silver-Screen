@@ -34,6 +34,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             appRouter = dependencies.router
             let libraryHomeViewModel = LibraryHomeViewModel(lists: dependencies.lists)
             Task { try? await dependencies.lists.loadIndex() }
+            Task { await dependencies.awards.prepare() }
             let root = RootTabView(
                 router: dependencies.router,
                 movies: dependencies.movies,
@@ -43,6 +44,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 listsIndex: dependencies.listsIndex,
                 listChanges: dependencies.listChanges,
                 annotations: dependencies.annotations,
+                awards: dependencies.awards,
                 imageLoader: dependencies.imageLoader,
                 libraryHomeViewModel: libraryHomeViewModel
             )

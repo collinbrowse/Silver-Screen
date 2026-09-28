@@ -98,19 +98,24 @@ struct FullscreenImages: Sendable, Equatable, Identifiable {
 @MainActor
 final class MovieDetailViewModel {
     private(set) var state: LoadState<MovieDetailContent> = .idle
+    /// Win pills, or up to three nomination pills when this movie has no wins.
+    private(set) var awardLabels: [AwardPill] = []
 
     private let movieID: Int
     private let movies: MovieRepository
     private let annotations: AnnotationsRepository
+    private let awards: AwardsRepository
 
     init(
         movieID: Int,
         movies: MovieRepository,
-        annotations: AnnotationsRepository
+        annotations: AnnotationsRepository,
+        awards: AwardsRepository = AwardsRepository(catalog: .empty)
     ) {
         self.movieID = movieID
         self.movies = movies
         self.annotations = annotations
+        self.awards = awards
     }
 
     func load() async {
@@ -135,6 +140,7 @@ final class MovieDetailViewModel {
                 reviews: await reviewsSection,
                 personal: personal.detail
             )
+            awardLabels = await awards.pillLabels(movieID: movieID)
             state = .loaded(content, activity: personal.activity)
         } catch is CancellationError {
             return

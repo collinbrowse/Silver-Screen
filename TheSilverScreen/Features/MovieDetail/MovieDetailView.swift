@@ -142,7 +142,8 @@ struct MovieDetailView: View {
                     transitionNamespace: heroTransition,
                     onOpenPoster: { viewModel.openPoster() },
                     onOpenImage: { viewModel.openImages(initialID: $0) },
-                    genreNames: content.detail.genres.map(\.name)
+                    genreNames: content.detail.genres.map(\.name),
+                    awardLabels: viewModel.awardLabels
                 ) {
                     if !content.detail.trailers.isEmpty {
                         MediaMetadataPills(
