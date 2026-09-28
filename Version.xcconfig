@@ -6,4 +6,4 @@
 MARKETING_VERSION = 0.1.1
 // Upload counter. `cut` adds one; the number never goes down, including across
 // marketing versions. Dev runs do not consume a build.
-CURRENT_PROJECT_VERSION = 2
+CURRENT_PROJECT_VERSION = 3

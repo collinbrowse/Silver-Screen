@@ -5,6 +5,8 @@ moves them under a `version+build` heading that matches the git tag.
 
 ## [Unreleased]
 
+## [0.1.1+3] - 2026-09-28
+
 - A person's page leads with the work they are known for, and credits in that role rank ahead of a guest spot on a popular show.
 - Search ranks a near-miss name ahead of other hits, so Christopher Waltz still finds Christoph Waltz.
 - A person's prizes show on their page, with the trophy, the category, and the title they were for. Movie and series prizes use that same awards card.
