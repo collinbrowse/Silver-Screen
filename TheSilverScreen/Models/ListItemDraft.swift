@@ -208,6 +208,22 @@ extension CatalogTVRow {
     }
 }
 
+extension ListEntry {
+    /// The snapshot stored on the row, reused when a rated movie moves onto Watched.
+    func listItem() -> ListItemDraft {
+        ListItemDraft(
+            id: itemID,
+            kind: kind,
+            title: title,
+            imagePath: imagePath,
+            releaseDate: releaseDate,
+            genreNames: genreNames,
+            voteAverage: voteAverage,
+            popularity: popularity
+        )
+    }
+}
+
 extension CatalogPersonRow {
     func listItem() -> ListItemDraft {
         ListItemDraft(

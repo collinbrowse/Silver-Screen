@@ -14,6 +14,7 @@ final class AwardDetailLabelTests: XCTestCase {
             movieID: 278,
             movies: MovieRepository.test(client: DetailAwardHTTPClient()),
             annotations: AnnotationsRepository.empty(),
+            lists: .empty(),
             awards: AwardsRepository(catalog: Self.catalog)
         )
 
@@ -27,6 +28,7 @@ final class AwardDetailLabelTests: XCTestCase {
             movieID: 278,
             movies: MovieRepository.test(client: DetailAwardHTTPClient()),
             annotations: AnnotationsRepository.empty(),
+            lists: .empty(),
             awards: AwardsRepository(catalog: .empty)
         )
 

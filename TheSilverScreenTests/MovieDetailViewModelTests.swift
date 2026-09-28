@@ -59,7 +59,8 @@ final class MovieDetailViewModelTests: XCTestCase {
         let viewModel = MovieDetailViewModel(
             movieID: 238,
             movies: MovieRepository.test(client: client),
-            annotations: AnnotationsRepository.empty()
+            annotations: AnnotationsRepository.empty(),
+            lists: .empty()
         )
 
         await viewModel.load()
@@ -80,7 +81,8 @@ final class MovieDetailViewModelTests: XCTestCase {
         let viewModel = MovieDetailViewModel(
             movieID: 238,
             movies: MovieRepository.test(client: client),
-            annotations: AnnotationsRepository.empty()
+            annotations: AnnotationsRepository.empty(),
+            lists: .empty()
         )
 
         await viewModel.load()
@@ -102,7 +104,8 @@ final class MovieDetailViewModelTests: XCTestCase {
         let viewModel = MovieDetailViewModel(
             movieID: 278,
             movies: MovieRepository.test(client: client),
-            annotations: AnnotationsRepository.empty()
+            annotations: AnnotationsRepository.empty(),
+            lists: .empty()
         )
 
         await viewModel.load()
@@ -120,7 +123,8 @@ final class MovieDetailViewModelTests: XCTestCase {
         let viewModel = MovieDetailViewModel(
             movieID: 278,
             movies: MovieRepository.test(client: client),
-            annotations: AnnotationsRepository.empty()
+            annotations: AnnotationsRepository.empty(),
+            lists: .empty()
         )
 
         await viewModel.load()
@@ -145,7 +149,8 @@ final class MovieDetailViewModelTests: XCTestCase {
         let viewModel = MovieDetailViewModel(
             movieID: 278,
             movies: MovieRepository.test(client: client),
-            annotations: AnnotationsRepository.empty()
+            annotations: AnnotationsRepository.empty(),
+            lists: .empty()
         )
         await viewModel.load()
 
@@ -169,7 +174,8 @@ final class MovieDetailViewModelTests: XCTestCase {
         let viewModel = MovieDetailViewModel(
             movieID: 278,
             movies: MovieRepository.test(client: client),
-            annotations: AnnotationsRepository.empty()
+            annotations: AnnotationsRepository.empty(),
+            lists: .empty()
         )
 
         await viewModel.load()
@@ -256,7 +262,8 @@ final class MovieDetailViewModelTests: XCTestCase {
         let viewModel = MovieDetailViewModel(
             movieID: 278,
             movies: MovieRepository.test(client: switchable),
-            annotations: AnnotationsRepository.empty()
+            annotations: AnnotationsRepository.empty(),
+            lists: .empty()
         )
 
         await viewModel.load()
@@ -279,7 +286,8 @@ final class MovieDetailViewModelTests: XCTestCase {
         let viewModel = MovieDetailViewModel(
             movieID: 278,
             movies: MovieRepository.test(client: DetailStubHTTPClient(detail: .success(TMDBFixtures.movieDetailShawshank))),
-            annotations: annotations
+            annotations: annotations,
+            lists: .empty()
         )
 
         await viewModel.load()
@@ -325,7 +333,8 @@ final class MovieDetailViewModelTests: XCTestCase {
         let viewModel = MovieDetailViewModel(
             movieID: 278,
             movies: MovieRepository.test(client: DetailStubHTTPClient(detail: .success(TMDBFixtures.movieDetailShawshank))),
-            annotations: annotations
+            annotations: annotations,
+            lists: .empty()
         )
         await viewModel.load()
         await store.setSaveError(CocoaError(.fileWriteUnknown))
@@ -339,6 +348,136 @@ final class MovieDetailViewModelTests: XCTestCase {
         XCTAssertEqual(error, .persistence)
     }
 
+    func test_saveUserScore_addsTheMovieToWatched() async throws {
+        let lists = ListsRepository.empty()
+        let viewModel = makeViewModel(stub: .success(TMDBFixtures.movieDetailShawshank), lists: lists)
+        await viewModel.load()
+
+        let change = await viewModel.saveUserScore(8)
+
+        XCTAssertEqual(change?.action, .added)
+        XCTAssertEqual(change?.confirmation, "Added to Watched")
+        let snapshot = try await lists.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        let entry = try XCTUnwrap(snapshot.entries.first { $0.listID == watched.id })
+        XCTAssertEqual(entry.itemID, 278)
+        XCTAssertEqual(entry.title, "The Shawshank Redemption")
+        XCTAssertEqual(entry.kind, .movie)
+        guard case .loaded(let content, activity: .none) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        XCTAssertEqual(content.formattedUserScore, "8.0 / 10")
+    }
+
+    func test_saveUserScore_again_keepsTheWatchedDate() async throws {
+        let lists = ListsRepository.empty()
+        let viewModel = makeViewModel(stub: .success(TMDBFixtures.movieDetailShawshank), lists: lists)
+        await viewModel.load()
+        _ = await viewModel.saveUserScore(8)
+        let first = try await lists.snapshot()
+        let watched = try XCTUnwrap(first.list(.watched))
+        let addedAt = try XCTUnwrap(first.entries.first { $0.listID == watched.id }?.addedAt)
+
+        let change = await viewModel.saveUserScore(9)
+
+        XCTAssertEqual(change?.action, .unchanged)
+        let second = try await lists.snapshot()
+        XCTAssertEqual(second.entries.filter { $0.listID == watched.id }.count, 1)
+        XCTAssertEqual(second.entries.first { $0.listID == watched.id }?.addedAt, addedAt)
+        guard case .loaded(let content, activity: .none) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        XCTAssertEqual(content.formattedUserScore, "9.0 / 10")
+    }
+
+    func test_saveUserScore_movesTheMovieOffWatchlist() async throws {
+        let lists = ListsRepository.empty()
+        let viewModel = makeViewModel(stub: .success(TMDBFixtures.movieDetailShawshank), lists: lists)
+        await viewModel.load()
+        guard case .loaded(let content, _) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        let seeded = try await lists.snapshot()
+        let watchlist = try XCTUnwrap(seeded.list(.watchlist))
+        _ = try await lists.add(draft: content.detail.listItem(), listID: watchlist.id)
+
+        let change = await viewModel.saveUserScore(8)
+
+        XCTAssertEqual(change?.action, .added)
+        XCTAssertEqual(change?.restore?.listID, watchlist.id)
+        let snapshot = try await lists.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        XCTAssertTrue(snapshot.entries.contains { $0.listID == watched.id && $0.itemID == 278 })
+        XCTAssertFalse(snapshot.entries.contains { $0.listID == watchlist.id && $0.itemID == 278 })
+    }
+
+    func test_saveUserScore_whenListSaveFails_keepsTheNewScore() async throws {
+        let store = InMemoryListsStore()
+        let lists = ListsRepository(store: store, logger: SilentLogger())
+        let viewModel = makeViewModel(stub: .success(TMDBFixtures.movieDetailShawshank), lists: lists)
+        await viewModel.load()
+        await store.setSaveError(CocoaError(.fileWriteUnknown))
+
+        let change = await viewModel.saveUserScore(8)
+
+        XCTAssertNil(change)
+        guard case .loaded(let content, activity: .failed(let error)) = viewModel.state else {
+            return XCTFail("Expected loaded with failed activity, got \(viewModel.state)")
+        }
+        XCTAssertEqual(content.formattedUserScore, "8.0 / 10")
+        XCTAssertEqual(error, .persistence)
+        await store.setSaveError(nil)
+        let snapshot = try await lists.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        XCTAssertFalse(snapshot.entries.contains { $0.listID == watched.id })
+    }
+
+    func test_load_withSavedScore_addsTheMovieToWatchedOnTheRatedDay() async throws {
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        let rated = TestMovies.date("2020-01-15")
+        _ = try await annotations.saveScore(7.5, for: .movie(278), at: rated)
+        let lists = ListsRepository.empty()
+        let viewModel = makeViewModel(
+            stub: .success(TMDBFixtures.movieDetailShawshank),
+            annotations: annotations,
+            lists: lists
+        )
+
+        await viewModel.load()
+
+        let snapshot = try await lists.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        let entry = try XCTUnwrap(snapshot.entries.first { $0.listID == watched.id })
+        XCTAssertEqual(entry.itemID, 278)
+        XCTAssertEqual(entry.title, "The Shawshank Redemption")
+        XCTAssertEqual(entry.addedAt, rated)
+        guard case .loaded(_, activity: .none) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+    }
+
+    func test_load_withNoteOnly_leavesWatchedEmpty() async throws {
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        _ = try await annotations.saveNote("Remember this", for: .movie(278))
+        let lists = ListsRepository.empty()
+        let viewModel = makeViewModel(
+            stub: .success(TMDBFixtures.movieDetailShawshank),
+            annotations: annotations,
+            lists: lists
+        )
+
+        await viewModel.load()
+
+        let snapshot = try await lists.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        XCTAssertFalse(snapshot.entries.contains { $0.listID == watched.id })
+        guard case .loaded(let content, activity: .none) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        XCTAssertNil(content.formattedUserScore)
+        XCTAssertEqual(content.userNote, "Remember this")
+    }
+
     func test_formatCurrency_zero_isNotAvailable() {
         let formatted = MovieDetailViewModel.formatCurrency(0)
         XCTAssertEqual(formatted.display, "Not available")
@@ -346,11 +485,16 @@ final class MovieDetailViewModelTests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func makeViewModel(stub: FakeHTTPClient.Stub) -> MovieDetailViewModel {
+    private func makeViewModel(
+        stub: FakeHTTPClient.Stub,
+        annotations: AnnotationsRepository = .empty(),
+        lists: ListsRepository = .empty()
+    ) -> MovieDetailViewModel {
         MovieDetailViewModel(
             movieID: 278,
             movies: MovieRepository.test(client: DetailStubHTTPClient(detail: stub)),
-            annotations: AnnotationsRepository.empty()
+            annotations: annotations,
+            lists: lists
         )
     }
 
@@ -358,7 +502,8 @@ final class MovieDetailViewModelTests: XCTestCase {
         MovieDetailViewModel(
             movieID: 278,
             movies: MovieRepository.test(client: FakeHTTPClient(result: result)),
-            annotations: AnnotationsRepository.empty()
+            annotations: AnnotationsRepository.empty(),
+            lists: .empty()
         )
     }
 }

@@ -40,6 +40,11 @@ actor AnnotationsRepository {
         return records.first { $0.key == key }
     }
 
+    /// Every stored score and note. An unreadable file yields an empty list.
+    func saved() async -> [MediaAnnotation] {
+        (try? await loadCache()) ?? []
+    }
+
     /// Stores a half-point score and leaves any existing note in place.
     /// The watched day is recorded only the first time a score or note is saved.
     @discardableResult

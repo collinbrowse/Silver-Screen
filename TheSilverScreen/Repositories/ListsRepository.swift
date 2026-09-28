@@ -57,6 +57,18 @@ actor ListsRepository {
         }
     }
 
+    /// Puts a movie on Watched. A title already there keeps its row and date.
+    /// Watchlist membership for that title is removed, as with a manual add.
+    func addToWatched(_ draft: ListItemDraft, at date: Date = Date()) async throws -> MembershipChange {
+        try await serializeWrite { [self] in
+            let snapshot = try await loadCache()
+            guard let watched = snapshot.list(.watched) else {
+                throw ListEditError.missingList
+            }
+            return try await performAdd(draft: draft, listID: watched.id, at: date)
+        }
+    }
+
     func remove(itemKey: String, listID: UUID) async throws -> MembershipChange {
         try await serializeWrite { [self] in
             try await performRemove(itemKey: itemKey, listID: listID)

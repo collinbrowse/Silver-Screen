@@ -26,6 +26,13 @@ extension AnnotationsRepository {
     }
 }
 
+extension ListsRepository {
+    @MainActor
+    static func empty() -> ListsRepository {
+        ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+    }
+}
+
 struct SilentLogger: AppLogging {
     func debug(_ message: String, category: LogCategory) {}
     func error(_ message: String, category: LogCategory) {}

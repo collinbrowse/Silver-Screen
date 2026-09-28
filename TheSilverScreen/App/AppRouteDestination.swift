@@ -144,6 +144,7 @@ struct MovieDetailRouteView: View {
                 movieID: movieID,
                 movies: movies,
                 annotations: annotations,
+                lists: lists,
                 awards: awards
             )
         )

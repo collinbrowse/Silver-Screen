@@ -35,6 +35,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             let libraryHomeViewModel = LibraryHomeViewModel(lists: dependencies.lists)
             Task { try? await dependencies.lists.loadIndex() }
             Task { await dependencies.awards.prepare() }
+            Task {
+                await WatchedRatings.sync(
+                    annotations: dependencies.annotations,
+                    lists: dependencies.lists,
+                    movies: dependencies.movies,
+                    logger: dependencies.logger
+                )
+            }
             let root = RootTabView(
                 router: dependencies.router,
                 movies: dependencies.movies,

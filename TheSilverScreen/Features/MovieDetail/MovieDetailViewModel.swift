@@ -104,17 +104,20 @@ final class MovieDetailViewModel {
     private let movieID: Int
     private let movies: MovieRepository
     private let annotations: AnnotationsRepository
+    private let lists: ListsRepository
     private let awards: AwardsRepository
 
     init(
         movieID: Int,
         movies: MovieRepository,
         annotations: AnnotationsRepository,
+        lists: ListsRepository,
         awards: AwardsRepository = AwardsRepository(catalog: .empty)
     ) {
         self.movieID = movieID
         self.movies = movies
         self.annotations = annotations
+        self.lists = lists
         self.awards = awards
     }
 
@@ -142,6 +145,9 @@ final class MovieDetailViewModel {
             )
             awardLabels = await awards.pillLabels(movieID: movieID)
             state = .loaded(content, activity: personal.activity)
+            if personal.detail.formattedUserScore != nil {
+                await ensureOnWatched(detail.listItem(), at: personal.watchedAt ?? Date())
+            }
         } catch is CancellationError {
             return
         } catch let error as AppError {
@@ -155,16 +161,21 @@ final class MovieDetailViewModel {
         await load()
     }
 
-    /// Saves a half-point score. A failure keeps the score already on screen.
-    func saveUserScore(_ score: Double) async {
-        guard case .loaded = state else { return }
+    /// Saves a half-point score and puts the movie on Watched.
+    /// A score that fails to save keeps the previous score on screen.
+    /// Returns the Watched membership change when the score was saved.
+    @discardableResult
+    func saveUserScore(_ score: Double) async -> MembershipChange? {
+        guard case .loaded(let content, _) = state else { return nil }
         do {
             let saved = try await annotations.saveScore(score, for: .movie(movieID))
             apply(PersonalDetail(annotation: saved))
+            return try await lists.addToWatched(content.detail.listItem(), at: saved.watchedAt ?? Date())
         } catch is CancellationError {
-            return
+            return nil
         } catch {
             markPersistenceFailure()
+            return nil
         }
     }
 
@@ -198,14 +209,26 @@ final class MovieDetailViewModel {
         }
     }
 
-    private func personalDetail() async throws -> (detail: PersonalDetail, activity: LoadActivity) {
+    private func personalDetail() async throws -> (detail: PersonalDetail, activity: LoadActivity, watchedAt: Date?) {
         do {
             let record = try await annotations.annotation(for: .movie(movieID))
-            return (PersonalDetail(annotation: record), .none)
+            let watchedAt = record?.score == nil ? nil : record?.watchedAt
+            return (PersonalDetail(annotation: record), .none, watchedAt)
         } catch is CancellationError {
             throw CancellationError()
         } catch {
-            return (.empty, .failed(.persistence))
+            return (.empty, .failed(.persistence), nil)
+        }
+    }
+
+    /// A scored movie belongs on Watched. A title already there keeps its row and date.
+    private func ensureOnWatched(_ draft: ListItemDraft, at date: Date) async {
+        do {
+            _ = try await lists.addToWatched(draft, at: date)
+        } catch is CancellationError {
+            return
+        } catch {
+            markPersistenceFailure()
         }
     }
 

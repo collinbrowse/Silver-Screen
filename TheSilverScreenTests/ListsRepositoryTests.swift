@@ -127,6 +127,148 @@ final class ListsRepositoryTests: XCTestCase {
         XCTAssertEqual(LibraryOrdering.displayed(snapshot.entries, list: stored).map(\.title), ["C", "A", "B"])
     }
 
+    func test_addToWatched_recordsTheMovieAndDropsWatchlist() async throws {
+        let repository = makeRepository()
+        let watchlist = try await systemList(.watchlist, repository: repository)
+        let custom = try await repository.createList(name: "Friday", segment: .moviesAndTV).list
+        let draft = movie(id: 15, title: "Heat", imagePath: "/heat.jpg")
+        _ = try await repository.add(draft: draft, listID: watchlist.id, at: TestMovies.date("2024-04-01"))
+        _ = try await repository.add(draft: draft, listID: custom.id)
+        let rated = TestMovies.date("2024-05-01")
+
+        let change = try await repository.addToWatched(draft, at: rated)
+
+        XCTAssertEqual(change.action, .added)
+        XCTAssertEqual(change.confirmation, "Added to Watched")
+        XCTAssertEqual(change.restore?.listID, watchlist.id)
+        let snapshot = try await repository.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        let entry = try XCTUnwrap(snapshot.entries.first { $0.listID == watched.id && $0.itemID == 15 })
+        XCTAssertEqual(entry.addedAt, rated)
+        XCTAssertEqual(entry.title, "Heat")
+        XCTAssertFalse(snapshot.entries.contains { $0.listID == watchlist.id && $0.itemID == 15 })
+        XCTAssertTrue(snapshot.entries.contains { $0.listID == custom.id && $0.itemID == 15 })
+    }
+
+    func test_addToWatched_again_keepsTheAddedDate() async throws {
+        let repository = makeRepository()
+        let draft = movie(id: 15, title: "Heat")
+        let rated = TestMovies.date("2024-05-01")
+        _ = try await repository.addToWatched(draft, at: rated)
+
+        let again = try await repository.addToWatched(draft, at: TestMovies.date("2024-08-01"))
+
+        XCTAssertEqual(again.action, .unchanged)
+        XCTAssertNil(again.confirmation)
+        let snapshot = try await repository.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        let matches = snapshot.entries.filter { $0.listID == watched.id && $0.itemID == 15 }
+        XCTAssertEqual(matches.count, 1)
+        XCTAssertEqual(matches.first?.addedAt, rated)
+    }
+
+    func test_sync_movesAWatchlistMovieUsingTheStoredRow() async throws {
+        let lists = makeRepository()
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        let watchlist = try await systemList(.watchlist, repository: lists)
+        let draft = movie(id: 15, title: "Heat", imagePath: "/heat.jpg")
+        _ = try await lists.add(draft: draft, listID: watchlist.id, at: TestMovies.date("2024-04-01"))
+        let rated = TestMovies.date("2020-03-01")
+        _ = try await annotations.saveScore(9, for: .movie(15), at: rated)
+        let movies = MovieRepository.test(
+            client: FakeHTTPClient(stub: .success(TMDBFixtures.movieDetailShawshank))
+        )
+
+        await WatchedRatings.sync(
+            annotations: annotations,
+            lists: lists,
+            movies: movies,
+            logger: SilentLogger()
+        )
+
+        let snapshot = try await lists.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        let entry = try XCTUnwrap(snapshot.entries.first { $0.listID == watched.id })
+        XCTAssertEqual(entry.itemID, 15)
+        XCTAssertEqual(entry.title, "Heat")
+        XCTAssertEqual(entry.imagePath, "/heat.jpg")
+        XCTAssertEqual(entry.addedAt, rated)
+        XCTAssertFalse(snapshot.entries.contains { $0.listID == watchlist.id })
+    }
+
+    func test_sync_loadsAScoredMovieThatIsNotOnAList() async throws {
+        let lists = makeRepository()
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        let rated = TestMovies.date("2019-06-01")
+        _ = try await annotations.saveScore(8, for: .movie(278), at: rated)
+        let movies = MovieRepository.test(
+            client: FakeHTTPClient(stub: .success(TMDBFixtures.movieDetailShawshank))
+        )
+
+        await WatchedRatings.sync(
+            annotations: annotations,
+            lists: lists,
+            movies: movies,
+            logger: SilentLogger()
+        )
+
+        let snapshot = try await lists.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        let entry = try XCTUnwrap(snapshot.entries.first { $0.listID == watched.id })
+        XCTAssertEqual(entry.itemID, 278)
+        XCTAssertEqual(entry.title, "The Shawshank Redemption")
+        XCTAssertEqual(entry.addedAt, rated)
+    }
+
+    func test_sync_ignoresNotesAndSeriesScores() async throws {
+        let lists = makeRepository()
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        _ = try await annotations.saveNote("Just a note", for: .movie(278))
+        _ = try await annotations.saveScore(9, for: .series(1396), at: TestMovies.date("2021-01-01"))
+        let movies = MovieRepository.test(
+            client: FakeHTTPClient(stub: .success(TMDBFixtures.movieDetailShawshank))
+        )
+
+        await WatchedRatings.sync(
+            annotations: annotations,
+            lists: lists,
+            movies: movies,
+            logger: SilentLogger()
+        )
+
+        let snapshot = try await lists.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        XCTAssertFalse(snapshot.entries.contains { $0.listID == watched.id })
+    }
+
+    func test_sync_leavesAnExistingWatchedDateAlone() async throws {
+        let lists = makeRepository()
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        let watched = try await systemList(.watched, repository: lists)
+        let added = TestMovies.date("2018-01-01")
+        _ = try await lists.add(
+            draft: movie(id: 278, title: "The Shawshank Redemption"),
+            listID: watched.id,
+            at: added
+        )
+        _ = try await annotations.saveScore(8, for: .movie(278), at: TestMovies.date("2022-01-01"))
+        let movies = MovieRepository.test(
+            client: FakeHTTPClient(stub: .success(TMDBFixtures.movieDetailShawshank))
+        )
+
+        await WatchedRatings.sync(
+            annotations: annotations,
+            lists: lists,
+            movies: movies,
+            logger: SilentLogger()
+        )
+
+        let snapshot = try await lists.snapshot()
+        let matches = snapshot.entries.filter { $0.listID == watched.id && $0.itemID == 278 }
+        XCTAssertEqual(matches.count, 1)
+        XCTAssertEqual(matches.first?.addedAt, added)
+    }
+
     func test_addToWatched_removesWatchlistEntryAndLeavesCustomList() async throws {
         let repository = makeRepository()
         let watched = try await systemList(.watched, repository: repository)

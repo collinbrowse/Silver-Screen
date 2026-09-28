@@ -131,6 +131,7 @@
 		L1B000072788B823003D8011 /* FileListsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B000082788B823003D8011 /* FileListsStore.swift */; };
 		L1B000092788B823003D8011 /* AppSupportDirectory.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B0000A2788B823003D8011 /* AppSupportDirectory.swift */; };
 		L1B0000B2788B823003D8011 /* ListsRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B0000C2788B823003D8011 /* ListsRepository.swift */; };
+		W1R000022788B823003D8011 /* WatchedRatings.swift in Sources */ = {isa = PBXBuildFile; fileRef = W1R000012788B823003D8011 /* WatchedRatings.swift */; };
 		L1B0000D2788B823003D8011 /* ListsIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B0000E2788B823003D8011 /* ListsIndex.swift */; };
 		L1B0000F2788B823003D8011 /* ListMembershipButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B000102788B823003D8011 /* ListMembershipButton.swift */; };
 		L1B000112788B823003D8011 /* ListChangeNotice.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B000122788B823003D8011 /* ListChangeNotice.swift */; };
@@ -292,6 +293,7 @@
 		L1B000082788B823003D8011 /* FileListsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileListsStore.swift; sourceTree = "<group>"; };
 		L1B0000A2788B823003D8011 /* AppSupportDirectory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSupportDirectory.swift; sourceTree = "<group>"; };
 		L1B0000C2788B823003D8011 /* ListsRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListsRepository.swift; sourceTree = "<group>"; };
+		W1R000012788B823003D8011 /* WatchedRatings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchedRatings.swift; sourceTree = "<group>"; };
 		L1B0000E2788B823003D8011 /* ListsIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListsIndex.swift; sourceTree = "<group>"; };
 		L1B000102788B823003D8011 /* ListMembershipButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListMembershipButton.swift; sourceTree = "<group>"; };
 		L1B000122788B823003D8011 /* ListChangeNotice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListChangeNotice.swift; sourceTree = "<group>"; };
@@ -350,6 +352,7 @@
 				B10003072788B823003D8011 /* PersonRepository.swift */,
 				C20000072788B823003D8011 /* AnnotationsRepository.swift */,
 				L1B0000C2788B823003D8011 /* ListsRepository.swift */,
+				W1R000012788B823003D8011 /* WatchedRatings.swift */,
 				L1B0000E2788B823003D8011 /* ListsIndex.swift */,
 			);
 			path = Repositories;
@@ -909,6 +912,7 @@
 				L1B000072788B823003D8011 /* FileListsStore.swift in Sources */,
 				L1B000092788B823003D8011 /* AppSupportDirectory.swift in Sources */,
 				L1B0000B2788B823003D8011 /* ListsRepository.swift in Sources */,
+				W1R000022788B823003D8011 /* WatchedRatings.swift in Sources */,
 				L1B0000D2788B823003D8011 /* ListsIndex.swift in Sources */,
 				L1B0000F2788B823003D8011 /* ListMembershipButton.swift in Sources */,
 				L1B000112788B823003D8011 /* ListChangeNotice.swift in Sources */,
