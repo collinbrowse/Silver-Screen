@@ -11,6 +11,7 @@ TMDB has no awards endpoint and no Oscars filter. Movie details do not include w
 3. A category opens a title list with a Winners / Nominees control. Newest ceremony year is first. Each page is 20 credits.
 4. A row matches a Browse row, with the ceremony year directly under the title, then genres, then a personal rating when one exists, then the list button. The release date is omitted. Tapping a row uses the existing movie, series, season, or episode route.
 5. On a detail screen, wins sit in a second pill row under genres. Each pill shows that prize’s trophy to the left of the category name (`Best Picture`), so an Oscar and a BAFTA are not just two similar strings. When the title has no wins, up to three nominations appear, and the word `nominee` is in the label. The row is hidden when there is nothing to show. VoiceOver reads one “Awards: …” label and names the prize body, because the trophy is decorative.
+6. On a person screen, prizes given to that person sit under the biography. Each row shows the trophy, the category (`Best Supporting Actor`, or `Best Supporting Actor nominee`), and the title plus ceremony year (`A Real Pain · 2025`). Best Picture and other title prizes are not listed. The section is hidden when the person’s IMDb id matches nothing. A win hides the nomination for that same title, category, and year. Tapping a row opens the title when the catalog has a TMDB id.
 
 A category with fewer than eight resolved credits stays off the menu. Eight is `AwardsRepository.minimumListedCredits`. A short stub would look like the whole history.
 
@@ -44,6 +45,14 @@ The file is [`TheSilverScreen/Data/Resources/AwardsCatalog.json`](TheSilverScree
 
 Credits with no IMDb id stay in the file and stay out of the lists.
 
+A prize given to a person also stores `recipients`. Title prizes such as Best Picture omit the field. Each recipient has `name`, `wikidataID`, and `imdbID` when Wikidata has an `nm` id. Person screens match that `nm` id. Two people nominated for the same title stay on one credit.
+
+```json
+"recipients": [
+  { "imdbID": "nm0000342", "name": "Kieran Culkin", "wikidataID": "Q313204" }
+]
+```
+
 ## How the app loads it
 
 `AwardsRepository` is a concrete actor, built in `AppDependencies` and passed down. `SceneDelegate` calls `prepare()` at launch.
@@ -66,7 +75,16 @@ The job opens a pull request only when the credit list changed. A quiet week pus
 
 Already-resolved ids stay in the file. A later Monday calls `/find` only for credits whose key is new or whose IMDb id changed.
 
-One category at a time. A family-wide SPARQL query times out, and a failed query must exit before `AwardsCatalog.json` is replaced. Wins and nominations are separate queries. Acting awards are read from the person, with the film or episode in Wikidata qualifier “for work” (`P1686`), and also from the work itself.
+One category at a time. A family-wide SPARQL query times out, and a failed query must exit before `AwardsCatalog.json` is replaced. Wins and nominations are separate queries. Acting awards are read from the person, with the film or episode in Wikidata qualifier “for work” (`P1686`), and also from the work itself. When the statement is on a person, that person is stored in `recipients` on the title credit.
+
+To attach recipients onto a catalog that was built before that field existed, without re-querying every category:
+
+```bash
+python3 scripts/build_awards_catalog.py --link-people \
+  --output TheSilverScreen/Data/Resources/AwardsCatalog.json
+```
+
+That reads Wikidata entity claims for ids that never resolved to a title, and keeps a human’s award only when the statement names a work (`P1686`). It does not call TMDB. A failed request leaves the file in place.
 
 | Family | Wikidata id | `/find` preference |
 | --- | --- | --- |

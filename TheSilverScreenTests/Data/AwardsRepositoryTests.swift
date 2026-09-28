@@ -101,6 +101,152 @@ final class AwardsRepositoryTests: XCTestCase {
         ])
     }
 
+    func test_personAwards_listsPrizesGivenToThisPersonNewestFirst() async {
+        let freeman = AwardRecipient(name: "Morgan Freeman", wikidataID: "Q48337", imdbID: "nm0000151")
+        let repository = AwardsRepository(catalog: AwardsCatalog(
+            generatedAt: Date(timeIntervalSince1970: 1),
+            credits: [
+                Self.credit(
+                    "support-1995",
+                    title: "The Shawshank Redemption",
+                    category: "Best Supporting Actor",
+                    year: 1995,
+                    won: true,
+                    movieID: 278,
+                    recipients: [freeman]
+                ),
+                Self.credit(
+                    "actor-1973",
+                    title: "The Godfather",
+                    category: "Best Actor",
+                    year: 1973,
+                    won: true,
+                    movieID: 238,
+                    recipients: [freeman]
+                ),
+                Self.credit(
+                    "picture",
+                    title: "The Shawshank Redemption",
+                    category: "Best Picture",
+                    year: 1995,
+                    won: true,
+                    movieID: 278
+                ),
+                Self.credit(
+                    "other",
+                    title: "Se7en",
+                    category: "Best Actor",
+                    year: 1996,
+                    won: true,
+                    movieID: 807,
+                    recipients: [AwardRecipient(name: "Someone Else", wikidataID: "Q1", imdbID: "nm0000001")]
+                ),
+            ]
+        ))
+
+        let awards = await repository.personAwards(imdbID: "nm0000151")
+
+        XCTAssertEqual(awards.map(\.workTitle), ["The Shawshank Redemption", "The Godfather"])
+        XCTAssertEqual(awards.map(\.categoryLabel), ["Best Supporting Actor", "Best Actor"])
+        XCTAssertEqual(awards.first?.route, .movieDetail(id: 278))
+    }
+
+    func test_personAwards_prefersTheWinOverTheSameNomination() async {
+        let freeman = AwardRecipient(name: "Morgan Freeman", wikidataID: "Q48337", imdbID: "nm0000151")
+        let repository = AwardsRepository(catalog: AwardsCatalog(
+            generatedAt: Date(timeIntervalSince1970: 1),
+            credits: [
+                Self.credit(
+                    "win",
+                    title: "The Shawshank Redemption",
+                    category: "Best Supporting Actor",
+                    year: 1995,
+                    won: true,
+                    movieID: 278,
+                    recipients: [freeman]
+                ),
+                Self.credit(
+                    "nom",
+                    title: "The Shawshank Redemption",
+                    category: "Best Supporting Actor",
+                    year: 1995,
+                    won: false,
+                    movieID: 278,
+                    recipients: [freeman]
+                ),
+                Self.credit(
+                    "other-nom",
+                    title: "Se7en",
+                    category: "Best Supporting Actor",
+                    year: 1996,
+                    won: false,
+                    movieID: 807,
+                    recipients: [freeman]
+                ),
+            ]
+        ))
+
+        let awards = await repository.personAwards(imdbID: "NM0000151")
+
+        XCTAssertEqual(awards.map(\.key), ["other-nom", "win"])
+        XCTAssertEqual(awards.map(\.categoryLabel), ["Best Supporting Actor nominee", "Best Supporting Actor"])
+    }
+
+    func test_personAwards_returnsNothingWithoutAnIMDbId() async {
+        let repository = AwardsRepository(catalog: AwardsCatalog(
+            generatedAt: Date(timeIntervalSince1970: 1),
+            credits: [
+                Self.credit(
+                    "win",
+                    title: "Film",
+                    category: "Best Actor",
+                    year: 2020,
+                    won: true,
+                    movieID: 1,
+                    recipients: [AwardRecipient(name: "Morgan Freeman", wikidataID: "Q48337", imdbID: "nm0000151")]
+                ),
+            ]
+        ))
+
+        let missing = await repository.personAwards(imdbID: nil)
+        let blank = await repository.personAwards(imdbID: "  ")
+
+        XCTAssertEqual(missing, [])
+        XCTAssertEqual(blank, [])
+    }
+
+    func test_decode_readsRecipientsAndOmitsAnEmptyList() throws {
+        let json = """
+        {
+          "generatedAt": "2024-03-10T10:00:00Z",
+          "credits": [{
+            "key": "support",
+            "family": "academy",
+            "category": "Best Supporting Actor",
+            "categoryID": "Q106291",
+            "won": true,
+            "year": 1995,
+            "title": "The Shawshank Redemption",
+            "work": {"kind": "movie", "movieID": 278},
+            "recipients": [{"name": "Morgan Freeman", "wikidataID": "Q48337", "imdbID": "nm0000151"}]
+          }]
+        }
+        """
+        let catalog = try AwardsCatalog.decode(from: Data(json.utf8))
+        XCTAssertEqual(catalog.credits.first?.recipients.first?.imdbID, "nm0000151")
+
+        let encoded = String(
+            decoding: try AwardsCatalog(
+                generatedAt: Date(timeIntervalSince1970: 0),
+                credits: [
+                    Self.credit("plain", title: "Film", category: "Best Picture", year: 2020, won: true, movieID: 1),
+                ]
+            ).encoded(),
+            as: UTF8.self
+        )
+        XCTAssertFalse(encoded.contains("recipients"))
+    }
+
     func test_pill_namesThePrizeBodyForVoiceOver() {
         XCTAssertEqual(
             AwardPill(family: .academy, title: "Best Original Music").accessibilityName,
@@ -240,7 +386,8 @@ final class AwardsRepositoryTests: XCTestCase {
         year: Int,
         won: Bool,
         movieID: Int?,
-        family: AwardFamily = .academy
+        family: AwardFamily = .academy,
+        recipients: [AwardRecipient] = []
     ) -> AwardCredit {
         AwardCredit(
             key: key,
@@ -252,7 +399,8 @@ final class AwardsRepositoryTests: XCTestCase {
             title: title,
             imdbID: nil,
             wikidataID: nil,
-            work: movieID.map { AwardWork(kind: .movie, movieID: $0) }
+            work: movieID.map { AwardWork(kind: .movie, movieID: $0) },
+            recipients: recipients
         )
     }
 

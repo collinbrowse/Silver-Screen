@@ -27,7 +27,7 @@ After that, pick anything you like.
 | [Now Playing Tab](now-playing-tab.md)             | The Now Playing window on Browse.                                                                                                                           |
 | [Upcoming Tab](upcoming-tab.md)                   | The Upcoming window on Browse.                                                                                                                              |
 | [Search Tab](search-tab.md)                       | Type-ahead movie search with persistent results.                                                                                                            |
-| [People View](people-view.md)                     | Person detail screen with bio, images, and cast/crew credits.                                                                                               |
+| [People View](people-view.md)                     | Person detail screen with bio, images, cast/crew credits, and prizes given to that person.                                                                   |
 | [Collections View](collections-view.md)           | Movie collection screen listing its parts.                                                                                                                  |
 | [TV Series View](tv-series-view.md)               | TV series detail screen with seasons, cast, crew, recommendations, and reviews.                                                                             |
 | [TV Series Season View](tv-series-season-view.md) | Season detail screen with images, cast, crew, and episodes.                                                                                                 |
@@ -51,7 +51,7 @@ Update the `Completed / Total` column as you go.
 | [Now Playing Tab](now-playing-tab.md)             | 2 / 2             |
 | [Upcoming Tab](upcoming-tab.md)                   | 2 / 2             |
 | [Search Tab](search-tab.md)                       | 4 / 4             |
-| [People View](people-view.md)                     | 4 / 4             |
+| [People View](people-view.md)                     | 5 / 5             |
 | [Collections View](collections-view.md)           | 3 / 3             |
 | [TV Series View](tv-series-view.md)               | 7 / 7             |
 | [TV Series Season View](tv-series-season-view.md) | 5 / 5             |
