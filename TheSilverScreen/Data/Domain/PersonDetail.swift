@@ -96,7 +96,7 @@ struct PersonCredit: Sendable, Identifiable, Equatable, Hashable {
     let roleLabel: String
     /// Crew jobs on this title, in payload order. Empty for cast.
     let jobs: [PersonCreditJob]
-    /// TMDB popularity used to order credits (most notable first).
+    /// TMDB popularity of the title. Breaks ties when two credits are equally recognizable.
     let popularity: Double
     /// TMDB user score copied onto a list entry. Zero when the payload omitted it.
     let voteAverage: Double
@@ -154,9 +154,9 @@ struct PersonDetail: Sendable, Identifiable, Equatable, Hashable {
     let knownForDepartment: String?
     let imdbID: String?
     let images: [MovieImage]
-    /// Cast credits sorted by popularity descending.
+    /// Cast credits, most recognizable roles first.
     let castCredits: [PersonCredit]
-    /// Crew credits sorted by popularity descending (jobs merged per title).
+    /// Crew credits, most recognizable titles first. Jobs on the same title are merged.
     let crewCredits: [PersonCredit]
     /// TMDB popularity copied onto a people-list entry. Zero when the payload omitted it.
     let popularity: Double
