@@ -54,20 +54,40 @@ struct InlineTitleBottomKey: PreferenceKey {
     }
 }
 
+/// True once `scrollingInlineTitle` has moved the on-page title into the bar.
+/// Hero screens use this to retire the clear status-bar treatment.
+private struct InlineTitleInNavigationBarKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var inlineTitleIsInNavigationBar: Bool {
+        get { self[InlineTitleInNavigationBarKey.self] }
+        set { self[InlineTitleInNavigationBarKey.self] = newValue }
+    }
+}
+
 /// Inline navigation title that appears only after the on-page title has scrolled away.
 /// Rubber-banding past the top or bottom does not toggle it.
+/// A hero screen passes `showsToolbarBackground: false` so the bar stays clear until that
+/// title appears, then picks up the same blurred background as other screens.
 struct ScrollingInlineTitle: ViewModifier {
     let title: String
-    /// Movie detail hides this so the backdrop can sit under the status icons.
+    /// When false, the bar stays clear until the inline title is showing.
     var showsToolbarBackground: Bool = true
     @State private var showsTitle = false
     @State private var titleBottom: CGFloat = 0
 
+    private var showsBackground: Bool {
+        showsToolbarBackground || showsTitle
+    }
+
     func body(content: Content) -> some View {
         content
+            .environment(\.inlineTitleIsInNavigationBar, showsTitle)
             .navigationTitle(showsTitle && !title.isEmpty ? title : "")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(showsToolbarBackground ? .visible : .hidden, for: .navigationBar)
+            .toolbarBackground(showsBackground ? .visible : .hidden, for: .navigationBar)
             .onPreferenceChange(InlineTitleBottomKey.self) { titleBottom = $0 }
             .onScrollGeometryChange(for: Bool.self) { geometry in
                 let offset = geometry.contentOffset.y + geometry.contentInsets.top
