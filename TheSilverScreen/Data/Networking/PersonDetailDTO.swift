@@ -29,6 +29,8 @@ struct PersonCombinedCreditDTO: Decodable, Sendable {
     let genreIDs: [Int]?
     let character: String?
     let job: String?
+    /// TMDB crew department, such as "Directing". Nil on cast entries and when the payload omits it.
+    let department: String?
     let popularity: Double?
     /// Nil when the combined-credit payload omits `vote_average`.
     let voteAverage: Double?
@@ -44,6 +46,7 @@ struct PersonCombinedCreditDTO: Decodable, Sendable {
         case genreIDs = "genre_ids"
         case character
         case job
+        case department
         case popularity
         case voteAverage = "vote_average"
     }

@@ -45,6 +45,9 @@ final class CreditsListViewModel {
         switch department {
         case .cast: return "Acting Roles"
         case .crew: return "Crew Roles"
+        case .directing: return "Directing"
+        case .writing: return "Writing"
+        case .named(let name): return name
         }
     }
 
@@ -53,11 +56,9 @@ final class CreditsListViewModel {
 
         do {
             let detail = try await people.personDetail(id: personID)
-            let credits: [PersonCredit]
-            switch department {
-            case .cast: credits = detail.castCredits
-            case .crew: credits = detail.crewCredits
-            }
+            let credits = PersonCreditGroups.make(from: detail)
+                .first { $0.department == department }?
+                .credits ?? []
             let items = credits.map { credit in
                 CreditsListItem(
                     credit: credit,
