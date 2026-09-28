@@ -5,6 +5,13 @@ moves them under a `version+build` heading that matches the git tag.
 
 ## [Unreleased]
 
+- A person's page leads with the work they are known for, and credits in that role rank ahead of a guest spot on a popular show.
+- Search ranks a near-miss name ahead of other hits, so Christopher Waltz still finds Christoph Waltz.
+- A person's prizes show on their page, with the trophy, the category, and the title they were for. Movie and series prizes use that same awards card.
+- Saving a personal score adds the movie to Watched, including scores saved before this rule.
+- The navigation bar on hero screens blurs only after the title scrolls into it.
+- List separators appear only between rows.
+
 ## [0.1.1+2] - 2026-09-28
 
 - Browse Oscar, BAFTA, and Emmy winners from Search, and see those awards on the title.
