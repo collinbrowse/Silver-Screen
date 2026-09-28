@@ -271,7 +271,8 @@ final class SearchViewModel {
         do {
             let fetched = try await fetch(scope: scope, query: key, page: page)
             guard token == requestGeneration else { return }
-            bucket.listing = appending(fetched.listing, to: bucket.listing, byPopularity: !key.isEmpty)
+            // Later pages append. Re-sorting by popularity would bury a typo hit page 1 already ranked first.
+            bucket.listing = appending(fetched.listing, to: bucket.listing, byPopularity: false)
             bucket.nextPage = fetched.page + 1
             let grew = listingCount(bucket.listing) > listingCount(current)
             bucket.hasMore = fetched.hasMore && grew
@@ -366,8 +367,15 @@ final class SearchViewModel {
         do {
             let fetched = try await fetch(scope: scope, query: query, page: 1)
             guard token == requestGeneration, !Task.isCancelled else { return }
+            let listing = await listingForFirstPage(
+                fetched.listing,
+                scope: scope,
+                query: query,
+                token: token
+            )
+            guard token == requestGeneration, !Task.isCancelled else { return }
             let bucket = Bucket(
-                listing: fetched.listing,
+                listing: listing,
                 nextPage: fetched.page + 1,
                 hasMore: fetched.hasMore
             )
@@ -402,6 +410,118 @@ final class SearchViewModel {
         let listing: SearchListing
         let page: Int
         let hasMore: Bool
+    }
+
+    /// Ranks close names ahead of other hits. When nothing on the page is close, searches the long words on their own.
+    private func listingForFirstPage(
+        _ listing: SearchListing,
+        scope: SearchScope,
+        query: String,
+        token: Int
+    ) async -> SearchListing {
+        if usesGenreDiscover(scope: scope, query: query) {
+            return listing
+        }
+        let rankedPage = ranked(listing, query: query)
+        let terms = FuzzyTextMatch.fallbackTokens(in: query)
+        guard !terms.isEmpty, !containsMatch(rankedPage, query: query) else {
+            return rankedPage
+        }
+        let extras = await fallbackListings(scope: scope, tokens: terms)
+        guard token == requestGeneration, !Task.isCancelled else { return rankedPage }
+        let merged = extras.reduce(rankedPage) { current, extra in
+            appending(matchingOnly(extra, query: query), to: current, byPopularity: false)
+        }
+        return ranked(merged, query: query)
+    }
+
+    private func usesGenreDiscover(scope: SearchScope, query: String) -> Bool {
+        switch scope {
+        case .movies:
+            !SearchGenreMatch.movieGenreIDs(matching: query).isEmpty
+        case .tv:
+            !SearchGenreMatch.tvGenreIDs(matching: query).isEmpty
+        case .people:
+            false
+        }
+    }
+
+    /// Token searches run together. A failure keeps whatever the other token, and the original page, already found.
+    private func fallbackListings(scope: SearchScope, tokens: [String]) async -> [SearchListing] {
+        switch tokens.count {
+        case 0:
+            return []
+        case 1:
+            return [await fallbackListing(scope: scope, query: tokens[0])].compactMap { $0 }
+        default:
+            async let first = fallbackListing(scope: scope, query: tokens[0])
+            async let second = fallbackListing(scope: scope, query: tokens[1])
+            let pair = await (first, second)
+            return [pair.0, pair.1].compactMap { $0 }
+        }
+    }
+
+    private func fallbackListing(scope: SearchScope, query: String) async -> SearchListing? {
+        do {
+            return try await fetch(scope: scope, query: query, page: 1).listing
+        } catch is CancellationError {
+            return nil
+        } catch {
+            return nil
+        }
+    }
+
+    private func containsMatch(_ listing: SearchListing, query: String) -> Bool {
+        switch listing {
+        case .movies(let rows):
+            rows.contains { FuzzyTextMatch.matches(query: query, candidate: $0.title) }
+        case .tv(let rows):
+            rows.contains { FuzzyTextMatch.matches(query: query, candidate: $0.name) }
+        case .people(let rows):
+            rows.contains { FuzzyTextMatch.matches(query: query, candidate: $0.name) }
+        }
+    }
+
+    private func matchingOnly(_ listing: SearchListing, query: String) -> SearchListing {
+        switch listing {
+        case .movies(let rows):
+            .movies(rows.filter { FuzzyTextMatch.matches(query: query, candidate: $0.title) })
+        case .tv(let rows):
+            .tv(rows.filter { FuzzyTextMatch.matches(query: query, candidate: $0.name) })
+        case .people(let rows):
+            .people(rows.filter { FuzzyTextMatch.matches(query: query, candidate: $0.name) })
+        }
+    }
+
+    /// Close matches first. Inside each group, the higher popularity stays first.
+    private func ranked(_ listing: SearchListing, query: String) -> SearchListing {
+        switch listing {
+        case .movies(let rows):
+            .movies(rows.sorted {
+                comesBefore($0.title, $0.popularity, $1.title, $1.popularity, query: query)
+            })
+        case .tv(let rows):
+            .tv(rows.sorted {
+                comesBefore($0.name, $0.popularity, $1.name, $1.popularity, query: query)
+            })
+        case .people(let rows):
+            .people(rows.sorted {
+                comesBefore($0.name, $0.popularity, $1.name, $1.popularity, query: query)
+            })
+        }
+    }
+
+    private func comesBefore(
+        _ lhsName: String,
+        _ lhsPopularity: Double,
+        _ rhsName: String,
+        _ rhsPopularity: Double,
+        query: String
+    ) -> Bool {
+        let lhsMatch = FuzzyTextMatch.matches(query: query, candidate: lhsName)
+        let rhsMatch = FuzzyTextMatch.matches(query: query, candidate: rhsName)
+        if lhsMatch != rhsMatch { return lhsMatch }
+        return lhsPopularity > rhsPopularity
     }
 
     private func fetch(scope: SearchScope, query: String, page: Int) async throws -> FetchedPage {

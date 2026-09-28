@@ -316,6 +316,57 @@ final class SearchViewModelTests: XCTestCase {
         XCTAssertEqual(rows.map(\.title), ["Spider-Man: Brand New Day", "SPI"])
     }
 
+    func test_peopleSearch_misspelledName_includesTheClosePerson() async {
+        let client = RoutingHTTPClient(routes: [
+            "query=Christopher Waltz": .success(peoplePage(id: 1, name: "Christopher Walsh", popularity: 500)),
+            "query=christopher": .success(peoplePage()),
+            "query=waltz": .success(peoplePage(id: 27319, name: "Christoph Waltz", popularity: 1)),
+        ])
+        let viewModel = SearchViewModel(
+            movies: MovieRepository.test(client: client),
+            shows: TVRepository.test(client: client),
+            people: PersonRepository.test(client: client),
+            annotations: AnnotationsRepository.empty(),
+            sleeper: NoopSleeper()
+        )
+        viewModel.scope = .people
+        viewModel.query = "Christopher Waltz"
+
+        await viewModel.submit()
+
+        guard case .loaded(.people(let rows), _) = viewModel.state else {
+            return XCTFail("Expected people, got \(viewModel.state)")
+        }
+        XCTAssertEqual(rows.map(\.name), ["Christoph Waltz", "Christopher Walsh"])
+        let queries = await client.requests.compactMap(queryValue)
+        XCTAssertEqual(queries.first, "Christopher Waltz")
+        XCTAssertEqual(Set(queries.dropFirst()), ["christopher", "waltz"])
+    }
+
+    func test_peopleSearch_whenThePageAlreadyMatches_doesNotSearchTokens() async {
+        let client = RecordingHTTPClient(
+            stub: .success(peoplePage(id: 27319, name: "Christoph Waltz", popularity: 10))
+        )
+        let viewModel = SearchViewModel(
+            movies: MovieRepository.test(client: client),
+            shows: TVRepository.test(client: client),
+            people: PersonRepository.test(client: client),
+            annotations: AnnotationsRepository.empty(),
+            sleeper: NoopSleeper()
+        )
+        viewModel.scope = .people
+        viewModel.query = "Christopher Waltz"
+
+        await viewModel.submit()
+
+        let requestCount = await client.requestCount
+        XCTAssertEqual(requestCount, 1)
+        guard case .loaded(.people(let rows), _) = viewModel.state else {
+            return XCTFail("Expected people, got \(viewModel.state)")
+        }
+        XCTAssertEqual(rows.map(\.name), ["Christoph Waltz"])
+    }
+
     func test_search_genreUsesDiscoverSortedByPopularity() async throws {
         let client = RoutingHTTPClient(routes: [
             "discover/movie": .success(TMDBFixtures.topMoviesPage1),
@@ -349,6 +400,30 @@ final class SearchViewModelTests: XCTestCase {
         let viewModel = makeViewModel(routes: [:])
         viewModel.setFieldFocused(true)
         XCTAssertEqual(viewModel.emptyMessage, "Type a name or genre")
+    }
+
+    private func peoplePage(id: Int = 0, name: String? = nil, popularity: Double = 0) -> Data {
+        let results: String
+        if let name {
+            results = """
+            {"id": \(id), "name": "\(name)", "profile_path": null, "known_for_department": "Acting", "popularity": \(popularity)}
+            """
+        } else {
+            results = ""
+        }
+        return Data(
+            """
+            {"page": 1, "total_pages": 1, "results": [\(results)]}
+            """.utf8
+        )
+    }
+
+    private func queryValue(_ request: URLRequest) -> String? {
+        guard let url = request.url else { return nil }
+        return URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?
+            .first { $0.name == "query" }?
+            .value
     }
 
     private func queryItems(_ client: RecordingHTTPClient) async -> [URLQueryItem] {
