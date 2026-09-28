@@ -32,7 +32,7 @@ actor FileAnnotationsStore: AnnotationsStore {
     }
 
     static func applicationSupportURL(fileName: String = "annotations.json") throws -> URL {
-        try FileFavoritesStore.applicationSupportURL(fileName: fileName)
+        try AppSupportDirectory.fileURL(fileName: fileName)
     }
 
     func load() async throws -> [MediaAnnotation] {

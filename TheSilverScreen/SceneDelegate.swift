@@ -32,21 +32,21 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 dependencies.router.restore(snapshot)
             }
             appRouter = dependencies.router
-            let favoritesListViewModel = FavoritesListViewModel(
-                favorites: dependencies.favorites,
-                annotations: dependencies.annotations
-            )
-            Task { try? await dependencies.favorites.loadIndex() }
+            let libraryHomeViewModel = LibraryHomeViewModel(lists: dependencies.lists)
+            Task { try? await dependencies.lists.loadIndex() }
+            Task { await dependencies.awards.prepare() }
             let root = RootTabView(
                 router: dependencies.router,
                 movies: dependencies.movies,
                 shows: dependencies.shows,
                 people: dependencies.people,
-                favorites: dependencies.favorites,
-                favoritesIndex: dependencies.favoritesIndex,
+                lists: dependencies.lists,
+                listsIndex: dependencies.listsIndex,
+                listChanges: dependencies.listChanges,
                 annotations: dependencies.annotations,
+                awards: dependencies.awards,
                 imageLoader: dependencies.imageLoader,
-                favoritesListViewModel: favoritesListViewModel
+                libraryHomeViewModel: libraryHomeViewModel
             )
             window.rootViewController = UIHostingController(rootView: root)
         } catch {

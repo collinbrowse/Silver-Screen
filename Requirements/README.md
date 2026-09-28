@@ -23,7 +23,7 @@ After that, pick anything you like.
 | [Top Movies](top-movies.md)                       | **Required — do first.** Bug fixes and improvements to the existing Top Ranked Movies list: cell layout, scrolling performance, error handling and sorting. |
 | [Favorites & Bookmarking](favorites.md)           | **Stories 1 & 2 required** (after Top Movies). Bookmark movies/TV/people and browse them in a Favorites tab with filtering and search.                      |
 | [Movie Detail View](movie-detail-view.md)         | Full detail screen for a movie: metadata, image carousel, cast, crew, similar movies, collections, and paginated reviews.                                   |
-| [Tab Bar](tab-bar.md)                             | Browse, Search, and Favorites. Browse holds media, window, and sort on one screen.                                                                          |
+| [Tab Bar](tab-bar.md)                             | Browse, Search, and Library. Browse holds media, window, and sort on one screen.                                                                            |
 | [Now Playing Tab](now-playing-tab.md)             | The Now Playing window on Browse.                                                                                                                           |
 | [Upcoming Tab](upcoming-tab.md)                   | The Upcoming window on Browse.                                                                                                                              |
 | [Search Tab](search-tab.md)                       | Type-ahead movie search with persistent results.                                                                                                            |

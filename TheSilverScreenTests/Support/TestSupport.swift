@@ -95,7 +95,8 @@ enum TestMovies {
         posterPath: String? = nil,
         releaseDate: Date? = nil,
         voteAverage: Double = 8.0,
-        genreIDs: [Int] = []
+        genreIDs: [Int] = [],
+        popularity: Double = 0
     ) -> Movie {
         Movie(
             id: id,
@@ -103,7 +104,8 @@ enum TestMovies {
             posterPath: posterPath,
             releaseDate: releaseDate,
             voteAverage: voteAverage,
-            genreIDs: genreIDs
+            genreIDs: genreIDs,
+            popularity: popularity
         )
     }
 

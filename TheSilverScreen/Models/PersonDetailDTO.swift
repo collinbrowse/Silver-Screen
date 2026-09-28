@@ -30,6 +30,8 @@ struct PersonCombinedCreditDTO: Decodable, Sendable {
     let character: String?
     let job: String?
     let popularity: Double?
+    /// Nil when the combined-credit payload omits `vote_average`.
+    let voteAverage: Double?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -43,6 +45,7 @@ struct PersonCombinedCreditDTO: Decodable, Sendable {
         case character
         case job
         case popularity
+        case voteAverage = "vote_average"
     }
 }
 
@@ -61,6 +64,7 @@ struct PersonDetailDTO: Decodable, Sendable {
     let placeOfBirth: String?
     let profilePath: String?
     let knownForDepartment: String?
+    let popularity: Double?
     let images: PersonImagesDTO?
     let combinedCredits: PersonCombinedCreditsDTO?
     let externalIds: PersonExternalIDsDTO?
@@ -74,6 +78,7 @@ struct PersonDetailDTO: Decodable, Sendable {
         case placeOfBirth = "place_of_birth"
         case profilePath = "profile_path"
         case knownForDepartment = "known_for_department"
+        case popularity
         case images
         case combinedCredits = "combined_credits"
         case externalIds = "external_ids"

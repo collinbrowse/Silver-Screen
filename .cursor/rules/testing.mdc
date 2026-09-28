@@ -13,7 +13,7 @@ alwaysApply: false
 
 ## Fake at the boundary, not at the repository
 
-The seam is `HTTPClient` (and the persistence store for Favorites) — the external boundaries named in [`architecture.mdc`](.cursor/rules/architecture.mdc). Build the **real** repository over a fake client. Do not add a repository protocol to fake one; that would leave DTO mapping and `AppError` translation untested, which is where the bugs actually are.
+The seam is `HTTPClient` (and the persistence store for Library lists) — the external boundaries named in [`architecture.mdc`](.cursor/rules/architecture.mdc). Build the **real** repository over a fake client. Do not add a repository protocol to fake one; that would leave DTO mapping and `AppError` translation untested, which is where the bugs actually are.
 
 ```swift
 @MainActor

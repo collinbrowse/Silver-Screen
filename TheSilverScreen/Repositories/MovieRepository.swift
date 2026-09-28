@@ -295,6 +295,7 @@ final class MovieRepository: Sendable {
             posterPath: dto.posterPath,
             releaseDate: parseReleaseDate(dto.releaseDate ?? ""),
             voteAverage: dto.voteAverage,
+            popularity: dto.popularity ?? 0,
             genres: (dto.genres ?? []).map { MovieGenre(id: $0.id, name: $0.name) },
             trailers: trailers,
             budget: dto.budget ?? 0,

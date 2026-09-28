@@ -23,6 +23,61 @@ struct GenreChipRow: View {
     }
 }
 
+/// Award pills under genres. The trophy says which prize; the label still says "nominee".
+struct AwardChipRow: View {
+    let labels: [AwardPill]
+
+    var body: some View {
+        FlowLayout(spacing: DesignSpacing.sm) {
+            ForEach(labels) { pill in
+                AwardPillChip(pill: pill)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Awards: \(labels.map(\.accessibilityName).joined(separator: ", "))")
+    }
+}
+
+/// Category name with that prize’s trophy on the left. The mark is hidden from VoiceOver.
+private struct AwardPillChip: View {
+    let pill: AwardPill
+    @ScaledMetric(relativeTo: .caption) private var trophyHeight: CGFloat = 22
+
+    var body: some View {
+        HStack(alignment: .center, spacing: DesignSpacing.xs) {
+            AwardTrophy(family: pill.family)
+                .frame(width: trophyHeight * CGFloat(pill.family.trophyAspect), height: trophyHeight)
+            Text(pill.title)
+                .font(DesignTypography.chip)
+                .foregroundStyle(DesignTheme.textPrimary)
+                .multilineTextAlignment(.leading)
+        }
+        .padding(.leading, DesignSpacing.sm)
+        .padding(.trailing, DesignSpacing.md)
+        .padding(.vertical, DesignSpacing.xs + 2)
+        .background(DesignTheme.surface)
+        .clipShape(Capsule())
+        .overlay(
+            Capsule()
+                .strokeBorder(DesignTheme.separator.opacity(0.35), lineWidth: 0.5)
+        )
+        .accessibilityHidden(true)
+    }
+}
+
+/// Picture of this prize’s trophy. Hidden from VoiceOver; the label names the prize.
+struct AwardTrophy: View {
+    let family: AwardFamily
+
+    var body: some View {
+        Image(family.trophyImage)
+            .resizable()
+            .scaledToFit()
+            .accessibilityHidden(true)
+    }
+}
+
 /// Play control in the genre-pill shape. The triangle becomes a spinner while that trailer is opening.
 struct TrailerChip: View {
     let title: String
@@ -45,6 +100,8 @@ struct TrailerChip: View {
                 }
                 Text(title)
                     .multilineTextAlignment(.leading)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .font(DesignTypography.chip)

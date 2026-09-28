@@ -78,7 +78,7 @@ final class MovieListViewModel {
 - No protocol per type, and no protocol wrapping a single concrete struct.
 - Prefer several small types with one reason to change over one type with mode flags.
 
-Concretely, this app has three protocols and no others: `HTTPClient` (network), the Favorites persistence store (disk), and `AppLogging`. **Repositories and view models are concrete types.** There is no `MovieRepositoryProtocol`, and tests do not fake a repository — see [`testing.mdc`](.cursor/rules/testing.mdc).
+Concretely, this app has three protocols and no others: `HTTPClient` (network), the Library lists store (disk), and `AppLogging`. **Repositories and view models are concrete types.** There is no `MovieRepositoryProtocol`, and tests do not fake a repository — see [`testing.mdc`](.cursor/rules/testing.mdc).
 
 ## Target toolchain
 

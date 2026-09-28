@@ -61,10 +61,14 @@ final class SearchViewModel {
     /// True while the field is focused and empty, so the view can show a dismissible placeholder.
     private(set) var showsFocusedPlaceholder = false
 
+    /// Fixed search-home cards. Empty, unfocused search shows these instead of popular lists.
+    var shelves: [AwardShelf] { AwardShelf.home }
+
     private let movies: MovieRepository
     private let shows: TVRepository
     private let people: PersonRepository
     private let annotations: AnnotationsRepository
+    private let awards: AwardsRepository
     private let sleeper: any Sleeper
     private let locale: Locale
 
@@ -82,6 +86,7 @@ final class SearchViewModel {
         shows: TVRepository,
         people: PersonRepository,
         annotations: AnnotationsRepository,
+        awards: AwardsRepository = AwardsRepository(catalog: .empty),
         sleeper: any Sleeper = TaskSleeper(),
         locale: Locale = .current
     ) {
@@ -89,33 +94,53 @@ final class SearchViewModel {
         self.shows = shows
         self.people = people
         self.annotations = annotations
+        self.awards = awards
         self.sleeper = sleeper
         self.locale = locale
     }
 
+    /// Shelves stay up while the field is empty and not showing the focused placeholder.
+    var showsAwardShelves: Bool {
+        trimmedQuery.isEmpty && !showsFocusedPlaceholder
+    }
+
+    /// The Movies / TV / People control stays hidden until there is a query.
+    var showsScopePicker: Bool {
+        !trimmedQuery.isEmpty && !showsFocusedPlaceholder
+    }
+
     var emptyTitle: String {
         if showsFocusedPlaceholder { return "Search" }
-        return trimmedQuery.isEmpty ? "Nothing Popular" : "No Results"
+        return "No Results"
     }
 
     var emptyMessage: String {
         if showsFocusedPlaceholder {
             return "Type a name or genre"
         }
-        if trimmedQuery.isEmpty {
-            return "Nothing popular is listed for \(scope.title) right now."
-        }
         return "No \(scope.title.lowercased()) matches \"\(trimmedQuery)\"."
     }
 
     func load() async {
         guard case .idle = state else { return }
-        await showCachedOrFetch(scope: scope, query: "")
+        state = .empty
+        await awards.prepare()
     }
 
     /// Debounced type-ahead. A newer change cancels the wait already in flight.
+    /// Clearing the field returns to shelves, or the focused placeholder, without waiting.
     func scheduleQueryChange() {
         debounceTask?.cancel()
+        if trimmedQuery.isEmpty {
+            queryGeneration += 1
+            debounceTask = nil
+            if fieldIsPresented {
+                presentFocusedPlaceholder()
+            } else {
+                showShelves()
+            }
+            return
+        }
         debounceTask = Task { await self.commitQueryChange() }
     }
 
@@ -149,7 +174,7 @@ final class SearchViewModel {
                 presentFocusedPlaceholder()
                 return
             }
-            await showCachedOrFetch(scope: scope, query: "")
+            showShelves()
             return
         }
         await showCachedOrFetch(scope: scope, query: requested)
@@ -158,6 +183,14 @@ final class SearchViewModel {
     /// Segment changes keep the query and show that segment's pages for this text.
     func reloadForScopeChange() async {
         queryGeneration += 1
+        if trimmedQuery.isEmpty {
+            if fieldIsPresented {
+                presentFocusedPlaceholder()
+            } else {
+                showShelves()
+            }
+            return
+        }
         await showCachedOrFetch(scope: scope, query: trimmedQuery)
     }
 
@@ -174,6 +207,11 @@ final class SearchViewModel {
 
     func restoreAfterDismiss() {
         showsFocusedPlaceholder = false
+        if trimmedQuery.isEmpty {
+            stashed = nil
+            showShelves()
+            return
+        }
         if let stashed {
             state = stashed
             self.stashed = nil
@@ -193,6 +231,10 @@ final class SearchViewModel {
     }
 
     func refresh() async {
+        if showsAwardShelves {
+            await awards.prepare()
+            return
+        }
         caches[scope]?[activeKey] = nil
         await showCachedOrFetch(scope: scope, query: activeKey, keepingVisible: true)
     }
@@ -206,7 +248,7 @@ final class SearchViewModel {
         state = .loaded(stamped, activity: activity)
     }
 
-    func noteFavoriteSaveFailed() {
+    func noteListSaveFailed() {
         guard case .loaded(let listing, _) = state else { return }
         state = .loaded(listing, activity: .failed(.persistence))
     }
@@ -214,7 +256,7 @@ final class SearchViewModel {
     /// Fetches the next page for the query and segment already on screen.
     /// Concurrent calls are ignored; failures stay on `.loaded`.
     func loadMore() async {
-        guard hasMore, !isPaging, !showsFocusedPlaceholder else { return }
+        guard hasMore, !isPaging, !showsFocusedPlaceholder, !showsAwardShelves else { return }
         guard case .loaded(let current, let activity) = state, activity == .none else { return }
         guard var bucket = caches[scope]?[activeKey] else { return }
 
@@ -255,6 +297,17 @@ final class SearchViewModel {
 
     private var trimmedQuery: String {
         query.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Empty, unfocused search. Does not request popular movies, TV, or people.
+    private func showShelves() {
+        stashed = nil
+        showsFocusedPlaceholder = false
+        cancelRequest()
+        activeKey = ""
+        committedQuery = ""
+        hasMore = false
+        state = .empty
     }
 
     /// Hides the list until the field is dismissed. The list underneath is kept for that tap.
@@ -355,37 +408,28 @@ final class SearchViewModel {
         switch scope {
         case .movies:
             let genres = SearchGenreMatch.movieGenreIDs(matching: query)
-            let result = query.isEmpty
-                ? try await movies.popular(page: page, locale: locale)
-                : genres.isEmpty
+            let result = genres.isEmpty
                     ? try await movies.searchMovies(query: query, page: page, locale: locale)
                     : try await movies.movies(inGenres: genres, page: page, locale: locale)
-            let ordered = query.isEmpty ? result.movies : result.movies.sorted { $0.popularity > $1.popularity }
             return FetchedPage(
-                listing: .movies(ordered.map(CatalogMovieRow.init)),
+                listing: .movies(result.movies.sorted { $0.popularity > $1.popularity }.map(CatalogMovieRow.init)),
                 page: result.page,
                 hasMore: result.hasMore
             )
         case .tv:
             let genres = SearchGenreMatch.tvGenreIDs(matching: query)
-            let result = query.isEmpty
-                ? try await shows.popular(page: page, locale: locale)
-                : genres.isEmpty
+            let result = genres.isEmpty
                     ? try await shows.search(query: query, page: page, locale: locale)
                     : try await shows.series(inGenres: genres, page: page, locale: locale)
-            let ordered = query.isEmpty ? result.series : result.series.sorted { $0.popularity > $1.popularity }
             return FetchedPage(
-                listing: .tv(ordered.map(CatalogTVRow.init)),
+                listing: .tv(result.series.sorted { $0.popularity > $1.popularity }.map(CatalogTVRow.init)),
                 page: result.page,
                 hasMore: result.hasMore
             )
         case .people:
-            let result = query.isEmpty
-                ? try await people.popular(page: page, locale: locale)
-                : try await people.search(query: query, page: page, locale: locale)
-            let ordered = query.isEmpty ? result.people : result.people.sorted { $0.popularity > $1.popularity }
+            let result = try await people.search(query: query, page: page, locale: locale)
             return FetchedPage(
-                listing: .people(ordered.map(CatalogPersonRow.init)),
+                listing: .people(result.people.sorted { $0.popularity > $1.popularity }.map(CatalogPersonRow.init)),
                 page: result.page,
                 hasMore: result.hasMore
             )

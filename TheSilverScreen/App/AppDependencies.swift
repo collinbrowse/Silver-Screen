@@ -10,9 +10,11 @@ struct AppDependencies {
     let movies: MovieRepository
     let shows: TVRepository
     let people: PersonRepository
-    let favorites: FavoritesRepository
-    let favoritesIndex: FavoritesIndex
+    let lists: ListsRepository
+    let listsIndex: ListsIndex
+    let listChanges: ListChangeNotice
     let annotations: AnnotationsRepository
+    let awards: AwardsRepository
     let imageLoader: ImageLoader
     let router: AppRouter
     let logger: any AppLogging
@@ -36,28 +38,36 @@ struct AppDependencies {
             apiKey: apiKey,
             logger: logger
         )
-        let favoritesStoreURL = try FileFavoritesStore.applicationSupportURL()
-        let favoritesStore = FileFavoritesStore(fileURL: favoritesStoreURL)
-        let favoritesIndex = FavoritesIndex()
-        let favorites = FavoritesRepository(
-            store: favoritesStore,
+        let listsStoreURL = try FileListsStore.applicationSupportURL()
+        let listsIndex = ListsIndex()
+        let lists = ListsRepository(
+            store: FileListsStore(fileURL: listsStoreURL),
             logger: logger,
-            index: favoritesIndex
+            index: listsIndex
         )
+        let listChanges = ListChangeNotice()
         let annotationsStoreURL = try FileAnnotationsStore.applicationSupportURL()
         let annotations = AnnotationsRepository(
             store: FileAnnotationsStore(fileURL: annotationsStoreURL),
             logger: logger
         )
         let imageLoader = ImageLoader(client: URLSessionHTTPClient.images(), logger: logger)
+        let awards = AwardsRepository(
+            client: httpClient,
+            bundleURL: Bundle.main.url(forResource: "AwardsCatalog", withExtension: "json"),
+            cacheURL: try AwardsRepository.cacheURL(),
+            logger: logger
+        )
         let router = AppRouter()
         return AppDependencies(
             movies: movies,
             shows: shows,
             people: people,
-            favorites: favorites,
-            favoritesIndex: favoritesIndex,
+            lists: lists,
+            listsIndex: listsIndex,
+            listChanges: listChanges,
             annotations: annotations,
+            awards: awards,
             imageLoader: imageLoader,
             router: router,
             logger: logger

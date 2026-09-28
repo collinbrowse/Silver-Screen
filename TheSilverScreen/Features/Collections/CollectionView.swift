@@ -8,8 +8,8 @@ import SwiftUI
 struct CollectionView: View {
     @Bindable var viewModel: CollectionViewModel
     let imageLoader: ImageLoader
-    let favorites: FavoritesRepository
-    let favoritesIndex: FavoritesIndex
+    let lists: ListsRepository
+    let listsIndex: ListsIndex
     var router: NavigationRouter?
 
     var body: some View {
@@ -101,11 +101,12 @@ struct CollectionView: View {
                                 )
                             }
                             .buttonStyle(.plain)
-                            CellFavoriteStar(
-                                name: row.title,
-                                isFavorite: favoritesIndex.contains(row.id, kind: .movie)
+                            ListMembershipButton(
+                                draft: row.listItem(),
+                                lists: lists,
+                                index: listsIndex
                             ) {
-                                Task { try? await favorites.toggle(movie: row.asMovie()) }
+                                viewModel.noteListSaveFailed()
                             }
                         }
                     }

@@ -31,33 +31,8 @@ struct PersonCredit: Sendable, Identifiable, Equatable, Hashable {
     let roleLabel: String
     /// TMDB popularity used to order credits (most notable first).
     let popularity: Double
-
-    /// Domain movie used when favoriting from an Acting/Crew carousel cell.
-    /// Only valid for `.movie` credits.
-    func asMovie(voteAverage: Double = 0) -> Movie {
-        precondition(mediaType == .movie, "asMovie() requires a movie credit")
-        return Movie(
-            id: mediaID,
-            title: title,
-            posterPath: posterPath,
-            releaseDate: releaseDate,
-            voteAverage: voteAverage,
-            genreIDs: genreIDs
-        )
-    }
-
-    /// Snapshot used when favoriting a TV series from an Acting/Crew carousel cell.
-    /// Only valid for `.tv` credits.
-    func asFavoriteTVSeries() -> FavoriteTVSeries {
-        precondition(mediaType == .tv, "asFavoriteTVSeries() requires a TV credit")
-        return FavoriteTVSeries(
-            id: mediaID,
-            name: title,
-            posterPath: posterPath,
-            releaseDate: releaseDate,
-            genreIDs: genreIDs
-        )
-    }
+    /// TMDB user score copied onto a list entry. Zero when the payload omitted it.
+    let voteAverage: Double
 }
 
 /// Person detail returned by TMDB `person/{id}` with appended credits, images, and external ids.
@@ -76,14 +51,6 @@ struct PersonDetail: Sendable, Identifiable, Equatable, Hashable {
     let castCredits: [PersonCredit]
     /// Crew credits sorted by popularity descending (jobs merged per title).
     let crewCredits: [PersonCredit]
-
-    /// Snapshot used when toggling favorites from the person screen.
-    func asFavoritePerson() -> FavoritePerson {
-        FavoritePerson(
-            id: id,
-            name: name,
-            profilePath: profilePath,
-            knownForDepartment: knownForDepartment
-        )
-    }
+    /// TMDB popularity copied onto a people-list entry. Zero when the payload omitted it.
+    let popularity: Double
 }

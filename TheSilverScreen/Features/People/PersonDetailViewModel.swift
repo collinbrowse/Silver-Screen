@@ -39,12 +39,10 @@ final class PersonDetailViewModel {
 
     private let personID: Int
     private let people: PersonRepository
-    private let favorites: FavoritesRepository
 
-    init(personID: Int, people: PersonRepository, favorites: FavoritesRepository) {
+    init(personID: Int, people: PersonRepository) {
         self.personID = personID
         self.people = people
-        self.favorites = favorites
     }
 
     func load() async {
@@ -67,51 +65,9 @@ final class PersonDetailViewModel {
         await load()
     }
 
-    func toggleFavorite() async {
+    func noteListSaveFailed() {
         guard case .loaded(let content, _) = state else { return }
-
-        do {
-            try await favorites.toggle(person: content.detail.asFavoritePerson())
-            state = .loaded(content, activity: .none)
-        } catch is CancellationError {
-            return
-        } catch let error as AppError {
-            state = .loaded(content, activity: .failed(error))
-        } catch {
-            state = .loaded(content, activity: .failed(.unknown))
-        }
-    }
-
-    /// Favorites or unfavorites a movie from an Acting/Crew card without changing person favorite state.
-    func toggleFavorite(movie: Movie) async {
-        guard case .loaded(let content, _) = state else { return }
-
-        do {
-            try await favorites.toggle(movie: movie)
-            state = .loaded(content, activity: .none)
-        } catch is CancellationError {
-            return
-        } catch let error as AppError {
-            state = .loaded(content, activity: .failed(error))
-        } catch {
-            state = .loaded(content, activity: .failed(.unknown))
-        }
-    }
-
-    /// Favorites or unfavorites a TV series from an Acting/Crew card without changing person favorite state.
-    func toggleFavorite(tv: FavoriteTVSeries) async {
-        guard case .loaded(let content, _) = state else { return }
-
-        do {
-            try await favorites.toggle(tv: tv)
-            state = .loaded(content, activity: .none)
-        } catch is CancellationError {
-            return
-        } catch let error as AppError {
-            state = .loaded(content, activity: .failed(error))
-        } catch {
-            state = .loaded(content, activity: .failed(.unknown))
-        }
+        state = .loaded(content, activity: .failed(.persistence))
     }
 
     func openImages(initialID: String) {

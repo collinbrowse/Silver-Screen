@@ -5,10 +5,10 @@
 
 import Foundation
 
-/// Tabs on the bar. An unrecognized stored value restores Browse.
+/// Tabs on the bar. A stored `favorites` value still opens Library.
 enum AppTab: Hashable, Sendable {
     case browse
-    case favorites
+    case library
     case search
 }
 
@@ -17,8 +17,8 @@ extension AppTab: Codable {
         let container = try decoder.singleValueContainer()
         let raw = (try? container.decode(String.self)) ?? ""
         switch raw {
-        case "favorites":
-            self = .favorites
+        case "favorites", "library":
+            self = .library
         case "search":
             self = .search
         case "browse":
@@ -33,8 +33,8 @@ extension AppTab: Codable {
         switch self {
         case .browse:
             try container.encode("browse")
-        case .favorites:
-            try container.encode("favorites")
+        case .library:
+            try container.encode("library")
         case .search:
             try container.encode("search")
         }
@@ -49,4 +49,8 @@ enum Route: Hashable, Sendable, Codable {
     case tvSeries(id: Int)
     case tvSeason(seriesID: Int, seriesName: String, seasonNumber: Int)
     case tvEpisode(seriesID: Int, seriesName: String, seasonNumber: Int, episodeNumber: Int)
+    /// One library list. The id is the list's stable UUID.
+    case libraryList(id: UUID)
+    case awardFamily(AwardFamily)
+    case awardTitles(AwardTitleRequest)
 }

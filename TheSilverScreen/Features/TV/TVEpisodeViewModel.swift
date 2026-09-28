@@ -41,25 +41,30 @@ struct TVEpisodeContent: Sendable, Equatable {
 @MainActor
 final class TVEpisodeViewModel {
     private(set) var state: LoadState<TVEpisodeContent> = .idle
+    /// Win pills, or up to three nomination pills when this episode has no wins.
+    private(set) var awardLabels: [AwardPill] = []
 
     private let seriesID: Int
     private let seasonNumber: Int
     private let episodeNumber: Int
     private let shows: TVRepository
     private let annotations: AnnotationsRepository
+    private let awards: AwardsRepository
 
     init(
         seriesID: Int,
         seasonNumber: Int,
         episodeNumber: Int,
         shows: TVRepository,
-        annotations: AnnotationsRepository
+        annotations: AnnotationsRepository,
+        awards: AwardsRepository = AwardsRepository(catalog: .empty)
     ) {
         self.seriesID = seriesID
         self.seasonNumber = seasonNumber
         self.episodeNumber = episodeNumber
         self.shows = shows
         self.annotations = annotations
+        self.awards = awards
     }
 
     func load() async {
@@ -74,6 +79,11 @@ final class TVEpisodeViewModel {
             let episode = try await episodeCall
             let others = try await othersCall
             let personal = try await personalDetail()
+            awardLabels = await awards.pillLabels(
+                seriesID: seriesID,
+                seasonNumber: seasonNumber,
+                episodeNumber: episodeNumber
+            )
             state = .loaded(
                 Self.makeContent(episode, otherEpisodes: others, personal: personal.detail),
                 activity: personal.activity
@@ -158,6 +168,10 @@ final class TVEpisodeViewModel {
     private func apply(_ personal: PersonalDetail) {
         guard case .loaded(let content, let activity) = state else { return }
         state = .loaded(content.withPersonal(personal), activity: AnnotationActivity.afterSuccess(activity))
+    }
+
+    func noteListSaveFailed() {
+        markPersistenceFailure()
     }
 
     private func markPersistenceFailure() {

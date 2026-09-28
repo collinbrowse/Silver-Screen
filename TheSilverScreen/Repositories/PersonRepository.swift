@@ -156,7 +156,8 @@ final class PersonRepository: Sendable {
             imdbID: (imdb?.isEmpty == false) ? imdb : nil,
             images: mapProfileImages(dto.images, logger: logger),
             castCredits: mapCastCredits(dto.combinedCredits?.cast, logger: logger),
-            crewCredits: mapCrewCredits(dto.combinedCredits?.crew, logger: logger)
+            crewCredits: mapCrewCredits(dto.combinedCredits?.crew, logger: logger),
+            popularity: dto.popularity ?? 0
         )
     }
 
@@ -210,7 +211,8 @@ final class PersonRepository: Sendable {
                     releaseDate: credit.releaseDate,
                     genreIDs: credit.genreIDs,
                     roleLabel: character,
-                    popularity: credit.popularity
+                    popularity: credit.popularity,
+                    voteAverage: credit.voteAverage
                 )
             )
         }
@@ -252,7 +254,8 @@ final class PersonRepository: Sendable {
                         releaseDate: existing.releaseDate ?? credit.releaseDate,
                         genreIDs: existing.genreIDs.isEmpty ? credit.genreIDs : existing.genreIDs,
                         roleLabel: existing.roleLabel + ", " + job,
-                        popularity: max(existing.popularity, credit.popularity)
+                        popularity: max(existing.popularity, credit.popularity),
+                        voteAverage: max(existing.voteAverage, credit.voteAverage)
                     )
                     byKey[credit.id] = existing
                 }
@@ -300,7 +303,8 @@ final class PersonRepository: Sendable {
             releaseDate: parseDay(dateRaw),
             genreIDs: item.genreIDs ?? [],
             roleLabel: roleOverride ?? "",
-            popularity: item.popularity ?? 0
+            popularity: item.popularity ?? 0,
+            voteAverage: item.voteAverage ?? 0
         )
     }
 

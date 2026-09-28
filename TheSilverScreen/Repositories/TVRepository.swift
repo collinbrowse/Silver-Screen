@@ -386,6 +386,7 @@ final class TVRepository: Sendable {
             genres: (dto.genres ?? []).map { MovieGenre(id: $0.id, name: $0.name) },
             trailers: trailers,
             voteAverage: dto.voteAverage ?? 0,
+            popularity: dto.popularity ?? 0,
             creators: creators,
             images: images,
             seasons: seasons,
