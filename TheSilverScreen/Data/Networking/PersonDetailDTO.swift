@@ -32,6 +32,12 @@ struct PersonCombinedCreditDTO: Decodable, Sendable {
     let popularity: Double?
     /// Nil when the combined-credit payload omits `vote_average`.
     let voteAverage: Double?
+    /// Call-sheet position. Zero is top billed. Nil when the payload omits it, which is common for TV.
+    let order: Int?
+    /// How many people rated the title. Nil when the payload omits `vote_count`.
+    let voteCount: Int?
+    /// Episodes this person appeared in. TV credits only.
+    let episodeCount: Int?
 
     enum CodingKeys: String, CodingKey {
         case id
@@ -46,6 +52,9 @@ struct PersonCombinedCreditDTO: Decodable, Sendable {
         case job
         case popularity
         case voteAverage = "vote_average"
+        case order
+        case voteCount = "vote_count"
+        case episodeCount = "episode_count"
     }
 }
 
