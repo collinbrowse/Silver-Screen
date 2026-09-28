@@ -240,12 +240,15 @@ final class PersonRepository: Sendable {
                 skipped += 1
                 continue
             }
-            guard let credit = mapCredit(item, roleOverride: job, logger: logger) else {
+            let department = item.department?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let creditJob = PersonCreditJob(department: department, job: job)
+            guard let credit = mapCredit(item, roleOverride: job, jobs: [creditJob], logger: logger) else {
                 skipped += 1
                 continue
             }
             if var existing = byKey[credit.id] {
-                if !existing.roleLabel.split(separator: ", ").map(String.init).contains(job) {
+                if !existing.jobs.contains(where: { $0.job == job }) {
+                    let jobs = existing.jobs + [creditJob]
                     existing = PersonCredit(
                         mediaType: existing.mediaType,
                         mediaID: existing.mediaID,
@@ -253,7 +256,8 @@ final class PersonRepository: Sendable {
                         posterPath: existing.posterPath ?? credit.posterPath,
                         releaseDate: existing.releaseDate ?? credit.releaseDate,
                         genreIDs: existing.genreIDs.isEmpty ? credit.genreIDs : existing.genreIDs,
-                        roleLabel: existing.roleLabel + ", " + job,
+                        roleLabel: jobs.map(\.job).joined(separator: ", "),
+                        jobs: jobs,
                         popularity: max(existing.popularity, credit.popularity),
                         voteAverage: max(existing.voteAverage, credit.voteAverage)
                     )
@@ -277,6 +281,7 @@ final class PersonRepository: Sendable {
     private static func mapCredit(
         _ item: PersonCombinedCreditDTO,
         roleOverride: String?,
+        jobs: [PersonCreditJob] = [],
         logger: any AppLogging
     ) -> PersonCredit? {
         guard let mediaType = parseMediaType(item.mediaType) else { return nil }
@@ -303,6 +308,7 @@ final class PersonRepository: Sendable {
             releaseDate: parseDay(dateRaw),
             genreIDs: item.genreIDs ?? [],
             roleLabel: roleOverride ?? "",
+            jobs: jobs,
             popularity: item.popularity ?? 0,
             voteAverage: item.voteAverage ?? 0
         )

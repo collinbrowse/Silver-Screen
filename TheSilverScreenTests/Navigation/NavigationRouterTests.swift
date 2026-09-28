@@ -73,6 +73,32 @@ final class NavigationRouterTests: XCTestCase {
         XCTAssertEqual(decoded, snapshot)
     }
 
+    func test_routerSnapshot_decodesLegacyCreditDepartmentStrings() throws {
+        let json = """
+        {
+          "selectedTab": "library",
+          "browsePath": [],
+          "favoritesPath": [
+            {
+              "personCredits": {
+                "personID": 5,
+                "personName": "Tim Robbins",
+                "department": "crew"
+              }
+            }
+          ],
+          "searchPath": []
+        }
+        """.data(using: .utf8)!
+
+        let decoded = try JSONDecoder().decode(RouterSnapshot.self, from: json)
+
+        XCTAssertEqual(
+            decoded.favoritesPath,
+            [.personCredits(personID: 5, personName: "Tim Robbins", department: .crew)]
+        )
+    }
+
     func test_appRouter_snapshot_reflectsTabAndPaths() {
         let router = AppRouter()
         router.selectedTab = .library
