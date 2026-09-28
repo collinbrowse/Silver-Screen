@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild TheSilverScreen/Resources/AwardsCatalog.json from Wikidata.
+"""Rebuild TheSilverScreen/Data/Resources/AwardsCatalog.json from Wikidata.
 
 Queries one award family at a time. A failed query exits before the file is
 replaced, so a timeout cannot wipe the catalog. Already-resolved TMDB ids are
@@ -245,7 +245,7 @@ Weekly rebuild of the bundled awards catalog from Wikidata. This pull request ex
 
 ## Decision Tree and Rationale
 
-The Monday workflow rebuilds `TheSilverScreen/Resources/AwardsCatalog.json` and opens a pull request only when credits change. A quiet week leaves main alone. Already-resolved TMDB ids stay in the file so later runs do not call `/find` for the whole history. `GITHUB_TOKEN` does not trigger the CI workflow on this pull request, so the review is the check.
+The Monday workflow rebuilds `TheSilverScreen/Data/Resources/AwardsCatalog.json` and opens a pull request only when credits change. A quiet week leaves main alone. Already-resolved TMDB ids stay in the file so later runs do not call `/find` for the whole history. `GITHUB_TOKEN` does not trigger the CI workflow on this pull request, so the review is the check.
 
 ## Test Plan
 
@@ -378,7 +378,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--output",
-        default="TheSilverScreen/Resources/AwardsCatalog.json",
+        default="TheSilverScreen/Data/Resources/AwardsCatalog.json",
     )
     parser.add_argument("--summary-out")
     args = parser.parse_args(argv)

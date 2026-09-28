@@ -65,9 +65,7 @@ def check_rules(problems: list[str]) -> None:
 
         print(f"  ok  {os.path.basename(path):22} alwaysApply={str(always).lower()}")
 
-        # Pending globs are expected: swiftui.mdc and images.mdc point at
-        # TheSilverScreen/Features/, which arrives with the first SwiftUI story. Surfaced
-        # so a genuine typo is visible, but not fatal.
+        # A glob that matches nothing is printed so a typo is visible, but not fatal.
         for pattern in globs:
             if not glob.glob(pattern, recursive=True):
                 print(f"       pending glob `{pattern}` (matches nothing yet)")

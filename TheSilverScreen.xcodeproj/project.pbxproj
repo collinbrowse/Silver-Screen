@@ -47,6 +47,7 @@
 		B10002062788B823003D8011 /* MoviePosterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002072788B823003D8011 /* MoviePosterView.swift */; };
 		B10002082788B823003D8011 /* TagChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002092788B823003D8011 /* TagChip.swift */; };
 		C3A100022788B823003D8011 /* MediaTrailer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A100012788B823003D8011 /* MediaTrailer.swift */; };
+		D1A000032788B823003D8011 /* TMDBTrailerDecoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A000042788B823003D8011 /* TMDBTrailerDecoding.swift */; };
 		C3A100042788B823003D8011 /* MediaMetadataPills.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A100032788B823003D8011 /* MediaMetadataPills.swift */; };
 		C3A100062788B823003D8011 /* TrailerPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A100052788B823003D8011 /* TrailerPlayerView.swift */; };
 		C3A100082788B823003D8011 /* OfficialYouTubeTrailersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A100072788B823003D8011 /* OfficialYouTubeTrailersTests.swift */; };
@@ -204,6 +205,7 @@
 		B10002072788B823003D8011 /* MoviePosterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoviePosterView.swift; sourceTree = "<group>"; };
 		B10002092788B823003D8011 /* TagChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TagChip.swift; sourceTree = "<group>"; };
 		C3A100012788B823003D8011 /* MediaTrailer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaTrailer.swift; sourceTree = "<group>"; };
+		D1A000042788B823003D8011 /* TMDBTrailerDecoding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TMDBTrailerDecoding.swift; sourceTree = "<group>"; };
 		C3A100032788B823003D8011 /* MediaMetadataPills.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaMetadataPills.swift; sourceTree = "<group>"; };
 		C3A100052788B823003D8011 /* TrailerPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrailerPlayerView.swift; sourceTree = "<group>"; };
 		C3A100072788B823003D8011 /* OfficialYouTubeTrailersTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfficialYouTubeTrailersTests.swift; sourceTree = "<group>"; };
@@ -333,8 +335,10 @@
 			isa = PBXGroup;
 			children = (
 				A10000032788B823003D8011 /* FakeHTTPClient.swift */,
+				A10000072788B823003D8011 /* FakeHTTPClientTests.swift */,
 				A10000052788B823003D8011 /* TMDBFixtures.swift */,
 				B10000292788B823003D8011 /* TestSupport.swift */,
+				B10000272788B823003D8011 /* ImageLoaderTests.swift */,
 				C200000B2788B823003D8011 /* InMemoryAnnotationsStore.swift */,
 				L1B000202788B823003D8011 /* InMemoryListsStore.swift */,
 			);
@@ -355,36 +359,27 @@
 			path = Repositories;
 			sourceTree = "<group>";
 		};
-		B10000312788B823003D8011 /* Errors */ = {
+		D1A000012788B823003D8011 /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				C77D45632788C969003D8011 /* Domain */,
+				B10000302788B823003D8011 /* Repositories */,
+				C77D45622788C95A003D8011 /* Networking */,
+				B100010E2788B823003D8011 /* Persistence */,
+				A1A000152788B823003D8011 /* Resources */,
+			);
+			path = Data;
+			sourceTree = "<group>";
+		};
+		D1A000022788B823003D8011 /* Support */ = {
 			isa = PBXGroup;
 			children = (
 				B10000112788B823003D8011 /* AppError.swift */,
-			);
-			path = Errors;
-			sourceTree = "<group>";
-		};
-		B10000322788B823003D8011 /* Logging */ = {
-			isa = PBXGroup;
-			children = (
 				B10000132788B823003D8011 /* AppLogging.swift */,
-			);
-			path = Logging;
-			sourceTree = "<group>";
-		};
-		B10000332788B823003D8011 /* State */ = {
-			isa = PBXGroup;
-			children = (
 				B10000152788B823003D8011 /* LoadState.swift */,
-			);
-			path = State;
-			sourceTree = "<group>";
-		};
-		B10000342788B823003D8011 /* ImageLoading */ = {
-			isa = PBXGroup;
-			children = (
 				B10000212788B823003D8011 /* ImageLoader.swift */,
 			);
-			path = ImageLoading;
+			path = Support;
 			sourceTree = "<group>";
 		};
 		B100010E2788B823003D8011 /* Persistence */ = {
@@ -399,7 +394,7 @@
 			path = Persistence;
 			sourceTree = "<group>";
 		};
-		B10001142788B823003D8011 /* Features */ = {
+		B10001142788B823003D8011 /* Screens */ = {
 			isa = PBXGroup;
 			children = (
 				F10000092788B823003D8011 /* Browse */,
@@ -411,7 +406,7 @@
 				B10002162788B823003D8011 /* MovieDetail */,
 				B10003142788B823003D8011 /* People */,
 			);
-			path = Features;
+			path = Screens;
 			sourceTree = "<group>";
 		};
 		B10001152788B823003D8011 /* Shared */ = {
@@ -420,7 +415,6 @@
 				E2A000282788B823003D8011 /* CatalogRowView.swift */,
 				C3A100052788B823003D8011 /* TrailerPlayerView.swift */,
 				E2A0002A2788B823003D8011 /* ReviewCard.swift */,
-				B10002172788B823003D8011 /* DesignSystem */,
 				B100012D2788B823003D8011 /* EmptyStateView.swift */,
 				L1B000102788B823003D8011 /* ListMembershipButton.swift */,
 				L1B000122788B823003D8011 /* ListChangeNotice.swift */,
@@ -442,6 +436,8 @@
 		B10001412788B823003D8011 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				C77D45312788B821003D8011 /* AppDelegate.swift */,
+				C77D45332788B821003D8011 /* SceneDelegate.swift */,
 				B10001272788B823003D8011 /* AppDependencies.swift */,
 				B10001292788B823003D8011 /* RootTabView.swift */,
 				B10002112788B823003D8011 /* AppRouteDestination.swift */,
@@ -471,9 +467,11 @@
 			path = MovieDetail;
 			sourceTree = "<group>";
 		};
-		B10002172788B823003D8011 /* DesignSystem */ = {
+		B10002172788B823003D8011 /* Design */ = {
 			isa = PBXGroup;
 			children = (
+				E2A000022788B823003D8011 /* DisplayDate.swift */,
+				F20000022788B823003D8011 /* TMDBRating.swift */,
 				B10002492788B823003D8011 /* DetailCarousel.swift */,
 				B100024B2788B823003D8011 /* RemoteImageView.swift */,
 				B10002052788B823003D8011 /* DesignTokens.swift */,
@@ -486,7 +484,7 @@
 				B10002212788B823003D8011 /* FlowLayout.swift */,
 				B10003132788B823003D8011 /* SectionHeader.swift */,
 			);
-			path = DesignSystem;
+			path = Design;
 			sourceTree = "<group>";
 		};
 		B10003142788B823003D8011 /* People */ = {
@@ -526,21 +524,13 @@
 		C77D45302788B821003D8011 /* TheSilverScreen */ = {
 			isa = PBXGroup;
 			children = (
-				C77D45632788C969003D8011 /* Models */,
-				C77D45622788C95A003D8011 /* Networking */,
-				B10000302788B823003D8011 /* Repositories */,
-				B100010E2788B823003D8011 /* Persistence */,
-				B10000312788B823003D8011 /* Errors */,
-				B10000322788B823003D8011 /* Logging */,
-				B10000332788B823003D8011 /* State */,
-				B10000342788B823003D8011 /* ImageLoading */,
-				B10001142788B823003D8011 /* Features */,
-				B10001402788B823003D8011 /* Navigation */,
 				B10001412788B823003D8011 /* App */,
-				C77D45312788B821003D8011 /* AppDelegate.swift */,
-				C77D45332788B821003D8011 /* SceneDelegate.swift */,
+				B10001142788B823003D8011 /* Screens */,
+				B10002172788B823003D8011 /* Design */,
+				B10001402788B823003D8011 /* Navigation */,
+				D1A000012788B823003D8011 /* Data */,
+				D1A000022788B823003D8011 /* Support */,
 				C77D453A2788B822003D8011 /* Assets.xcassets */,
-				A1A000152788B823003D8011 /* Resources */,
 				C77D453C2788B822003D8011 /* LaunchScreen.storyboard */,
 				C77D453F2788B822003D8011 /* Info.plist */,
 			);
@@ -555,32 +545,54 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
-		C77D45472788B823003D8011 /* TheSilverScreenTests */ = {
+		T1A000012788B823003D8011 /* Screens */ = {
 			isa = PBXGroup;
 			children = (
 				F100000B2788B823003D8011 /* BrowseListViewModelTests.swift */,
 				E2A0002E2788B823003D8011 /* SearchViewModelTests.swift */,
-				A1A000102788B823003D8011 /* AwardsRepositoryTests.swift */,
 				A1A000122788B823003D8011 /* AwardTitlesViewModelTests.swift */,
 				A1A000142788B823003D8011 /* AwardDetailLabelTests.swift */,
 				E2A000302788B823003D8011 /* CollectionViewModelTests.swift */,
-				E2A000322788B823003D8011 /* TVRepositoryTests.swift */,
 				E2A000342788B823003D8011 /* TVSeriesViewModelTests.swift */,
 				E2A000362788B823003D8011 /* TVSeasonViewModelTests.swift */,
 				E2A000382788B823003D8011 /* TVEpisodeViewModelTests.swift */,
-				A10000092788B823003D8011 /* Support */,
-				A10000072788B823003D8011 /* FakeHTTPClientTests.swift */,
-				B10000232788B823003D8011 /* MovieRepositoryTests.swift */,
-				C3A100072788B823003D8011 /* OfficialYouTubeTrailersTests.swift */,
-				B10000272788B823003D8011 /* ImageLoaderTests.swift */,
-				C200000D2788B823003D8011 /* AnnotationsRepositoryTests.swift */,
-				L1B0001C2788B823003D8011 /* ListsRepositoryTests.swift */,
 				L1B0001E2788B823003D8011 /* LibraryViewModelTests.swift */,
 				B10002132788B823003D8011 /* MovieDetailViewModelTests.swift */,
-				B10002152788B823003D8011 /* NavigationRouterTests.swift */,
-				B10003172788B823003D8011 /* PersonRepositoryTests.swift */,
 				B10003192788B823003D8011 /* PersonDetailViewModelTests.swift */,
 				B100031B2788B823003D8011 /* CreditsListViewModelTests.swift */,
+			);
+			path = Screens;
+			sourceTree = "<group>";
+		};
+		T1A000022788B823003D8011 /* Data */ = {
+			isa = PBXGroup;
+			children = (
+				A1A000102788B823003D8011 /* AwardsRepositoryTests.swift */,
+				E2A000322788B823003D8011 /* TVRepositoryTests.swift */,
+				B10000232788B823003D8011 /* MovieRepositoryTests.swift */,
+				C200000D2788B823003D8011 /* AnnotationsRepositoryTests.swift */,
+				L1B0001C2788B823003D8011 /* ListsRepositoryTests.swift */,
+				B10003172788B823003D8011 /* PersonRepositoryTests.swift */,
+				C3A100072788B823003D8011 /* OfficialYouTubeTrailersTests.swift */,
+			);
+			path = Data;
+			sourceTree = "<group>";
+		};
+		T1A000032788B823003D8011 /* Navigation */ = {
+			isa = PBXGroup;
+			children = (
+				B10002152788B823003D8011 /* NavigationRouterTests.swift */,
+			);
+			path = Navigation;
+			sourceTree = "<group>";
+		};
+		C77D45472788B823003D8011 /* TheSilverScreenTests */ = {
+			isa = PBXGroup;
+			children = (
+				T1A000012788B823003D8011 /* Screens */,
+				T1A000022788B823003D8011 /* Data */,
+				T1A000032788B823003D8011 /* Navigation */,
+				A10000092788B823003D8011 /* Support */,
 			);
 			path = TheSilverScreenTests;
 			sourceTree = "<group>";
@@ -605,38 +617,37 @@
 				B10002332788B823003D8011 /* TMDBRequestBuilder.swift */,
 				B10002352788B823003D8011 /* Sleeper.swift */,
 				B100001D2788B823003D8011 /* TMDBAPIKey.swift */,
+				B10000192788B823003D8011 /* MovieSummaryDTO.swift */,
+				B10002032788B823003D8011 /* MovieDetailDTO.swift */,
+				B10003032788B823003D8011 /* PersonDetailDTO.swift */,
+				E2A000082788B823003D8011 /* TVSeriesDTO.swift */,
+				D1A000042788B823003D8011 /* TMDBTrailerDecoding.swift */,
 			);
 			path = Networking;
 			sourceTree = "<group>";
 		};
-		C77D45632788C969003D8011 /* Models */ = {
+		C77D45632788C969003D8011 /* Domain */ = {
 			isa = PBXGroup;
 			children = (
-				E2A000022788B823003D8011 /* DisplayDate.swift */,
-				F20000022788B823003D8011 /* TMDBRating.swift */,
 				C20000012788B823003D8011 /* MediaAnnotation.swift */,
 				F10000042788B823003D8011 /* BrowseCatalog.swift */,
 				E2A000042788B823003D8011 /* CatalogMedia.swift */,
 				E2A000062788B823003D8011 /* TVSeries.swift */,
-				E2A000082788B823003D8011 /* TVSeriesDTO.swift */,
 				B10000172788B823003D8011 /* Movie.swift */,
 				A1A000022788B823003D8011 /* AwardsCatalog.swift */,
-				B10000192788B823003D8011 /* MovieSummaryDTO.swift */,
 				B10002412788B823003D8011 /* MovieImage.swift */,
 				B10002432788B823003D8011 /* MovieCredit.swift */,
 				B10002452788B823003D8011 /* MovieCollection.swift */,
 				B10002472788B823003D8011 /* MovieReview.swift */,
 				B10002012788B823003D8011 /* MovieDetail.swift */,
 				C3A100012788B823003D8011 /* MediaTrailer.swift */,
-				B10002032788B823003D8011 /* MovieDetailDTO.swift */,
 				B10001032788B823003D8011 /* MovieGenreCatalog.swift */,
 				L1B000022788B823003D8011 /* LibraryList.swift */,
 				L1B000042788B823003D8011 /* ListItemDraft.swift */,
 				B10003012788B823003D8011 /* PersonDetail.swift */,
-				B10003032788B823003D8011 /* PersonDetailDTO.swift */,
 				B10003052788B823003D8011 /* TVGenreCatalog.swift */,
 			);
-			path = Models;
+			path = Domain;
 			sourceTree = "<group>";
 		};
 		E2A000412788B823003D8011 /* Search */ = {
@@ -885,6 +896,7 @@
 				B10002082788B823003D8011 /* TagChip.swift in Sources */,
 				C3A100042788B823003D8011 /* MediaMetadataPills.swift in Sources */,
 				C3A100022788B823003D8011 /* MediaTrailer.swift in Sources */,
+				D1A000032788B823003D8011 /* TMDBTrailerDecoding.swift in Sources */,
 				C3A100062788B823003D8011 /* TrailerPlayerView.swift in Sources */,
 				B100020A2788B823003D8011 /* SurfaceCard.swift in Sources */,
 				B10002202788B823003D8011 /* FlowLayout.swift in Sources */,

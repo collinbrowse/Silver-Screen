@@ -18,7 +18,7 @@ Credits that cannot open a detail screen are skipped. That means the catalog row
 
 ## Where the data lives
 
-The file is [`TheSilverScreen/Resources/AwardsCatalog.json`](TheSilverScreen/Resources/AwardsCatalog.json). It is listed in the Xcode project. Leave it pretty-printed and sorted. Do not hand-edit credits. A failed rebuild must not replace this file.
+The file is [`TheSilverScreen/Data/Resources/AwardsCatalog.json`](TheSilverScreen/Data/Resources/AwardsCatalog.json). It is listed in the Xcode project. Leave it pretty-printed and sorted. Do not hand-edit credits. A failed rebuild must not replace this file.
 
 ```json
 {
@@ -52,7 +52,7 @@ Credits with no IMDb id stay in the file and stay out of the lists.
 2. Keep whichever file has the newer `generatedAt`. A missing or unreadable side leaves the other. Both missing means an empty catalog.
 3. At most once every seven days, download the copy on `main`:
 
-   `https://raw.githubusercontent.com/collinbrowse/The-Silver-Screen/main/TheSilverScreen/Resources/AwardsCatalog.json`
+   `https://raw.githubusercontent.com/collinbrowse/The-Silver-Screen/main/TheSilverScreen/Data/Resources/AwardsCatalog.json`
 
 4. Replace the in-memory catalog and the cache only when the download decodes and its `generatedAt` is newer. A failed download leaves the current catalog on screen.
 
@@ -84,7 +84,7 @@ Rebuild locally from the repo root:
 python3 scripts/test_build_awards_catalog.py
 export TMDB_API_KEY="$(python3 -c 'import re; print(re.search(r"^TMDB_API_KEY\s*=\s*(\S+)", open("Secrets.xcconfig").read(), re.M).group(1))')"
 python3 scripts/build_awards_catalog.py \
-  --output TheSilverScreen/Resources/AwardsCatalog.json \
+  --output TheSilverScreen/Data/Resources/AwardsCatalog.json \
   --summary-out /tmp/awards-summary.md
 ```
 
@@ -96,7 +96,7 @@ A new category inside Academy, BAFTA Film, or the Primetime Emmys needs no app c
 
 A new prize body needs both of these, together:
 
-- A case on `AwardFamily` in [`TheSilverScreen/Models/AwardsCatalog.swift`](TheSilverScreen/Models/AwardsCatalog.swift), with `title` and `subtitle`. Search home cards follow `AwardFamily.allCases`.
+- A case on `AwardFamily` in [`TheSilverScreen/Data/Domain/AwardsCatalog.swift`](TheSilverScreen/Data/Domain/AwardsCatalog.swift), with `title` and `subtitle`. Search home cards follow `AwardFamily.allCases`.
 - An entry in `FAMILIES` in [`scripts/build_awards_catalog.py`](scripts/build_awards_catalog.py): the `academy` / `bafta` / `emmy` style id, the Wikidata id of the prize body, and whether `/find` should prefer a movie or a TV result.
 
 Category names in the file drop a leading “Academy Award for ”, “BAFTA Award for ”, “Primetime Emmy Award for ”, and the other prefixes in `CATEGORY_PREFIXES`.
@@ -112,13 +112,13 @@ On device, use the iPhone 17e. Empty Search shows the three cards. A family list
 
 | Piece | Path |
 | --- | --- |
-| Catalog JSON | `TheSilverScreen/Resources/AwardsCatalog.json` |
-| Model, shelves, pill copy | `TheSilverScreen/Models/AwardsCatalog.swift` |
-| Load, filter, weekly download | `TheSilverScreen/Repositories/AwardsRepository.swift` |
-| Search home | `TheSilverScreen/Features/Search/SearchView.swift`, `SearchViewModel.swift` |
-| Category list | `TheSilverScreen/Features/Search/AwardFamilyView.swift` |
-| Title list | `TheSilverScreen/Features/Search/AwardTitlesView.swift`, `AwardTitlesViewModel.swift` |
-| Detail pills | `TheSilverScreen/Features/Shared/DesignSystem/MediaMetadataPills.swift` (`AwardChipRow`), `MovieDetailHero.swift` |
+| Catalog JSON | `TheSilverScreen/Data/Resources/AwardsCatalog.json` |
+| Model, shelves, pill copy | `TheSilverScreen/Data/Domain/AwardsCatalog.swift` |
+| Load, filter, weekly download | `TheSilverScreen/Data/Repositories/AwardsRepository.swift` |
+| Search home | `TheSilverScreen/Screens/Search/SearchView.swift`, `SearchViewModel.swift` |
+| Category list | `TheSilverScreen/Screens/Search/AwardFamilyView.swift` |
+| Title list | `TheSilverScreen/Screens/Search/AwardTitlesView.swift`, `AwardTitlesViewModel.swift` |
+| Detail pills | `TheSilverScreen/Design/MediaMetadataPills.swift` (`AwardChipRow`), `TheSilverScreen/Screens/MovieDetail/MovieDetailHero.swift` |
 | Routes | `TheSilverScreen/Navigation/Route.swift` (`.awardFamily`, `.awardTitles`) |
 | Builder and tests | `scripts/build_awards_catalog.py`, `scripts/test_build_awards_catalog.py` |
 | Monday job | `.github/workflows/awards-catalog.yml` |

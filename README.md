@@ -48,7 +48,7 @@ Start at the [Requirements index](Requirements/README.md) for the full list and 
 ## Codebase Tour
 A quick map so you can step in fast:
 
-- [`TheSilverScreen/Repositories/MovieRepository.swift`](TheSilverScreen/Repositories/MovieRepository.swift) — movie networking and mapping.
+- [`TheSilverScreen/Data/Repositories/MovieRepository.swift`](TheSilverScreen/Data/Repositories/MovieRepository.swift) — movie networking and mapping.
 - [`TheSilverScreen/App/RootTabView.swift`](TheSilverScreen/App/RootTabView.swift) — Browse, Search, and Library.
 - [`AWARDS.md`](AWARDS.md) — how Search award shelves and the weekly catalog work.
 

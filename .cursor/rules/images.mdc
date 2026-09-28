@@ -1,6 +1,6 @@
 ---
 description: Poster and backdrop image loading — cache, downsampling, request coalescing, and cancellation on cell reuse.
-globs: TheSilverScreen/ImageLoading/**/*.swift,TheSilverScreen/Views/**/*.swift,TheSilverScreen/Features/**/*.swift
+globs: TheSilverScreen/Support/ImageLoader.swift,TheSilverScreen/Design/**/*.swift,TheSilverScreen/Screens/**/*.swift
 alwaysApply: false
 ---
 
