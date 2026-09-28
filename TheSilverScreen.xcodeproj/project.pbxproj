@@ -7,6 +7,16 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A1A000012788B823003D8011 /* AwardsCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000022788B823003D8011 /* AwardsCatalog.swift */; };
+		A1A000032788B823003D8011 /* AwardsRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000042788B823003D8011 /* AwardsRepository.swift */; };
+		A1A000052788B823003D8011 /* AwardsCatalog.json in Resources */ = {isa = PBXBuildFile; fileRef = A1A000062788B823003D8011 /* AwardsCatalog.json */; };
+		A1A000072788B823003D8011 /* AwardFamilyViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000082788B823003D8011 /* AwardFamilyViewModel.swift */; };
+		A1A000092788B823003D8011 /* AwardFamilyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A0000A2788B823003D8011 /* AwardFamilyView.swift */; };
+		A1A0000B2788B823003D8011 /* AwardTitlesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A0000C2788B823003D8011 /* AwardTitlesViewModel.swift */; };
+		A1A0000D2788B823003D8011 /* AwardTitlesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A0000E2788B823003D8011 /* AwardTitlesView.swift */; };
+		A1A0000F2788B823003D8011 /* AwardsRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000102788B823003D8011 /* AwardsRepositoryTests.swift */; };
+		A1A000112788B823003D8011 /* AwardTitlesViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000122788B823003D8011 /* AwardTitlesViewModelTests.swift */; };
+		A1A000132788B823003D8011 /* AwardDetailLabelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1A000142788B823003D8011 /* AwardDetailLabelTests.swift */; };
 		A10000022788B823003D8011 /* HTTPClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000012788B823003D8011 /* HTTPClient.swift */; };
 		A10000042788B823003D8011 /* FakeHTTPClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000032788B823003D8011 /* FakeHTTPClient.swift */; };
 		A10000062788B823003D8011 /* TMDBFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000052788B823003D8011 /* TMDBFixtures.swift */; };
@@ -151,6 +161,16 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A1A000022788B823003D8011 /* AwardsCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AwardsCatalog.swift; sourceTree = "<group>"; };
+		A1A000042788B823003D8011 /* AwardsRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AwardsRepository.swift; sourceTree = "<group>"; };
+		A1A000062788B823003D8011 /* AwardsCatalog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = AwardsCatalog.json; sourceTree = "<group>"; };
+		A1A000082788B823003D8011 /* AwardFamilyViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AwardFamilyViewModel.swift; sourceTree = "<group>"; };
+		A1A0000A2788B823003D8011 /* AwardFamilyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AwardFamilyView.swift; sourceTree = "<group>"; };
+		A1A0000C2788B823003D8011 /* AwardTitlesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AwardTitlesViewModel.swift; sourceTree = "<group>"; };
+		A1A0000E2788B823003D8011 /* AwardTitlesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AwardTitlesView.swift; sourceTree = "<group>"; };
+		A1A000102788B823003D8011 /* AwardsRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AwardsRepositoryTests.swift; sourceTree = "<group>"; };
+		A1A000122788B823003D8011 /* AwardTitlesViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AwardTitlesViewModelTests.swift; sourceTree = "<group>"; };
+		A1A000142788B823003D8011 /* AwardDetailLabelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AwardDetailLabelTests.swift; sourceTree = "<group>"; };
 		A10000012788B823003D8011 /* HTTPClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPClient.swift; sourceTree = "<group>"; };
 		A10000032788B823003D8011 /* FakeHTTPClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeHTTPClient.swift; sourceTree = "<group>"; };
 		A10000052788B823003D8011 /* TMDBFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TMDBFixtures.swift; sourceTree = "<group>"; };
@@ -325,6 +345,7 @@
 			children = (
 				E2A0000C2788B823003D8011 /* TVRepository.swift */,
 				B100001F2788B823003D8011 /* MovieRepository.swift */,
+				A1A000042788B823003D8011 /* AwardsRepository.swift */,
 				B10003072788B823003D8011 /* PersonRepository.swift */,
 				C20000072788B823003D8011 /* AnnotationsRepository.swift */,
 				L1B0000C2788B823003D8011 /* ListsRepository.swift */,
@@ -517,10 +538,19 @@
 				C77D45312788B821003D8011 /* AppDelegate.swift */,
 				C77D45332788B821003D8011 /* SceneDelegate.swift */,
 				C77D453A2788B822003D8011 /* Assets.xcassets */,
+				A1A000152788B823003D8011 /* Resources */,
 				C77D453C2788B822003D8011 /* LaunchScreen.storyboard */,
 				C77D453F2788B822003D8011 /* Info.plist */,
 			);
 			path = TheSilverScreen;
+			sourceTree = "<group>";
+		};
+		A1A000152788B823003D8011 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A1A000062788B823003D8011 /* AwardsCatalog.json */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		C77D45472788B823003D8011 /* TheSilverScreenTests */ = {
@@ -528,6 +558,9 @@
 			children = (
 				F100000B2788B823003D8011 /* BrowseListViewModelTests.swift */,
 				E2A0002E2788B823003D8011 /* SearchViewModelTests.swift */,
+				A1A000102788B823003D8011 /* AwardsRepositoryTests.swift */,
+				A1A000122788B823003D8011 /* AwardTitlesViewModelTests.swift */,
+				A1A000142788B823003D8011 /* AwardDetailLabelTests.swift */,
 				E2A000302788B823003D8011 /* CollectionViewModelTests.swift */,
 				E2A000322788B823003D8011 /* TVRepositoryTests.swift */,
 				E2A000342788B823003D8011 /* TVSeriesViewModelTests.swift */,
@@ -585,6 +618,7 @@
 				E2A000062788B823003D8011 /* TVSeries.swift */,
 				E2A000082788B823003D8011 /* TVSeriesDTO.swift */,
 				B10000172788B823003D8011 /* Movie.swift */,
+				A1A000022788B823003D8011 /* AwardsCatalog.swift */,
 				B10000192788B823003D8011 /* MovieSummaryDTO.swift */,
 				B10002412788B823003D8011 /* MovieImage.swift */,
 				B10002432788B823003D8011 /* MovieCredit.swift */,
@@ -608,6 +642,10 @@
 			children = (
 				E2A000122788B823003D8011 /* SearchViewModel.swift */,
 				E2A000142788B823003D8011 /* SearchView.swift */,
+				A1A000082788B823003D8011 /* AwardFamilyViewModel.swift */,
+				A1A0000A2788B823003D8011 /* AwardFamilyView.swift */,
+				A1A0000C2788B823003D8011 /* AwardTitlesViewModel.swift */,
+				A1A0000E2788B823003D8011 /* AwardTitlesView.swift */,
 			);
 			path = Search;
 			sourceTree = "<group>";
@@ -750,6 +788,7 @@
 			files = (
 				C77D453E2788B822003D8011 /* LaunchScreen.storyboard in Resources */,
 				C77D453B2788B822003D8011 /* Assets.xcassets in Resources */,
+				A1A000052788B823003D8011 /* AwardsCatalog.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -793,6 +832,12 @@
 				E2A0000B2788B823003D8011 /* TVRepository.swift in Sources */,
 				E2A000112788B823003D8011 /* SearchViewModel.swift in Sources */,
 				E2A000132788B823003D8011 /* SearchView.swift in Sources */,
+				A1A000012788B823003D8011 /* AwardsCatalog.swift in Sources */,
+				A1A000032788B823003D8011 /* AwardsRepository.swift in Sources */,
+				A1A000072788B823003D8011 /* AwardFamilyViewModel.swift in Sources */,
+				A1A000092788B823003D8011 /* AwardFamilyView.swift in Sources */,
+				A1A0000B2788B823003D8011 /* AwardTitlesViewModel.swift in Sources */,
+				A1A0000D2788B823003D8011 /* AwardTitlesView.swift in Sources */,
 				E2A000152788B823003D8011 /* CollectionViewModel.swift in Sources */,
 				E2A000172788B823003D8011 /* CollectionView.swift in Sources */,
 				E2A000192788B823003D8011 /* TVSeriesViewModel.swift in Sources */,
@@ -879,6 +924,9 @@
 			files = (
 				F100000A2788B823003D8011 /* BrowseListViewModelTests.swift in Sources */,
 				E2A0002D2788B823003D8011 /* SearchViewModelTests.swift in Sources */,
+				A1A0000F2788B823003D8011 /* AwardsRepositoryTests.swift in Sources */,
+				A1A000112788B823003D8011 /* AwardTitlesViewModelTests.swift in Sources */,
+				A1A000132788B823003D8011 /* AwardDetailLabelTests.swift in Sources */,
 				E2A0002F2788B823003D8011 /* CollectionViewModelTests.swift in Sources */,
 				E2A000312788B823003D8011 /* TVRepositoryTests.swift in Sources */,
 				E2A000332788B823003D8011 /* TVSeriesViewModelTests.swift in Sources */,

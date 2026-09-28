@@ -157,7 +157,8 @@ struct TVEpisodeView: View {
             imageLoader: imageLoader,
             transitionNamespace: heroTransition,
             onOpenPoster: {},
-            onOpenImage: { viewModel.openImages(initialID: $0) }
+            onOpenImage: { viewModel.openImages(initialID: $0) },
+            awardLabels: viewModel.awardLabels
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.sm) {
                 Text(content.episodeNumberText)

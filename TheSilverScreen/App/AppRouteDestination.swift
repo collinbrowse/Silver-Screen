@@ -13,6 +13,7 @@ struct AppRouteDestination: View {
     let lists: ListsRepository
     let listsIndex: ListsIndex
     let annotations: AnnotationsRepository
+    let awards: AwardsRepository
     let imageLoader: ImageLoader
     let router: NavigationRouter
 
@@ -25,6 +26,7 @@ struct AppRouteDestination: View {
                 lists: lists,
                 listsIndex: listsIndex,
                 annotations: annotations,
+                awards: awards,
                 imageLoader: imageLoader,
                 router: router
             )
@@ -63,6 +65,7 @@ struct AppRouteDestination: View {
                 lists: lists,
                 listsIndex: listsIndex,
                 annotations: annotations,
+                awards: awards,
                 imageLoader: imageLoader,
                 router: router
             )
@@ -75,6 +78,7 @@ struct AppRouteDestination: View {
                 lists: lists,
                 listsIndex: listsIndex,
                 annotations: annotations,
+                awards: awards,
                 imageLoader: imageLoader,
                 router: router
             )
@@ -88,6 +92,7 @@ struct AppRouteDestination: View {
                 lists: lists,
                 listsIndex: listsIndex,
                 annotations: annotations,
+                awards: awards,
                 imageLoader: imageLoader,
                 router: router
             )
@@ -96,6 +101,20 @@ struct AppRouteDestination: View {
                 listID: id,
                 lists: lists,
                 annotations: annotations,
+                imageLoader: imageLoader,
+                router: router
+            )
+        case .awardFamily(let family):
+            AwardFamilyView(family: family, awards: awards, router: router)
+        case .awardTitles(let request):
+            AwardTitlesView(
+                request: request,
+                awards: awards,
+                movies: movies,
+                shows: shows,
+                annotations: annotations,
+                lists: lists,
+                listsIndex: listsIndex,
                 imageLoader: imageLoader,
                 router: router
             )
@@ -116,6 +135,7 @@ struct MovieDetailRouteView: View {
         lists: ListsRepository,
         listsIndex: ListsIndex,
         annotations: AnnotationsRepository,
+        awards: AwardsRepository,
         imageLoader: ImageLoader,
         router: NavigationRouter
     ) {
@@ -123,7 +143,8 @@ struct MovieDetailRouteView: View {
             initialValue: MovieDetailViewModel(
                 movieID: movieID,
                 movies: movies,
-                annotations: annotations
+                annotations: annotations,
+                awards: awards
             )
         )
         self.lists = lists
@@ -234,11 +255,17 @@ struct TVSeriesRouteView: View {
         lists: ListsRepository,
         listsIndex: ListsIndex,
         annotations: AnnotationsRepository,
+        awards: AwardsRepository,
         imageLoader: ImageLoader,
         router: NavigationRouter
     ) {
         _viewModel = State(
-            initialValue: TVSeriesViewModel(seriesID: seriesID, shows: shows, annotations: annotations)
+            initialValue: TVSeriesViewModel(
+                seriesID: seriesID,
+                shows: shows,
+                annotations: annotations,
+                awards: awards
+            )
         )
         self.imageLoader = imageLoader
         self.lists = lists
@@ -274,6 +301,7 @@ struct TVSeasonRouteView: View {
         lists: ListsRepository,
         listsIndex: ListsIndex,
         annotations: AnnotationsRepository,
+        awards: AwardsRepository,
         imageLoader: ImageLoader,
         router: NavigationRouter
     ) {
@@ -283,7 +311,8 @@ struct TVSeasonRouteView: View {
                 seriesName: seriesName,
                 seasonNumber: seasonNumber,
                 shows: shows,
-                annotations: annotations
+                annotations: annotations,
+                awards: awards
             )
         )
         self.imageLoader = imageLoader
@@ -326,6 +355,7 @@ struct TVEpisodeRouteView: View {
         lists: ListsRepository,
         listsIndex: ListsIndex,
         annotations: AnnotationsRepository,
+        awards: AwardsRepository,
         imageLoader: ImageLoader,
         router: NavigationRouter
     ) {
@@ -335,7 +365,8 @@ struct TVEpisodeRouteView: View {
                 seasonNumber: seasonNumber,
                 episodeNumber: episodeNumber,
                 shows: shows,
-                annotations: annotations
+                annotations: annotations,
+                awards: awards
             )
         )
         self.imageLoader = imageLoader

@@ -31,25 +31,30 @@ struct TVSeasonContent: Sendable, Equatable {
 @MainActor
 final class TVSeasonViewModel {
     private(set) var state: LoadState<TVSeasonContent> = .idle
+    /// Win pills, or up to three nomination pills when this season has no wins.
+    private(set) var awardLabels: [AwardPill] = []
 
     private let seriesID: Int
     private let seriesName: String
     private let seasonNumber: Int
     private let shows: TVRepository
     private let annotations: AnnotationsRepository
+    private let awards: AwardsRepository
 
     init(
         seriesID: Int,
         seriesName: String,
         seasonNumber: Int,
         shows: TVRepository,
-        annotations: AnnotationsRepository
+        annotations: AnnotationsRepository,
+        awards: AwardsRepository = AwardsRepository(catalog: .empty)
     ) {
         self.seriesID = seriesID
         self.seriesName = seriesName
         self.seasonNumber = seasonNumber
         self.shows = shows
         self.annotations = annotations
+        self.awards = awards
     }
 
     func load() async {
@@ -57,6 +62,7 @@ final class TVSeasonViewModel {
         do {
             let season = try await shows.season(seriesID: seriesID, seasonNumber: seasonNumber)
             let personal = try await personalDetail()
+            awardLabels = await awards.pillLabels(seriesID: seriesID, seasonNumber: seasonNumber)
             state = .loaded(
                 Self.makeContent(season: season, seriesName: seriesName, personal: personal.detail),
                 activity: personal.activity

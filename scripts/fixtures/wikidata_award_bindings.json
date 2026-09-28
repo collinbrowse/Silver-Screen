@@ -1,0 +1,31 @@
+{
+  "head": {
+    "vars": ["work", "workLabel", "imdb", "category", "categoryLabel", "year"]
+  },
+  "results": {
+    "bindings": [
+      {
+        "work": {"type": "uri", "value": "http://www.wikidata.org/entity/Q108669"},
+        "workLabel": {"xml:lang": "en", "type": "literal", "value": "Oppenheimer"},
+        "imdb": {"type": "literal", "value": "tt15398776"},
+        "category": {"type": "uri", "value": "http://www.wikidata.org/entity/Q102427"},
+        "categoryLabel": {"xml:lang": "en", "type": "literal", "value": "Academy Award for Best Picture"},
+        "year": {"datatype": "http://www.w3.org/2001/XMLSchema#integer", "type": "literal", "value": "2024"}
+      },
+      {
+        "work": {"type": "uri", "value": "http://www.wikidata.org/entity/Q24871"},
+        "workLabel": {"xml:lang": "en", "type": "literal", "value": "The Godfather"},
+        "imdb": {"type": "literal", "value": "not-an-id"},
+        "category": {"type": "uri", "value": "http://www.wikidata.org/entity/Q103916"},
+        "categoryLabel": {"xml:lang": "en", "type": "literal", "value": "Academy Award for Best Actor"},
+        "year": {"type": "literal", "value": "1973"}
+      },
+      {
+        "work": {"type": "uri", "value": "http://www.wikidata.org/entity/Q44578"},
+        "category": {"type": "uri", "value": "http://www.wikidata.org/entity/Q102427"},
+        "categoryLabel": {"xml:lang": "en", "type": "literal", "value": "Academy Award for Best Picture"}
+      }
+    ]
+  }
+}
+

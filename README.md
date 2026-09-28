@@ -50,6 +50,7 @@ A quick map so you can step in fast:
 
 - [`TheSilverScreen/Repositories/MovieRepository.swift`](TheSilverScreen/Repositories/MovieRepository.swift) — movie networking and mapping.
 - [`TheSilverScreen/App/RootTabView.swift`](TheSilverScreen/App/RootTabView.swift) — Browse, Search, and Library.
+- [`AWARDS.md`](AWARDS.md) — how Search award shelves and the weekly catalog work.
 
 ## Submission
 - Do your work in your own **private** repo (see Getting Started), with the recruiting-provided GitHub usernames added as collaborators.

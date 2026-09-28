@@ -29,6 +29,7 @@ Do **not** try to finish the backlog. Judgment and craft matter more than comple
 ## Pointers (do not duplicate architecture here)
 
 - Architecture: [`.cursor/rules/architecture.mdc`](.cursor/rules/architecture.mdc) (always on), plus scoped rules for concurrency, SwiftUI, data layer, image loading, secrets, errors and logging, accessibility, documentation comments, tests, commits, and pull requests
+- Awards shelves and the weekly catalog: [`AWARDS.md`](AWARDS.md)
 - Skills: [`.cursor/skills/implement-story/`](.cursor/skills/implement-story/SKILL.md), [`.cursor/skills/visual-qa/`](.cursor/skills/visual-qa/SKILL.md)
 - Hooks: [`.cursor/hooks.json`](.cursor/hooks.json)
 - Harness gates: [`scripts/validate-rules.py`](scripts/validate-rules.py), [`scripts/validate-tests.py`](scripts/validate-tests.py) (empty tests banned; Done requires test changes), [`scripts/validate-pr-body.py`](scripts/validate-pr-body.py) (PR template sections required)

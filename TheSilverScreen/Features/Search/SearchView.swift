@@ -2,8 +2,8 @@
 //  SearchView.swift
 //  TheSilverScreen
 //
-//  Search tab: Movies, TV, and People segments. The field is the system
-//  search UI; dismissing the keyboard leaves the current results in place.
+//  Search tab. An empty field shows award shelves. A query searches Movies,
+//  TV, and People. Dismissing the keyboard leaves the current results in place.
 //
 
 import SwiftUI
@@ -23,33 +23,16 @@ struct SearchView: View {
 
     var body: some View {
         Group {
-            switch viewModel.state {
-            case .idle, .loading:
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .empty:
-                if viewModel.showsFocusedPlaceholder {
-                    Button {
-                        dismissSearchKeyboard()
-                    } label: {
-                        emptyState
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("Dismisses search and restores the last results")
-                } else {
-                    emptyState
-                }
-            case .loaded(let listing, let activity):
-                results(listing, activity: activity)
-            case .failed(let error):
-                ErrorStateView(error: error) {
-                    await viewModel.retry()
-                }
+            if viewModel.showsAwardShelves {
+                shelfGrid
+            } else {
+                searchBody
             }
         }
         .background(DesignTheme.canvas)
         .refreshable { await viewModel.refresh() }
         .safeAreaInset(edge: .top, spacing: 0) {
+            if viewModel.showsScopePicker {
             Picker("Search", selection: $viewModel.scope) {
                 ForEach(SearchScope.allCases, id: \.self) { scope in
                     Text(scope.title).tag(scope)
@@ -60,6 +43,7 @@ struct SearchView: View {
             .padding(.vertical, DesignSpacing.sm)
             .background(DesignTheme.canvas)
             .accessibilityLabel("Search category")
+            }
         }
         .navigationTitle("Search")
         .toolbarTitleDisplayMode(.inlineLarge)
@@ -100,6 +84,66 @@ struct SearchView: View {
         }
     }
 
+    @ViewBuilder
+    private var searchBody: some View {
+        switch viewModel.state {
+        case .idle, .loading:
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .empty:
+            if viewModel.showsFocusedPlaceholder {
+                Button {
+                    dismissSearchKeyboard()
+                } label: {
+                    emptyState
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint("Dismisses search and restores the last results")
+            } else {
+                emptyState
+            }
+        case .loaded(let listing, let activity):
+            results(listing, activity: activity)
+        case .failed(let error):
+            ErrorStateView(error: error) {
+                await viewModel.retry()
+            }
+        }
+    }
+
+    private var shelfGrid: some View {
+        ScrollView {
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: DesignSpacing.md),
+                    GridItem(.flexible(), spacing: DesignSpacing.md),
+                ],
+                spacing: DesignSpacing.md
+            ) {
+                ForEach(viewModel.shelves) { shelf in
+                    Button {
+                        openShelf(shelf)
+                    } label: {
+                        AwardShelfCard(shelf: shelf)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(shelf.title), \(shelf.subtitle)")
+                    .accessibilityHint("Opens this award list")
+                }
+            }
+            .padding(DesignSpacing.lg)
+        }
+    }
+
+    private func openShelf(_ shelf: AwardShelf) {
+        switch shelf.destination {
+        case .family(let family):
+            open(.awardFamily(family))
+        case .titles(let request):
+            open(.awardTitles(request))
+        }
+    }
+
     private var emptyState: some View {
         EmptyStateView(
             title: viewModel.emptyTitle,
@@ -109,10 +153,11 @@ struct SearchView: View {
     }
 
     private var searchPrompt: String {
+        guard viewModel.showsScopePicker else { return "Search movies, TV, and people" }
         switch viewModel.scope {
-        case .movies: "Search movies"
-        case .tv: "Search TV"
-        case .people: "Search people"
+        case .movies: return "Search movies"
+        case .tv: return "Search TV"
+        case .people: return "Search people"
         }
     }
 
@@ -231,6 +276,49 @@ struct SearchView: View {
     private func listControl(_ draft: ListItemDraft) -> some View {
         ListMembershipButton(draft: draft, lists: lists, index: listsIndex) {
             viewModel.noteListSaveFailed()
+        }
+    }
+}
+
+/// Search-home card. The ceremony lockup is the whole card. The Oscars mark is
+/// clear, so the card fill switches between white and black. BAFTA and the Emmys
+/// supply their own light and dark pictures.
+private struct AwardShelfCard: View {
+    let shelf: AwardShelf
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        Color.clear
+            .frame(maxWidth: .infinity)
+            .frame(height: 112)
+            .overlay {
+                if let family = shelf.family {
+                    Image(family.shelfImage)
+                        .resizable()
+                        .renderingMode(.original)
+                        .scaledToFit()
+                        .padding(.horizontal, DesignSpacing.md)
+                        .padding(.vertical, DesignSpacing.sm)
+                        .accessibilityHidden(true)
+                }
+            }
+            .background(fill)
+            .clipShape(RoundedRectangle(cornerRadius: DesignRadius.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: DesignRadius.card, style: .continuous)
+                    .strokeBorder(DesignTheme.separator.opacity(0.5), lineWidth: 1)
+            )
+            .accessibilityElement(children: .ignore)
+    }
+
+    /// Matches the picture’s own field, so fitting the logo does not leave a mismatched border.
+    private var fill: Color {
+        let dark = colorScheme == .dark
+        switch shelf.family {
+        case .emmy:
+            return dark ? Color(red: 0.008, green: 0.016, blue: 0.13) : .white
+        case .academy, .bafta, nil:
+            return dark ? .black : .white
         }
     }
 }

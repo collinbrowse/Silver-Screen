@@ -28,6 +28,8 @@ jobs:
           fetch-depth: 0
       - name: Validate rules
         run: python3 scripts/validate-rules.py
+      - name: Test awards catalog builder
+        run: python3 scripts/test_build_awards_catalog.py
       - name: Validate test suite gates
         env:
           BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}

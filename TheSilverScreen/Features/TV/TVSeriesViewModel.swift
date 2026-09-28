@@ -52,15 +52,24 @@ struct TVSeriesContent: Sendable, Equatable {
 @MainActor
 final class TVSeriesViewModel {
     private(set) var state: LoadState<TVSeriesContent> = .idle
+    /// Win pills, or up to three nomination pills when this series has no wins.
+    private(set) var awardLabels: [AwardPill] = []
 
     private let seriesID: Int
     private let shows: TVRepository
     private let annotations: AnnotationsRepository
+    private let awards: AwardsRepository
 
-    init(seriesID: Int, shows: TVRepository, annotations: AnnotationsRepository) {
+    init(
+        seriesID: Int,
+        shows: TVRepository,
+        annotations: AnnotationsRepository,
+        awards: AwardsRepository = AwardsRepository(catalog: .empty)
+    ) {
         self.seriesID = seriesID
         self.shows = shows
         self.annotations = annotations
+        self.awards = awards
     }
 
     func load() async {
@@ -69,6 +78,7 @@ final class TVSeriesViewModel {
             let detail = try await shows.series(id: seriesID)
             let reviews = await Self.loadReviews(seriesID: seriesID, shows: shows)
             let personal = try await personalDetail()
+            awardLabels = await awards.pillLabels(seriesID: seriesID)
             state = .loaded(
                 Self.makeContent(detail: detail, reviews: reviews, personal: personal.detail),
                 activity: personal.activity
@@ -177,6 +187,7 @@ final class TVSeriesViewModel {
             let detail = try await shows.series(id: seriesID)
             let reviews = await Self.loadReviews(seriesID: seriesID, shows: shows)
             let personal = try await personalKeeping(current)
+            awardLabels = await awards.pillLabels(seriesID: seriesID)
             state = .loaded(
                 Self.makeContent(detail: detail, reviews: reviews, personal: personal.detail),
                 activity: personal.activity

@@ -14,6 +14,7 @@ struct AppDependencies {
     let listsIndex: ListsIndex
     let listChanges: ListChangeNotice
     let annotations: AnnotationsRepository
+    let awards: AwardsRepository
     let imageLoader: ImageLoader
     let router: AppRouter
     let logger: any AppLogging
@@ -51,6 +52,12 @@ struct AppDependencies {
             logger: logger
         )
         let imageLoader = ImageLoader(client: URLSessionHTTPClient.images(), logger: logger)
+        let awards = AwardsRepository(
+            client: httpClient,
+            bundleURL: Bundle.main.url(forResource: "AwardsCatalog", withExtension: "json"),
+            cacheURL: try AwardsRepository.cacheURL(),
+            logger: logger
+        )
         let router = AppRouter()
         return AppDependencies(
             movies: movies,
@@ -60,6 +67,7 @@ struct AppDependencies {
             listsIndex: listsIndex,
             listChanges: listChanges,
             annotations: annotations,
+            awards: awards,
             imageLoader: imageLoader,
             router: router,
             logger: logger

@@ -51,4 +51,6 @@ enum Route: Hashable, Sendable, Codable {
     case tvEpisode(seriesID: Int, seriesName: String, seasonNumber: Int, episodeNumber: Int)
     /// One library list. The id is the list's stable UUID.
     case libraryList(id: UUID)
+    case awardFamily(AwardFamily)
+    case awardTitles(AwardTitleRequest)
 }
