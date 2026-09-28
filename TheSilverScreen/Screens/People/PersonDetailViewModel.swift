@@ -10,12 +10,15 @@ struct PersonDetailContent: Sendable, Equatable {
         let items: [MovieImage]
     }
 
-    /// Carousel + optional View All for cast or crew credits.
-    struct CreditsSection: Sendable, Equatable {
+    /// Carousel + optional View All for one slice of this person's credits.
+    struct CreditsSection: Sendable, Equatable, Identifiable {
         let department: CreditDepartment
+        /// Heading such as Directing, Acting, or Crew.
+        let title: String
         /// First five credits shown in the carousel.
         let preview: [PersonCredit]
         let totalCount: Int
+        var id: CreditDepartment { department }
         /// True when totalCount > 10 (requirement threshold for View All).
         var showsViewAll: Bool { totalCount > 10 }
     }
@@ -25,8 +28,8 @@ struct PersonDetailContent: Sendable, Equatable {
     let formattedDeathday: String?
     let placeOfBirth: String?
     let images: ImagesSection?
-    let cast: CreditsSection?
-    let crew: CreditsSection?
+    /// Carousels in display order. The work this person is known for leads.
+    let creditSections: [CreditsSection]
 
     /// Non-nil while the image lightbox is open.
     var fullscreenImages: FullscreenImages?
@@ -103,8 +106,14 @@ final class PersonDetailViewModel {
         let images = detail.images.isEmpty
             ? nil
             : PersonDetailContent.ImagesSection(items: detail.images)
-        let cast = makeCreditsSection(detail.castCredits, department: .cast)
-        let crew = makeCreditsSection(detail.crewCredits, department: .crew)
+        let creditSections = PersonCreditGroups.make(from: detail).map { group in
+            PersonDetailContent.CreditsSection(
+                department: group.department,
+                title: group.title,
+                preview: Array(group.credits.prefix(5)),
+                totalCount: group.credits.count
+            )
+        }
 
         return PersonDetailContent(
             detail: detail,
@@ -112,8 +121,7 @@ final class PersonDetailViewModel {
             formattedDeathday: formatDay(detail.deathday),
             placeOfBirth: detail.placeOfBirth,
             images: images,
-            cast: cast,
-            crew: crew,
+            creditSections: creditSections,
             fullscreenImages: nil
         )
     }
@@ -136,18 +144,117 @@ final class PersonDetailViewModel {
         return DisplayDate.day(date)
     }
 
-    // MARK: - Private
+}
 
-    private static func makeCreditsSection(
-        _ credits: [PersonCredit],
-        department: CreditDepartment
-    ) -> PersonDetailContent.CreditsSection? {
+/// Orders a person's credits so the work they are known for leads the page.
+enum PersonCreditGroups {
+    struct Group: Sendable, Equatable {
+        let department: CreditDepartment
+        let title: String
+        let credits: [PersonCredit]
+    }
+
+    /// Acting, or an unknown department, leads. A director, writer, or other crew
+    /// department leads with that work, then acting, then any jobs left over.
+    /// An empty primary slice is omitted, so a director with no director credits
+    /// still shows acting and the rest of their crew.
+    static func make(from detail: PersonDetail) -> [Group] {
+        let known = trimmed(detail.knownForDepartment)
+        let leadsWithActing = known.map(isActing) ?? true
+
+        var groups: [Group] = []
+        var consumed = Set<String>()
+
+        if leadsWithActing {
+            if let acting = actingGroup(detail.castCredits) {
+                groups.append(acting)
+            }
+        } else if let known, let primary = primaryGroup(known: known, credits: detail.crewCredits) {
+            groups.append(primary.group)
+            consumed = primary.consumed
+        }
+
+        if !leadsWithActing, let acting = actingGroup(detail.castCredits) {
+            groups.append(acting)
+        }
+
+        if let crew = leftoverCrew(detail.crewCredits, consumed: consumed) {
+            groups.append(crew)
+        }
+        return groups
+    }
+
+    private static func trimmed(_ raw: String?) -> String? {
+        guard let raw else { return nil }
+        let value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        return value.isEmpty ? nil : value
+    }
+
+    private static func isActing(_ name: String) -> Bool {
+        switch name.lowercased() {
+        case "acting", "actors": return true
+        default: return false
+        }
+    }
+
+    private static func actingGroup(_ credits: [PersonCredit]) -> Group? {
         guard !credits.isEmpty else { return nil }
-        return PersonDetailContent.CreditsSection(
-            department: department,
-            preview: Array(credits.prefix(5)),
-            totalCount: credits.count
-        )
+        return Group(department: .cast, title: "Acting", credits: credits)
+    }
+
+    private static func primaryGroup(
+        known: String,
+        credits: [PersonCredit]
+    ) -> (group: Group, consumed: Set<String>)? {
+        switch known.lowercased() {
+        case "directing":
+            return slice(credits, department: .directing, title: "Directing") { $0.job == "Director" }
+        case "writing":
+            return slice(credits, department: .writing, title: "Writing") {
+                MovieRepository.writerJobs.contains($0.job)
+            }
+        default:
+            return slice(credits, department: .named(known), title: known) { job in
+                !job.department.isEmpty && job.department.caseInsensitiveCompare(known) == .orderedSame
+            }
+        }
+    }
+
+    private static func slice(
+        _ credits: [PersonCredit],
+        department: CreditDepartment,
+        title: String,
+        where matches: (PersonCreditJob) -> Bool
+    ) -> (group: Group, consumed: Set<String>)? {
+        var selected: [PersonCredit] = []
+        var consumed = Set<String>()
+        for credit in credits {
+            let jobs = credit.jobs.filter(matches)
+            guard !jobs.isEmpty else { continue }
+            for job in jobs {
+                consumed.insert(consumedKey(creditID: credit.id, job: job.job))
+            }
+            selected.append(credit.keepingJobs(jobs))
+        }
+        guard !selected.isEmpty else { return nil }
+        return (Group(department: department, title: title, credits: selected), consumed)
+    }
+
+    private static func leftoverCrew(_ credits: [PersonCredit], consumed: Set<String>) -> Group? {
+        var selected: [PersonCredit] = []
+        for credit in credits {
+            let jobs = credit.jobs.filter {
+                !consumed.contains(consumedKey(creditID: credit.id, job: $0.job))
+            }
+            guard !jobs.isEmpty else { continue }
+            selected.append(credit.keepingJobs(jobs))
+        }
+        guard !selected.isEmpty else { return nil }
+        return Group(department: .crew, title: "Crew", credits: selected)
+    }
+
+    private static func consumedKey(creditID: String, job: String) -> String {
+        "\(creditID)|\(job)"
     }
 }
 
@@ -161,8 +268,7 @@ private extension PersonDetailContent {
             formattedDeathday: formattedDeathday,
             placeOfBirth: placeOfBirth,
             images: images,
-            cast: cast,
-            crew: crew,
+            creditSections: creditSections,
             fullscreenImages: fullscreenImages ?? self.fullscreenImages
         )
     }

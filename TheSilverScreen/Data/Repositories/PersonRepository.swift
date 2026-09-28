@@ -234,13 +234,16 @@ final class PersonRepository: Sendable {
                 skipped += 1
                 continue
             }
-            guard let credit = mapCredit(item, roleOverride: job, logger: logger) else {
+            let department = item.department?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let creditJob = PersonCreditJob(department: department, job: job)
+            guard let credit = mapCredit(item, roleOverride: job, jobs: [creditJob], logger: logger) else {
                 skipped += 1
                 continue
             }
             let incoming = signals(from: item)
             if var existing = byKey[credit.id] {
-                if !existing.credit.roleLabel.split(separator: ", ").map(String.init).contains(job) {
+                if !existing.credit.jobs.contains(where: { $0.job == job }) {
+                    let jobs = existing.credit.jobs + [creditJob]
                     existing.credit = PersonCredit(
                         mediaType: existing.credit.mediaType,
                         mediaID: existing.credit.mediaID,
@@ -248,7 +251,8 @@ final class PersonRepository: Sendable {
                         posterPath: existing.credit.posterPath ?? credit.posterPath,
                         releaseDate: existing.credit.releaseDate ?? credit.releaseDate,
                         genreIDs: existing.credit.genreIDs.isEmpty ? credit.genreIDs : existing.credit.genreIDs,
-                        roleLabel: existing.credit.roleLabel + ", " + job,
+                        roleLabel: jobs.map(\.job).joined(separator: ", "),
+                        jobs: jobs,
                         popularity: max(existing.credit.popularity, credit.popularity),
                         voteAverage: max(existing.credit.voteAverage, credit.voteAverage)
                     )
@@ -272,6 +276,7 @@ final class PersonRepository: Sendable {
     private static func mapCredit(
         _ item: PersonCombinedCreditDTO,
         roleOverride: String?,
+        jobs: [PersonCreditJob] = [],
         logger: any AppLogging
     ) -> PersonCredit? {
         guard let mediaType = parseMediaType(item.mediaType) else { return nil }
@@ -298,6 +303,7 @@ final class PersonRepository: Sendable {
             releaseDate: parseDay(dateRaw),
             genreIDs: item.genreIDs ?? [],
             roleLabel: roleOverride ?? "",
+            jobs: jobs,
             popularity: item.popularity ?? 0,
             voteAverage: item.voteAverage ?? 0
         )

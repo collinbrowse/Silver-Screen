@@ -79,6 +79,7 @@ final class PersonRepositoryTests: XCTestCase {
                 genreIDs: [18],
                 character: nil,
                 job: "Director",
+                department: nil,
                 popularity: 10,
                 voteAverage: nil,
                 order: nil,
@@ -96,6 +97,7 @@ final class PersonRepositoryTests: XCTestCase {
                 genreIDs: [18],
                 character: nil,
                 job: "Writer",
+                department: nil,
                 popularity: 12,
                 voteAverage: nil,
                 order: nil,
@@ -109,6 +111,54 @@ final class PersonRepositoryTests: XCTestCase {
         XCTAssertEqual(credits.count, 1)
         XCTAssertEqual(credits[0].popularity, 12)
         XCTAssertEqual(credits[0].roleLabel, "Director, Writer")
+        XCTAssertEqual(credits[0].jobs.map(\.job), ["Director", "Writer"])
+    }
+
+    func test_mapCrewCredits_keepsDepartmentOnEachJob() {
+        let items = [
+            PersonCombinedCreditDTO(
+                id: 1,
+                mediaType: "movie",
+                title: "Film",
+                name: nil,
+                posterPath: nil,
+                releaseDate: "2000-01-01",
+                firstAirDate: nil,
+                genreIDs: [18],
+                character: nil,
+                job: "Director",
+                department: "Directing",
+                popularity: 10,
+                voteAverage: nil,
+                order: nil,
+                voteCount: nil,
+                episodeCount: nil
+            ),
+            PersonCombinedCreditDTO(
+                id: 1,
+                mediaType: "movie",
+                title: "Film",
+                name: nil,
+                posterPath: nil,
+                releaseDate: "2000-01-01",
+                firstAirDate: nil,
+                genreIDs: [18],
+                character: nil,
+                job: "Screenplay",
+                department: "Writing",
+                popularity: 12,
+                voteAverage: nil,
+                order: nil,
+                voteCount: nil,
+                episodeCount: nil
+            ),
+        ]
+
+        let credits = PersonRepository.mapCrewCredits(items, logger: SilentLogger())
+
+        XCTAssertEqual(credits.count, 1)
+        XCTAssertEqual(credits[0].jobs.map(\.department), ["Directing", "Writing"])
+        XCTAssertEqual(credits[0].jobs.map(\.job), ["Director", "Screenplay"])
     }
 
     func test_mapCastCredits_ranksFamousRoleAbovePopularGuestSpot() throws {
