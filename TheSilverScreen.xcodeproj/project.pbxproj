@@ -140,6 +140,8 @@
 		L1B0000F2788B823003D8011 /* ListMembershipButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B000102788B823003D8011 /* ListMembershipButton.swift */; };
 		L1B000112788B823003D8011 /* ListChangeNotice.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B000122788B823003D8011 /* ListChangeNotice.swift */; };
 		L1B000132788B823003D8011 /* LibraryHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B000142788B823003D8011 /* LibraryHomeView.swift */; };
+		L1B000212788B823003D8011 /* LibraryListArtwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B000222788B823003D8011 /* LibraryListArtwork.swift */; };
+		L1B000232788B823003D8011 /* LibraryListCoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B000242788B823003D8011 /* LibraryListCoverView.swift */; };
 		L1B000152788B823003D8011 /* LibraryHomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B000162788B823003D8011 /* LibraryHomeViewModel.swift */; };
 		L1B000172788B823003D8011 /* LibraryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B000182788B823003D8011 /* LibraryDetailView.swift */; };
 		L1B000192788B823003D8011 /* LibraryDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B0001A2788B823003D8011 /* LibraryDetailViewModel.swift */; };
@@ -306,6 +308,8 @@
 		L1B000102788B823003D8011 /* ListMembershipButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListMembershipButton.swift; sourceTree = "<group>"; };
 		L1B000122788B823003D8011 /* ListChangeNotice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListChangeNotice.swift; sourceTree = "<group>"; };
 		L1B000142788B823003D8011 /* LibraryHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryHomeView.swift; sourceTree = "<group>"; };
+		L1B000222788B823003D8011 /* LibraryListArtwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryListArtwork.swift; sourceTree = "<group>"; };
+		L1B000242788B823003D8011 /* LibraryListCoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryListCoverView.swift; sourceTree = "<group>"; };
 		L1B000162788B823003D8011 /* LibraryHomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryHomeViewModel.swift; sourceTree = "<group>"; };
 		L1B000182788B823003D8011 /* LibraryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryDetailView.swift; sourceTree = "<group>"; };
 		L1B0001A2788B823003D8011 /* LibraryDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryDetailViewModel.swift; sourceTree = "<group>"; };
@@ -459,6 +463,8 @@
 			isa = PBXGroup;
 			children = (
 				L1B000142788B823003D8011 /* LibraryHomeView.swift */,
+				L1B000222788B823003D8011 /* LibraryListArtwork.swift */,
+				L1B000242788B823003D8011 /* LibraryListCoverView.swift */,
 				L1B000162788B823003D8011 /* LibraryHomeViewModel.swift */,
 				L1B000182788B823003D8011 /* LibraryDetailView.swift */,
 				L1B0001A2788B823003D8011 /* LibraryDetailViewModel.swift */,
@@ -940,6 +946,8 @@
 				L1B0000F2788B823003D8011 /* ListMembershipButton.swift in Sources */,
 				L1B000112788B823003D8011 /* ListChangeNotice.swift in Sources */,
 				L1B000132788B823003D8011 /* LibraryHomeView.swift in Sources */,
+				L1B000212788B823003D8011 /* LibraryListArtwork.swift in Sources */,
+				L1B000232788B823003D8011 /* LibraryListCoverView.swift in Sources */,
 				L1B000152788B823003D8011 /* LibraryHomeViewModel.swift in Sources */,
 				L1B000172788B823003D8011 /* LibraryDetailView.swift in Sources */,
 				L1B000192788B823003D8011 /* LibraryDetailViewModel.swift in Sources */,

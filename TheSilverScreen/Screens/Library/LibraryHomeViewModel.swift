@@ -38,6 +38,17 @@ final class LibraryHomeViewModel {
         return snapshot.entries.filter { $0.listID == listID }.count
     }
 
+    /// Icon for Watched and Watchlist. Up to four images for a custom list.
+    func artwork(for list: LibraryList) -> LibraryListArtwork {
+        let entries: [ListEntry]
+        if case .loaded(let snapshot, _) = state {
+            entries = snapshot.entries
+        } else {
+            entries = []
+        }
+        return LibraryListArtwork.cover(for: list, entries: entries)
+    }
+
     func load() async {
         if case .loaded(let current, _) = state {
             state = .loaded(current, activity: .refreshing)
