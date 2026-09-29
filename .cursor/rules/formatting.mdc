@@ -1,0 +1,81 @@
+---
+description: Swift formatting — switch indentation and when to split Swift files.
+globs: TheSilverScreen/**/*.swift,TheSilverScreenTests/**/*.swift
+alwaysApply: false
+---
+
+# Formatting
+
+## Switch cases
+
+Indent `case` and `default` one level under `switch`. Indent the body of each case one level under the label.
+
+```swift
+switch viewModel.state {
+    case .idle, .loading:
+        ProgressView()
+    case .empty:
+        EmptyStateView()
+    case .loaded(let movies, let activity):
+        MovieList(movies: movies, activity: activity)
+    case .failed(let error):
+        ErrorStateView(error: error) { await viewModel.load() }
+}
+```
+
+A single-line case uses the same label indent:
+
+```swift
+switch kind {
+    case .movie: "film"
+    case .tv: "tv"
+    case .person: "person.fill"
+}
+```
+
+Enum declarations keep `case` at the usual indent of the type body. This rule is for `switch` statements.
+
+## Multiline arguments
+
+When a call or initializer does not fit on one line, put the opening `(` on the first line and **indent every argument (and nested multiline call) one level under that line**. The closing `)` aligns with the start of the call.
+
+```swift
+// ✅ GOOD — continuation lines are indented under the call
+ListMembershipButton(
+    draft: content.detail.listItem(),
+    lists: lists,
+    index: listsIndex
+) {
+    viewModel.noteListSaveFailed()
+}
+
+// ❌ BAD — arguments line up with the callee instead of indenting
+MovieDetailRouteView(
+movieID: id,
+movies: movies,
+router: router
+)
+```
+
+Single-line calls stay on one line. This applies to initializers, function calls, and SwiftUI builders alike.
+
+## File layout
+
+Prefer names that show up in the Project navigator. Split when a type is its own thing; keep composition helpers in the screen file.
+
+### Keep in the screen file
+
+- **`@ViewBuilder` properties and methods** on the screen (`searchBody`, `shelfGrid`, `heroSection`) that only organize the same screen’s `body`.
+- **Small private helpers** tied to one layout decision (a modifier chain, a one-off stack).
+- **Implementation-only types** (`CodingKeys`, paging scratch structs) that are not UI.
+
+### Extract to their own file
+
+- **Named `View` types** another developer would search for (`AwardShelfCard`, `CreditsListRow`, `ListChangeBanner`).
+- **Reusable rows, sections, and sheets** used from more than one call site in the feature, or large enough to read on their own.
+- **Route wrappers** and tab roots when they carry real layout (`MovieDetailRouteView`, `BrowseTabRoot`).
+- **Screen payload types and feature enums** when the view model file is large or tests need the type alone (`MovieDetailContent`, `SearchScope`).
+
+Rough guides: consider splitting a **view file past ~250 lines** or a **view model past ~350** when the extra type would get a clear filename. Do not split only to hit a line count.
+
+See also [`swiftui.mdc`](.cursor/rules/swiftui.mdc) for when to extract subviews from an oversized `body`.

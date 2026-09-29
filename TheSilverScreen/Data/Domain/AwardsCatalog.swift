@@ -17,53 +17,53 @@ enum AwardFamily: String, Codable, Hashable, Sendable, CaseIterable {
     /// Name on the search shelf and the category screen.
     var title: String {
         switch self {
-        case .academy: "Oscar Winners"
-        case .bafta: "BAFTAs"
-        case .emmy: "Emmys"
+            case .academy: "Oscar Winners"
+            case .bafta: "BAFTAs"
+            case .emmy: "Emmys"
         }
     }
 
     var subtitle: String {
         switch self {
-        case .academy: "Academy Awards"
-        case .bafta: "Film categories"
-        case .emmy: "Primetime categories"
+            case .academy: "Academy Awards"
+            case .bafta: "Film categories"
+            case .emmy: "Primetime categories"
         }
     }
 
     /// Search-card lockup. BAFTA and Emmy include a dark-mode variant in the asset.
     var shelfImage: String {
         switch self {
-        case .academy: "AwardShelfOscar"
-        case .bafta: "AwardShelfBafta"
-        case .emmy: "AwardShelfEmmy"
+            case .academy: "AwardShelfOscar"
+            case .bafta: "AwardShelfBafta"
+            case .emmy: "AwardShelfEmmy"
         }
     }
 
     /// Asset catalog image of this prize’s trophy.
     var trophyImage: String {
         switch self {
-        case .academy: "AwardOscar"
-        case .bafta: "AwardBafta"
-        case .emmy: "AwardEmmy"
+            case .academy: "AwardOscar"
+            case .bafta: "AwardBafta"
+            case .emmy: "AwardEmmy"
         }
     }
 
     /// Width divided by height of `trophyImage`, so a pill can size the picture.
     var trophyAspect: Double {
         switch self {
-        case .academy: 0.34
-        case .bafta: 0.47
-        case .emmy: 0.64
+            case .academy: 0.34
+            case .bafta: 0.47
+            case .emmy: 0.64
         }
     }
 
     /// Spoken beside a category. The trophy is decorative, so VoiceOver needs this name.
     var shortName: String {
         switch self {
-        case .academy: "Oscar"
-        case .bafta: "BAFTA"
-        case .emmy: "Emmy"
+            case .academy: "Oscar"
+            case .bafta: "BAFTA"
+            case .emmy: "Emmy"
         }
     }
 }
@@ -121,27 +121,27 @@ struct AwardWork: Codable, Hashable, Sendable, Equatable {
     /// Route for this work, or nil when the TMDB id never resolved.
     func route(fallbackSeriesName: String) -> Route? {
         switch kind {
-        case .movie:
-            guard let movieID else { return nil }
-            return .movieDetail(id: movieID)
-        case .series:
-            guard let seriesID else { return nil }
-            return .tvSeries(id: seriesID)
-        case .season:
-            guard let seriesID, let seasonNumber else { return nil }
-            return .tvSeason(
-                seriesID: seriesID,
-                seriesName: displaySeriesName(fallback: fallbackSeriesName),
-                seasonNumber: seasonNumber
-            )
-        case .episode:
-            guard let seriesID, let seasonNumber, let episodeNumber else { return nil }
-            return .tvEpisode(
-                seriesID: seriesID,
-                seriesName: displaySeriesName(fallback: fallbackSeriesName),
-                seasonNumber: seasonNumber,
-                episodeNumber: episodeNumber
-            )
+            case .movie:
+                guard let movieID else { return nil }
+                return .movieDetail(id: movieID)
+            case .series:
+                guard let seriesID else { return nil }
+                return .tvSeries(id: seriesID)
+            case .season:
+                guard let seriesID, let seasonNumber else { return nil }
+                return .tvSeason(
+                    seriesID: seriesID,
+                    seriesName: displaySeriesName(fallback: fallbackSeriesName),
+                    seasonNumber: seasonNumber
+                )
+            case .episode:
+                guard let seriesID, let seasonNumber, let episodeNumber else { return nil }
+                return .tvEpisode(
+                    seriesID: seriesID,
+                    seriesName: displaySeriesName(fallback: fallbackSeriesName),
+                    seasonNumber: seasonNumber,
+                    episodeNumber: episodeNumber
+                )
         }
     }
 
@@ -308,10 +308,10 @@ struct AwardTitleRequest: Hashable, Codable, Sendable, Equatable {
     var navigationTitle: String {
         if let category, !category.isEmpty { return category }
         switch family {
-        case .academy: return "Oscar Winners"
-        case .bafta: return "BAFTAs"
-        case .emmy: return "Emmys"
-        case nil: return "Awards"
+            case .academy: return "Oscar Winners"
+            case .bafta: return "BAFTAs"
+            case .emmy: return "Emmys"
+            case nil: return "Awards"
         }
     }
 }
@@ -452,14 +452,14 @@ enum PersonAwardList {
     private static func workIdentity(_ credit: AwardCredit) -> String {
         if let work = credit.work {
             switch work.kind {
-            case .movie:
-                return "m:\(work.movieID ?? -1)"
-            case .series:
-                return "s:\(work.seriesID ?? -1)"
-            case .season:
-                return "sn:\(work.seriesID ?? -1):\(work.seasonNumber ?? -1)"
-            case .episode:
-                return "ep:\(work.seriesID ?? -1):\(work.seasonNumber ?? -1):\(work.episodeNumber ?? -1)"
+                case .movie:
+                    return "m:\(work.movieID ?? -1)"
+                case .series:
+                    return "s:\(work.seriesID ?? -1)"
+                case .season:
+                    return "sn:\(work.seriesID ?? -1):\(work.seasonNumber ?? -1)"
+                case .episode:
+                    return "ep:\(work.seriesID ?? -1):\(work.seasonNumber ?? -1):\(work.episodeNumber ?? -1)"
             }
         }
         if let imdbID = credit.imdbID { return "imdb:\(imdbID)" }

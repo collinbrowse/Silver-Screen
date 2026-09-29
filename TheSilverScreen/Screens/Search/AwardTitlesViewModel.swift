@@ -149,8 +149,8 @@ final class AwardTitlesViewModel {
         var scoreKey: AnnotationKey?
         if let work = credit.work {
             switch work.kind {
-            case .movie:
-                if let movieID = work.movieID {
+                case .movie:
+                    if let movieID = work.movieID {
                     scoreKey = .movie(movieID)
                     if let detail = try? await movies.movieDetail(id: movieID) {
                         title = detail.title
@@ -160,9 +160,9 @@ final class AwardTitlesViewModel {
                     } else {
                         listDraft = fallbackDraft(id: movieID, kind: .movie, title: title)
                     }
-                }
-            case .series:
-                if let seriesID = work.seriesID {
+                    }
+                case .series:
+                    if let seriesID = work.seriesID {
                     scoreKey = .series(seriesID)
                     if let detail = try? await shows.series(id: seriesID) {
                         title = detail.name
@@ -172,9 +172,9 @@ final class AwardTitlesViewModel {
                     } else {
                         listDraft = fallbackDraft(id: seriesID, kind: .tv, title: title)
                     }
-                }
-            case .season:
-                if let seriesID = work.seriesID, let seasonNumber = work.seasonNumber {
+                    }
+                case .season:
+                    if let seriesID = work.seriesID, let seasonNumber = work.seasonNumber {
                     scoreKey = .season(seriesID: seriesID, seasonNumber: seasonNumber)
                     if let detail = try? await shows.season(seriesID: seriesID, seasonNumber: seasonNumber) {
                         title = detail.name
@@ -190,12 +190,12 @@ final class AwardTitlesViewModel {
                             title: seriesTitle(work, fallback: title)
                         )
                     }
-                }
-            case .episode:
-                artwork = .still
-                if let seriesID = work.seriesID,
-                   let seasonNumber = work.seasonNumber,
-                   let episodeNumber = work.episodeNumber {
+                    }
+                case .episode:
+                    artwork = .still
+                    if let seriesID = work.seriesID,
+                    let seasonNumber = work.seasonNumber,
+                    let episodeNumber = work.episodeNumber {
                     scoreKey = .episode(
                         seriesID: seriesID,
                         seasonNumber: seasonNumber,
@@ -219,7 +219,7 @@ final class AwardTitlesViewModel {
                             title: seriesTitle(work, fallback: title)
                         )
                     }
-                }
+                    }
             }
         }
         return AwardTitleRow(

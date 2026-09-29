@@ -19,12 +19,12 @@ enum LibraryListArtwork: Sendable, Equatable {
     /// A custom list takes the first four distinct, non-blank paths in display order.
     static func cover(for list: LibraryList, entries: [ListEntry]) -> LibraryListArtwork {
         switch list.system {
-        case .watched:
-            return .watched
-        case .watchlist:
-            return .watchlist
-        case nil:
-            return .images(imagePaths(for: list, entries: entries))
+            case .watched:
+                return .watched
+            case .watchlist:
+                return .watchlist
+            case nil:
+                return .images(imagePaths(for: list, entries: entries))
         }
     }
 

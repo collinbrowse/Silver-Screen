@@ -139,7 +139,7 @@ final class AwardsRepositoryTests: XCTestCase {
         XCTAssertEqual(rows.map(\.detailLine), [
             "Cillian Murphy · 2024",
             "Christopher Nolan · 2024",
-        ])
+            ])
         XCTAssertEqual(rows.map(\.categoryLabel), ["Best Actor", "Best Director nominee"])
         XCTAssertEqual(
             rows[0].accessibilityName,
@@ -301,7 +301,7 @@ final class AwardsRepositoryTests: XCTestCase {
             "Best Actor nominee",
             "Best Director nominee",
             "Best Adapted Screenplay nominee",
-        ])
+            ])
         XCTAssertEqual(rows.map(\.detailLine), ["1995", "1994", "1993", "1992"])
         XCTAssertEqual(rows[0].accessibilityName, "Oscar nominee for Best Picture, 1995")
     }

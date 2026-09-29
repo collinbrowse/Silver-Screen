@@ -39,24 +39,24 @@ struct TVEpisodeView: View {
     var body: some View {
         Group {
             switch viewModel.state {
-            case .idle, .loading:
-                ProgressView()
+                case .idle, .loading:
+                    ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .empty:
-                EmptyStateView(
-                    title: "Episode Unavailable",
-                    message: "This episode could not be shown.",
-                    systemImage: "tv"
-                )
-            case .loaded(let content, let activity):
-                loaded(content)
+                case .empty:
+                    EmptyStateView(
+                        title: "Episode Unavailable",
+                        message: "This episode could not be shown.",
+                        systemImage: "tv"
+                    )
+                case .loaded(let content, let activity):
+                    loaded(content)
                     .overlay(alignment: .top) {
                         LoadActivityBanner(activity: activity)
                     }
-            case .failed(let error):
-                ErrorStateView(error: error) {
+                case .failed(let error):
+                    ErrorStateView(error: error) {
                     await viewModel.retry()
-                }
+                    }
             }
         }
         .background(DesignTheme.canvas)

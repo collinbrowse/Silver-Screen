@@ -102,28 +102,28 @@ extension PersonCredit {
     /// Movie or series credit. The person's own list membership is a separate draft.
     func listItem() -> ListItemDraft {
         switch mediaType {
-        case .movie:
-            ListItemDraft(
-                id: mediaID,
-                kind: .movie,
-                title: title,
-                imagePath: posterPath,
-                releaseDate: releaseDate,
-                genreNames: MovieGenreCatalog.names(for: genreIDs),
-                voteAverage: voteAverage,
-                popularity: popularity
-            )
-        case .tv:
-            ListItemDraft(
-                id: mediaID,
-                kind: .tv,
-                title: title,
-                imagePath: posterPath,
-                releaseDate: releaseDate,
-                genreNames: TVGenreCatalog.names(for: genreIDs),
-                voteAverage: voteAverage,
-                popularity: popularity
-            )
+            case .movie:
+                ListItemDraft(
+                    id: mediaID,
+                    kind: .movie,
+                    title: title,
+                    imagePath: posterPath,
+                    releaseDate: releaseDate,
+                    genreNames: MovieGenreCatalog.names(for: genreIDs),
+                    voteAverage: voteAverage,
+                    popularity: popularity
+                )
+            case .tv:
+                ListItemDraft(
+                    id: mediaID,
+                    kind: .tv,
+                    title: title,
+                    imagePath: posterPath,
+                    releaseDate: releaseDate,
+                    genreNames: TVGenreCatalog.names(for: genreIDs),
+                    voteAverage: voteAverage,
+                    popularity: popularity
+                )
         }
     }
 }
@@ -161,28 +161,28 @@ extension CreditedPerson {
 extension BrowseRow {
     func listItem() -> ListItemDraft {
         switch media {
-        case .movie:
-            ListItemDraft(
-                id: mediaID,
-                kind: .movie,
-                title: title,
-                imagePath: posterPath,
-                releaseDate: date,
-                genreNames: genreNames,
-                voteAverage: voteAverage,
-                popularity: popularity
-            )
-        case .tv:
-            ListItemDraft(
-                id: mediaID,
-                kind: .tv,
-                title: title,
-                imagePath: posterPath,
-                releaseDate: date,
-                genreNames: genreNames,
-                voteAverage: voteAverage,
-                popularity: popularity
-            )
+            case .movie:
+                ListItemDraft(
+                    id: mediaID,
+                    kind: .movie,
+                    title: title,
+                    imagePath: posterPath,
+                    releaseDate: date,
+                    genreNames: genreNames,
+                    voteAverage: voteAverage,
+                    popularity: popularity
+                )
+            case .tv:
+                ListItemDraft(
+                    id: mediaID,
+                    kind: .tv,
+                    title: title,
+                    imagePath: posterPath,
+                    releaseDate: date,
+                    genreNames: genreNames,
+                    voteAverage: voteAverage,
+                    popularity: popularity
+                )
         }
     }
 }

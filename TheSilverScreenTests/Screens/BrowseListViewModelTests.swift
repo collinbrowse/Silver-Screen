@@ -57,7 +57,7 @@ final class BrowseListViewModelTests: XCTestCase {
             "movie/popular": .success(TMDBFixtures.topMoviesPage1),
             "discover/movie": .success(TMDBFixtures.topMoviesPage1),
             "discover/tv": .success(Self.tvPage),
-        ])
+            ])
         let viewModel = makeViewModel(
             movies: MovieRepository.test(client: client),
             shows: TVRepository.test(client: client)
@@ -81,10 +81,10 @@ final class BrowseListViewModelTests: XCTestCase {
         merge.appendMovies([
             candidate(.movie, id: 1, title: "Alpha", popularity: 1),
             candidate(.movie, id: 2, title: "Beta", popularity: 1),
-        ])
+            ])
         merge.appendShows([
             candidate(.tv, id: 3, title: "Zebra", popularity: 100),
-        ])
+            ])
         merge.consume(sort: .popular, moviesHaveMore: false, showsHaveMore: false)
         XCTAssertEqual(merge.shown.map(\.title), ["Alpha", "Zebra", "Beta"])
     }
@@ -211,7 +211,7 @@ final class BrowseListViewModelTests: XCTestCase {
         let client = RoutingHTTPClient(routes: [
             "discover/movie": .success(TMDBFixtures.topMoviesPage1),
             "discover/tv": .success(Self.tvPage),
-        ])
+            ])
         let viewModel = makeViewModel(
             movies: MovieRepository.test(client: client),
             shows: TVRepository.test(client: client)
@@ -233,7 +233,7 @@ final class BrowseListViewModelTests: XCTestCase {
         let client = PausingHTTPClient(pauseOn: 2, pages: [
             1: TMDBFixtures.topMoviesPage1,
             2: TMDBFixtures.topMoviesPage2,
-        ])
+            ])
         let viewModel = makeViewModel(movies: MovieRepository.test(client: client), shows: TVRepository.test(client: client))
         await viewModel.load()
 
@@ -257,7 +257,7 @@ final class BrowseListViewModelTests: XCTestCase {
         let client = SequencingHTTPClient(stubs: [
             .success(TMDBFixtures.topMoviesPage1),
             .success(duplicate),
-        ])
+            ])
         let viewModel = makeViewModel(movies: MovieRepository.test(client: client), shows: TVRepository.test(client: client))
         await viewModel.load()
         await viewModel.loadMore()
@@ -274,7 +274,7 @@ final class BrowseListViewModelTests: XCTestCase {
             1: TMDBFixtures.topMoviesPage1,
             2: Self.moviePage(id: 1, title: "Late", page: 2, totalPages: 2),
             3: Self.moviePage(id: 2, title: "Fresh", page: 1, totalPages: 1),
-        ])
+            ])
         let viewModel = makeViewModel(movies: MovieRepository.test(client: client), shows: TVRepository.test(client: client))
         await viewModel.load()
 
@@ -295,7 +295,7 @@ final class BrowseListViewModelTests: XCTestCase {
         let client = SequencingHTTPClient(stubs: [
             .success(TMDBFixtures.topMoviesPage1),
             .failure(URLError(.notConnectedToInternet)),
-        ])
+            ])
         let viewModel = makeViewModel(movies: MovieRepository.test(client: client), shows: TVRepository.test(client: client))
         await viewModel.load()
         await viewModel.refresh()
@@ -311,7 +311,7 @@ final class BrowseListViewModelTests: XCTestCase {
         let client = SequencingHTTPClient(stubs: [
             .success(TMDBFixtures.topMoviesPage1),
             .failure(URLError(.notConnectedToInternet)),
-        ])
+            ])
         let viewModel = makeViewModel(movies: MovieRepository.test(client: client), shows: TVRepository.test(client: client))
         await viewModel.load()
         await viewModel.loadMore()

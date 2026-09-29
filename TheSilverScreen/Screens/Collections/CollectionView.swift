@@ -15,21 +15,21 @@ struct CollectionView: View {
     var body: some View {
         Group {
             switch viewModel.state {
-            case .idle, .loading:
-                ProgressView()
+                case .idle, .loading:
+                    ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .empty:
-                EmptyStateView(
-                    title: "No Collection",
-                    message: "This collection has no details.",
-                    systemImage: "square.stack"
-                )
-            case .loaded(let content, _):
-                loaded(content)
-            case .failed(let error):
-                ErrorStateView(error: error) {
+                case .empty:
+                    EmptyStateView(
+                        title: "No Collection",
+                        message: "This collection has no details.",
+                        systemImage: "square.stack"
+                    )
+                case .loaded(let content, _):
+                    loaded(content)
+                case .failed(let error):
+                    ErrorStateView(error: error) {
                     await viewModel.retry()
-                }
+                    }
             }
         }
         .background(DesignTheme.canvas)

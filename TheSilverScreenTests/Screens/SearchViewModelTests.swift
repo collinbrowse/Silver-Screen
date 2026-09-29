@@ -37,7 +37,7 @@ final class SearchViewModelTests: XCTestCase {
     func test_load_emptyQuery_exposesAwardShelves() async {
         let client = RoutingHTTPClient(routes: [
             "movie/popular": .success(TMDBFixtures.topMoviesPage1),
-        ])
+            ])
         let viewModel = SearchViewModel(
             movies: MovieRepository.test(client: client),
             shows: TVRepository.test(client: client),
@@ -131,7 +131,7 @@ final class SearchViewModelTests: XCTestCase {
         let client = SequencingHTTPClient(stubs: [
             .success(TMDBFixtures.topMoviesPage1),
             .success(TMDBFixtures.topMoviesPage2),
-        ])
+            ])
         let viewModel = SearchViewModel(
             movies: MovieRepository.test(client: client),
             shows: TVRepository.test(client: client),
@@ -154,7 +154,7 @@ final class SearchViewModelTests: XCTestCase {
         let client = RoutingHTTPClient(routes: [
             "movie/popular": .success(TMDBFixtures.topMoviesPage1),
             "search/movie": .success(TMDBFixtures.topMoviesPage2),
-        ])
+            ])
         let viewModel = SearchViewModel(
             movies: MovieRepository.test(client: client),
             shows: TVRepository.test(client: client),
@@ -180,7 +180,7 @@ final class SearchViewModelTests: XCTestCase {
         let client = RoutingHTTPClient(routes: [
             "search/movie": .success(TMDBFixtures.topMoviesPage1),
             "search/tv": .success(TMDBFixtures.popularTVPage),
-        ])
+            ])
         let viewModel = SearchViewModel(
             movies: MovieRepository.test(client: client),
             shows: TVRepository.test(client: client),
@@ -208,7 +208,7 @@ final class SearchViewModelTests: XCTestCase {
         let client = RoutingHTTPClient(routes: [
             "movie/popular": .success(TMDBFixtures.topMoviesPage1),
             "search/movie": .success(TMDBFixtures.topMoviesPage2),
-        ])
+            ])
         let viewModel = SearchViewModel(
             movies: MovieRepository.test(client: client),
             shows: TVRepository.test(client: client),
@@ -234,7 +234,7 @@ final class SearchViewModelTests: XCTestCase {
         let client = RoutingHTTPClient(routes: [
             "movie/popular": .success(TMDBFixtures.topMoviesPage1),
             "search/movie": .success(TMDBFixtures.topMoviesPage2),
-        ])
+            ])
         let viewModel = SearchViewModel(
             movies: MovieRepository.test(client: client),
             shows: TVRepository.test(client: client),
@@ -298,150 +298,150 @@ final class SearchViewModelTests: XCTestCase {
 
     func test_search_ordersNameMatchesByPopularity() async {
         let payload = Data("""
-        {
-          "page": 1,
-          "results": [
+            {
+            "page": 1,
+            "results": [
             {"id": 1, "title": "SPI", "genre_ids": [99], "vote_average": 5.0, "popularity": 1.0, "release_date": "2020-01-01"},
             {"id": 2, "title": "Spider-Man: Brand New Day", "genre_ids": [28], "vote_average": 8.0, "popularity": 100.0, "release_date": "2026-07-29"}
-          ],
-          "total_pages": 1
-        }
-        """.utf8)
-        let viewModel = makeViewModel(routes: ["search/movie": .success(payload)])
-        viewModel.query = "Spi"
-        await viewModel.submit()
-        guard case .loaded(.movies(let rows), _) = viewModel.state else {
+            ],
+            "total_pages": 1
+            }
+            """.utf8)
+            let viewModel = makeViewModel(routes: ["search/movie": .success(payload)])
+            viewModel.query = "Spi"
+            await viewModel.submit()
+            guard case .loaded(.movies(let rows), _) = viewModel.state else {
             return XCTFail("Expected movies, got \(viewModel.state)")
-        }
-        XCTAssertEqual(rows.map(\.title), ["Spider-Man: Brand New Day", "SPI"])
-    }
+            }
+            XCTAssertEqual(rows.map(\.title), ["Spider-Man: Brand New Day", "SPI"])
+            }
 
-    func test_peopleSearch_misspelledName_includesTheClosePerson() async {
-        let client = RoutingHTTPClient(routes: [
-            "query=Christopher Waltz": .success(peoplePage(id: 1, name: "Christopher Walsh", popularity: 500)),
-            "query=christopher": .success(peoplePage()),
-            "query=waltz": .success(peoplePage(id: 27319, name: "Christoph Waltz", popularity: 1)),
-        ])
-        let viewModel = SearchViewModel(
-            movies: MovieRepository.test(client: client),
-            shows: TVRepository.test(client: client),
-            people: PersonRepository.test(client: client),
-            annotations: AnnotationsRepository.empty(),
-            sleeper: NoopSleeper()
-        )
-        viewModel.scope = .people
-        viewModel.query = "Christopher Waltz"
+            func test_peopleSearch_misspelledName_includesTheClosePerson() async {
+            let client = RoutingHTTPClient(routes: [
+                "query=Christopher Waltz": .success(peoplePage(id: 1, name: "Christopher Walsh", popularity: 500)),
+                "query=christopher": .success(peoplePage()),
+                "query=waltz": .success(peoplePage(id: 27319, name: "Christoph Waltz", popularity: 1)),
+                ])
+            let viewModel = SearchViewModel(
+                movies: MovieRepository.test(client: client),
+                shows: TVRepository.test(client: client),
+                people: PersonRepository.test(client: client),
+                annotations: AnnotationsRepository.empty(),
+                sleeper: NoopSleeper()
+                )
+            viewModel.scope = .people
+            viewModel.query = "Christopher Waltz"
 
-        await viewModel.submit()
+            await viewModel.submit()
 
-        guard case .loaded(.people(let rows), _) = viewModel.state else {
+            guard case .loaded(.people(let rows), _) = viewModel.state else {
             return XCTFail("Expected people, got \(viewModel.state)")
-        }
-        XCTAssertEqual(rows.map(\.name), ["Christoph Waltz", "Christopher Walsh"])
-        let queries = await client.requests.compactMap(queryValue)
-        XCTAssertEqual(queries.first, "Christopher Waltz")
-        XCTAssertEqual(Set(queries.dropFirst()), ["christopher", "waltz"])
-    }
+            }
+            XCTAssertEqual(rows.map(\.name), ["Christoph Waltz", "Christopher Walsh"])
+            let queries = await client.requests.compactMap(queryValue)
+            XCTAssertEqual(queries.first, "Christopher Waltz")
+            XCTAssertEqual(Set(queries.dropFirst()), ["christopher", "waltz"])
+            }
 
-    func test_peopleSearch_whenThePageAlreadyMatches_doesNotSearchTokens() async {
-        let client = RecordingHTTPClient(
-            stub: .success(peoplePage(id: 27319, name: "Christoph Waltz", popularity: 10))
-        )
-        let viewModel = SearchViewModel(
-            movies: MovieRepository.test(client: client),
-            shows: TVRepository.test(client: client),
-            people: PersonRepository.test(client: client),
-            annotations: AnnotationsRepository.empty(),
-            sleeper: NoopSleeper()
-        )
-        viewModel.scope = .people
-        viewModel.query = "Christopher Waltz"
+            func test_peopleSearch_whenThePageAlreadyMatches_doesNotSearchTokens() async {
+            let client = RecordingHTTPClient(
+                stub: .success(peoplePage(id: 27319, name: "Christoph Waltz", popularity: 10))
+                )
+            let viewModel = SearchViewModel(
+                movies: MovieRepository.test(client: client),
+                shows: TVRepository.test(client: client),
+                people: PersonRepository.test(client: client),
+                annotations: AnnotationsRepository.empty(),
+                sleeper: NoopSleeper()
+                )
+            viewModel.scope = .people
+            viewModel.query = "Christopher Waltz"
 
-        await viewModel.submit()
+            await viewModel.submit()
 
-        let requestCount = await client.requestCount
-        XCTAssertEqual(requestCount, 1)
-        guard case .loaded(.people(let rows), _) = viewModel.state else {
+            let requestCount = await client.requestCount
+            XCTAssertEqual(requestCount, 1)
+            guard case .loaded(.people(let rows), _) = viewModel.state else {
             return XCTFail("Expected people, got \(viewModel.state)")
-        }
-        XCTAssertEqual(rows.map(\.name), ["Christoph Waltz"])
-    }
+            }
+            XCTAssertEqual(rows.map(\.name), ["Christoph Waltz"])
+            }
 
-    func test_search_genreUsesDiscoverSortedByPopularity() async throws {
-        let client = RoutingHTTPClient(routes: [
-            "discover/movie": .success(TMDBFixtures.topMoviesPage1),
-            "discover/tv": .success(TMDBFixtures.popularTVPage),
-        ])
-        let viewModel = SearchViewModel(
-            movies: MovieRepository.test(client: client),
-            shows: TVRepository.test(client: client),
-            people: PersonRepository.test(client: client),
-            annotations: AnnotationsRepository.empty(),
-            sleeper: NoopSleeper()
-        )
-        viewModel.query = "Horror"
-        await viewModel.submit()
-        let movieURL = await client.requests.last?.url
-        let movieItems = URLComponents(url: movieURL!, resolvingAgainstBaseURL: false)?.queryItems ?? []
-        XCTAssertEqual(movieURL?.path, "/3/discover/movie")
-        XCTAssertTrue(movieItems.contains(URLQueryItem(name: "with_genres", value: "27")))
-        XCTAssertTrue(movieItems.contains(URLQueryItem(name: "sort_by", value: "popularity.desc")))
+            func test_search_genreUsesDiscoverSortedByPopularity() async throws {
+            let client = RoutingHTTPClient(routes: [
+                "discover/movie": .success(TMDBFixtures.topMoviesPage1),
+                "discover/tv": .success(TMDBFixtures.popularTVPage),
+                ])
+            let viewModel = SearchViewModel(
+                movies: MovieRepository.test(client: client),
+                shows: TVRepository.test(client: client),
+                people: PersonRepository.test(client: client),
+                annotations: AnnotationsRepository.empty(),
+                sleeper: NoopSleeper()
+                )
+            viewModel.query = "Horror"
+            await viewModel.submit()
+            let movieURL = await client.requests.last?.url
+            let movieItems = URLComponents(url: movieURL!, resolvingAgainstBaseURL: false)?.queryItems ?? []
+            XCTAssertEqual(movieURL?.path, "/3/discover/movie")
+            XCTAssertTrue(movieItems.contains(URLQueryItem(name: "with_genres", value: "27")))
+            XCTAssertTrue(movieItems.contains(URLQueryItem(name: "sort_by", value: "popularity.desc")))
 
-        viewModel.scope = .tv
-        viewModel.query = "Drama"
-        await viewModel.submit()
-        let tvURL = await client.requests.last?.url
-        let tvItems = URLComponents(url: tvURL!, resolvingAgainstBaseURL: false)?.queryItems ?? []
-        XCTAssertEqual(tvURL?.path, "/3/discover/tv")
-        XCTAssertTrue(tvItems.contains(URLQueryItem(name: "with_genres", value: "18")))
-    }
+            viewModel.scope = .tv
+            viewModel.query = "Drama"
+            await viewModel.submit()
+            let tvURL = await client.requests.last?.url
+            let tvItems = URLComponents(url: tvURL!, resolvingAgainstBaseURL: false)?.queryItems ?? []
+            XCTAssertEqual(tvURL?.path, "/3/discover/tv")
+            XCTAssertTrue(tvItems.contains(URLQueryItem(name: "with_genres", value: "18")))
+            }
 
-    func test_focusedPlaceholder_asksForANameOrGenre() {
-        let viewModel = makeViewModel(routes: [:])
-        viewModel.setFieldFocused(true)
-        XCTAssertEqual(viewModel.emptyMessage, "Type a name or genre")
-    }
+            func test_focusedPlaceholder_asksForANameOrGenre() {
+            let viewModel = makeViewModel(routes: [:])
+            viewModel.setFieldFocused(true)
+            XCTAssertEqual(viewModel.emptyMessage, "Type a name or genre")
+            }
 
-    private func peoplePage(id: Int = 0, name: String? = nil, popularity: Double = 0) -> Data {
-        let results: String
-        if let name {
+            private func peoplePage(id: Int = 0, name: String? = nil, popularity: Double = 0) -> Data {
+            let results: String
+            if let name {
             results = """
             {"id": \(id), "name": "\(name)", "profile_path": null, "known_for_department": "Acting", "popularity": \(popularity)}
             """
-        } else {
+            } else {
             results = ""
-        }
-        return Data(
-            """
-            {"page": 1, "total_pages": 1, "results": [\(results)]}
-            """.utf8
-        )
-    }
+            }
+            return Data(
+                """
+                {"page": 1, "total_pages": 1, "results": [\(results)]}
+                """.utf8
+                )
+            }
 
-    private func queryValue(_ request: URLRequest) -> String? {
-        guard let url = request.url else { return nil }
-        return URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            private func queryValue(_ request: URLRequest) -> String? {
+            guard let url = request.url else { return nil }
+            return URLComponents(url: url, resolvingAgainstBaseURL: false)?
             .queryItems?
             .first { $0.name == "query" }?
             .value
-    }
+            }
 
-    private func queryItems(_ client: RecordingHTTPClient) async -> [URLQueryItem] {
-        let url = await client.lastURL
-        return URLComponents(url: url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
-    }
+            private func queryItems(_ client: RecordingHTTPClient) async -> [URLQueryItem] {
+            let url = await client.lastURL
+            return URLComponents(url: url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
+            }
 
-    private func makeViewModel(
-        routes: [String: FakeHTTPClient.Stub],
-        annotations: AnnotationsRepository = .empty()
-    ) -> SearchViewModel {
-        let client = RoutingHTTPClient(routes: routes)
-        return SearchViewModel(
-            movies: MovieRepository.test(client: client),
-            shows: TVRepository.test(client: client),
-            people: PersonRepository.test(client: client),
-            annotations: annotations,
-            sleeper: NoopSleeper()
-        )
-    }
-}
+            private func makeViewModel(
+                routes: [String: FakeHTTPClient.Stub],
+                annotations: AnnotationsRepository = .empty()
+                ) -> SearchViewModel {
+            let client = RoutingHTTPClient(routes: routes)
+            return SearchViewModel(
+                movies: MovieRepository.test(client: client),
+                shows: TVRepository.test(client: client),
+                people: PersonRepository.test(client: client),
+                annotations: annotations,
+                sleeper: NoopSleeper()
+                )
+            }
+            }

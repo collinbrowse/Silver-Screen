@@ -7,7 +7,6 @@
 //
 
 import SwiftUI
-import UIKit
 
 /// Which backdrop stays on the hero when the image list or the user's page changes.
 enum MovieHeroSelection {
@@ -236,105 +235,5 @@ struct DetailHero<Metadata: View>: View {
 
     private func reconcileSelection() {
         selectedImageID = MovieHeroSelection.backdropID(selected: selectedImageID, images: images)
-    }
-}
-
-extension View {
-    /// Draws the backdrop under the status icons, with a short fade that is darker at the top.
-    /// The fade and the dark status-bar treatment lift once the inline title has moved into the bar.
-    func heroStatusBarBleed(enabled: Bool) -> some View {
-        modifier(HeroStatusBarBleed(enabled: enabled))
-    }
-}
-
-private struct HeroStatusBarBleed: ViewModifier {
-    let enabled: Bool
-
-    @State private var statusBarHeight: CGFloat = 0
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-    @Environment(\.inlineTitleIsInNavigationBar) private var inlineTitleIsInNavigationBar
-
-    /// Clear bar over the hero. Drops once the title has moved into the bar.
-    private var keepsStatusBarClear: Bool {
-        enabled && !inlineTitleIsInNavigationBar
-    }
-
-    func body(content: Content) -> some View {
-        content
-            .contentMargins(.top, 0, for: .scrollContent)
-            .scrollEdgeEffectHidden(keepsStatusBarClear)
-            .overlay(alignment: .top) {
-                if keepsStatusBarClear, statusBarHeight > 0 {
-                    StatusBarScrim(height: statusBarHeight * 2.4, reduceTransparency: reduceTransparency)
-                }
-            }
-            .ignoresSafeArea(edges: enabled ? .top : [])
-            .toolbarColorScheme(keepsStatusBarClear ? .dark : nil, for: .navigationBar)
-            .background {
-                WindowTopInsetReader { top in
-                    if top != statusBarHeight {
-                        statusBarHeight = top
-                    }
-                }
-                .frame(width: 0, height: 0)
-            }
-    }
-}
-
-/// Soft shade under the time and status icons. Darkest at the screen edge, gone before the artwork.
-private struct StatusBarScrim: View {
-    let height: CGFloat
-    let reduceTransparency: Bool
-
-    var body: some View {
-        LinearGradient(
-            stops: [
-                .init(color: Color.black.opacity(reduceTransparency ? 0.42 : 0.28), location: 0),
-                .init(color: Color.black.opacity(reduceTransparency ? 0.16 : 0.08), location: 0.38),
-                .init(color: Color.black.opacity(0), location: 1)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-        .frame(height: height)
-        .frame(maxWidth: .infinity)
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
-}
-
-/// Reports the window top inset, which is the band behind the clock and status icons.
-private struct WindowTopInsetReader: UIViewRepresentable {
-    let onChange: (CGFloat) -> Void
-
-    func makeUIView(context: Context) -> ProbeView {
-        let view = ProbeView()
-        view.onChange = onChange
-        return view
-    }
-
-    func updateUIView(_ uiView: ProbeView, context: Context) {
-        uiView.onChange = onChange
-        uiView.report()
-    }
-
-    final class ProbeView: UIView {
-        var onChange: ((CGFloat) -> Void)?
-
-        override func didMoveToWindow() {
-            super.didMoveToWindow()
-            report()
-        }
-
-        override func safeAreaInsetsDidChange() {
-            super.safeAreaInsetsDidChange()
-            report()
-        }
-
-        func report() {
-            let top = window?.safeAreaInsets.top ?? 0
-            guard top > 0 else { return }
-            onChange?(top)
-        }
     }
 }

@@ -49,10 +49,10 @@ struct RemoteImageView: View {
         image = nil
         guard let path,
               let url = ImageLoader.imageURL(
-                path: path,
-                kind: kind,
-                targetWidthPoints: width,
-                scale: displayScale
+                  path: path,
+                  kind: kind,
+                  targetWidthPoints: width,
+                  scale: displayScale
               ) else {
             return
         }

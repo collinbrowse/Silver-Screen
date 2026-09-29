@@ -34,37 +34,37 @@ extension CreditDepartment: Codable {
         }
         let raw = try decoder.singleValueContainer().decode(String.self)
         switch raw {
-        case "cast": self = .cast
-        case "crew": self = .crew
-        case "directing": self = .directing
-        case "writing": self = .writing
-        default:
-            throw DecodingError.dataCorrupted(
-                DecodingError.Context(
-                    codingPath: decoder.codingPath,
-                    debugDescription: "Unknown credit department"
+            case "cast": self = .cast
+            case "crew": self = .crew
+            case "directing": self = .directing
+            case "writing": self = .writing
+            default:
+                throw DecodingError.dataCorrupted(
+                    DecodingError.Context(
+                        codingPath: decoder.codingPath,
+                        debugDescription: "Unknown credit department"
+                        )
                 )
-            )
         }
     }
 
     func encode(to encoder: Encoder) throws {
         switch self {
-        case .cast:
-            var container = encoder.singleValueContainer()
-            try container.encode("cast")
-        case .crew:
-            var container = encoder.singleValueContainer()
-            try container.encode("crew")
-        case .directing:
-            var container = encoder.singleValueContainer()
-            try container.encode("directing")
-        case .writing:
-            var container = encoder.singleValueContainer()
-            try container.encode("writing")
-        case .named(let name):
-            var container = encoder.container(keyedBy: CodingKeys.self)
-            try container.encode(name, forKey: .named)
+            case .cast:
+                var container = encoder.singleValueContainer()
+                try container.encode("cast")
+            case .crew:
+                var container = encoder.singleValueContainer()
+                try container.encode("crew")
+            case .directing:
+                var container = encoder.singleValueContainer()
+                try container.encode("directing")
+            case .writing:
+                var container = encoder.singleValueContainer()
+                try container.encode("writing")
+            case .named(let name):
+                var container = encoder.container(keyedBy: CodingKeys.self)
+                try container.encode(name, forKey: .named)
         }
     }
 }

@@ -45,7 +45,7 @@ enum WatchedRatings {
             let draft: ListItemDraft
             if let stored = snapshot.entries.first(where: {
                 $0.kind == .movie && $0.itemID == record.key.subjectID
-            }) {
+                }) {
                 draft = stored.listItem()
             } else {
                 do {

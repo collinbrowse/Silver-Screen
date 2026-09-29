@@ -20,24 +20,24 @@ struct LibraryHomeView: View {
     var body: some View {
         Group {
             switch viewModel.state {
-            case .idle, .loading:
-                ProgressView()
+                case .idle, .loading:
+                    ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .empty:
-                EmptyStateView(
-                    title: "No Lists",
-                    message: emptyMessage,
-                    systemImage: "books.vertical"
-                )
-            case .loaded(_, let activity):
-                list
+                case .empty:
+                    EmptyStateView(
+                        title: "No Lists",
+                        message: emptyMessage,
+                        systemImage: "books.vertical"
+                    )
+                case .loaded(_, let activity):
+                    list
                     .overlay(alignment: .top) {
                         LoadActivityBanner(activity: activity)
                     }
-            case .failed(let error):
-                ErrorStateView(error: error) {
+                case .failed(let error):
+                    ErrorStateView(error: error) {
                     await viewModel.load()
-                }
+                    }
             }
         }
         .background(DesignTheme.canvas)
@@ -170,7 +170,7 @@ struct LibraryHomeView: View {
                             }
                             .onMove(perform: viewModel.canReorderLists ? { source, destination in
                                 Task { await viewModel.moveLists(from: source, to: destination) }
-                            } : nil)
+                                } : nil)
                         }
                         .listSectionSeparatorBetweenCells(isFirstSection: system.isEmpty, isLastSection: true)
                     }

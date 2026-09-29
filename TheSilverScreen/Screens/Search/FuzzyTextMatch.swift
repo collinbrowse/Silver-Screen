@@ -71,9 +71,9 @@ enum FuzzyTextMatch {
     /// 0 edits under 3 characters, 1 edit for 3–5, 2 edits after that.
     private static func editBudget(for length: Int) -> Int {
         switch length {
-        case ..<3: 0
-        case 3...5: 1
-        default: 2
+            case ..<3: 0
+            case 3...5: 1
+            default: 2
         }
     }
 

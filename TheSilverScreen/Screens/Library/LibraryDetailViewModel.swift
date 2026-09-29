@@ -106,9 +106,9 @@ final class LibraryDetailViewModel {
         var mapped: [String: SavedUserScore] = [:]
         for entry in entries {
             let key: AnnotationKey? = switch entry.kind {
-            case .movie: .movie(entry.itemID)
-            case .tv: .series(entry.itemID)
-            case .person: nil
+                case .movie: .movie(entry.itemID)
+                case .tv: .series(entry.itemID)
+                case .person: nil
             }
             if let key, let score = scores[key] {
                 mapped[entry.itemKey] = score

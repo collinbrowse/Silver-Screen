@@ -119,11 +119,11 @@ final class TVRepositoryTests: XCTestCase {
 
     func test_season_joinsEveryDirector() async throws {
         let payload = Data("""
-        {
-          "id": 2,
-          "name": "Season 2",
-          "season_number": 2,
-          "episodes": [
+            {
+            "id": 2,
+            "name": "Season 2",
+            "season_number": 2,
+            "episodes": [
             {
               "id": 11,
               "name": "Grilled",
@@ -133,109 +133,109 @@ final class TVRepositoryTests: XCTestCase {
                 {"id": 5, "credit_id": "dir-2", "name": "Michelle MacLaren", "job": "Director", "department": "Directing"}
               ]
             }
-          ]
-        }
-        """.utf8)
-        let season = try await TVRepository.test(client: FakeHTTPClient(stub: .success(payload)))
+            ]
+            }
+            """.utf8)
+            let season = try await TVRepository.test(client: FakeHTTPClient(stub: .success(payload)))
             .season(seriesID: 1396, seasonNumber: 2)
-        XCTAssertEqual(season.episodes[0].directorName, "Vince Gilligan, Michelle MacLaren")
-        XCTAssertEqual(season.episodes[0].directorLine, "Director: Vince Gilligan, Michelle MacLaren")
-    }
+            XCTAssertEqual(season.episodes[0].directorName, "Vince Gilligan, Michelle MacLaren")
+            XCTAssertEqual(season.episodes[0].directorLine, "Director: Vince Gilligan, Michelle MacLaren")
+            }
 
-    func test_season_reportsUnknownDirectorWhenNoneAreCredited() async throws {
-        let payload = Data("""
-        {
-          "id": 1,
-          "name": "Specials",
-          "season_number": 0,
-          "episodes": [
-            {"id": 12, "name": "Extra", "episode_number": 1, "crew": []}
-          ]
-        }
-        """.utf8)
-        let season = try await TVRepository.test(client: FakeHTTPClient(stub: .success(payload)))
-            .season(seriesID: 1396, seasonNumber: 0)
-        XCTAssertNil(season.episodes[0].directorName)
-        XCTAssertEqual(season.episodes[0].directorLine, "Director: unknown")
-    }
+            func test_season_reportsUnknownDirectorWhenNoneAreCredited() async throws {
+            let payload = Data("""
+                {
+                "id": 1,
+                "name": "Specials",
+                "season_number": 0,
+                "episodes": [
+                {"id": 12, "name": "Extra", "episode_number": 1, "crew": []}
+                ]
+                }
+                """.utf8)
+                let season = try await TVRepository.test(client: FakeHTTPClient(stub: .success(payload)))
+                .season(seriesID: 1396, seasonNumber: 0)
+                XCTAssertNil(season.episodes[0].directorName)
+                XCTAssertEqual(season.episodes[0].directorLine, "Director: unknown")
+                }
 
-    func test_popular_requestsPopularTV() async throws {
-        let client = RecordingHTTPClient(stub: .success(TMDBFixtures.popularTVPage))
-        let repository = TVRepository.test(client: client)
-        let page = try await repository.popular(page: 1)
-        let path = await client.lastPath
-        XCTAssertEqual(path, "/3/tv/popular")
-        XCTAssertEqual(page.series.map(\.name), ["Breaking Bad"])
-        XCTAssertTrue(page.hasMore)
-    }
+                func test_popular_requestsPopularTV() async throws {
+                let client = RecordingHTTPClient(stub: .success(TMDBFixtures.popularTVPage))
+                let repository = TVRepository.test(client: client)
+                let page = try await repository.popular(page: 1)
+                let path = await client.lastPath
+                XCTAssertEqual(path, "/3/tv/popular")
+                XCTAssertEqual(page.series.map(\.name), ["Breaking Bad"])
+                XCTAssertTrue(page.hasMore)
+                }
 
-    func test_series_skipsMalformedImagesAndKeepsTheSeries() async throws {
-        let payload = Data("""
-        {
-          "id": 1396,
-          "name": "Breaking Bad",
-          "images": { "backdrops": "not-an-array" },
-          "aggregate_credits": { "cast": [], "crew": [] },
-          "recommendations": { "results": [] }
-        }
-        """.utf8)
-        let series = try await TVRepository.test(client: FakeHTTPClient(stub: .success(payload)))
-            .series(id: 1396)
-        XCTAssertEqual(series.name, "Breaking Bad")
-        XCTAssertTrue(series.images.isEmpty)
-        XCTAssertTrue(series.cast.isEmpty)
-    }
+                func test_series_skipsMalformedImagesAndKeepsTheSeries() async throws {
+                let payload = Data("""
+                    {
+                    "id": 1396,
+                    "name": "Breaking Bad",
+                    "images": { "backdrops": "not-an-array" },
+                    "aggregate_credits": { "cast": [], "crew": [] },
+                    "recommendations": { "results": [] }
+                    }
+                    """.utf8)
+                    let series = try await TVRepository.test(client: FakeHTTPClient(stub: .success(payload)))
+                    .series(id: 1396)
+                    XCTAssertEqual(series.name, "Breaking Bad")
+                    XCTAssertTrue(series.images.isEmpty)
+                    XCTAssertTrue(series.cast.isEmpty)
+                    }
 
-    func test_series_appendsVideosAndMapsOfficialTrailers() async throws {
-        let client = RecordingHTTPClient(stub: .success(Self.detailPayload(
-            core: #""id": 9, "name": "Show""#,
-            videos: Self.twoTrailers
-        )))
-        let repository = TVRepository.test(client: client)
-        let series = try await repository.series(id: 9)
-        let url = await client.lastURL
-        let items = URLComponents(url: url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
-        XCTAssertTrue(items.contains(URLQueryItem(name: "append_to_response", value: "images,aggregate_credits,recommendations,videos")))
-        XCTAssertEqual(series.trailers.map(\.title), ["Official Trailer", "Trailer 2"])
-    }
+                    func test_series_appendsVideosAndMapsOfficialTrailers() async throws {
+                    let client = RecordingHTTPClient(stub: .success(Self.detailPayload(
+                        core: #""id": 9, "name": "Show""#,
+                        videos: Self.twoTrailers
+                        )))
+                    let repository = TVRepository.test(client: client)
+                    let series = try await repository.series(id: 9)
+                    let url = await client.lastURL
+                    let items = URLComponents(url: url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
+                    XCTAssertTrue(items.contains(URLQueryItem(name: "append_to_response", value: "images,aggregate_credits,recommendations,videos")))
+                    XCTAssertEqual(series.trailers.map(\.title), ["Official Trailer", "Trailer 2"])
+                    }
 
-    func test_season_appendsVideosAndMapsOfficialTrailers() async throws {
-        let client = RecordingHTTPClient(stub: .success(Self.detailPayload(
-            core: #""id": 3, "season_number": 1"#,
-            videos: Self.twoTrailers
-        )))
-        let repository = TVRepository.test(client: client)
-        let season = try await repository.season(seriesID: 9, seasonNumber: 1)
-        let url = await client.lastURL
-        let items = URLComponents(url: url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
-        XCTAssertTrue(items.contains(URLQueryItem(name: "append_to_response", value: "images,aggregate_credits,videos")))
-        XCTAssertEqual(season.trailers.map(\.youtubeID), ["abc_123", "second"])
-    }
+                    func test_season_appendsVideosAndMapsOfficialTrailers() async throws {
+                    let client = RecordingHTTPClient(stub: .success(Self.detailPayload(
+                        core: #""id": 3, "season_number": 1"#,
+                        videos: Self.twoTrailers
+                        )))
+                    let repository = TVRepository.test(client: client)
+                    let season = try await repository.season(seriesID: 9, seasonNumber: 1)
+                    let url = await client.lastURL
+                    let items = URLComponents(url: url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
+                    XCTAssertTrue(items.contains(URLQueryItem(name: "append_to_response", value: "images,aggregate_credits,videos")))
+                    XCTAssertEqual(season.trailers.map(\.youtubeID), ["abc_123", "second"])
+                    }
 
-    func test_episode_appendsVideosAndMapsOfficialTrailers() async throws {
-        let client = RecordingHTTPClient(stub: .success(Self.detailPayload(
-            core: #""id": 4, "episode_number": 2"#,
-            videos: Self.twoTrailers
-        )))
-        let repository = TVRepository.test(client: client)
-        let episode = try await repository.episode(seriesID: 9, seasonNumber: 1, episodeNumber: 2)
-        let url = await client.lastURL
-        let items = URLComponents(url: url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
-        XCTAssertTrue(items.contains(URLQueryItem(name: "append_to_response", value: "images,credits,videos")))
-        XCTAssertEqual(episode.trailers.map(\.title), ["Official Trailer", "Trailer 2"])
-    }
+                    func test_episode_appendsVideosAndMapsOfficialTrailers() async throws {
+                    let client = RecordingHTTPClient(stub: .success(Self.detailPayload(
+                        core: #""id": 4, "episode_number": 2"#,
+                        videos: Self.twoTrailers
+                        )))
+                    let repository = TVRepository.test(client: client)
+                    let episode = try await repository.episode(seriesID: 9, seasonNumber: 1, episodeNumber: 2)
+                    let url = await client.lastURL
+                    let items = URLComponents(url: url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
+                    XCTAssertTrue(items.contains(URLQueryItem(name: "append_to_response", value: "images,credits,videos")))
+                    XCTAssertEqual(episode.trailers.map(\.title), ["Official Trailer", "Trailer 2"])
+                    }
 
-    private static let twoTrailers = """
-    {"name": "Official Trailer", "key": "abc_123", "site": "YouTube", "type": "Trailer", "official": true},
-    {"key": "second", "site": "YouTube", "type": "Trailer", "official": true}
-    """
+                    private static let twoTrailers = """
+                    {"name": "Official Trailer", "key": "abc_123", "site": "YouTube", "type": "Trailer", "official": true},
+                    {"key": "second", "site": "YouTube", "type": "Trailer", "official": true}
+                    """
 
-    private static func detailPayload(core: String, videos: String) -> Data {
-        Data("""
-        {
-          \(core),
-          "videos": { "results": [\(videos)] }
-        }
-        """.utf8)
-    }
-}
+                    private static func detailPayload(core: String, videos: String) -> Data {
+                    Data("""
+                        {
+                        \(core),
+                        "videos": { "results": [\(videos)] }
+                        }
+                        """.utf8)
+                        }
+                        }

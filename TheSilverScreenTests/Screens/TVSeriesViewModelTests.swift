@@ -13,7 +13,7 @@ final class TVSeriesViewModelTests: XCTestCase {
         let client = RoutingHTTPClient(routes: [
             "/tv/1396/reviews": .success(TMDBFixtures.movieReviewsPage1),
             "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
-        ])
+            ])
         let viewModel = TVSeriesViewModel(seriesID: 1396, shows: TVRepository.test(client: client),
             annotations: AnnotationsRepository.empty()
         )
@@ -41,7 +41,7 @@ final class TVSeriesViewModelTests: XCTestCase {
             .success(TMDBFixtures.tvSeriesBreakingBad),
             .success(TMDBFixtures.movieReviewsPage1),
             .success(TMDBFixtures.movieReviewsPage2),
-        ])
+            ])
         let viewModel = TVSeriesViewModel(seriesID: 1396, shows: TVRepository.test(client: client),
             annotations: AnnotationsRepository.empty()
         )
@@ -61,7 +61,7 @@ final class TVSeriesViewModelTests: XCTestCase {
             .success(TMDBFixtures.tvSeriesBreakingBad),
             .success(TMDBFixtures.movieReviewsPage1),
             .failure(URLError(.notConnectedToInternet)),
-        ])
+            ])
         let viewModel = TVSeriesViewModel(seriesID: 1396, shows: TVRepository.test(client: client),
             annotations: AnnotationsRepository.empty()
         )
@@ -81,7 +81,7 @@ final class TVSeriesViewModelTests: XCTestCase {
             .success(TMDBFixtures.tvSeriesBreakingBad),
             .success(TMDBFixtures.movieReviewsPage1),
             .failure(URLError(.notConnectedToInternet)),
-        ])
+            ])
         let viewModel = TVSeriesViewModel(seriesID: 1396, shows: TVRepository.test(client: client),
             annotations: AnnotationsRepository.empty()
         )
@@ -98,125 +98,125 @@ final class TVSeriesViewModelTests: XCTestCase {
 
     func test_load_usesUnknownCopyWhenCreatorAndLastAirDateAreMissing() async {
         let payload = Data("""
-        {"id": 1, "name": "Untitled", "overview": "", "created_by": []}
-        """.utf8)
-        let client = SequencingHTTPClient(stubs: [
-            .success(payload),
-            .failure(URLError(.notConnectedToInternet)),
-        ])
-        let viewModel = TVSeriesViewModel(seriesID: 1, shows: TVRepository.test(client: client),
-            annotations: AnnotationsRepository.empty()
-        )
+            {"id": 1, "name": "Untitled", "overview": "", "created_by": []}
+            """.utf8)
+            let client = SequencingHTTPClient(stubs: [
+                .success(payload),
+                .failure(URLError(.notConnectedToInternet)),
+                ])
+            let viewModel = TVSeriesViewModel(seriesID: 1, shows: TVRepository.test(client: client),
+                annotations: AnnotationsRepository.empty()
+                )
 
-        await viewModel.load()
+            await viewModel.load()
 
-        guard case .loaded(let content, _) = viewModel.state else {
+            guard case .loaded(let content, _) = viewModel.state else {
             return XCTFail("Expected loaded, got \(viewModel.state)")
-        }
-        XCTAssertEqual(content.creatorsText, "Creator unknown")
-        XCTAssertEqual(content.formattedLastAirDate, "Last Air Date: Unknown")
-        XCTAssertEqual(content.formattedRating, "Unavailable")
-        XCTAssertEqual(content.ratingAccessibilityLabel, "TMDB rating unavailable")
-    }
+            }
+            XCTAssertEqual(content.creatorsText, "Creator unknown")
+            XCTAssertEqual(content.formattedLastAirDate, "Last Air Date: Unknown")
+            XCTAssertEqual(content.formattedRating, "Unavailable")
+            XCTAssertEqual(content.ratingAccessibilityLabel, "TMDB rating unavailable")
+            }
 
-    func test_openPoster_setsFullscreenPoster() async {
-        let client = RoutingHTTPClient(routes: [
-            "/tv/1396/reviews": .success(TMDBFixtures.movieReviewsPage1),
-            "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
-        ])
-        let viewModel = TVSeriesViewModel(seriesID: 1396, shows: TVRepository.test(client: client),
-            annotations: AnnotationsRepository.empty()
-        )
-        await viewModel.load()
+            func test_openPoster_setsFullscreenPoster() async {
+            let client = RoutingHTTPClient(routes: [
+                "/tv/1396/reviews": .success(TMDBFixtures.movieReviewsPage1),
+                "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
+                ])
+            let viewModel = TVSeriesViewModel(seriesID: 1396, shows: TVRepository.test(client: client),
+                annotations: AnnotationsRepository.empty()
+                )
+            await viewModel.load()
 
-        viewModel.openPoster()
+            viewModel.openPoster()
 
-        guard case .loaded(let content, _) = viewModel.state else {
+            guard case .loaded(let content, _) = viewModel.state else {
             return XCTFail("Expected loaded, got \(viewModel.state)")
-        }
-        XCTAssertEqual(content.fullscreenImages?.kind, .poster)
-        XCTAssertEqual(content.fullscreenImages?.images.map(\.filePath), ["/bb.jpg"])
-        XCTAssertEqual(content.fullscreenImages?.images.count, 1)
-    }
+            }
+            XCTAssertEqual(content.fullscreenImages?.kind, .poster)
+            XCTAssertEqual(content.fullscreenImages?.images.map(\.filePath), ["/bb.jpg"])
+            XCTAssertEqual(content.fullscreenImages?.images.count, 1)
+            }
 
-    func test_load_withSavedScoreAndNote_showsThem() async throws {
-        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
-        _ = try await annotations.saveScore(9, for: .series(1396))
-        _ = try await annotations.saveNote("Peak television", for: .series(1396))
-        let client = RoutingHTTPClient(routes: [
-            "/tv/1396/reviews": .success(TMDBFixtures.movieReviewsEmpty),
-            "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
-        ])
-        let viewModel = TVSeriesViewModel(
-            seriesID: 1396,
-            shows: TVRepository.test(client: client),
-            annotations: annotations
-        )
+            func test_load_withSavedScoreAndNote_showsThem() async throws {
+            let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+            _ = try await annotations.saveScore(9, for: .series(1396))
+            _ = try await annotations.saveNote("Peak television", for: .series(1396))
+            let client = RoutingHTTPClient(routes: [
+                "/tv/1396/reviews": .success(TMDBFixtures.movieReviewsEmpty),
+                "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
+                ])
+            let viewModel = TVSeriesViewModel(
+                seriesID: 1396,
+                shows: TVRepository.test(client: client),
+                annotations: annotations
+                )
 
-        await viewModel.load()
+            await viewModel.load()
 
-        guard case .loaded(let content, activity: .none) = viewModel.state else {
+            guard case .loaded(let content, activity: .none) = viewModel.state else {
             return XCTFail("Expected loaded, got \(viewModel.state)")
-        }
-        XCTAssertEqual(content.formattedUserScore, "9.0 / 10")
-        XCTAssertEqual(content.userNote, "Peak television")
-        XCTAssertTrue(PersonalDetail(
-            formattedUserScore: content.formattedUserScore,
-            userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
-            userNote: content.userNote,
-            formattedRatedOn: content.formattedRatedOn,
-            formattedNotedOn: content.formattedNotedOn
-        ).showsNotesFirst)
-    }
+            }
+            XCTAssertEqual(content.formattedUserScore, "9.0 / 10")
+            XCTAssertEqual(content.userNote, "Peak television")
+            XCTAssertTrue(PersonalDetail(
+                formattedUserScore: content.formattedUserScore,
+                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+                userNote: content.userNote,
+                formattedRatedOn: content.formattedRatedOn,
+                formattedNotedOn: content.formattedNotedOn
+                ).showsNotesFirst)
+            }
 
-    func test_load_withoutNote_andEmptyOverview_staysOnDescription() async {
-        let payload = Data("""
-        {"id": 1, "name": "Untitled", "overview": "", "created_by": []}
-        """.utf8)
-        let viewModel = TVSeriesViewModel(
-            seriesID: 1,
-            shows: TVRepository.test(client: SequencingHTTPClient(stubs: [.success(payload)])),
-            annotations: AnnotationsRepository.empty()
-        )
+            func test_load_withoutNote_andEmptyOverview_staysOnDescription() async {
+            let payload = Data("""
+                {"id": 1, "name": "Untitled", "overview": "", "created_by": []}
+                """.utf8)
+                let viewModel = TVSeriesViewModel(
+                    seriesID: 1,
+                    shows: TVRepository.test(client: SequencingHTTPClient(stubs: [.success(payload)])),
+                    annotations: AnnotationsRepository.empty()
+                    )
 
-        await viewModel.load()
+                await viewModel.load()
 
-        guard case .loaded(let content, _) = viewModel.state else {
-            return XCTFail("Expected loaded, got \(viewModel.state)")
-        }
-        XCTAssertNil(content.userNote)
-        XCTAssertEqual(content.detail.overview, "")
-        XCTAssertFalse(PersonalDetail(
-            formattedUserScore: nil,
-            userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
-            userNote: nil,
-            formattedRatedOn: nil,
-            formattedNotedOn: nil
-        ).showsNotesFirst)
-    }
+                guard case .loaded(let content, _) = viewModel.state else {
+                return XCTFail("Expected loaded, got \(viewModel.state)")
+                }
+                XCTAssertNil(content.userNote)
+                XCTAssertEqual(content.detail.overview, "")
+                XCTAssertFalse(PersonalDetail(
+                    formattedUserScore: nil,
+                    userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+                    userNote: nil,
+                    formattedRatedOn: nil,
+                    formattedNotedOn: nil
+                    ).showsNotesFirst)
+                }
 
-    func test_saveUserNote_whenPersistenceFails_keepsPreviousNote() async throws {
-        let store = InMemoryAnnotationsStore()
-        let annotations = AnnotationsRepository(store: store, logger: SilentLogger())
-        _ = try await annotations.saveNote("Keep this", for: .series(1396))
-        let client = RoutingHTTPClient(routes: [
-            "/tv/1396/reviews": .success(TMDBFixtures.movieReviewsEmpty),
-            "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
-        ])
-        let viewModel = TVSeriesViewModel(
-            seriesID: 1396,
-            shows: TVRepository.test(client: client),
-            annotations: annotations
-        )
-        await viewModel.load()
-        await store.setSaveError(CocoaError(.fileWriteUnknown))
+                func test_saveUserNote_whenPersistenceFails_keepsPreviousNote() async throws {
+                let store = InMemoryAnnotationsStore()
+                let annotations = AnnotationsRepository(store: store, logger: SilentLogger())
+                _ = try await annotations.saveNote("Keep this", for: .series(1396))
+                let client = RoutingHTTPClient(routes: [
+                    "/tv/1396/reviews": .success(TMDBFixtures.movieReviewsEmpty),
+                    "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
+                    ])
+                let viewModel = TVSeriesViewModel(
+                    seriesID: 1396,
+                    shows: TVRepository.test(client: client),
+                    annotations: annotations
+                    )
+                await viewModel.load()
+                await store.setSaveError(CocoaError(.fileWriteUnknown))
 
-        let saved = await viewModel.saveUserNote("Replacement")
+                let saved = await viewModel.saveUserNote("Replacement")
 
-        XCTAssertFalse(saved)
-        guard case .loaded(let content, activity: .failed(.persistence)) = viewModel.state else {
-            return XCTFail("Expected loaded with persistence failure, got \(viewModel.state)")
-        }
-        XCTAssertEqual(content.userNote, "Keep this")
-    }
-}
+                XCTAssertFalse(saved)
+                guard case .loaded(let content, activity: .failed(.persistence)) = viewModel.state else {
+                return XCTFail("Expected loaded with persistence failure, got \(viewModel.state)")
+                }
+                XCTAssertEqual(content.userNote, "Keep this")
+                }
+                }

@@ -55,7 +55,7 @@ final class MovieDetailViewModelTests: XCTestCase {
             "/movie/238": .success(TMDBFixtures.movieDetailWithCollection),
             "/collection/230": .success(TMDBFixtures.collectionGodfather),
             "/reviews": .success(TMDBFixtures.movieReviewsEmpty),
-        ])
+            ])
         let viewModel = MovieDetailViewModel(
             movieID: 238,
             movies: MovieRepository.test(client: client),
@@ -77,7 +77,7 @@ final class MovieDetailViewModelTests: XCTestCase {
             "/movie/238": .success(TMDBFixtures.movieDetailWithCollection),
             "/collection/230": .success(TMDBFixtures.collectionSolo),
             "/reviews": .success(TMDBFixtures.movieReviewsEmpty),
-        ])
+            ])
         let viewModel = MovieDetailViewModel(
             movieID: 238,
             movies: MovieRepository.test(client: client),
@@ -100,7 +100,7 @@ final class MovieDetailViewModelTests: XCTestCase {
         let client = RoutingHTTPClient(routes: [
             "/movie/278": .success(TMDBFixtures.movieDetailShawshank),
             "/reviews": .success(TMDBFixtures.movieReviewsPage1),
-        ])
+            ])
         let viewModel = MovieDetailViewModel(
             movieID: 278,
             movies: MovieRepository.test(client: client),
@@ -170,7 +170,7 @@ final class MovieDetailViewModelTests: XCTestCase {
         let client = RoutingHTTPClient(routes: [
             "/movie/278": .success(TMDBFixtures.movieDetailShawshank),
             "/reviews": .failure(URLError(.notConnectedToInternet)),
-        ])
+            ])
         let viewModel = MovieDetailViewModel(
             movieID: 278,
             movies: MovieRepository.test(client: client),

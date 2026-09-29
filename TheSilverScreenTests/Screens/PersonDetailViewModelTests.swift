@@ -215,13 +215,13 @@ final class PersonDetailViewModelTests: XCTestCase {
                 credit(id: 1, title: "Inception", popularity: 100, jobs: [
                     PersonCreditJob(department: "Directing", job: "Director"),
                     PersonCreditJob(department: "Writing", job: "Screenplay"),
-                ]),
+                    ]),
                 credit(id: 2, title: "Interstellar", popularity: 80, jobs: [
                     PersonCreditJob(department: "Directing", job: "Director"),
-                ]),
+                    ]),
                 credit(id: 4, title: "Produced", popularity: 50, jobs: [
                     PersonCreditJob(department: "Production", job: "Producer"),
-                ]),
+                    ]),
             ]
         ))
 
@@ -241,11 +241,11 @@ final class PersonDetailViewModelTests: XCTestCase {
                 credit(id: 1, title: "Inception", popularity: 90, jobs: [
                     PersonCreditJob(department: "Directing", job: "Director"),
                     PersonCreditJob(department: "Writing", job: "Screenplay"),
-                ]),
+                    ]),
                 credit(id: 2, title: "Memento", popularity: 40, jobs: [
                     PersonCreditJob(department: "Writing", job: "Story"),
                     PersonCreditJob(department: "Writing", job: "Script Coordinator"),
-                ]),
+                    ]),
             ]
         ))
 
@@ -263,7 +263,7 @@ final class PersonDetailViewModelTests: XCTestCase {
                 credit(id: 1, title: "Dune", popularity: 70, jobs: [
                     PersonCreditJob(department: "Production", job: "Producer"),
                     PersonCreditJob(department: "Directing", job: "Director"),
-                ]),
+                    ]),
             ]
         ))
 
@@ -280,7 +280,7 @@ final class PersonDetailViewModelTests: XCTestCase {
             crew: [
                 credit(id: 1, title: "Second Unit", popularity: 20, jobs: [
                     PersonCreditJob(department: "Directing", job: "Assistant Director"),
-                ]),
+                    ]),
             ]
         ))
 
@@ -292,7 +292,7 @@ final class PersonDetailViewModelTests: XCTestCase {
         let directed = (1...12).map { index in
             credit(id: index, title: "Film \(index)", popularity: Double(100 - index), jobs: [
                 PersonCreditJob(department: "Directing", job: "Director"),
-            ])
+                ])
         }
         let content = PersonDetailViewModel.makeContent(detail: person(
             knownFor: "Directing",

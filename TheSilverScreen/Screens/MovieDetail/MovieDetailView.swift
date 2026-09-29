@@ -40,21 +40,21 @@ struct MovieDetailView: View {
     var body: some View {
         Group {
             switch viewModel.state {
-            case .idle, .loading:
-                ProgressView()
+                case .idle, .loading:
+                    ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .empty:
-                EmptyStateView(
-                    title: "Movie Unavailable",
-                    message: "This movie could not be shown.",
-                    systemImage: "film"
-                )
-            case .loaded(let content, let activity):
-                loadedBody(content: content, activity: activity)
-            case .failed(let error):
-                ErrorStateView(error: error) {
+                case .empty:
+                    EmptyStateView(
+                        title: "Movie Unavailable",
+                        message: "This movie could not be shown.",
+                        systemImage: "film"
+                    )
+                case .loaded(let content, let activity):
+                    loadedBody(content: content, activity: activity)
+                case .failed(let error):
+                    ErrorStateView(error: error) {
                     await viewModel.retry()
-                }
+                    }
             }
         }
         .background(DesignTheme.canvas)
@@ -102,7 +102,7 @@ struct MovieDetailView: View {
         ScrollViewReader { proxy in
             loadedScroll(content: content, activity: activity, scrollTo: { id in
                 proxy.scrollTo(id, anchor: .top)
-            })
+                })
         }
     }
 
@@ -333,7 +333,7 @@ struct MovieDetailView: View {
     ) -> some View {
         DetailCarousel(title: section.title, onTitle: {
             router?.push(.collection(id: section.id))
-        }) {
+            }) {
             ForEach(section.movies) { movie in
                 moviePosterCell(
                     movie: movie,

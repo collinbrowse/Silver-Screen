@@ -28,20 +28,20 @@ struct LibraryListCoverView: View {
     @ViewBuilder
     private var content: some View {
         switch artwork {
-        case .watched:
-            iconTile(
+            case .watched:
+                iconTile(
                 systemImage: "eye.fill",
                 foreground: DesignTheme.accent,
                 background: DesignTheme.surface
-            )
-        case .watchlist:
-            iconTile(
+                )
+            case .watchlist:
+                iconTile(
                 systemImage: "bookmark.fill",
                 foreground: DesignTheme.accent,
                 background: DesignTheme.surface
-            )
-        case .images(let paths):
-            collage(paths)
+                )
+            case .images(let paths):
+                collage(paths)
         }
     }
 
@@ -50,30 +50,30 @@ struct LibraryListCoverView: View {
     @ViewBuilder
     private func collage(_ paths: [String]) -> some View {
         switch paths.count {
-        case 0:
-            iconTile(
+            case 0:
+                iconTile(
                 systemImage: placeholderSymbol,
                 foreground: DesignTheme.textMuted,
                 background: DesignTheme.surface
-            )
-        case 1:
-            cell(paths[0], width: side, aspectRatio: 1)
-        case 2:
-            HStack(spacing: gutter) {
+                )
+            case 1:
+                cell(paths[0], width: side, aspectRatio: 1)
+            case 2:
+                HStack(spacing: gutter) {
                 cell(paths[0], width: half, aspectRatio: half / side)
                 cell(paths[1], width: half, aspectRatio: half / side)
-            }
-        case 3:
-            HStack(spacing: gutter) {
+                }
+            case 3:
+                HStack(spacing: gutter) {
                 cell(paths[0], width: half, aspectRatio: half / side)
                 VStack(spacing: gutter) {
                     cell(paths[1], width: half, aspectRatio: 1)
                     cell(paths[2], width: half, aspectRatio: 1)
                 }
-            }
-        default:
-            let four = Array(paths.prefix(4))
-            VStack(spacing: gutter) {
+                }
+            default:
+                let four = Array(paths.prefix(4))
+                VStack(spacing: gutter) {
                 HStack(spacing: gutter) {
                     cell(four[0], width: half, aspectRatio: 1)
                     cell(four[1], width: half, aspectRatio: 1)
@@ -82,7 +82,7 @@ struct LibraryListCoverView: View {
                     cell(four[2], width: half, aspectRatio: 1)
                     cell(four[3], width: half, aspectRatio: 1)
                 }
-            }
+                }
         }
     }
 

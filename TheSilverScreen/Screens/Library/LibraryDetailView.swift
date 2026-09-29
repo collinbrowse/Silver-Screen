@@ -20,21 +20,21 @@ struct LibraryDetailView: View {
     var body: some View {
         Group {
             switch viewModel.state {
-            case .idle, .loading:
-                ProgressView()
+                case .idle, .loading:
+                    ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .empty:
-                EmptyStateView(
-                    title: "List Unavailable",
-                    message: "That list no longer exists.",
-                    systemImage: "books.vertical"
-                )
-            case .loaded(let detail, let activity):
-                loaded(detail, activity: activity)
-            case .failed(let error):
-                ErrorStateView(error: error) {
+                case .empty:
+                    EmptyStateView(
+                        title: "List Unavailable",
+                        message: "That list no longer exists.",
+                        systemImage: "books.vertical"
+                    )
+                case .loaded(let detail, let activity):
+                    loaded(detail, activity: activity)
+                case .failed(let error):
+                    ErrorStateView(error: error) {
                     await viewModel.load()
-                }
+                    }
             }
         }
         .background(DesignTheme.canvas)
@@ -103,7 +103,7 @@ struct LibraryDetailView: View {
                         }
                         .onMove(perform: viewModel.allowsReorder ? { source, destination in
                             Task { await viewModel.moveEntries(from: source, to: destination) }
-                        } : nil)
+                            } : nil)
                     }
                     .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
                 }
@@ -172,24 +172,24 @@ struct LibraryDetailView: View {
 
     private func route(for entry: ListEntry) -> Route {
         switch entry.kind {
-        case .movie: .movieDetail(id: entry.itemID)
-        case .tv: .tvSeries(id: entry.itemID)
-        case .person: .person(id: entry.itemID)
+            case .movie: .movieDetail(id: entry.itemID)
+            case .tv: .tvSeries(id: entry.itemID)
+            case .person: .person(id: entry.itemID)
         }
     }
 
     private func metadata(for entry: ListEntry) -> String {
         switch entry.kind {
-        case .person: "Person"
-        case .movie, .tv: DisplayDate.day(entry.releaseDate)
+            case .person: "Person"
+            case .movie, .tv: DisplayDate.day(entry.releaseDate)
         }
     }
 
     private func placeholder(for kind: ListItemKind) -> String {
         switch kind {
-        case .movie: "film"
-        case .tv: "tv"
-        case .person: "person.fill"
+            case .movie: "film"
+            case .tv: "tv"
+            case .person: "person.fill"
         }
     }
 

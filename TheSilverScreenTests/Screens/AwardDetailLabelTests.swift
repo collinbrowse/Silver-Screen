@@ -29,7 +29,7 @@ final class AwardDetailLabelTests: XCTestCase {
                 accessibilityName: "Oscar for Best Picture, 1995",
                 route: nil
             ),
-        ])
+            ])
     }
 
     func test_movie_unknownID_hasNoAwardLabels() async {
@@ -53,7 +53,7 @@ final class AwardDetailLabelTests: XCTestCase {
         let client = RoutingHTTPClient(routes: [
             "/tv/1396/reviews": .success(TMDBFixtures.movieReviewsEmpty),
             "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
-        ])
+            ])
         let viewModel = TVSeriesViewModel(
             seriesID: 1396,
             shows: TVRepository.test(client: client),
@@ -72,7 +72,7 @@ final class AwardDetailLabelTests: XCTestCase {
                 accessibilityName: "Emmy for Outstanding Drama Series, 2014",
                 route: nil
             ),
-        ])
+            ])
     }
 
     func test_season_knownID_setsNominationLabels() async {
@@ -96,7 +96,7 @@ final class AwardDetailLabelTests: XCTestCase {
                 accessibilityName: "Emmy nominee for Outstanding Drama Series, 2009",
                 route: nil
             ),
-        ])
+            ])
     }
 
     func test_episode_knownID_setsAwardLabels() async {
@@ -120,7 +120,7 @@ final class AwardDetailLabelTests: XCTestCase {
                 accessibilityName: "Emmy for Outstanding Writing for a Drama Series, 2014",
                 route: nil
             ),
-        ])
+            ])
     }
 
     func test_episode_unknownID_hasNoAwardLabels() async {
