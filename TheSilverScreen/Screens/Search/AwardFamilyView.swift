@@ -22,9 +22,9 @@ struct AwardFamilyView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 case .empty:
                     EmptyStateView(
-                    title: "No Categories",
-                    message: "This award has no titles in the catalog yet.",
-                    systemImage: "trophy"
+                        title: "No Categories",
+                        message: "This award has no titles in the catalog yet.",
+                        systemImage: "trophy"
                     )
                 case .loaded(let categories, _):
                     List {

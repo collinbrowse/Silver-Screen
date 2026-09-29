@@ -40,10 +40,10 @@ extension CreditDepartment: Codable {
             case "writing": self = .writing
             default:
                 throw DecodingError.dataCorrupted(
-                DecodingError.Context(
-                    codingPath: decoder.codingPath,
-                    debugDescription: "Unknown credit department"
-                )
+                    DecodingError.Context(
+                        codingPath: decoder.codingPath,
+                        debugDescription: "Unknown credit department"
+                        )
                 )
         }
     }

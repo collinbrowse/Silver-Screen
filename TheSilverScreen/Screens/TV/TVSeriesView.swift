@@ -41,9 +41,9 @@ struct TVSeriesView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 case .empty:
                     EmptyStateView(
-                    title: "Series Unavailable",
-                    message: "This series could not be shown.",
-                    systemImage: "tv"
+                        title: "Series Unavailable",
+                        message: "This series could not be shown.",
+                        systemImage: "tv"
                     )
                 case .loaded(let content, let activity):
                     loaded(content)
@@ -100,7 +100,7 @@ struct TVSeriesView: View {
         ScrollViewReader { proxy in
             seriesScroll(content, scrollTo: { id in
                 proxy.scrollTo(id, anchor: .top)
-            })
+                })
         }
     }
 

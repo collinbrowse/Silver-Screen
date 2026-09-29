@@ -46,9 +46,9 @@ struct AwardTitlesView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 case .empty:
                     EmptyStateView(
-                    title: viewModel.emptyTitle,
-                    message: viewModel.emptyMessage,
-                    systemImage: "trophy"
+                        title: viewModel.emptyTitle,
+                        message: viewModel.emptyMessage,
+                        systemImage: "trophy"
                     )
                 case .loaded(let rows, let activity):
                     list(rows, activity: activity)

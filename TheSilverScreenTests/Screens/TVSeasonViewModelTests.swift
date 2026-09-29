@@ -91,51 +91,51 @@ final class TVSeasonViewModelTests: XCTestCase {
 
     func test_load_withoutNote_andEmptyOverview_staysOnDescription() async {
         let payload = Data("""
-        {"id": 1, "name": "Season 1", "season_number": 1, "overview": "", "episodes": []}
-        """.utf8)
-        let viewModel = TVSeasonViewModel(
-            seriesID: 1396,
-            seriesName: "Breaking Bad",
-            seasonNumber: 1,
-            shows: TVRepository.test(client: FakeHTTPClient(stub: .success(payload))),
-            annotations: AnnotationsRepository.empty()
-        )
+            {"id": 1, "name": "Season 1", "season_number": 1, "overview": "", "episodes": []}
+            """.utf8)
+            let viewModel = TVSeasonViewModel(
+                seriesID: 1396,
+                seriesName: "Breaking Bad",
+                seasonNumber: 1,
+                shows: TVRepository.test(client: FakeHTTPClient(stub: .success(payload))),
+                annotations: AnnotationsRepository.empty()
+                )
 
-        await viewModel.load()
+            await viewModel.load()
 
-        guard case .loaded(let content, _) = viewModel.state else {
+            guard case .loaded(let content, _) = viewModel.state else {
             return XCTFail("Expected loaded, got \(viewModel.state)")
-        }
-        XCTAssertNil(content.userNote)
-        XCTAssertEqual(content.overview, "")
-        XCTAssertFalse(PersonalDetail(
-            formattedUserScore: nil,
-            userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
-            userNote: nil,
-            formattedRatedOn: nil,
-            formattedNotedOn: nil
-        ).showsNotesFirst)
-    }
+            }
+            XCTAssertNil(content.userNote)
+            XCTAssertEqual(content.overview, "")
+            XCTAssertFalse(PersonalDetail(
+                formattedUserScore: nil,
+                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+                userNote: nil,
+                formattedRatedOn: nil,
+                formattedNotedOn: nil
+                ).showsNotesFirst)
+            }
 
-    func test_saveUserScore_whenPersistenceFails_keepsPreviousScore() async throws {
-        let store = InMemoryAnnotationsStore()
-        let annotations = AnnotationsRepository(store: store, logger: SilentLogger())
-        _ = try await annotations.saveScore(8.5, for: .season(seriesID: 1396, seasonNumber: 1))
-        let viewModel = TVSeasonViewModel(
-            seriesID: 1396,
-            seriesName: "Breaking Bad",
-            seasonNumber: 1,
-            shows: TVRepository.test(client: FakeHTTPClient(stub: .success(TMDBFixtures.tvSeasonPilot))),
-            annotations: annotations
-        )
-        await viewModel.load()
-        await store.setSaveError(CocoaError(.fileWriteUnknown))
+            func test_saveUserScore_whenPersistenceFails_keepsPreviousScore() async throws {
+            let store = InMemoryAnnotationsStore()
+            let annotations = AnnotationsRepository(store: store, logger: SilentLogger())
+            _ = try await annotations.saveScore(8.5, for: .season(seriesID: 1396, seasonNumber: 1))
+            let viewModel = TVSeasonViewModel(
+                seriesID: 1396,
+                seriesName: "Breaking Bad",
+                seasonNumber: 1,
+                shows: TVRepository.test(client: FakeHTTPClient(stub: .success(TMDBFixtures.tvSeasonPilot))),
+                annotations: annotations
+                )
+            await viewModel.load()
+            await store.setSaveError(CocoaError(.fileWriteUnknown))
 
-        await viewModel.saveUserScore(10)
+            await viewModel.saveUserScore(10)
 
-        guard case .loaded(let content, activity: .failed(.persistence)) = viewModel.state else {
+            guard case .loaded(let content, activity: .failed(.persistence)) = viewModel.state else {
             return XCTFail("Expected loaded with persistence failure, got \(viewModel.state)")
-        }
-        XCTAssertEqual(content.formattedUserScore, "8.5 / 10")
-    }
-}
+            }
+            XCTAssertEqual(content.formattedUserScore, "8.5 / 10")
+            }
+            }

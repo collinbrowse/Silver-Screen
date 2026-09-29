@@ -43,9 +43,9 @@ struct TVSeasonView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 case .empty:
                     EmptyStateView(
-                    title: "Season Unavailable",
-                    message: "This season could not be shown.",
-                    systemImage: "tv"
+                        title: "Season Unavailable",
+                        message: "This season could not be shown.",
+                        systemImage: "tv"
                     )
                 case .loaded(let content, let activity):
                     loaded(content)

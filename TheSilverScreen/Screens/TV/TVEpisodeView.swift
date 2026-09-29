@@ -44,9 +44,9 @@ struct TVEpisodeView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 case .empty:
                     EmptyStateView(
-                    title: "Episode Unavailable",
-                    message: "This episode could not be shown.",
-                    systemImage: "tv"
+                        title: "Episode Unavailable",
+                        message: "This episode could not be shown.",
+                        systemImage: "tv"
                     )
                 case .loaded(let content, let activity):
                     loaded(content)

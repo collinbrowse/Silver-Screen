@@ -130,17 +130,17 @@ struct AwardWork: Codable, Hashable, Sendable, Equatable {
             case .season:
                 guard let seriesID, let seasonNumber else { return nil }
                 return .tvSeason(
-                seriesID: seriesID,
-                seriesName: displaySeriesName(fallback: fallbackSeriesName),
-                seasonNumber: seasonNumber
+                    seriesID: seriesID,
+                    seriesName: displaySeriesName(fallback: fallbackSeriesName),
+                    seasonNumber: seasonNumber
                 )
             case .episode:
                 guard let seriesID, let seasonNumber, let episodeNumber else { return nil }
                 return .tvEpisode(
-                seriesID: seriesID,
-                seriesName: displaySeriesName(fallback: fallbackSeriesName),
-                seasonNumber: seasonNumber,
-                episodeNumber: episodeNumber
+                    seriesID: seriesID,
+                    seriesName: displaySeriesName(fallback: fallbackSeriesName),
+                    seasonNumber: seasonNumber,
+                    episodeNumber: episodeNumber
                 )
         }
     }

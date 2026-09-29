@@ -422,7 +422,7 @@ final class PersonRepository: Sendable {
                 || role.hasPrefix(marker + " ")
                 || role.hasPrefix(marker + "-")
                 || role.hasPrefix(marker + "—")
-        }) {
+            }) {
             return true
         }
         let name = personName.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()

@@ -109,9 +109,9 @@ struct BrowseListView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             case .empty:
                 EmptyStateView(
-                title: "Nothing to Browse",
-                message: "No titles match \(viewModel.media.title), \(viewModel.window.title).",
-                systemImage: "film"
+                    title: "Nothing to Browse",
+                    message: "No titles match \(viewModel.media.title), \(viewModel.window.title).",
+                    systemImage: "film"
                 )
             case .loaded(let rows, let activity):
                 list(rows, activity: activity)

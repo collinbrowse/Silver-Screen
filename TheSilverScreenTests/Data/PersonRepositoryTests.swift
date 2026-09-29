@@ -191,7 +191,7 @@ final class PersonRepositoryTests: XCTestCase {
         XCTAssertEqual(credits.map(\.title), [
             "Inglourious Basterds",
             "The Tonight Show Starring Jimmy Fallon",
-        ])
+            ])
     }
 
     func test_mapCastCredits_ranksSeriesRoleAboveOneEpisodeOnAHotterShow() throws {
@@ -295,7 +295,7 @@ final class PersonRepositoryTests: XCTestCase {
         XCTAssertEqual(credits.map(\.title), [
             "The Tonight Show Starring Jimmy Fallon",
             "The Boys",
-        ])
+            ])
     }
 
     func test_mapCrewCredits_ranksDirectedFilmAboveOneEpisodeOnAPopularShow() throws {

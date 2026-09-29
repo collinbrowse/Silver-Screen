@@ -459,16 +459,16 @@ final class SearchViewModel {
         switch listing {
             case .movies(let rows):
                 .movies(rows.sorted {
-                comesBefore($0.title, $0.popularity, $1.title, $1.popularity, query: query)
-                })
+                    comesBefore($0.title, $0.popularity, $1.title, $1.popularity, query: query)
+                    })
             case .tv(let rows):
                 .tv(rows.sorted {
-                comesBefore($0.name, $0.popularity, $1.name, $1.popularity, query: query)
-                })
+                    comesBefore($0.name, $0.popularity, $1.name, $1.popularity, query: query)
+                    })
             case .people(let rows):
                 .people(rows.sorted {
-                comesBefore($0.name, $0.popularity, $1.name, $1.popularity, query: query)
-                })
+                    comesBefore($0.name, $0.popularity, $1.name, $1.popularity, query: query)
+                    })
         }
     }
 
@@ -493,9 +493,9 @@ final class SearchViewModel {
                     ? try await movies.searchMovies(query: query, page: page, locale: locale)
                     : try await movies.movies(inGenres: genres, page: page, locale: locale)
                 return FetchedPage(
-                listing: .movies(result.movies.sorted { $0.popularity > $1.popularity }.map(CatalogMovieRow.init)),
-                page: result.page,
-                hasMore: result.hasMore
+                    listing: .movies(result.movies.sorted { $0.popularity > $1.popularity }.map(CatalogMovieRow.init)),
+                    page: result.page,
+                    hasMore: result.hasMore
                 )
             case .tv:
                 let genres = SearchGenreMatch.tvGenreIDs(matching: query)
@@ -503,16 +503,16 @@ final class SearchViewModel {
                     ? try await shows.search(query: query, page: page, locale: locale)
                     : try await shows.series(inGenres: genres, page: page, locale: locale)
                 return FetchedPage(
-                listing: .tv(result.series.sorted { $0.popularity > $1.popularity }.map(CatalogTVRow.init)),
-                page: result.page,
-                hasMore: result.hasMore
+                    listing: .tv(result.series.sorted { $0.popularity > $1.popularity }.map(CatalogTVRow.init)),
+                    page: result.page,
+                    hasMore: result.hasMore
                 )
             case .people:
                 let result = try await people.search(query: query, page: page, locale: locale)
                 return FetchedPage(
-                listing: .people(result.people.sorted { $0.popularity > $1.popularity }.map(CatalogPersonRow.init)),
-                page: result.page,
-                hasMore: result.hasMore
+                    listing: .people(result.people.sorted { $0.popularity > $1.popularity }.map(CatalogPersonRow.init)),
+                    page: result.page,
+                    hasMore: result.hasMore
                 )
         }
     }

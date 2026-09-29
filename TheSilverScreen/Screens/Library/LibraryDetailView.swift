@@ -25,9 +25,9 @@ struct LibraryDetailView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 case .empty:
                     EmptyStateView(
-                    title: "List Unavailable",
-                    message: "That list no longer exists.",
-                    systemImage: "books.vertical"
+                        title: "List Unavailable",
+                        message: "That list no longer exists.",
+                        systemImage: "books.vertical"
                     )
                 case .loaded(let detail, let activity):
                     loaded(detail, activity: activity)
@@ -103,7 +103,7 @@ struct LibraryDetailView: View {
                         }
                         .onMove(perform: viewModel.allowsReorder ? { source, destination in
                             Task { await viewModel.moveEntries(from: source, to: destination) }
-                        } : nil)
+                            } : nil)
                     }
                     .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
                 }

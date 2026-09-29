@@ -40,7 +40,7 @@ extension View {
     func trailerPlayer(_ selection: Binding<MediaTrailer?>, loadingID: Binding<String?>) -> some View {
         sheet(item: selection, onDismiss: {
             loadingID.wrappedValue = nil
-        }) { trailer in
+            }) { trailer in
             TrailerPlayerView(trailer: trailer)
         }
     }

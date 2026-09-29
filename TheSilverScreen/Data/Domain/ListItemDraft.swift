@@ -104,25 +104,25 @@ extension PersonCredit {
         switch mediaType {
             case .movie:
                 ListItemDraft(
-                id: mediaID,
-                kind: .movie,
-                title: title,
-                imagePath: posterPath,
-                releaseDate: releaseDate,
-                genreNames: MovieGenreCatalog.names(for: genreIDs),
-                voteAverage: voteAverage,
-                popularity: popularity
+                    id: mediaID,
+                    kind: .movie,
+                    title: title,
+                    imagePath: posterPath,
+                    releaseDate: releaseDate,
+                    genreNames: MovieGenreCatalog.names(for: genreIDs),
+                    voteAverage: voteAverage,
+                    popularity: popularity
                 )
             case .tv:
                 ListItemDraft(
-                id: mediaID,
-                kind: .tv,
-                title: title,
-                imagePath: posterPath,
-                releaseDate: releaseDate,
-                genreNames: TVGenreCatalog.names(for: genreIDs),
-                voteAverage: voteAverage,
-                popularity: popularity
+                    id: mediaID,
+                    kind: .tv,
+                    title: title,
+                    imagePath: posterPath,
+                    releaseDate: releaseDate,
+                    genreNames: TVGenreCatalog.names(for: genreIDs),
+                    voteAverage: voteAverage,
+                    popularity: popularity
                 )
         }
     }
@@ -163,25 +163,25 @@ extension BrowseRow {
         switch media {
             case .movie:
                 ListItemDraft(
-                id: mediaID,
-                kind: .movie,
-                title: title,
-                imagePath: posterPath,
-                releaseDate: date,
-                genreNames: genreNames,
-                voteAverage: voteAverage,
-                popularity: popularity
+                    id: mediaID,
+                    kind: .movie,
+                    title: title,
+                    imagePath: posterPath,
+                    releaseDate: date,
+                    genreNames: genreNames,
+                    voteAverage: voteAverage,
+                    popularity: popularity
                 )
             case .tv:
                 ListItemDraft(
-                id: mediaID,
-                kind: .tv,
-                title: title,
-                imagePath: posterPath,
-                releaseDate: date,
-                genreNames: genreNames,
-                voteAverage: voteAverage,
-                popularity: popularity
+                    id: mediaID,
+                    kind: .tv,
+                    title: title,
+                    imagePath: posterPath,
+                    releaseDate: date,
+                    genreNames: genreNames,
+                    voteAverage: voteAverage,
+                    popularity: popularity
                 )
         }
     }

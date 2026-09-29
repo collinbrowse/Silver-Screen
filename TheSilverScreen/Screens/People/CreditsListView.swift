@@ -38,9 +38,9 @@ struct CreditsListView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 case .empty:
                     EmptyStateView(
-                    title: "No Credits",
-                    message: "No credits were found for this section.",
-                    systemImage: "film"
+                        title: "No Credits",
+                        message: "No credits were found for this section.",
+                        systemImage: "film"
                     )
                 case .loaded(let content, _):
                     List {

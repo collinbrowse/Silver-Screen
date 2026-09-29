@@ -85,7 +85,7 @@ final class FakeHTTPClientTests: XCTestCase {
         let client = RoutingHTTPClient(routes: [
             "/movie/278": .success(TMDBFixtures.movieDetailShawshank),
             "/movie/278/reviews": .success(TMDBFixtures.movieReviewsPage1),
-        ])
+            ])
         let detailRequest = URLRequest(url: URL(string: "https://api.themoviedb.org/3/movie/278")!)
         let reviewsRequest = URLRequest(url: URL(string: "https://api.themoviedb.org/3/movie/278/reviews")!)
 

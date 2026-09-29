@@ -226,9 +226,9 @@ actor ListsRepository {
         switch change.action {
             case .added:
                 snapshot.entries = Self.removing(
-                itemKey: change.itemKey,
-                listID: change.listID,
-                from: snapshot.entries
+                    itemKey: change.itemKey,
+                    listID: change.listID,
+                    from: snapshot.entries
                 ).entries
                 if let restore = change.restore {
                 snapshot.entries = Self.inserting(restore, into: snapshot.entries)

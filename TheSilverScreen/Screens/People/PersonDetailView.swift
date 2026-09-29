@@ -28,9 +28,9 @@ struct PersonDetailView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 case .empty:
                     EmptyStateView(
-                    title: "Person Unavailable",
-                    message: "This person could not be found.",
-                    systemImage: "person"
+                        title: "Person Unavailable",
+                        message: "This person could not be found.",
+                        systemImage: "person"
                     )
                 case .loaded(let content, let activity):
                     loadedBody(content: content, activity: activity)

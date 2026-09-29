@@ -24,9 +24,9 @@ struct LibraryHomeView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 case .empty:
                     EmptyStateView(
-                    title: "No Lists",
-                    message: emptyMessage,
-                    systemImage: "books.vertical"
+                        title: "No Lists",
+                        message: emptyMessage,
+                        systemImage: "books.vertical"
                     )
                 case .loaded(_, let activity):
                     list
@@ -169,7 +169,7 @@ struct LibraryHomeView: View {
                             }
                             .onMove(perform: viewModel.canReorderLists ? { source, destination in
                                 Task { await viewModel.moveLists(from: source, to: destination) }
-                            } : nil)
+                                } : nil)
                         }
                         .listSectionSeparatorBetweenCells(isFirstSection: system.isEmpty, isLastSection: true)
                     }

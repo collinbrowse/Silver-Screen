@@ -262,12 +262,12 @@ final class BrowseListViewModel {
                 return try await movies.popular(page: page, locale: locale)
                 }
                 return try await movies.discover(
-                sort: sort,
-                window: .all,
-                page: page,
-                locale: locale,
-                today: today(),
-                timeZone: timeZone
+                    sort: sort,
+                    window: .all,
+                    page: page,
+                    locale: locale,
+                    today: today(),
+                    timeZone: timeZone
                 )
         }
     }
@@ -278,22 +278,22 @@ final class BrowseListViewModel {
                 return try await shows.onTheAir(page: page, locale: locale)
             case .upcoming:
                 return try await shows.upcoming(
-                page: page,
-                locale: locale,
-                today: today(),
-                timeZone: timeZone
+                    page: page,
+                    locale: locale,
+                    today: today(),
+                    timeZone: timeZone
                 )
             case .all:
                 if sort == .popular {
                 return try await shows.popular(page: page, locale: locale)
                 }
                 return try await shows.discover(
-                sort: sort,
-                window: .all,
-                page: page,
-                locale: locale,
-                today: today(),
-                timeZone: timeZone
+                    sort: sort,
+                    window: .all,
+                    page: page,
+                    locale: locale,
+                    today: today(),
+                    timeZone: timeZone
                 )
         }
     }

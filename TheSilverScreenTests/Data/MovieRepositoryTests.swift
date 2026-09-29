@@ -69,7 +69,7 @@ final class MovieRepositoryTests: XCTestCase {
         let client = SequencingHTTPClient(stubs: [
             .success(Data(), status: 401),
             .success(TMDBFixtures.topMoviesPage1),
-        ])
+            ])
         let repository = MovieRepository.test(client: client)
 
         do {
@@ -104,7 +104,7 @@ final class MovieRepositoryTests: XCTestCase {
             .success(Data(), status: 500),
             .success(Data(), status: 503),
             .success(TMDBFixtures.topMoviesPage1),
-        ])
+            ])
         let repository = MovieRepository.test(client: client)
 
         let page = try await repository.topMovies(page: 1)
@@ -121,7 +121,7 @@ final class MovieRepositoryTests: XCTestCase {
         let client = SequencingHTTPClient(stubs: [
             .failure(URLError(.notConnectedToInternet)),
             .success(TMDBFixtures.topMoviesPage1),
-        ])
+            ])
         let repository = MovieRepository.test(client: client)
 
         do {
@@ -364,37 +364,37 @@ final class MovieRepositoryTests: XCTestCase {
 
     func test_movieDetail_mapsOfficialYouTubeTrailers() async throws {
         let payload = Data("""
-        {
-          "id": 1,
-          "title": "Dune",
-          "vote_average": 8,
-          "videos": {
+            {
+            "id": 1,
+            "title": "Dune",
+            "vote_average": 8,
+            "videos": {
             "results": [
               {"name": "Teaser", "key": "tease", "site": "YouTube", "type": "Teaser", "official": true},
               {"name": "Official Trailer", "key": "abc_123", "site": "YouTube", "type": "Trailer", "official": true},
               {"key": "second", "site": "YouTube", "type": "Trailer", "official": true}
             ]
-          }
-        }
-        """.utf8)
-        let detail = try await MovieRepository.test(client: FakeHTTPClient(stub: .success(payload)))
+            }
+            }
+            """.utf8)
+            let detail = try await MovieRepository.test(client: FakeHTTPClient(stub: .success(payload)))
             .movieDetail(id: 1)
-        XCTAssertEqual(detail.trailers.map(\.title), ["Official Trailer", "Trailer 2"])
-        XCTAssertEqual(detail.trailers.map(\.youtubeID), ["abc_123", "second"])
-    }
+            XCTAssertEqual(detail.trailers.map(\.title), ["Official Trailer", "Trailer 2"])
+            XCTAssertEqual(detail.trailers.map(\.youtubeID), ["abc_123", "second"])
+            }
 
-    func test_movieDetail_keepsTheMovieWhenVideosAreMalformed() async throws {
-        let payload = Data("""
-        {
-          "id": 1,
-          "title": "Dune",
-          "vote_average": 8,
-          "videos": []
-        }
-        """.utf8)
-        let detail = try await MovieRepository.test(client: FakeHTTPClient(stub: .success(payload)))
-            .movieDetail(id: 1)
-        XCTAssertEqual(detail.title, "Dune")
-        XCTAssertTrue(detail.trailers.isEmpty)
-    }
-}
+            func test_movieDetail_keepsTheMovieWhenVideosAreMalformed() async throws {
+            let payload = Data("""
+                {
+                "id": 1,
+                "title": "Dune",
+                "vote_average": 8,
+                "videos": []
+                }
+                """.utf8)
+                let detail = try await MovieRepository.test(client: FakeHTTPClient(stub: .success(payload)))
+                .movieDetail(id: 1)
+                XCTAssertEqual(detail.title, "Dune")
+                XCTAssertTrue(detail.trailers.isEmpty)
+                }
+                }

@@ -21,103 +21,103 @@ struct AppRouteDestination: View {
         switch route {
             case .movieDetail(let id):
                 MovieDetailRouteView(
-                movieID: id,
-                movies: movies,
-                lists: lists,
-                listsIndex: listsIndex,
-                annotations: annotations,
-                awards: awards,
-                imageLoader: imageLoader,
-                router: router
+                    movieID: id,
+                    movies: movies,
+                    lists: lists,
+                    listsIndex: listsIndex,
+                    annotations: annotations,
+                    awards: awards,
+                    imageLoader: imageLoader,
+                    router: router
                 )
             case .person(let id):
                 PersonDetailRouteView(
-                personID: id,
-                people: people,
-                lists: lists,
-                listsIndex: listsIndex,
-                awards: awards,
-                imageLoader: imageLoader,
-                router: router
+                    personID: id,
+                    people: people,
+                    lists: lists,
+                    listsIndex: listsIndex,
+                    awards: awards,
+                    imageLoader: imageLoader,
+                    router: router
                 )
             case .personCredits(let personID, let personName, let department):
                 CreditsListView(
-                personID: personID,
-                personName: personName,
-                department: department,
-                people: people,
-                imageLoader: imageLoader,
-                router: router
+                    personID: personID,
+                    personName: personName,
+                    department: department,
+                    people: people,
+                    imageLoader: imageLoader,
+                    router: router
                 )
             case .collection(let id):
                 CollectionRouteView(
-                collectionID: id,
-                movies: movies,
-                lists: lists,
-                listsIndex: listsIndex,
-                annotations: annotations,
-                imageLoader: imageLoader,
-                router: router
+                    collectionID: id,
+                    movies: movies,
+                    lists: lists,
+                    listsIndex: listsIndex,
+                    annotations: annotations,
+                    imageLoader: imageLoader,
+                    router: router
                 )
             case .tvSeries(let id):
                 TVSeriesRouteView(
-                seriesID: id,
-                shows: shows,
-                lists: lists,
-                listsIndex: listsIndex,
-                annotations: annotations,
-                awards: awards,
-                imageLoader: imageLoader,
-                router: router
+                    seriesID: id,
+                    shows: shows,
+                    lists: lists,
+                    listsIndex: listsIndex,
+                    annotations: annotations,
+                    awards: awards,
+                    imageLoader: imageLoader,
+                    router: router
                 )
             case .tvSeason(let seriesID, let seriesName, let seasonNumber):
                 TVSeasonRouteView(
-                seriesID: seriesID,
-                seriesName: seriesName,
-                seasonNumber: seasonNumber,
-                shows: shows,
-                lists: lists,
-                listsIndex: listsIndex,
-                annotations: annotations,
-                awards: awards,
-                imageLoader: imageLoader,
-                router: router
+                    seriesID: seriesID,
+                    seriesName: seriesName,
+                    seasonNumber: seasonNumber,
+                    shows: shows,
+                    lists: lists,
+                    listsIndex: listsIndex,
+                    annotations: annotations,
+                    awards: awards,
+                    imageLoader: imageLoader,
+                    router: router
                 )
             case .tvEpisode(let seriesID, let seriesName, let seasonNumber, let episodeNumber):
                 TVEpisodeRouteView(
-                seriesID: seriesID,
-                seriesName: seriesName,
-                seasonNumber: seasonNumber,
-                episodeNumber: episodeNumber,
-                shows: shows,
-                lists: lists,
-                listsIndex: listsIndex,
-                annotations: annotations,
-                awards: awards,
-                imageLoader: imageLoader,
-                router: router
+                    seriesID: seriesID,
+                    seriesName: seriesName,
+                    seasonNumber: seasonNumber,
+                    episodeNumber: episodeNumber,
+                    shows: shows,
+                    lists: lists,
+                    listsIndex: listsIndex,
+                    annotations: annotations,
+                    awards: awards,
+                    imageLoader: imageLoader,
+                    router: router
                 )
             case .libraryList(let id):
                 LibraryDetailRouteView(
-                listID: id,
-                lists: lists,
-                annotations: annotations,
-                imageLoader: imageLoader,
-                router: router
+                    listID: id,
+                    lists: lists,
+                    annotations: annotations,
+                    imageLoader: imageLoader,
+                    router: router
                 )
             case .awardFamily(let family):
                 AwardFamilyView(family: family, awards: awards, router: router)
             case .awardTitles(let request):
                 AwardTitlesView(
-                request: request,
-                awards: awards,
-                movies: movies,
-                shows: shows,
-                annotations: annotations,
-                lists: lists,
-                listsIndex: listsIndex,
-                imageLoader: imageLoader,
-                router: router
+                    request: request,
+                    awards: awards,
+                    movies: movies,
+                    shows: shows,
+                    annotations: annotations,
+                    lists: lists,
+                    listsIndex: listsIndex,
+                    imageLoader: imageLoader,
+                    router: router
                 )
         }
     }

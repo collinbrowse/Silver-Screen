@@ -44,9 +44,9 @@ struct MoviePosterView: View {
         image = nil
         guard let posterPath,
               let url = ImageLoader.posterURL(
-                path: posterPath,
-                targetWidthPoints: width,
-                scale: displayScale
+                  path: posterPath,
+                  targetWidthPoints: width,
+                  scale: displayScale
               ) else {
             return
         }

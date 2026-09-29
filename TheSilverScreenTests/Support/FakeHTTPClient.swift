@@ -35,10 +35,10 @@ struct FakeHTTPClient: HTTPClient, Sendable {
             case .success(let data, let status):
                 let url = request.url ?? URL(string: "https://example.invalid")!
                 let response = HTTPURLResponse(
-                url: url,
-                statusCode: status,
-                httpVersion: "HTTP/1.1",
-                headerFields: ["Content-Type": "application/json"]
+                    url: url,
+                    statusCode: status,
+                    httpVersion: "HTTP/1.1",
+                    headerFields: ["Content-Type": "application/json"]
                 )!
                 return (data, response)
             case .failure(let error):
