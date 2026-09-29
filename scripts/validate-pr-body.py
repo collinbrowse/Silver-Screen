@@ -22,7 +22,6 @@ REQUIRED_HEADINGS = [
     "Summary",
     "Decision Tree and Rationale",
     "Test Plan",
-    "Stories completed",
     "AI Harness notes",
 ]
 
@@ -103,29 +102,6 @@ def validate(body: str) -> list[str]:
                     problems,
                     f"`## Test Plan` must include template coverage matching /{marker.pattern}/",
                 )
-
-    stories = by_fold.get("stories completed")
-    if stories:
-        _, content = stories
-        # Require either an explicit None or a markdown table row beyond the header.
-        has_none = re.search(r"\bnone\b", content, re.I)
-        data_rows = [
-            line
-            for line in content.splitlines()
-            if line.strip().startswith("|")
-            and not re.match(r"^\|\s*---", line.strip())
-            and not re.match(r"^\|\s*Epic\s*\|", line.strip(), re.I)
-        ]
-        meaningful = [
-            row
-            for row in data_rows
-            if not re.match(r"^\|\s*[—\-–]\s*\|\s*[—\-–]\s*\|", row.strip())
-        ]
-        if not has_none and not meaningful:
-            fail(
-                problems,
-                "`## Stories completed` needs a filled table row or an explicit None",
-            )
 
     return problems
 

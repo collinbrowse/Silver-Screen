@@ -72,7 +72,7 @@ if ! python3 "$ROOT/scripts/validate-tests.py" >/dev/null 2>&1; then
   python3 -c '
 import json, sys
 print(json.dumps({
-    "followup_message": "Test suite gates failed (empty/placeholder tests or Done without tests). Fix these before continuing.\n\n" + sys.argv[1]
+    "followup_message": "Test suite gates failed (empty or placeholder tests). Fix these before continuing.\n\n" + sys.argv[1]
 }))
 ' "$DETAIL"
   exit 0
@@ -111,7 +111,7 @@ if len(text) > limit:
     text = "(truncated)\n" + text
 
 print(json.dumps({
-    "followup_message": "TheSilverScreenTests failed. Fix the failures, then continue. Do not tick Done until tests pass.\n\n" + text
+    "followup_message": "TheSilverScreenTests failed. Fix the failures, then continue.\n\n" + text
 }))
 ' "$LOG"
 

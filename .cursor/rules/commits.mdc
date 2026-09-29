@@ -1,5 +1,5 @@
 ---
-description: Keep git commits reviewable — one logical unit each, never an epic-sized dump.
+description: Keep git commits reviewable — one logical unit each, never a dump of unrelated work.
 alwaysApply: true
 ---
 
@@ -9,18 +9,18 @@ Commits are for reviewers, not for the agent’s convenience. Prefer several sma
 
 ## Size
 
-- **One story or one logical unit per commit.** Examples: “secrets + toolchain”, “data layer”, “Story 1 cell layout”, “Story 2 ImageLoader”.
-- Do **not** land an entire epic (or multiple unrelated stories) in a single commit.
+- **One logical unit per commit.** Examples: “secrets + toolchain”, “data layer”, “list layout”, “ImageLoader”.
+- Do **not** land unrelated changes in a single commit.
 - If work grew into a mega-commit, rewrite it into reviewable commits on the feature branch **before** asking for review (backup the tip first; force-push only that feature branch).
 
 ## Shape
 
 - Commit message: 1–2 sentences on **why**, in the repo’s existing style.
-- Include the tests, screenshot, and Requirements `Done` tick for a story in **that story’s** commit when they belong together.
-- Shared foundation that several stories need (repository, `LoadState`, secrets) may be its own commit(s) ahead of the story commits — that is preferred over stuffing foundation into Story 1.
-- Do not mix harness-only changes with app story changes unless the harness change is required for that story to verify.
+- Include the tests and screenshot for a change in **that change’s** commit when they belong together.
+- Shared foundation that several features need (repository, `LoadState`, secrets) may be its own commit(s) ahead of the feature commits.
+- Do not mix harness-only changes with app changes unless the harness change is required for that work to verify.
 
 ## When implementing
 
-- Finish and commit (or stage as a distinct unit) as each story or foundation slice is verified, rather than accumulating everything until the end.
+- Finish and commit (or stage as a distinct unit) as each logical unit is verified, rather than accumulating everything until the end.
 - Follow the user’s commit rules: only create commits when asked, unless they have asked for a PR / history rewrite that requires commits.
