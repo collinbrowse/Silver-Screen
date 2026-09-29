@@ -35,7 +35,7 @@ and my own intuition modeling the app after the AppleTV app which has a clean, i
   reviewable; shared foundation landed ahead of the stories that need it.
 - Work shipped through PRs whose bodies follow
   `.github/pull_request_template.md` in full (Summary, Decision Tree, Test Plan,
-  Stories completed, AI Harness notes).
+  AI Harness notes).
 - A story is only marked `Done` in `Requirements/` after both unit tests and a
   visual check against the comps.
 
@@ -78,21 +78,16 @@ Strict layering, one direction only:
 The harness lives in the repo under `.cursor/` and is part of the workflow:
 
 - **Rules** (`.cursor/rules/*.mdc`): an always-on architecture rule plus scoped
-  rules for concurrency, SwiftUI, the legacy UIKit screen, the data layer,
+  rules for concurrency, SwiftUI, no UIKit screens, the data layer,
   image loading, secrets, errors/logging, accessibility, documentation,
-  testing, commits, and pull requests. `AGENTS.md` is the source of truth for
-  the assessment constraints.
+  testing, commits, and pull requests. `AGENTS.md` is the agent contract.
 
-- **Skills** (`.cursor/skills/`): `implement-story` (smallest reviewable slice
-  with tests + screenshot + Done only after verification) and `visual-qa`
-  (screenshot the booted simulator and compare against the comps).
 - **Hooks** (`.cursor/hooks.json`):
   - `beforeShellExecution` → `block-third-party-deps.sh` (fail-closed guard
     against adding dependencies).
   - `stop` → `run-unit-tests.sh` (runs the unit tests when the agent finishes).
 - **CI gates** (`scripts/`):
-  - `validate-tests.py` — bans empty tests and fails a PR that ticks a story
-    `Done` without touching `TheSilverScreenTests/`.
+  - `validate-tests.py` — bans empty tests and Xcode placeholder test names.
   - `validate-pr-body.py` — enforces the PR template sections.
   - `validate-rules.py` — validates the rule files.
 - **MCP**: 

@@ -25,8 +25,8 @@ import sys
 
 RULES_DIR = ".cursor/rules"
 
-# Files still holding a burned key that secrets.mdc says to rotate. Keep empty
-# once Globals.swift (or equivalent) is gone; the guard then fails any new leak.
+# Tracked Swift must not contain a TMDB v3 key (32 hex chars). The allowlist
+# stays empty; a hit is a new leak.
 SECRET_DEBT_ALLOWLIST: set[str] = set()
 
 # 32 hex characters: the shape of a TMDB v3 key.

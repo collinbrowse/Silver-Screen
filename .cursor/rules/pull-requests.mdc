@@ -14,7 +14,6 @@ When creating or editing a GitHub pull request for this repo, the body **must** 
    - `## Summary`
    - `## Decision Tree and Rationale`
    - `## Test Plan` — keep the template’s validation checkboxes; add UI steps and the screenshot path when UI changed
-   - `## Stories completed` — fill the table (epic, story #, test method names, screenshot); use `None` / `—` only when harness-only
    - `## AI Harness notes` — describe harness changes, or `None` if app-only
 3. **Validate** before claiming the PR is ready:
    ```bash
@@ -25,6 +24,6 @@ When creating or editing a GitHub pull request for this repo, the body **must** 
 
 ## Do not
 
-- Skip Decision Tree, Stories completed, or AI Harness notes.
+- Skip Decision Tree or AI Harness notes.
 - Replace the template Test Plan checkboxes with an ad-hoc list only.
 - Open a PR with a placeholder or truncated body “to fill in later.”

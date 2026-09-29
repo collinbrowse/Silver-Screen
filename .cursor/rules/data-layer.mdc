@@ -63,9 +63,9 @@ A 200 is not the only thing TMDB returns, and "it didn't decode" is the wrong th
 
 ## Pagination
 
-The list endpoints are paged and the response already carries `page` and `total_pages`. Do not hardcode `page=1` and call the feature done — every list epic in the backlog inherits this.
+List endpoints are paged. The response carries `page` and `total_pages`.
 
 - The repository takes an explicit `page` and returns the results plus whether more exist. It does not hide paging behind an accumulating array.
 - The view model owns the accumulated items and the next page number, and reflects a page fetch as `.loaded(items, activity: .loadingMore)` so the current list stays on screen.
-- **Deduplicate by `id` when appending.** TMDB can return the same movie on two pages when the underlying ordering shifts between requests, and a duplicate `Identifiable` id will crash a diffable snapshot rather than merely look wrong.
+- **Deduplicate by `id` when appending.** TMDB can return the same movie on two pages when the underlying ordering shifts between requests, and a duplicate `Identifiable` id crashes list updates.
 - Guard against concurrent page requests: ignore a "load more" while one is in flight.

@@ -65,7 +65,7 @@ Two things this shape buys, both of which a four-case `idle / loading / loaded /
 
 - Screens depend on a repository, never on a networking type.
 - A repository owns its API service, mapping, caching, and persistence, and returns domain models or throws `AppError`.
-- Pick the persistence store when implementing the story and keep it private to the repository.
+- The persistence store stays private to the repository.
 
 ## Dependency injection — no singletons
 
@@ -100,6 +100,6 @@ Concretely, this app has three protocols and no others: `HTTPClient` (network), 
 
 ## Target toolchain
 
-Swift 6 language mode with strict concurrency, Observation, and an iOS 26 deployment target. `project.pbxproj` still says Swift 5.0 / iOS 15.2: bump both during the Top Movies epic, together with the async/await conversion that Swift 6 mode requires (today it fails with `sending 'completion' risks causing data races`).
+Swift 6 language mode with strict concurrency, Observation, and an iOS 26 deployment target.
 
 Screens are SwiftUI. `AppDelegate`, `SceneDelegate`, and `ImageLoader`'s `UIImage` cache are the only UIKit that stays.

@@ -1,5 +1,5 @@
 ---
-description: Poster and backdrop image loading — cache, downsampling, request coalescing, and cancellation on cell reuse.
+description: Poster and backdrop image loading — cache, downsampling, request coalescing, and cancellation when a view leaves the screen.
 globs: TheSilverScreen/Support/ImageLoader.swift,TheSilverScreen/Design/**/*.swift,TheSilverScreen/Screens/**/*.swift
 alwaysApply: false
 ---
@@ -8,7 +8,7 @@ alwaysApply: false
 
 No 3rd-party dependency, so this pipeline is ours. Build it **once** as `ImageLoader` and inject it from the composition root. Never let a second loader appear — two loaders mean two caches and the same poster fetched twice.
 
-Never fetch bytes inside a view or cell. `Data(contentsOf:)` is a synchronous network call; on the main thread it stalls scrolling and risks a watchdog kill.
+Never fetch bytes inside a view. `Data(contentsOf:)` is a synchronous network call; on the main thread it stalls scrolling and risks a watchdog kill.
 
 ## The loader
 
@@ -19,44 +19,18 @@ actor ImageLoader {
 ```
 
 - **Two tiers.** `NSCache<NSURL, UIImage>` for decoded images (it evicts under memory pressure; a plain `Dictionary` does not), over a `URLCache` for the encoded bytes. Check memory, then disk, then network.
-- **Coalesce in flight requests.** Keep `[URL: Task<UIImage, Error>]` and hand the existing task to later callers. Ten visible cells wanting one poster must make one request.
-- **Downsample at decode**, with `CGImageSourceCreateThumbnailAtIndex` and `kCGImageSourceThumbnailMaxPixelSize` from `targetSize * scale`. A `w500` poster is 500×750 ≈ 1.5 MB decoded; a 70pt cell at 3x needs ≈ 0.26 MB. Caching full-size images is a ~6x memory overdraw and the fastest route to a jetsam kill on older hardware.
+- **Coalesce in flight requests.** Keep `[URL: Task<UIImage, Error>]` and hand the existing task to later callers. Ten visible rows wanting one poster must make one request.
+- **Downsample at decode**, with `CGImageSourceCreateThumbnailAtIndex` and `kCGImageSourceThumbnailMaxPixelSize` from `targetSize * scale`. A `w500` poster is 500×750 ≈ 1.5 MB decoded; a 70pt row at 3x needs ≈ 0.26 MB. Caching full-size images is a ~6x memory overdraw and the fastest route to a jetsam kill on older hardware.
 - **Ask TMDB for the right size.** Pick from `w92`, `w154`, `w185`, `w342`, `w500` by target size and screen scale rather than hardcoding `w500`. Size selection belongs in the data layer with the rest of the URL building.
 - Cache keys include the requested size. A poster at `w154` is not the same entry as `w342`.
 
-## Reuse is a correctness problem, not a performance one
+## Identity changes cancel the previous fetch
 
-Any view with reuse identity — a `UITableViewCell`, a `UICollectionViewCell` — must **cancel and revalidate**. Without both, fast scrolling puts the wrong poster on the wrong movie, and that is the single most common defect in a hand-rolled loader.
+SwiftUI reuses row views as the list scrolls. Load with `.task(id:)`, keyed to the image path, so leaving the screen or changing identity cancels the previous work. Clear the displayed image before the new fetch returns, and ignore a result whose path no longer matches. Without both, a slow response paints the wrong poster.
 
-```swift
-final class MovieTableViewCell: UITableViewCell {
-    private var imageTask: Task<Void, Never>?
-    private var movieID: Movie.ID?
-
-    override func prepareForReuse() {
-        super.prepareForReuse()
-        imageTask?.cancel()          // 1. cancel the in flight fetch
-        imageTask = nil
-        posterView.image = nil       // 2. drop the previous movie's poster
-        movieID = nil
-    }
-
-    func configure(with movie: Movie, loader: ImageLoader) {
-        movieID = movie.id
-        // ...
-        imageTask = Task { [weak self] in
-            let image = try? await loader.image(for: url, targetSize: size, scale: scale)
-            guard let self, self.movieID == movie.id else { return }  // 3. still the same movie?
-            self.posterView.image = image
-        }
-    }
-}
-```
-
-The same shape governs any async result landing in a recycled or re-targeted view: sorting, filtering, and search all need a generation check so a slow response cannot overwrite a newer one.
+`ImageLoader` cancels the shared fetch once no visible caller still needs it. Prefetch through `prefetch(urls:targetSize:scale:)` and `cancelPrefetch(urls:)`. A prefetch cancel leaves a fetch alone when a visible row is already waiting on it.
 
 ## Also required
 
-- Implement `UITableViewDataSourcePrefetching` (`prefetchRowsAt` / `cancelPrefetchingForRowsAt`) so posters warm ahead of the scroll and cancel when the user reverses.
 - A poster that fails or is absent (`poster_path` is null) renders a placeholder, never an empty box that collapses the layout.
 - Cancellation is expected here. Never surface a cancelled image fetch as an `AppError`.
