@@ -179,4 +179,106 @@ final class LibraryViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.displayedEntries.map(\.title), ["High", "Low"])
     }
+
+    func test_artwork_systemListsStayIconsWhenTheyHavePosters() async throws {
+        let repository = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let viewModel = LibraryHomeViewModel(lists: repository)
+        await viewModel.load()
+        let snapshot = try await repository.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        let watchlist = try XCTUnwrap(snapshot.list(.watchlist))
+        _ = try await repository.add(draft: draft(id: 1, title: "Heat", imagePath: "/heat.jpg"), listID: watched.id)
+        _ = try await repository.add(draft: draft(id: 2, title: "Alien", imagePath: "/alien.jpg"), listID: watchlist.id)
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.artwork(for: watched), .watched)
+        XCTAssertEqual(viewModel.artwork(for: watchlist), .watchlist)
+    }
+
+    func test_artwork_customListUsesFirstFourPathsInDisplayOrder() async throws {
+        let repository = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let viewModel = LibraryHomeViewModel(lists: repository)
+        let list = try await repository.createList(name: "Friday", segment: .moviesAndTV).list
+        for id in 1...5 {
+            _ = try await repository.add(
+                draft: draft(id: id, title: "Title \(id)", imagePath: "/\(id).jpg"),
+                listID: list.id
+            )
+        }
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.artwork(for: list), .images(["/5.jpg", "/4.jpg", "/3.jpg", "/2.jpg"]))
+    }
+
+    func test_artwork_customListSkipsBlankPaths() async throws {
+        let repository = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let viewModel = LibraryHomeViewModel(lists: repository)
+        let list = try await repository.createList(name: "Friday", segment: .moviesAndTV).list
+        let paths: [String?] = ["/keep-late.jpg", nil, "   ", "/keep-early.jpg"]
+        for (id, path) in paths.enumerated() {
+            _ = try await repository.add(
+                draft: draft(id: id + 1, title: "Title \(id)", imagePath: path),
+                listID: list.id
+            )
+        }
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.artwork(for: list), .images(["/keep-early.jpg", "/keep-late.jpg"]))
+    }
+
+    func test_artwork_customListDedupesPaths() async throws {
+        let repository = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let viewModel = LibraryHomeViewModel(lists: repository)
+        let list = try await repository.createList(name: "Friday", segment: .moviesAndTV).list
+        let paths = ["/extra.jpg", "/b.jpg", "/a.jpg", "/a.jpg", "/c.jpg", "/d.jpg"]
+        for (id, path) in paths.enumerated() {
+            _ = try await repository.add(
+                draft: draft(id: id + 1, title: "Title \(id)", imagePath: path),
+                listID: list.id
+            )
+        }
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.artwork(for: list), .images(["/d.jpg", "/c.jpg", "/a.jpg", "/b.jpg"]))
+    }
+
+    func test_artwork_emptyCustomListHasNoPaths() async throws {
+        let repository = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let viewModel = LibraryHomeViewModel(lists: repository)
+        let list = try await repository.createList(name: "Friday", segment: .moviesAndTV).list
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.artwork(for: list), .images([]))
+    }
+
+    func test_artwork_peopleListUsesProfilePaths() async throws {
+        let repository = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let viewModel = LibraryHomeViewModel(lists: repository)
+        let list = try await repository.createList(name: "Directors", segment: .people).list
+        _ = try await repository.add(
+            draft: draft(id: 9, title: "Agnes", imagePath: "/face.jpg", kind: .person),
+            listID: list.id
+        )
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.artwork(for: list), .images(["/face.jpg"]))
+    }
+
+    private func draft(
+        id: Int,
+        title: String,
+        imagePath: String?,
+        kind: ListItemKind = .movie
+    ) -> ListItemDraft {
+        ListItemDraft(
+            id: id,
+            kind: kind,
+            title: title,
+            imagePath: imagePath,
+            releaseDate: nil,
+            genreNames: [],
+            voteAverage: 0,
+            popularity: 0
+        )
+    }
 }

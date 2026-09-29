@@ -19,7 +19,7 @@ struct LibraryTabRoot: View {
 
     var body: some View {
         NavigationStack(path: $router.path) {
-            LibraryHomeView(viewModel: viewModel)
+            LibraryHomeView(viewModel: viewModel, imageLoader: imageLoader)
                 .navigationDestination(for: Route.self) { route in
                     AppRouteDestination(
                         route: route,
