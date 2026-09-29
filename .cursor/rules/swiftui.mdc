@@ -7,7 +7,7 @@ alwaysApply: false
 # SwiftUI views
 
 - All new screens are SwiftUI with Observation. Do not add new `UIViewController` subclasses.
-- New screens live in `TheSilverScreen/Screens/<Feature>/` — the view, its subviews, and its view model together. Do not add UIKit view controllers.
+- New screens live in `TheSilverScreen/Screens/<Feature>/` — the screen view, its view model, and extracted subviews in separate files when they are named types (not `@ViewBuilder` sections). See [`formatting.mdc`](.cursor/rules/formatting.mdc).
 - Observe with `@State private var viewModel` (injected at construction) or `@Environment`. Do not use `ObservableObject`, `@Published`, `@StateObject`, or `@ObservedObject`.
 - A view is a function of state: `switch viewModel.state` and handle every case, including empty and failed.
 
@@ -28,4 +28,4 @@ switch viewModel.state {
 - `EmptyStateView` and `ErrorStateView` are built once in `TheSilverScreen/Screens/Shared/` and reused. Every screen switches on state, so hand-rolling these per screen guarantees five slightly different error screens.
 
 - No networking, persistence, or business rules in `body`. Put derived display values on the view model.
-- Extract subviews once `body` outgrows roughly one screen. Do not grow `@ViewBuilder` chains driven by booleans.
+- Extract **named** subviews (`struct …: View`) into their own files. Keep `@ViewBuilder` properties like `searchBody` on the screen. Do not grow `@ViewBuilder` chains driven by booleans.
