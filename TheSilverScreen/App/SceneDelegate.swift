@@ -78,17 +78,3 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         routerStateStore.save(appRouter.snapshot)
     }
 }
-
-private struct StartupFailureView: View {
-    let message: String
-
-    var body: some View {
-        Text(message)
-            .font(.body)
-            .multilineTextAlignment(.center)
-            .foregroundStyle(Color(.label))
-            .padding()
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(.systemBackground))
-    }
-}

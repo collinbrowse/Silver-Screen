@@ -9,45 +9,6 @@
 
 import Foundation
 
-enum SearchScope: String, CaseIterable, Sendable, Equatable {
-    case movies
-    case tv
-    case people
-
-    var title: String {
-        switch self {
-            case .movies: "Movies"
-            case .tv: "TV"
-            case .people: "People"
-        }
-    }
-}
-
-enum SearchListing: Sendable, Equatable {
-    case movies([CatalogMovieRow])
-    case tv([CatalogTVRow])
-    case people([CatalogPersonRow])
-
-    var isEmpty: Bool {
-        switch self {
-            case .movies(let rows): rows.isEmpty
-            case .tv(let rows): rows.isEmpty
-            case .people(let rows): rows.isEmpty
-        }
-    }
-
-    func applying(_ scores: [AnnotationKey: SavedUserScore]) -> SearchListing {
-        switch self {
-            case .movies(let rows):
-                .movies(rows.map { $0.withUserScore(scores[.movie($0.id)]) })
-            case .tv(let rows):
-                .tv(rows.map { $0.withUserScore(scores[.series($0.id)]) })
-            case .people:
-                self
-        }
-    }
-}
-
 @Observable
 @MainActor
 final class SearchViewModel {
@@ -578,24 +539,5 @@ final class SearchViewModel {
             default:
                 return next
         }
-    }
-}
-
-/// Genre names the query starts, so "hor" finds Horror and "sci" finds Science Fiction.
-enum SearchGenreMatch {
-    static func movieGenreIDs(matching query: String) -> [Int] {
-        ids(in: MovieGenreCatalog.namesByID, matching: query)
-    }
-
-    static func tvGenreIDs(matching query: String) -> [Int] {
-        ids(in: TVGenreCatalog.namesByID, matching: query)
-    }
-
-    private static func ids(in namesByID: [Int: String], matching query: String) -> [Int] {
-        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard needle.count >= 3 else { return [] }
-        return namesByID.compactMap { id, name in
-            name.range(of: needle, options: [.caseInsensitive, .anchored]) != nil ? id : nil
-        }.sorted()
     }
 }
