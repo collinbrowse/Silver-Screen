@@ -35,6 +35,30 @@ switch kind {
 
 Enum declarations keep `case` at the usual indent of the type body. This rule is for `switch` statements.
 
+## Multiline arguments
+
+When a call or initializer does not fit on one line, put the opening `(` on the first line and **indent every argument (and nested multiline call) one level under that line**. The closing `)` aligns with the start of the call.
+
+```swift
+// ✅ GOOD — continuation lines are indented under the call
+ListMembershipButton(
+    draft: content.detail.listItem(),
+    lists: lists,
+    index: listsIndex
+) {
+    viewModel.noteListSaveFailed()
+}
+
+// ❌ BAD — arguments line up with the callee instead of indenting
+MovieDetailRouteView(
+movieID: id,
+movies: movies,
+router: router
+)
+```
+
+Single-line calls stay on one line. This applies to initializers, function calls, and SwiftUI builders alike.
+
 ## File layout
 
 Prefer names that show up in the Project navigator. Split when a type is its own thing; keep composition helpers in the screen file.
