@@ -1,6 +1,6 @@
 # Epic: Search Tab
 
-Type-ahead movie search on the Search tab. The field is the system search control at the top of the screen. All new work is SwiftUI.
+Type-ahead search on the Search tab. The field is the system search control at the top of the screen. Later stories added TV, people, and the award shelves.
 
 | # | Story | Done |
 | --- | --- | --- |

@@ -2,8 +2,6 @@
 //  SceneDelegate.swift
 //  TheSilverScreen
 //
-//  Created by URBN
-//
 
 import UIKit
 import SwiftUI

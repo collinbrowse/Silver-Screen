@@ -1,122 +1,36 @@
-# NOTES.md
+# Notes
 
-## Hello 
-Hey, Nuuly (Sean, Eric, Sean, Allison, Kevin)
+Decisions that are easier to say in prose than to reconstruct from the code. What the app does, and how to run it, is in the [README](README.md).
 
-Thanks for taking the time to look over my project. It's always fun getting to start something
-new and see where it goes. I've tried to give an informative but short description on each
-part of the assignment and I'm looking forward to reviewing it with you all in person. 
+## Layout
 
-Thanks! 
+The screens follow a familiar media app: a tab bar, poster rows, and a full-bleed detail page. A personal movie library does not need a new way to move around. The work went into the lists staying in sync, the detail page holding together, and awards showing up on the title they belong to.
 
-## Approach
-
-The goal was to set up a repeatable AI workflow with deterministic quality and then push tasks 
-through that process and evaluate the code and the results. If the agent missed any steps 
-or the results were not of sufficient quality I would stop, fix the issue/add more to the harness 
-and ensure it didn't happen again. As I built trust in the process I started providing larger tasks. 
-I have a general design principle that established design styles & navigation
-are best for UX unless a brand new design is specifically warranted and validated. 
-For a quick take home interview project, this holds true. I used ai design tools (google stitch) 
-and my own intuition modeling the app after the AppleTV app which has a clean, intuitive and pleasant UI to use. 
-
-- **Foundation (the harness + architecture):** before and alongside feature
-  work, I built the in-repo AI harness (rules, skills, hooks, CI gates —
-  described below) and the layered architecture the app sits on. This is a
-  large part of the effort and shaped how every story was implemented.
-- **Features:** after the required stories (in order), I let the same judgment the
-  harness enforces drive scope: go deep where it makes the app feel finished —
-  detail and people screens, and a library of lists that stays in sync across
-  every screen — rather than chase completion count across the backlog.
-
-## Process
-
-- One story (or one logical foundation slice) per commit, kept small and
-  reviewable; shared foundation landed ahead of the stories that need it.
-- Work shipped through PRs whose bodies follow
-  `.github/pull_request_template.md` in full (Summary, Decision Tree, Test Plan,
-  AI Harness notes).
-- A story is only marked `Done` in `Requirements/` after both unit tests and a
-  visual check against the comps.
-
-### Toolchain
-
-- Swift 6 language mode with strict concurrency, Observation, iOS 26 target.
-- Bumped `project.pbxproj` off Swift 5 / iOS 15.2 during the Top Movies epic,
-  alongside the async/await conversion Swift 6 mode requires.
-- No 3rd-party dependencies.
-- Setup: copy `Secrets.example.xcconfig` → `Secrets.xcconfig` and set
-  `TMDB_API_KEY` to the provided key. It's gitignored; a missing key fails fast
-  at launch by design.
-
-### Architecture Decisions I Made
+## State and dependencies
 
 Strict layering, one direction only:
 
-`View (SwiftUI) → ViewModel → Repository → Service (TMDB / persistence)`
+`View (SwiftUI)` → `ViewModel` → `Repository` → `Service (TMDB / persistence)`
 
-- **MVVM**: one `@Observable @MainActor` view model per screen. View models
-  import `Foundation` only.
-- **Single explicit state enum** (`LoadState` + nested `LoadActivity`) instead
-  of parallel `isLoading` / `error` / `data` flags, so "loading" and "has
-  content" can never disagree. Refresh, paging, and refresh-failure keep the
-  current content on screen; only a cold failure is full-screen.
-- **Repositories are concrete types** that own their API service, mapping,
-  caching, and persistence, and return domain models or throw `AppError`.
-- **DI, no singletons**: dependencies are built once in the composition root
-  (`AppDependencies`) and injected down — init injection for view models,
-  `Environment` for views.
-- **Navigation**: `AppRouter` owns the selected tab and one `NavigationRouter`
-  (with its own `path`) per tab. Views push routes, never construct
-  destinations.
-- **Minimal protocols**: only where a real boundary needs substitution —
-  `HTTPClient` (network), the Library lists store (disk), and
-  `AppLogging`. No `MovieRepositoryProtocol`, no protocol-per-type.
+- One `@Observable @MainActor` view model per screen. View models import `Foundation` only.
+- One `LoadState`, with `LoadActivity` nested inside `.loaded`. Refresh, paging, and a failed refresh keep the current content on screen. Only a cold failure is full-screen. `empty` is its own case.
+- Repositories are concrete. They own mapping, caching, and persistence, and they return domain models or throw `AppError`.
+- Dependencies are built once in `AppDependencies` and passed down. No singletons.
+- `AppRouter` owns the selected tab and one `NavigationRouter` per tab. Views push routes. They do not construct the destination.
+- Protocols exist only where a test has to substitute a boundary: `HTTPClient`, the library store, and `AppLogging`.
 
-## AI Infrastructure / Harness
+## Awards and the API key
 
-The harness lives in the repo under `.cursor/` and is part of the workflow:
+TMDB has no awards endpoint. The catalog is a Wikidata snapshot joined to TMDB by IMDb id, compiled by [`scripts/build_awards_catalog.py`](scripts/build_awards_catalog.py) and refreshed from `main` at most weekly. The phone never queries Wikidata. See [`AWARDS.md`](AWARDS.md).
 
-- **Rules** (`.cursor/rules/*.mdc`): an always-on architecture rule plus scoped
-  rules for concurrency, SwiftUI, no UIKit screens, the data layer,
-  image loading, secrets, errors/logging, accessibility, documentation,
-  testing, commits, and pull requests. `AGENTS.md` is the agent contract.
+The key lives in a gitignored `Secrets.xcconfig`, is copied into `Info.plist`, and is read at launch. Requests still send it as TMDB’s v3 `api_key` query item. A v4 bearer token would keep the key out of the URL. Logs already omit request URLs. I have not minted a v4 token yet.
 
-- **Hooks** (`.cursor/hooks.json`):
-  - `beforeShellExecution` → `block-third-party-deps.sh` (fail-closed guard
-    against adding dependencies).
-  - `stop` → `run-unit-tests.sh` (runs the unit tests when the agent finishes).
-- **CI gates** (`scripts/`):
-  - `validate-tests.py` — bans empty tests and Xcode placeholder test names.
-  - `validate-pr-body.py` — enforces the PR template sections.
-  - `validate-rules.py` — validates the rule files.
-- **MCP**: 
-  - Use MobAI as an MCP connection to let the agent control the simulator to validate its work.
+## Still open
 
+- Switch TMDB auth to a v4 bearer token.
+- Snapshot tests for the components in `Design/`.
+- A reachability check, so the interface can respond when the network drops instead of only after a request fails.
 
-## Testing
+## How it was built
 
-Unit tests cover the completed work (repositories, view models, library
-lists) under `TheSilverScreenTests/`. Tests substitute only real external boundaries
-(HTTP, disk) — repositories and view models are not hidden behind a protocol and faked. 
-
-
-## What I'd do next/differently
-
-- Search:
-  - Right now the app is more of a "Learn about top movies" but a search functionality 
-  would change it to "An app where I can keep track of my favorite movies "
-- Then continue the backlog in this order:
-  - TV Show page
-  - TV Series/Season Pages
-  - Movie Collections Page
-  - Advanced Search
-  - Now Playing / Upcoming
-- Snapshot tests for the design-system components in
-  `Design/`.
-- Add a network reachability service to monitor for no-service scenarios, so the
-  UI can react to connectivity changes proactively rather than only on a failed
-  request.
-- Switch to a v4 bearer token for TMDB for a more secure process. 
-  I didn't want to sign up for another TMDB account just to mint a token for this project. 
-  I did move the key out of source (gitignored `xcconfig` → `Info.plist`, read at launch) and keep it out of logs.
+The harness is in the repo: rules under `.cursor/rules/`, the contract in [`AGENTS.md`](AGENTS.md), hooks that block a new third-party dependency, and CI checks for empty tests and pull-request bodies. Tests substitute the network and the disk store, then run the real repositories and view models.

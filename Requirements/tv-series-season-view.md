@@ -1,6 +1,6 @@
 # Epic: TV Series Season View
 
-The detail screen for a single season of a TV series. All new work is SwiftUI.
+The detail screen for one season of a series.
 
 | # | Story | Done |
 | --- | --- | --- |

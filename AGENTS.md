@@ -7,7 +7,7 @@ Architecture conventions live in [`.cursor/rules/architecture.mdc`](.cursor/rule
 - All UI work is SwiftUI. Do not add UIKit screens.
 - No 3rd-party dependencies.
 - Add unit tests for completed work.
-- Ship work through PRs. Reviewers look at `main`.
+- Ship work through pull requests. `main` is the branch that ships.
 - **PR bodies must follow** [`.github/pull_request_template.md`](.github/pull_request_template.md) in full — see [`.cursor/rules/pull-requests.mdc`](.cursor/rules/pull-requests.mdc). CI runs [`scripts/validate-pr-body.py`](scripts/validate-pr-body.py).
 - Commits stay reviewable: one logical unit each — see [`.cursor/rules/commits.mdc`](.cursor/rules/commits.mdc).
 

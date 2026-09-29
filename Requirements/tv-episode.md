@@ -1,6 +1,6 @@
 # Epic: TV Episode
 
-The detail screen for a single TV episode, reached by tapping an episode in a TV Season. All new work is SwiftUI.
+The detail screen for one episode, opened from a season.
 
 | # | Story | Done |
 | --- | --- | --- |
