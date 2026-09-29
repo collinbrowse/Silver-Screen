@@ -1,6 +1,6 @@
 # Epic: Collections View (Movie Collections)
 
-The detail screen for a movie collection. All new work is SwiftUI.
+The detail screen for a movie collection.
 
 | # | Story | Done |
 | --- | --- | --- |

@@ -1,6 +1,6 @@
 # Epic: TV Series View
 
-The detail screen for a TV series, reached by tapping a TV series from a person's page. All new work is SwiftUI.
+The detail screen for a series. It opens from a series row, including one on a person's page.
 
 | # | Story | Done |
 | --- | --- | --- |

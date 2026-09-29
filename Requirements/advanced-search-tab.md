@@ -1,6 +1,6 @@
 # Epic: Advanced Search Tab
 
-Take the Search tab to the next level with segmented search across Movies, TV, and People. All new work is SwiftUI.
+Search across Movies, TV, and People. An empty field now opens the award shelves instead of a popular-titles list.
 
 | # | Story | Done |
 | --- | --- | --- |

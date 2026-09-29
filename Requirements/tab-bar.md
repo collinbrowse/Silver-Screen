@@ -1,6 +1,6 @@
 # Epic: Tab Bar
 
-The tab bar is Browse, Search, and Library. All new work is SwiftUI.
+The tab bar is Browse, Search, and Library.
 
 | # | Story | Done |
 | --- | --- | --- |

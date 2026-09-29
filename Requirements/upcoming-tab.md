@@ -1,6 +1,6 @@
 # Epic: Upcoming
 
-Upcoming is a window on Browse, not its own tab. All new work is SwiftUI.
+Upcoming is a window on Browse, not its own tab.
 
 | # | Story | Done |
 | --- | --- | --- |

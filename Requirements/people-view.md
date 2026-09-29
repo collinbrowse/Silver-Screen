@@ -1,6 +1,6 @@
 # Epic: People View
 
-The detail screen for a person, reached by tapping a person elsewhere in the app. All new work is SwiftUI.
+The detail screen for a person, opened from a person row elsewhere in the app.
 
 | # | Story | Done |
 | --- | --- | --- |

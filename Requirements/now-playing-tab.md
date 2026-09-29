@@ -1,6 +1,6 @@
 # Epic: Now Playing
 
-Now Playing is a window on Browse, not its own tab. All new work is SwiftUI.
+Now Playing is a window on Browse, not its own tab.
 
 | # | Story | Done |
 | --- | --- | --- |

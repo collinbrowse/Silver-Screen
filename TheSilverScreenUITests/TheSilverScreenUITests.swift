@@ -2,8 +2,6 @@
 //  TheSilverScreenUITests.swift
 //  TheSilverScreenUITests
 //
-//  Created by Ray Migneco on 1/7/22.
-//
 
 import XCTest
 

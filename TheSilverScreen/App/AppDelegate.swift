@@ -2,8 +2,6 @@
 //  AppDelegate.swift
 //  TheSilverScreen
 //
-//  Created by URBN
-//
 
 import UIKit
 

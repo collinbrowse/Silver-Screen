@@ -1,59 +1,80 @@
-# The Silver Screen — iOS Engineering Assessment
+# Silver Screen
 
-## Overview
-The Silver Screen is a small iOS app that uses [The Movie Database (TMDB)](https://developer.themoviedb.org/reference/getting-started) API to display movies. When we're not busy programming, the URBN Mobile Team loves discussing our favorite films and making recommendations — this app is where we track them.
+It's Letterboxd, but with TV.
 
-This repo is a coding assessment. It ships with a working UIKit movie list, and a large backlog of new SwiftUI features to build on top of it.
+Keep track of movies and series on your iPhone. Browse what's popular, in theaters, and coming up. Search titles and people. Save lists, score what you've seen, and look up Oscar, BAFTA, and Emmy history on the title or the person it was for.
 
-## What we're looking for
-We care about **how** you work as much as what you ship: your process, the tooling you reach for, and how you architect and organize your project to move faster and more accurately.
+No account. Your lists, scores, and notes stay on the device.
 
-The backlog in [`Requirements/`](Requirements/README.md) is **intentionally larger than anyone could finish** in the time you have. That is by design.
+<p>
+  <img src="docs/screenshots/browse-movies.png" width="240" alt="Browse with Movies selected. A title shows a personal rating and is already on a list.">
+  &nbsp;
+  <img src="docs/screenshots/movie-detail.png" width="240" alt="A movie page with a backdrop, trailers, genres, the TMDB rating, your rating, and the storyline.">
+  &nbsp;
+  <img src="docs/screenshots/tv-series.png" width="240" alt="A series page for Severance, with air dates, a trailer, genres, and the storyline.">
+</p>
 
-- You are **not** expected to complete everything — please don't try.
-- Pick whatever you want, in any order, and go deep or wide as you see fit.
-- Check off the stories you complete in the requirement tables as you go.
+## Features
 
-We are assessing your approach, judgment, and craft — not raw completion count.
+- **Browse** for movies, series, or both. Filter to now playing or upcoming, and sort by popularity, rating, name, or release date. Sort applies to the full catalog. Now playing and upcoming already have an order.
+- **Search** for movies, TV, and people. An empty field opens Oscar, BAFTA, and Emmy shelves. Open a ceremony, pick a category, and switch between winners and nominees. A close spelling still finds the name: Christopher Waltz finds Christoph Waltz. The query stays after you open a result.
+- **Rating and notes** Add a rating or a note for a movie, series, season, or episode. Scores run from 0.5 to 10 in half points. Notes are your personal review. 
+- **Awards** show on the title and on the person, with the category, the year, and who it was for. A person's prize opens that film or episode.
+- **Library** helps you keep track of everything your watching. Start with Watched and Watchlist. Add your own lists to make your own ranked lists or simple your favorites from this year. A series opens its seasons, a season its episodes, and a collection the films in it.
 
-## Getting Started
-- Make sure you have a Mac running **Xcode 26** (or higher).
-- Create a new **private** repo from this project.
-- Add the GitHub usernames provided by the recruiting team as collaborators.
-- Your **first commit should be the project exactly as-is** (no changes), so we can see your work as a diff.
-- Open the project in Xcode. The TMDB API key is in [`TheSilverScreen/Networking/Globals.swift`](TheSilverScreen/Networking/Globals.swift).
-- Commit as often as you like.
+### Browse
 
-TMDB API reference: https://developer.themoviedb.org/reference/getting-started
+<p>
+  <img src="docs/screenshots/browse-filters.png" width="240" alt="The Browse filters menu, with window and sort options.">
+  &nbsp;
+  <img src="docs/screenshots/browse-movies.png" width="240" alt="The Movies list on Browse.">
+</p>
 
-## Ground Rules
-- **AI is encouraged.** Use whatever tooling and IDE you prefer — Cursor, Claude Code, Xcode with AI, etc. We want to see how you work with AI, not without it.
-- **All new work is SwiftUI.**
-- **No 3rd-party dependencies.** You may otherwise modify the existing source however you see fit.
-- **Add unit tests** for the work you complete.
-- **You're encouraged to build out your own AI infrastructure/harness.**
-- AI infrastructure/harness should be scoped for the repo, committed in git and accessible in GitHub.
-- **PRs are encouraged** if they help your workflow.
-- Feel free to leave comments/notes in the code about your implementation and any suggestions you have.
+### Search
 
-## How the Work Is Organized
-The backlog lives in [`Requirements/`](Requirements/README.md).
+<p>
+  <img src="docs/screenshots/search-awards.png" width="240" alt="Search with an empty field, showing Oscar, BAFTA, and Emmy shelves.">
+  &nbsp;
+  <img src="docs/screenshots/search-results.png" width="240" alt="A TV search for Severance, with Movies, TV, and People scopes.">
+  &nbsp;
+  <img src="docs/screenshots/award-winners.png" width="240" alt="Best Picture winners, with a Winners and Nominees control.">
+</p>
 
-- Each **epic** is its own file with a table of stories.
-- Each **story** is a single row in that table.
-- The `Done` column is a checkbox — tick it as you complete each story.
+### A title
 
-Start at the [Requirements index](Requirements/README.md) for the full list and an at-a-glance progress view.
+<p>
+  <img src="docs/screenshots/movie-detail.png" width="240" alt="Movie detail with trailers, ratings, and a place to add a note.">
+  &nbsp;
+  <img src="docs/screenshots/movie-awards.png" width="240" alt="Awards listed on a movie page.">
+</p>
 
-## Codebase Tour
-A quick map so you can step in fast:
+### People
 
-- [`TheSilverScreen/Data/Repositories/MovieRepository.swift`](TheSilverScreen/Data/Repositories/MovieRepository.swift) — movie networking and mapping.
-- [`TheSilverScreen/App/RootTabView.swift`](TheSilverScreen/App/RootTabView.swift) — Browse, Search, and Library.
-- [`AWARDS.md`](AWARDS.md) — how Search award shelves and the weekly catalog work.
+<p>
+  <img src="docs/screenshots/person-detail.png" width="240" alt="A person page with a portrait, biography, and an IMDb link.">
+  &nbsp;
+  <img src="docs/screenshots/person-awards.png" width="240" alt="Awards given to a person, each opening the title it was for.">
+</p>
 
-## Submission
-- Do your work in your own **private** repo (see Getting Started), with the recruiting-provided GitHub usernames added as collaborators.
-- We review the **`main`** branch, so make sure your completed work lands there.
-- Please include a short `NOTES.md` describing your approach: your process, the tooling you used, and any AI infrastructure you built along the way.
-- Let your recruiter know when you're ready for review.
+### Library
+
+<p>
+  <img src="docs/screenshots/library.png" width="240" alt="The library, with Watched and Watchlist under Movies and TV.">
+  &nbsp;
+  <img src="docs/screenshots/library-watched.png" width="240" alt="The Watched list, filtered across all titles, movies, and TV.">
+</p>
+
+## Get it running
+
+Silver Screen is a native iPhone app. To run it from this repo:
+
+1. Install [Xcode 26](https://developer.apple.com/xcode/) or newer.
+2. Create a free API key at [The Movie Database](https://www.themoviedb.org/settings/api).
+3. Copy `Secrets.example.xcconfig` to `Secrets.xcconfig` and set `TMDB_API_KEY`.
+4. Open `TheSilverScreen.xcodeproj` and run the **TheSilverScreen** scheme.
+
+## Data sources
+
+Movie and series information comes from [The Movie Database](https://www.themoviedb.org/). This product uses the TMDB API but is not endorsed or certified by TMDB.
+
+Person pages link out to IMDb. Award credits are compiled from Wikidata and matched to TMDB.

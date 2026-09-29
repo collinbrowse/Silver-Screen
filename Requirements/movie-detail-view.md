@@ -1,6 +1,6 @@
 # Epic: Movie Detail View
 
-The detail screen for a single movie. Pushed from a movie cell in any list. All new work is SwiftUI.
+The detail screen for a single movie, opened from a movie row.
 
 
 | #   | Story                                                                                                                                                                                                                       | Done |
