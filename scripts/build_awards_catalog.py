@@ -314,7 +314,7 @@ The Monday workflow rebuilds `TheSilverScreen/Data/Resources/AwardsCatalog.json`
 How to verify this PR (commands, screens, edge cases).
 
 - [ ] `python3 scripts/validate-rules.py`
-- [ ] `BASE_SHA=origin/main python3 scripts/validate-tests.py` (PRs that tick Done)
+- [ ] `python3 scripts/validate-tests.py`
 - [ ] `python3 scripts/validate-pr-body.py --pr <number>` (or pipe the body on stdin)
 - [ ] `xcodebuild test -scheme TheSilverScreen -only-testing:TheSilverScreenTests`
 - [ ] Screenshot path (if UI changed): None
@@ -322,14 +322,6 @@ How to verify this PR (commands, screens, edge cases).
 Catalog diff:
 
 {summary.rstrip()}
-
-## Stories completed
-
-None. This pull request updates bundled award data.
-
-| Epic | Story # | Tests added (method names) | Screenshot |
-| --- | --- | --- | --- |
-| — | — | — | — |
 
 ## AI Harness notes
 

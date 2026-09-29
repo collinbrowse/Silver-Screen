@@ -23,16 +23,11 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-        with:
-          # Need the base commit to detect newly checked Done boxes.
-          fetch-depth: 0
       - name: Validate rules
         run: python3 scripts/validate-rules.py
       - name: Test awards catalog builder
         run: python3 scripts/test_build_awards_catalog.py
       - name: Validate test suite gates
-        env:
-          BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || '' }}
         run: python3 scripts/validate-tests.py
       - name: Validate PR body template
         if: github.event_name == 'pull_request'
@@ -55,9 +50,8 @@ jobs:
       - uses: actions/checkout@v4
 
       # Recorded in the log so a failure that only reproduces on CI can be traced to
-      # a toolchain difference. `macos-latest` is deliberate while the project targets
-      # Swift 5 / iOS 15.2 and builds on anything; pin the runner and select an
-      # explicit Xcode once the Swift 6 / iOS 26 bump makes the SDK a hard requirement.
+      # a toolchain difference. The app needs the iOS 26 SDK. Pin the runner and
+      # select an explicit Xcode if `macos-latest` stops shipping it.
       - name: Toolchain
         run: |
           xcodebuild -version
