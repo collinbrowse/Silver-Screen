@@ -1,4 +1,4 @@
-# The Silver Screen — agent contract
+# Silver Screen — agent contract
 
 Architecture conventions live in [`.cursor/rules/architecture.mdc`](.cursor/rules/architecture.mdc) and the scoped rules beside it.
 
