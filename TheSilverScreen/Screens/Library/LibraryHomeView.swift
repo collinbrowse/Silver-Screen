@@ -10,6 +10,7 @@ import SwiftUI
 
 struct LibraryHomeView: View {
     @Bindable var viewModel: LibraryHomeViewModel
+    let imageLoader: ImageLoader
     @State private var editMode: EditMode = .inactive
     @State private var showingNameDialog = false
     @State private var nameDialogIsRename = false
@@ -182,13 +183,21 @@ struct LibraryHomeView: View {
 
     private func listLink(_ list: LibraryList) -> some View {
         NavigationLink(value: Route.libraryList(id: list.id)) {
-            VStack(alignment: .leading, spacing: DesignSpacing.xs) {
-                Text(list.name)
-                    .font(DesignTypography.section)
-                    .foregroundStyle(DesignTheme.textPrimary)
-                Text(countText(for: list))
-                    .font(DesignTypography.metadata)
-                    .foregroundStyle(DesignTheme.textSecondary)
+            HStack(alignment: .center, spacing: DesignSpacing.md) {
+                LibraryListCoverView(
+                    artwork: viewModel.artwork(for: list),
+                    segment: list.segment,
+                    imageLoader: imageLoader
+                )
+                VStack(alignment: .leading, spacing: DesignSpacing.xs) {
+                    Text(list.name)
+                        .font(DesignTypography.section)
+                        .foregroundStyle(DesignTheme.textPrimary)
+                    Text(countText(for: list))
+                        .font(DesignTypography.metadata)
+                        .foregroundStyle(DesignTheme.textSecondary)
+                }
+                Spacer(minLength: 0)
             }
             .accessibilityElement(children: .combine)
         }
