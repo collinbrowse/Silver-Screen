@@ -33,17 +33,17 @@ struct CreditsListView: View {
     var body: some View {
         Group {
             switch viewModel.state {
-            case .idle, .loading:
-                ProgressView()
+                case .idle, .loading:
+                    ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .empty:
-                EmptyStateView(
+                case .empty:
+                    EmptyStateView(
                     title: "No Credits",
                     message: "No credits were found for this section.",
                     systemImage: "film"
-                )
-            case .loaded(let content, _):
-                List {
+                    )
+                case .loaded(let content, _):
+                    List {
                     Section {
                         ForEach(Array(content.items.enumerated()), id: \.element.id) { index, item in
                             creditRow(item)
@@ -55,12 +55,12 @@ struct CreditsListView: View {
                         }
                     }
                     .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
-                }
-                .listStyle(.plain)
-            case .failed(let error):
-                ErrorStateView(error: error) {
+                    }
+                    .listStyle(.plain)
+                case .failed(let error):
+                    ErrorStateView(error: error) {
                     await viewModel.retry()
-                }
+                    }
             }
         }
         .background(DesignTheme.canvas)
@@ -79,10 +79,10 @@ struct CreditsListView: View {
         if let router {
             Button {
                 switch item.credit.mediaType {
-                case .movie:
-                    router.push(.movieDetail(id: item.credit.mediaID))
-                case .tv:
-                    router.push(.tvSeries(id: item.credit.mediaID))
+                    case .movie:
+                        router.push(.movieDetail(id: item.credit.mediaID))
+                    case .tv:
+                        router.push(.tvSeries(id: item.credit.mediaID))
                 }
             } label: {
                 row
@@ -144,8 +144,8 @@ private struct CreditsListRow: View {
             parts.append(item.formattedReleaseDate)
         }
         switch item.credit.mediaType {
-        case .movie: parts.append("Movie")
-        case .tv: parts.append("TV series")
+            case .movie: parts.append("Movie")
+            case .tv: parts.append("TV series")
         }
         return parts.joined(separator: ", ")
     }

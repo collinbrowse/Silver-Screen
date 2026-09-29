@@ -194,14 +194,14 @@ actor AwardsRepository {
     /// Newer cache wins. A missing side leaves the other. Used by tests and by `prepare`.
     static func preferred(bundle: AwardsCatalog?, cache: AwardsCatalog?) -> AwardsCatalog? {
         switch (bundle, cache) {
-        case let (bundle?, cache?):
-            return cache.generatedAt > bundle.generatedAt ? cache : bundle
-        case let (bundle?, nil):
-            return bundle
-        case let (nil, cache?):
-            return cache
-        case (nil, nil):
-            return nil
+            case let (bundle?, cache?):
+                return cache.generatedAt > bundle.generatedAt ? cache : bundle
+            case let (bundle?, nil):
+                return bundle
+            case let (nil, cache?):
+                return cache
+            case (nil, nil):
+                return nil
         }
     }
 

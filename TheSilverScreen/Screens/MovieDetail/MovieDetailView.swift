@@ -40,21 +40,21 @@ struct MovieDetailView: View {
     var body: some View {
         Group {
             switch viewModel.state {
-            case .idle, .loading:
-                ProgressView()
+                case .idle, .loading:
+                    ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .empty:
-                EmptyStateView(
+                case .empty:
+                    EmptyStateView(
                     title: "Movie Unavailable",
                     message: "This movie could not be shown.",
                     systemImage: "film"
-                )
-            case .loaded(let content, let activity):
-                loadedBody(content: content, activity: activity)
-            case .failed(let error):
-                ErrorStateView(error: error) {
+                    )
+                case .loaded(let content, let activity):
+                    loadedBody(content: content, activity: activity)
+                case .failed(let error):
+                    ErrorStateView(error: error) {
                     await viewModel.retry()
-                }
+                    }
             }
         }
         .background(DesignTheme.canvas)

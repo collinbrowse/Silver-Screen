@@ -102,8 +102,8 @@ extension PersonCredit {
     /// Movie or series credit. The person's own list membership is a separate draft.
     func listItem() -> ListItemDraft {
         switch mediaType {
-        case .movie:
-            ListItemDraft(
+            case .movie:
+                ListItemDraft(
                 id: mediaID,
                 kind: .movie,
                 title: title,
@@ -112,9 +112,9 @@ extension PersonCredit {
                 genreNames: MovieGenreCatalog.names(for: genreIDs),
                 voteAverage: voteAverage,
                 popularity: popularity
-            )
-        case .tv:
-            ListItemDraft(
+                )
+            case .tv:
+                ListItemDraft(
                 id: mediaID,
                 kind: .tv,
                 title: title,
@@ -123,7 +123,7 @@ extension PersonCredit {
                 genreNames: TVGenreCatalog.names(for: genreIDs),
                 voteAverage: voteAverage,
                 popularity: popularity
-            )
+                )
         }
     }
 }
@@ -161,8 +161,8 @@ extension CreditedPerson {
 extension BrowseRow {
     func listItem() -> ListItemDraft {
         switch media {
-        case .movie:
-            ListItemDraft(
+            case .movie:
+                ListItemDraft(
                 id: mediaID,
                 kind: .movie,
                 title: title,
@@ -171,9 +171,9 @@ extension BrowseRow {
                 genreNames: genreNames,
                 voteAverage: voteAverage,
                 popularity: popularity
-            )
-        case .tv:
-            ListItemDraft(
+                )
+            case .tv:
+                ListItemDraft(
                 id: mediaID,
                 kind: .tv,
                 title: title,
@@ -182,7 +182,7 @@ extension BrowseRow {
                 genreNames: genreNames,
                 voteAverage: voteAverage,
                 popularity: popularity
-            )
+                )
         }
     }
 }

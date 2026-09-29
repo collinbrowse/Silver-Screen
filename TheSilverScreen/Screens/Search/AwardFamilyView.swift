@@ -17,17 +17,17 @@ struct AwardFamilyView: View {
     var body: some View {
         Group {
             switch viewModel.state {
-            case .idle, .loading:
-                ProgressView()
+                case .idle, .loading:
+                    ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .empty:
-                EmptyStateView(
+                case .empty:
+                    EmptyStateView(
                     title: "No Categories",
                     message: "This award has no titles in the catalog yet.",
                     systemImage: "trophy"
-                )
-            case .loaded(let categories, _):
-                List {
+                    )
+                case .loaded(let categories, _):
+                    List {
                     Section {
                         ForEach(Array(categories.enumerated()), id: \.element.id) { index, category in
                             Button {
@@ -61,12 +61,12 @@ struct AwardFamilyView: View {
                         }
                     }
                     .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
-                }
-                .listStyle(.plain)
-            case .failed(let error):
-                ErrorStateView(error: error) {
+                    }
+                    .listStyle(.plain)
+                case .failed(let error):
+                    ErrorStateView(error: error) {
                     await viewModel.load()
-                }
+                    }
             }
         }
         .background(DesignTheme.canvas)

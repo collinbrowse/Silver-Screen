@@ -87,11 +87,11 @@ struct SearchView: View {
     @ViewBuilder
     private var searchBody: some View {
         switch viewModel.state {
-        case .idle, .loading:
-            ProgressView()
+            case .idle, .loading:
+                ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .empty:
-            if viewModel.showsFocusedPlaceholder {
+            case .empty:
+                if viewModel.showsFocusedPlaceholder {
                 Button {
                     dismissSearchKeyboard()
                 } label: {
@@ -99,15 +99,15 @@ struct SearchView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityHint("Dismisses search and restores the last results")
-            } else {
+                } else {
                 emptyState
-            }
-        case .loaded(let listing, let activity):
-            results(listing, activity: activity)
-        case .failed(let error):
-            ErrorStateView(error: error) {
+                }
+            case .loaded(let listing, let activity):
+                results(listing, activity: activity)
+            case .failed(let error):
+                ErrorStateView(error: error) {
                 await viewModel.retry()
-            }
+                }
         }
     }
 
@@ -137,10 +137,10 @@ struct SearchView: View {
 
     private func openShelf(_ shelf: AwardShelf) {
         switch shelf.destination {
-        case .family(let family):
-            open(.awardFamily(family))
-        case .titles(let request):
-            open(.awardTitles(request))
+            case .family(let family):
+                open(.awardFamily(family))
+            case .titles(let request):
+                open(.awardTitles(request))
         }
     }
 
@@ -155,9 +155,9 @@ struct SearchView: View {
     private var searchPrompt: String {
         guard viewModel.showsScopePicker else { return "Search movies, TV, and people" }
         switch viewModel.scope {
-        case .movies: return "Search movies"
-        case .tv: return "Search TV"
-        case .people: return "Search people"
+            case .movies: return "Search movies"
+            case .tv: return "Search TV"
+            case .people: return "Search people"
         }
     }
 
@@ -166,8 +166,8 @@ struct SearchView: View {
         List {
             Section {
                 switch listing {
-                case .movies(let rows):
-                    ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                    case .movies(let rows):
+                        ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                         resultButton(index: index, count: rows.count, showsLoadingRow: activity == .loadingMore, rowID: row.id) {
                             open(.movieDetail(id: row.id))
                         } label: {
@@ -184,9 +184,9 @@ struct SearchView: View {
                         } star: {
                             listControl(row.listItem())
                         }
-                    }
-                case .tv(let rows):
-                    ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                        }
+                    case .tv(let rows):
+                        ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                         resultButton(index: index, count: rows.count, showsLoadingRow: activity == .loadingMore, rowID: row.id) {
                             open(.tvSeries(id: row.id))
                         } label: {
@@ -203,9 +203,9 @@ struct SearchView: View {
                         } star: {
                             listControl(row.listItem())
                         }
-                    }
-                case .people(let rows):
-                    ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                        }
+                    case .people(let rows):
+                        ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                         resultButton(index: index, count: rows.count, showsLoadingRow: activity == .loadingMore, rowID: row.id) {
                             open(.person(id: row.id))
                         } label: {
@@ -221,7 +221,7 @@ struct SearchView: View {
                         } star: {
                             listControl(row.listItem())
                         }
-                    }
+                        }
                 }
 
                 if activity == .loadingMore {
@@ -320,10 +320,10 @@ private struct AwardShelfCard: View {
     private var fill: Color {
         let dark = colorScheme == .dark
         switch shelf.family {
-        case .emmy:
-            return dark ? Color(red: 0.008, green: 0.016, blue: 0.13) : .white
-        case .academy, .bafta, nil:
-            return dark ? .black : .white
+            case .emmy:
+                return dark ? Color(red: 0.008, green: 0.016, blue: 0.13) : .white
+            case .academy, .bafta, nil:
+                return dark ? .black : .white
         }
     }
 }

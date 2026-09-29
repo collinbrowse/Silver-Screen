@@ -282,17 +282,17 @@ final class PersonRepository: Sendable {
         guard let mediaType = parseMediaType(item.mediaType) else { return nil }
         let title: String
         switch mediaType {
-        case .movie:
-            title = item.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        case .tv:
-            title = item.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            case .movie:
+                title = item.title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            case .tv:
+                title = item.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         }
         guard !title.isEmpty else { return nil }
 
         let dateRaw: String?
         switch mediaType {
-        case .movie: dateRaw = item.releaseDate
-        case .tv: dateRaw = item.firstAirDate
+            case .movie: dateRaw = item.releaseDate
+            case .tv: dateRaw = item.firstAirDate
         }
 
         return PersonCredit(
@@ -319,10 +319,10 @@ final class PersonRepository: Sendable {
         func merging(_ other: CreditSignals) -> CreditSignals {
             let episodes: Int?
             switch (episodeCount, other.episodeCount) {
-            case let (left?, right?): episodes = max(left, right)
-            case let (left?, nil): episodes = left
-            case let (nil, right?): episodes = right
-            case (nil, nil): episodes = nil
+                case let (left?, right?): episodes = max(left, right)
+                case let (left?, nil): episodes = left
+                case let (nil, right?): episodes = right
+                case (nil, nil): episodes = nil
             }
             return CreditSignals(
                 voteCount: max(voteCount, other.voteCount),
@@ -432,9 +432,9 @@ final class PersonRepository: Sendable {
 
     private static func parseMediaType(_ raw: String?) -> CreditMediaType? {
         switch raw?.trimmingCharacters(in: .whitespacesAndNewlines) {
-        case "movie": return .movie
-        case "tv": return .tv
-        default: return nil
+            case "movie": return .movie
+            case "tv": return .tv
+            default: return nil
         }
     }
 

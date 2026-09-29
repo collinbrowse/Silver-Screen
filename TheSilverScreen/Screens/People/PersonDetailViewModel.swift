@@ -139,8 +139,8 @@ final class PersonDetailViewModel {
     /// Genre names for a credit row, using the movie or TV catalog by media type.
     static func genreNames(for credit: PersonCredit) -> [String] {
         switch credit.mediaType {
-        case .movie: return MovieGenreCatalog.names(for: credit.genreIDs)
-        case .tv: return TVGenreCatalog.names(for: credit.genreIDs)
+            case .movie: return MovieGenreCatalog.names(for: credit.genreIDs)
+            case .tv: return TVGenreCatalog.names(for: credit.genreIDs)
         }
     }
 
@@ -202,8 +202,8 @@ enum PersonCreditGroups {
 
     private static func isActing(_ name: String) -> Bool {
         switch name.lowercased() {
-        case "acting", "actors": return true
-        default: return false
+            case "acting", "actors": return true
+            default: return false
         }
     }
 
@@ -217,16 +217,16 @@ enum PersonCreditGroups {
         credits: [PersonCredit]
     ) -> (group: Group, consumed: Set<String>)? {
         switch known.lowercased() {
-        case "directing":
-            return slice(credits, department: .directing, title: "Directing") { $0.job == "Director" }
-        case "writing":
-            return slice(credits, department: .writing, title: "Writing") {
+            case "directing":
+                return slice(credits, department: .directing, title: "Directing") { $0.job == "Director" }
+            case "writing":
+                return slice(credits, department: .writing, title: "Writing") {
                 MovieRepository.writerJobs.contains($0.job)
-            }
-        default:
-            return slice(credits, department: .named(known), title: known) { job in
+                }
+            default:
+                return slice(credits, department: .named(known), title: known) { job in
                 !job.department.isEmpty && job.department.caseInsensitiveCompare(known) == .orderedSame
-            }
+                }
         }
     }
 

@@ -91,16 +91,16 @@ final class CollectionViewModel {
     /// Missing release dates sort ahead of every dated part. Dated parts go oldest first.
     private static func undatedFirst(_ lhs: Movie, _ rhs: Movie) -> Bool {
         switch (lhs.releaseDate, rhs.releaseDate) {
-        case (nil, nil):
-            return lhs.id < rhs.id
-        case (nil, .some):
-            return true
-        case (.some, nil):
-            return false
-        case let (left?, right?) where left != right:
-            return left < right
-        default:
-            return lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
+            case (nil, nil):
+                return lhs.id < rhs.id
+            case (nil, .some):
+                return true
+            case (.some, nil):
+                return false
+            case let (left?, right?) where left != right:
+                return left < right
+            default:
+                return lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
         }
     }
 }

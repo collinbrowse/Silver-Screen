@@ -23,21 +23,21 @@ struct PersonDetailView: View {
     var body: some View {
         Group {
             switch viewModel.state {
-            case .idle, .loading:
-                ProgressView()
+                case .idle, .loading:
+                    ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .empty:
-                EmptyStateView(
+                case .empty:
+                    EmptyStateView(
                     title: "Person Unavailable",
                     message: "This person could not be found.",
                     systemImage: "person"
-                )
-            case .loaded(let content, let activity):
-                loadedBody(content: content, activity: activity)
-            case .failed(let error):
-                ErrorStateView(error: error) {
+                    )
+                case .loaded(let content, let activity):
+                    loadedBody(content: content, activity: activity)
+                case .failed(let error):
+                    ErrorStateView(error: error) {
                     await viewModel.retry()
-                }
+                    }
             }
         }
         .background(DesignTheme.canvas)
@@ -381,10 +381,10 @@ struct PersonDetailView: View {
         .contentShape(Rectangle())
         .onTapGesture {
             switch credit.mediaType {
-            case .movie:
-                router?.push(.movieDetail(id: credit.mediaID))
-            case .tv:
-                router?.push(.tvSeries(id: credit.mediaID))
+                case .movie:
+                    router?.push(.movieDetail(id: credit.mediaID))
+                case .tv:
+                    router?.push(.tvSeries(id: credit.mediaID))
             }
         }
         .accessibilityElement(children: .contain)
@@ -399,8 +399,8 @@ struct PersonDetailView: View {
     private func creditAccessibilityLabel(_ credit: PersonCredit) -> String {
         var parts = [credit.title]
         switch credit.mediaType {
-        case .movie: parts.append("Movie")
-        case .tv: parts.append("TV series")
+            case .movie: parts.append("Movie")
+            case .tv: parts.append("TV series")
         }
         if !credit.roleLabel.isEmpty {
             parts.append(credit.roleLabel)

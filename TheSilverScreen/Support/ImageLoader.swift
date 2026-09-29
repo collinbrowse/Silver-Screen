@@ -143,11 +143,11 @@ actor ImageLoader {
         let pixels = targetWidthPoints * scale
         let sizeToken: String
         switch pixels {
-        case ..<92: sizeToken = "w92"
-        case ..<154: sizeToken = "w154"
-        case ..<185: sizeToken = "w185"
-        case ..<342: sizeToken = "w342"
-        default: sizeToken = "w500"
+            case ..<92: sizeToken = "w92"
+            case ..<154: sizeToken = "w154"
+            case ..<185: sizeToken = "w185"
+            case ..<342: sizeToken = "w342"
+            default: sizeToken = "w500"
         }
         let normalized = path.hasPrefix("/") ? path : "/" + path
         return URL(string: "https://image.tmdb.org/t/p/\(sizeToken)\(normalized)")
@@ -164,12 +164,12 @@ actor ImageLoader {
             let pixels = targetWidthPoints * scale
             let sizeToken: String
             switch pixels {
-            case ..<92: sizeToken = "w92"
-            case ..<154: sizeToken = "w154"
-            case ..<185: sizeToken = "w185"
-            case ..<342: sizeToken = "w342"
-            case ..<500: sizeToken = "w500"
-            default: sizeToken = "w780"
+                case ..<92: sizeToken = "w92"
+                case ..<154: sizeToken = "w154"
+                case ..<185: sizeToken = "w185"
+                case ..<342: sizeToken = "w342"
+                case ..<500: sizeToken = "w500"
+                default: sizeToken = "w780"
             }
             let normalized = path.hasPrefix("/") ? path : "/" + path
             return URL(string: "https://image.tmdb.org/t/p/\(sizeToken)\(normalized)")
@@ -182,16 +182,16 @@ actor ImageLoader {
 
     private static func sizeToken(for kind: ImageKind, pixels: CGFloat) -> String {
         switch kind {
-        case .poster:
-            return "w500"
-        case .backdrop:
-            switch pixels {
+            case .poster:
+                return "w500"
+            case .backdrop:
+                switch pixels {
             case ..<300: return "w300"
             case ..<780: return "w780"
             default: return "w1280"
             }
-        case .profile:
-            switch pixels {
+            case .profile:
+                switch pixels {
             case ..<45: return "w45"
             case ..<185: return "w185"
             default: return "h632"

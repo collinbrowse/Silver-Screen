@@ -17,26 +17,26 @@ extension AppTab: Codable {
         let container = try decoder.singleValueContainer()
         let raw = (try? container.decode(String.self)) ?? ""
         switch raw {
-        case "favorites", "library":
-            self = .library
-        case "search":
-            self = .search
-        case "browse":
-            self = .browse
-        default:
-            self = .browse
+            case "favorites", "library":
+                self = .library
+            case "search":
+                self = .search
+            case "browse":
+                self = .browse
+            default:
+                self = .browse
         }
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         switch self {
-        case .browse:
-            try container.encode("browse")
-        case .library:
-            try container.encode("library")
-        case .search:
-            try container.encode("search")
+            case .browse:
+                try container.encode("browse")
+            case .library:
+                try container.encode("library")
+            case .search:
+                try container.encode("search")
         }
     }
 }

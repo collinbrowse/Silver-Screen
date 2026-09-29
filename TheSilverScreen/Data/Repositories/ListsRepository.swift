@@ -224,21 +224,21 @@ actor ListsRepository {
         guard change.action != .unchanged else { return }
         var snapshot = try await loadCache()
         switch change.action {
-        case .added:
-            snapshot.entries = Self.removing(
+            case .added:
+                snapshot.entries = Self.removing(
                 itemKey: change.itemKey,
                 listID: change.listID,
                 from: snapshot.entries
-            ).entries
-            if let restore = change.restore {
+                ).entries
+                if let restore = change.restore {
                 snapshot.entries = Self.inserting(restore, into: snapshot.entries)
-            }
-        case .removed:
-            if let removed = change.removed {
+                }
+            case .removed:
+                if let removed = change.removed {
                 snapshot.entries = Self.inserting(removed, into: snapshot.entries)
-            }
-        case .unchanged:
-            return
+                }
+            case .unchanged:
+                return
         }
         try await persist(snapshot)
     }

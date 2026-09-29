@@ -138,9 +138,9 @@ private struct FullscreenImagePage: View {
 
     private var loaderKind: ImageLoader.ImageKind {
         switch imageKind {
-        case .poster: return .poster
-        case .backdrop: return .backdrop
-        case .profile: return .profile
+            case .poster: return .poster
+            case .backdrop: return .backdrop
+            case .profile: return .profile
         }
     }
 
@@ -166,12 +166,12 @@ private struct FullscreenImagePage: View {
         let targetWidth: CGFloat
         let aspect: CGFloat
         switch imageKind {
-        case .poster, .profile:
-            targetWidth = 780
-            aspect = 2 / 3
-        case .backdrop:
-            targetWidth = 1280
-            aspect = 9 / 16
+            case .poster, .profile:
+                targetWidth = 780
+                aspect = 2 / 3
+            case .backdrop:
+                targetWidth = 1280
+                aspect = 9 / 16
         }
         guard let url = ImageLoader.imageURL(
             path: item.filePath,

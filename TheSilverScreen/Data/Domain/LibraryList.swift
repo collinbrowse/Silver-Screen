@@ -16,8 +16,8 @@ enum LibrarySegment: String, Codable, Sendable, Equatable, CaseIterable {
 
     var title: String {
         switch self {
-        case .moviesAndTV: "Movies & TV"
-        case .people: "People"
+            case .moviesAndTV: "Movies & TV"
+            case .people: "People"
         }
     }
 }
@@ -29,8 +29,8 @@ enum SystemListKind: String, Codable, Sendable, Equatable {
 
     var name: String {
         switch self {
-        case .watched: "Watched"
-        case .watchlist: "Watchlist"
+            case .watched: "Watched"
+            case .watchlist: "Watchlist"
         }
     }
 }
@@ -46,23 +46,23 @@ enum LibrarySort: String, Codable, Sendable, Equatable, CaseIterable {
 
     var title: String {
         switch self {
-        case .dateAdded: "Date Added"
-        case .alphabetical: "Alphabetical"
-        case .popular: "Popular"
-        case .topRated: "Top Rated"
-        case .newest: "Newest"
-        case .oldest: "Oldest"
+            case .dateAdded: "Date Added"
+            case .alphabetical: "Alphabetical"
+            case .popular: "Popular"
+            case .topRated: "Top Rated"
+            case .newest: "Newest"
+            case .oldest: "Oldest"
         }
     }
 
     var symbol: String {
         switch self {
-        case .dateAdded: "clock"
-        case .alphabetical: "textformat.abc"
-        case .popular: "flame"
-        case .topRated: "star"
-        case .newest: "arrow.down"
-        case .oldest: "arrow.up"
+            case .dateAdded: "clock"
+            case .alphabetical: "textformat.abc"
+            case .popular: "flame"
+            case .topRated: "star"
+            case .newest: "arrow.down"
+            case .oldest: "arrow.up"
         }
     }
 }
@@ -101,8 +101,8 @@ enum ListItemKind: String, Codable, Sendable, Equatable, Hashable {
 
     var segment: LibrarySegment {
         switch self {
-        case .movie, .tv: .moviesAndTV
-        case .person: .people
+            case .movie, .tv: .moviesAndTV
+            case .person: .people
         }
     }
 }
@@ -187,9 +187,9 @@ struct LibrarySnapshot: Codable, Sendable, Equatable {
 
     private static func systemRank(_ list: LibraryList) -> Int {
         switch list.system {
-        case .watched: 0
-        case .watchlist: 1
-        case nil: 2
+            case .watched: 0
+            case .watchlist: 1
+            case nil: 2
         }
     }
 }
@@ -205,23 +205,23 @@ enum ListEditError: Error, Equatable, Sendable {
     /// Name problems reopen the name dialog. Other cases are shown as a save failure.
     var isNameRejection: Bool {
         switch self {
-        case .emptyName, .duplicateName: true
-        case .systemListLocked, .wrongSegment, .missingList: false
+            case .emptyName, .duplicateName: true
+            case .systemListLocked, .wrongSegment, .missingList: false
         }
     }
 
     var message: String {
         switch self {
-        case .emptyName:
-            "Enter a name."
-        case .duplicateName:
-            "A list with that name already exists."
-        case .systemListLocked:
-            "Watched and Watchlist can't be changed."
-        case .wrongSegment:
-            "That title doesn't belong on this list."
-        case .missingList:
-            "That list no longer exists."
+            case .emptyName:
+                "Enter a name."
+            case .duplicateName:
+                "A list with that name already exists."
+            case .systemListLocked:
+                "Watched and Watchlist can't be changed."
+            case .wrongSegment:
+                "That title doesn't belong on this list."
+            case .missingList:
+                "That list no longer exists."
         }
     }
 }
@@ -246,9 +246,9 @@ struct MembershipChange: Sendable, Equatable {
     /// Banner copy for an add or removal. An unchanged membership has nothing to confirm.
     var confirmation: String? {
         switch action {
-        case .added: "Added to \(listName)"
-        case .removed: "Removed from \(listName)"
-        case .unchanged: nil
+            case .added: "Added to \(listName)"
+            case .removed: "Removed from \(listName)"
+            case .unchanged: nil
         }
     }
 }
@@ -273,16 +273,16 @@ enum LibraryOrdering {
 
     static func comesBefore(_ lhs: ListEntry, _ rhs: ListEntry, sort: LibrarySort) -> Bool {
         switch sort {
-        case .dateAdded:
-            if lhs.addedAt != rhs.addedAt { return lhs.addedAt > rhs.addedAt }
-        case .popular:
-            if lhs.popularity != rhs.popularity { return lhs.popularity > rhs.popularity }
-        case .topRated:
-            if lhs.voteAverage != rhs.voteAverage { return lhs.voteAverage > rhs.voteAverage }
-        case .alphabetical:
-            break
-        case .newest:
-            switch (lhs.releaseDate, rhs.releaseDate) {
+            case .dateAdded:
+                if lhs.addedAt != rhs.addedAt { return lhs.addedAt > rhs.addedAt }
+            case .popular:
+                if lhs.popularity != rhs.popularity { return lhs.popularity > rhs.popularity }
+            case .topRated:
+                if lhs.voteAverage != rhs.voteAverage { return lhs.voteAverage > rhs.voteAverage }
+            case .alphabetical:
+                break
+            case .newest:
+                switch (lhs.releaseDate, rhs.releaseDate) {
             case let (left?, right?) where left != right:
                 return left > right
             case (.some, .none):
@@ -292,8 +292,8 @@ enum LibraryOrdering {
             default:
                 break
             }
-        case .oldest:
-            switch (lhs.releaseDate, rhs.releaseDate) {
+            case .oldest:
+                switch (lhs.releaseDate, rhs.releaseDate) {
             case let (left?, right?) where left != right:
                 return left < right
             case (.none, .some):
@@ -319,9 +319,9 @@ enum LibraryOrdering {
 
     private static func kindRank(_ kind: ListItemKind) -> Int {
         switch kind {
-        case .movie: 0
-        case .tv: 1
-        case .person: 2
+            case .movie: 0
+            case .tv: 1
+            case .person: 2
         }
     }
 }
@@ -352,9 +352,9 @@ enum LibraryQuery {
     ) -> [ListEntry] {
         let kindFiltered = entries.filter { entry in
             switch filter {
-            case .all: true
-            case .movies: entry.kind == .movie
-            case .tv: entry.kind == .tv
+                case .all: true
+                case .movies: entry.kind == .movie
+                case .tv: entry.kind == .tv
             }
         }
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -371,9 +371,9 @@ enum TitleMediaFilter: String, CaseIterable, Sendable, Equatable {
 
     var title: String {
         switch self {
-        case .all: "All"
-        case .movies: "Movies"
-        case .tv: "TV"
+            case .all: "All"
+            case .movies: "Movies"
+            case .tv: "TV"
         }
     }
 }

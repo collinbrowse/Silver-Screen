@@ -16,17 +16,17 @@ enum BrowseMedia: String, CaseIterable, Sendable, Equatable {
 
     var title: String {
         switch self {
-        case .all: "All"
-        case .movies: "Movies"
-        case .tv: "TV Series"
+            case .all: "All"
+            case .movies: "Movies"
+            case .tv: "TV Series"
         }
     }
 
     var symbol: String {
         switch self {
-        case .all: "square.grid.2x2"
-        case .movies: "film"
-        case .tv: "tv"
+            case .all: "square.grid.2x2"
+            case .movies: "film"
+            case .tv: "tv"
         }
     }
 }
@@ -38,17 +38,17 @@ enum BrowseWindow: String, CaseIterable, Sendable, Equatable {
 
     var title: String {
         switch self {
-        case .all: "All"
-        case .nowPlaying: "Now Playing"
-        case .upcoming: "Upcoming"
+            case .all: "All"
+            case .nowPlaying: "Now Playing"
+            case .upcoming: "Upcoming"
         }
     }
 
     var symbol: String {
         switch self {
-        case .all: "square.grid.2x2"
-        case .nowPlaying: "ticket"
-        case .upcoming: "calendar"
+            case .all: "square.grid.2x2"
+            case .nowPlaying: "ticket"
+            case .upcoming: "calendar"
         }
     }
 }
@@ -62,21 +62,21 @@ enum BrowseSort: String, CaseIterable, Sendable, Equatable {
 
     var title: String {
         switch self {
-        case .popular: "Popular"
-        case .topRated: "Top Rated"
-        case .alphabetical: "Alphabetical"
-        case .newest: "Newest"
-        case .oldest: "Oldest"
+            case .popular: "Popular"
+            case .topRated: "Top Rated"
+            case .alphabetical: "Alphabetical"
+            case .newest: "Newest"
+            case .oldest: "Oldest"
         }
     }
 
     var symbol: String {
         switch self {
-        case .popular: "flame"
-        case .topRated: "star"
-        case .alphabetical: "textformat.abc"
-        case .newest: "arrow.down"
-        case .oldest: "arrow.up"
+            case .popular: "flame"
+            case .topRated: "star"
+            case .alphabetical: "textformat.abc"
+            case .newest: "arrow.down"
+            case .oldest: "arrow.up"
         }
     }
 }
@@ -88,8 +88,8 @@ enum DiscoverKind: Sendable, Equatable {
 
     var path: String {
         switch self {
-        case .movie: "discover/movie"
-        case .tv: "discover/tv"
+            case .movie: "discover/movie"
+            case .tv: "discover/tv"
         }
     }
 }
@@ -117,22 +117,22 @@ enum DiscoverQuery {
 
     static func sortBy(kind: DiscoverKind, sort: BrowseSort) -> String {
         switch (kind, sort) {
-        case (_, .popular):
-            "popularity.desc"
-        case (_, .topRated):
-            "vote_average.desc"
-        case (.movie, .alphabetical):
-            "title.asc"
-        case (.tv, .alphabetical):
-            "name.asc"
-        case (.movie, .newest):
-            "primary_release_date.desc"
-        case (.tv, .newest):
-            "first_air_date.desc"
-        case (.movie, .oldest):
-            "primary_release_date.asc"
-        case (.tv, .oldest):
-            "first_air_date.asc"
+            case (_, .popular):
+                "popularity.desc"
+            case (_, .topRated):
+                "vote_average.desc"
+            case (.movie, .alphabetical):
+                "title.asc"
+            case (.tv, .alphabetical):
+                "name.asc"
+            case (.movie, .newest):
+                "primary_release_date.desc"
+            case (.tv, .newest):
+                "first_air_date.desc"
+            case (.movie, .oldest):
+                "primary_release_date.asc"
+            case (.tv, .oldest):
+                "first_air_date.asc"
         }
     }
 
@@ -172,8 +172,8 @@ struct BrowseCandidate: Sendable, Equatable {
 
     var identity: String {
         switch media {
-        case .movie: "movie-\(id)"
-        case .tv: "tv-\(id)"
+            case .movie: "movie-\(id)"
+            case .tv: "tv-\(id)"
         }
     }
 
@@ -209,18 +209,18 @@ struct BrowseCandidate: Sendable, Equatable {
 enum BrowseOrdering {
     static func comesBefore(_ lhs: BrowseCandidate, _ rhs: BrowseCandidate, sort: BrowseSort) -> Bool {
         switch sort {
-        case .popular:
-            if lhs.popularity != rhs.popularity {
+            case .popular:
+                if lhs.popularity != rhs.popularity {
                 return lhs.popularity > rhs.popularity
-            }
-        case .topRated:
-            if lhs.voteAverage != rhs.voteAverage {
+                }
+            case .topRated:
+                if lhs.voteAverage != rhs.voteAverage {
                 return lhs.voteAverage > rhs.voteAverage
-            }
-        case .alphabetical:
-            break
-        case .newest:
-            switch (lhs.date, rhs.date) {
+                }
+            case .alphabetical:
+                break
+            case .newest:
+                switch (lhs.date, rhs.date) {
             case let (left?, right?) where left != right:
                 return left > right
             case (.some, .none):
@@ -230,8 +230,8 @@ enum BrowseOrdering {
             default:
                 break
             }
-        case .oldest:
-            switch (lhs.date, rhs.date) {
+            case .oldest:
+                switch (lhs.date, rhs.date) {
             case let (left?, right?) where left != right:
                 return left < right
             case (.none, .some):
@@ -369,10 +369,10 @@ struct BrowseRow: Sendable, Equatable, Identifiable {
         title = candidate.title
         posterPath = candidate.posterPath
         switch candidate.media {
-        case .movie:
-            genreNames = MovieGenreCatalog.names(for: candidate.genreIDs)
-        case .tv:
-            genreNames = TVGenreCatalog.names(for: candidate.genreIDs)
+            case .movie:
+                genreNames = MovieGenreCatalog.names(for: candidate.genreIDs)
+            case .tv:
+                genreNames = TVGenreCatalog.names(for: candidate.genreIDs)
         }
         formattedDate = DisplayDate.day(candidate.date, locale: locale)
         date = candidate.date

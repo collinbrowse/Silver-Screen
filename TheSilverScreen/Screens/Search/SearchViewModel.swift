@@ -16,9 +16,9 @@ enum SearchScope: String, CaseIterable, Sendable, Equatable {
 
     var title: String {
         switch self {
-        case .movies: "Movies"
-        case .tv: "TV"
-        case .people: "People"
+            case .movies: "Movies"
+            case .tv: "TV"
+            case .people: "People"
         }
     }
 }
@@ -30,20 +30,20 @@ enum SearchListing: Sendable, Equatable {
 
     var isEmpty: Bool {
         switch self {
-        case .movies(let rows): rows.isEmpty
-        case .tv(let rows): rows.isEmpty
-        case .people(let rows): rows.isEmpty
+            case .movies(let rows): rows.isEmpty
+            case .tv(let rows): rows.isEmpty
+            case .people(let rows): rows.isEmpty
         }
     }
 
     func applying(_ scores: [AnnotationKey: SavedUserScore]) -> SearchListing {
         switch self {
-        case .movies(let rows):
-            .movies(rows.map { $0.withUserScore(scores[.movie($0.id)]) })
-        case .tv(let rows):
-            .tv(rows.map { $0.withUserScore(scores[.series($0.id)]) })
-        case .people:
-            self
+            case .movies(let rows):
+                .movies(rows.map { $0.withUserScore(scores[.movie($0.id)]) })
+            case .tv(let rows):
+                .tv(rows.map { $0.withUserScore(scores[.series($0.id)]) })
+            case .people:
+                self
         }
     }
 }
@@ -437,27 +437,27 @@ final class SearchViewModel {
 
     private func usesGenreDiscover(scope: SearchScope, query: String) -> Bool {
         switch scope {
-        case .movies:
-            !SearchGenreMatch.movieGenreIDs(matching: query).isEmpty
-        case .tv:
-            !SearchGenreMatch.tvGenreIDs(matching: query).isEmpty
-        case .people:
-            false
+            case .movies:
+                !SearchGenreMatch.movieGenreIDs(matching: query).isEmpty
+            case .tv:
+                !SearchGenreMatch.tvGenreIDs(matching: query).isEmpty
+            case .people:
+                false
         }
     }
 
     /// Token searches run together. A failure keeps whatever the other token, and the original page, already found.
     private func fallbackListings(scope: SearchScope, tokens: [String]) async -> [SearchListing] {
         switch tokens.count {
-        case 0:
-            return []
-        case 1:
-            return [await fallbackListing(scope: scope, query: tokens[0])].compactMap { $0 }
-        default:
-            async let first = fallbackListing(scope: scope, query: tokens[0])
-            async let second = fallbackListing(scope: scope, query: tokens[1])
-            let pair = await (first, second)
-            return [pair.0, pair.1].compactMap { $0 }
+            case 0:
+                return []
+            case 1:
+                return [await fallbackListing(scope: scope, query: tokens[0])].compactMap { $0 }
+            default:
+                async let first = fallbackListing(scope: scope, query: tokens[0])
+                async let second = fallbackListing(scope: scope, query: tokens[1])
+                let pair = await (first, second)
+                return [pair.0, pair.1].compactMap { $0 }
         }
     }
 
@@ -473,41 +473,41 @@ final class SearchViewModel {
 
     private func containsMatch(_ listing: SearchListing, query: String) -> Bool {
         switch listing {
-        case .movies(let rows):
-            rows.contains { FuzzyTextMatch.matches(query: query, candidate: $0.title) }
-        case .tv(let rows):
-            rows.contains { FuzzyTextMatch.matches(query: query, candidate: $0.name) }
-        case .people(let rows):
-            rows.contains { FuzzyTextMatch.matches(query: query, candidate: $0.name) }
+            case .movies(let rows):
+                rows.contains { FuzzyTextMatch.matches(query: query, candidate: $0.title) }
+            case .tv(let rows):
+                rows.contains { FuzzyTextMatch.matches(query: query, candidate: $0.name) }
+            case .people(let rows):
+                rows.contains { FuzzyTextMatch.matches(query: query, candidate: $0.name) }
         }
     }
 
     private func matchingOnly(_ listing: SearchListing, query: String) -> SearchListing {
         switch listing {
-        case .movies(let rows):
-            .movies(rows.filter { FuzzyTextMatch.matches(query: query, candidate: $0.title) })
-        case .tv(let rows):
-            .tv(rows.filter { FuzzyTextMatch.matches(query: query, candidate: $0.name) })
-        case .people(let rows):
-            .people(rows.filter { FuzzyTextMatch.matches(query: query, candidate: $0.name) })
+            case .movies(let rows):
+                .movies(rows.filter { FuzzyTextMatch.matches(query: query, candidate: $0.title) })
+            case .tv(let rows):
+                .tv(rows.filter { FuzzyTextMatch.matches(query: query, candidate: $0.name) })
+            case .people(let rows):
+                .people(rows.filter { FuzzyTextMatch.matches(query: query, candidate: $0.name) })
         }
     }
 
     /// Close matches first. Inside each group, the higher popularity stays first.
     private func ranked(_ listing: SearchListing, query: String) -> SearchListing {
         switch listing {
-        case .movies(let rows):
-            .movies(rows.sorted {
+            case .movies(let rows):
+                .movies(rows.sorted {
                 comesBefore($0.title, $0.popularity, $1.title, $1.popularity, query: query)
-            })
-        case .tv(let rows):
-            .tv(rows.sorted {
+                })
+            case .tv(let rows):
+                .tv(rows.sorted {
                 comesBefore($0.name, $0.popularity, $1.name, $1.popularity, query: query)
-            })
-        case .people(let rows):
-            .people(rows.sorted {
+                })
+            case .people(let rows):
+                .people(rows.sorted {
                 comesBefore($0.name, $0.popularity, $1.name, $1.popularity, query: query)
-            })
+                })
         }
     }
 
@@ -526,57 +526,57 @@ final class SearchViewModel {
 
     private func fetch(scope: SearchScope, query: String, page: Int) async throws -> FetchedPage {
         switch scope {
-        case .movies:
-            let genres = SearchGenreMatch.movieGenreIDs(matching: query)
-            let result = genres.isEmpty
+            case .movies:
+                let genres = SearchGenreMatch.movieGenreIDs(matching: query)
+                let result = genres.isEmpty
                     ? try await movies.searchMovies(query: query, page: page, locale: locale)
                     : try await movies.movies(inGenres: genres, page: page, locale: locale)
-            return FetchedPage(
+                return FetchedPage(
                 listing: .movies(result.movies.sorted { $0.popularity > $1.popularity }.map(CatalogMovieRow.init)),
                 page: result.page,
                 hasMore: result.hasMore
-            )
-        case .tv:
-            let genres = SearchGenreMatch.tvGenreIDs(matching: query)
-            let result = genres.isEmpty
+                )
+            case .tv:
+                let genres = SearchGenreMatch.tvGenreIDs(matching: query)
+                let result = genres.isEmpty
                     ? try await shows.search(query: query, page: page, locale: locale)
                     : try await shows.series(inGenres: genres, page: page, locale: locale)
-            return FetchedPage(
+                return FetchedPage(
                 listing: .tv(result.series.sorted { $0.popularity > $1.popularity }.map(CatalogTVRow.init)),
                 page: result.page,
                 hasMore: result.hasMore
-            )
-        case .people:
-            let result = try await people.search(query: query, page: page, locale: locale)
-            return FetchedPage(
+                )
+            case .people:
+                let result = try await people.search(query: query, page: page, locale: locale)
+                return FetchedPage(
                 listing: .people(result.people.sorted { $0.popularity > $1.popularity }.map(CatalogPersonRow.init)),
                 page: result.page,
                 hasMore: result.hasMore
-            )
+                )
         }
     }
 
     private func listingCount(_ listing: SearchListing) -> Int {
         switch listing {
-        case .movies(let rows): rows.count
-        case .tv(let rows): rows.count
-        case .people(let rows): rows.count
+            case .movies(let rows): rows.count
+            case .tv(let rows): rows.count
+            case .people(let rows): rows.count
         }
     }
 
     private func appending(_ next: SearchListing, to current: SearchListing, byPopularity: Bool) -> SearchListing {
         switch (current, next) {
-        case (.movies(let existing), .movies(let incoming)):
-            let merged = existing + incoming.filter { row in !existing.contains { $0.id == row.id } }
-            return .movies(byPopularity ? merged.sorted { $0.popularity > $1.popularity } : merged)
-        case (.tv(let existing), .tv(let incoming)):
-            let merged = existing + incoming.filter { row in !existing.contains { $0.id == row.id } }
-            return .tv(byPopularity ? merged.sorted { $0.popularity > $1.popularity } : merged)
-        case (.people(let existing), .people(let incoming)):
-            let merged = existing + incoming.filter { row in !existing.contains { $0.id == row.id } }
-            return .people(byPopularity ? merged.sorted { $0.popularity > $1.popularity } : merged)
-        default:
-            return next
+            case (.movies(let existing), .movies(let incoming)):
+                let merged = existing + incoming.filter { row in !existing.contains { $0.id == row.id } }
+                return .movies(byPopularity ? merged.sorted { $0.popularity > $1.popularity } : merged)
+            case (.tv(let existing), .tv(let incoming)):
+                let merged = existing + incoming.filter { row in !existing.contains { $0.id == row.id } }
+                return .tv(byPopularity ? merged.sorted { $0.popularity > $1.popularity } : merged)
+            case (.people(let existing), .people(let incoming)):
+                let merged = existing + incoming.filter { row in !existing.contains { $0.id == row.id } }
+                return .people(byPopularity ? merged.sorted { $0.popularity > $1.popularity } : merged)
+            default:
+                return next
         }
     }
 }

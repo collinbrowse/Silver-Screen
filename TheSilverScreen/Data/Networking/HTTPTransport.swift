@@ -74,23 +74,23 @@ enum HTTPTransport {
     /// `.offline` via `AppError.isRetryable`.
     static func shouldAutomaticallyRetry(_ error: AppError) -> Bool {
         switch error {
-        case .timedOut, .unknown:
-            return true
-        case .server(let status):
-            return (500..<600).contains(status)
-        case .offline, .unauthorized, .decoding, .persistence, .missingAPIKey:
-            return false
+            case .timedOut, .unknown:
+                return true
+            case .server(let status):
+                return (500..<600).contains(status)
+            case .offline, .unauthorized, .decoding, .persistence, .missingAPIKey:
+                return false
         }
     }
 
     static func mapURLError(_ error: URLError) -> AppError {
         switch error.code {
-        case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed:
-            return .offline
-        case .timedOut:
-            return .timedOut
-        default:
-            return .unknown
+            case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed:
+                return .offline
+            case .timedOut:
+                return .timedOut
+            default:
+                return .unknown
         }
     }
 
@@ -100,17 +100,17 @@ enum HTTPTransport {
         context: String = "Request"
     ) throws {
         switch status {
-        case 200..<300:
-            return
-        case 401, 403:
-            logger.error("\(context) unauthorized status \(status)", category: .networking)
-            throw AppError.unauthorized
-        case 500..<600:
-            logger.error("\(context) server status \(status)", category: .networking)
-            throw AppError.server(status: status)
-        default:
-            logger.error("\(context) unexpected status \(status)", category: .networking)
-            throw AppError.server(status: status)
+            case 200..<300:
+                return
+            case 401, 403:
+                logger.error("\(context) unauthorized status \(status)", category: .networking)
+                throw AppError.unauthorized
+            case 500..<600:
+                logger.error("\(context) server status \(status)", category: .networking)
+                throw AppError.server(status: status)
+            default:
+                logger.error("\(context) unexpected status \(status)", category: .networking)
+                throw AppError.server(status: status)
         }
     }
 }

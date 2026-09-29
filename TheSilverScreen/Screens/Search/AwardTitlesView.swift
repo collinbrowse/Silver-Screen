@@ -41,21 +41,21 @@ struct AwardTitlesView: View {
     var body: some View {
         Group {
             switch viewModel.state {
-            case .idle, .loading:
-                ProgressView()
+                case .idle, .loading:
+                    ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .empty:
-                EmptyStateView(
+                case .empty:
+                    EmptyStateView(
                     title: viewModel.emptyTitle,
                     message: viewModel.emptyMessage,
                     systemImage: "trophy"
-                )
-            case .loaded(let rows, let activity):
-                list(rows, activity: activity)
-            case .failed(let error):
-                ErrorStateView(error: error) {
+                    )
+                case .loaded(let rows, let activity):
+                    list(rows, activity: activity)
+                case .failed(let error):
+                    ErrorStateView(error: error) {
                     await viewModel.load()
-                }
+                    }
             }
         }
         .background(DesignTheme.canvas)

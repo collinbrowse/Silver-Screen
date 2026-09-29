@@ -38,24 +38,24 @@ struct TVSeasonView: View {
     var body: some View {
         Group {
             switch viewModel.state {
-            case .idle, .loading:
-                ProgressView()
+                case .idle, .loading:
+                    ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .empty:
-                EmptyStateView(
+                case .empty:
+                    EmptyStateView(
                     title: "Season Unavailable",
                     message: "This season could not be shown.",
                     systemImage: "tv"
-                )
-            case .loaded(let content, let activity):
-                loaded(content)
+                    )
+                case .loaded(let content, let activity):
+                    loaded(content)
                     .overlay(alignment: .top) {
                         LoadActivityBanner(activity: activity)
                     }
-            case .failed(let error):
-                ErrorStateView(error: error) {
+                case .failed(let error):
+                    ErrorStateView(error: error) {
                     await viewModel.retry()
-                }
+                    }
             }
         }
         .background(DesignTheme.canvas)
