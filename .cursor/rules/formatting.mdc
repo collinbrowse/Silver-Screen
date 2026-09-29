@@ -1,0 +1,36 @@
+---
+description: Swift formatting — indent switch cases under the switch.
+globs: TheSilverScreen/**/*.swift,TheSilverScreenTests/**/*.swift
+alwaysApply: false
+---
+
+# Formatting
+
+## Switch cases
+
+Indent `case` and `default` one level under `switch`. Indent the body of each case one level under the label.
+
+```swift
+switch viewModel.state {
+    case .idle, .loading:
+        ProgressView()
+    case .empty:
+        EmptyStateView()
+    case .loaded(let movies, let activity):
+        MovieList(movies: movies, activity: activity)
+    case .failed(let error):
+        ErrorStateView(error: error) { await viewModel.load() }
+}
+```
+
+A single-line case uses the same label indent:
+
+```swift
+switch kind {
+    case .movie: "film"
+    case .tv: "tv"
+    case .person: "person.fill"
+}
+```
+
+Enum declarations keep `case` at the usual indent of the type body. This rule is for `switch` statements.

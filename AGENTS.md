@@ -13,7 +13,7 @@ Architecture conventions live in [`.cursor/rules/architecture.mdc`](.cursor/rule
 
 ## Pointers
 
-- Architecture: [`.cursor/rules/architecture.mdc`](.cursor/rules/architecture.mdc) (always on), plus scoped rules for concurrency, SwiftUI, data layer, image loading, secrets, errors and logging, accessibility, documentation comments, tests, commits, and pull requests
+- Architecture: [`.cursor/rules/architecture.mdc`](.cursor/rules/architecture.mdc) (always on), plus scoped rules for concurrency, SwiftUI, data layer, image loading, secrets, errors and logging, accessibility, documentation comments, formatting, tests, commits, and pull requests
 - Awards shelves and the weekly catalog: [`AWARDS.md`](AWARDS.md)
 - Hooks: [`.cursor/hooks.json`](.cursor/hooks.json)
 - Harness gates: [`scripts/validate-rules.py`](scripts/validate-rules.py), [`scripts/validate-tests.py`](scripts/validate-tests.py) (empty tests banned), [`scripts/validate-pr-body.py`](scripts/validate-pr-body.py) (PR template sections required)

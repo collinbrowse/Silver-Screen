@@ -13,14 +13,14 @@ alwaysApply: false
 
 ```swift
 switch viewModel.state {
-case .idle, .loading:
-    ProgressView()
-case .empty:
-    EmptyStateView()
-case .loaded(let movies, let activity):
-    MovieList(movies: movies, activity: activity)
-case .failed(let error):
-    ErrorStateView(error: error) { await viewModel.load() }
+    case .idle, .loading:
+        ProgressView()
+    case .empty:
+        EmptyStateView()
+    case .loaded(let movies, let activity):
+        MovieList(movies: movies, activity: activity)
+    case .failed(let error):
+        ErrorStateView(error: error) { await viewModel.load() }
 }
 ```
 
