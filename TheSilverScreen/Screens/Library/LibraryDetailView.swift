@@ -40,11 +40,7 @@ struct LibraryDetailView: View {
         .background(DesignTheme.canvas)
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
-        .searchable(
-            text: $viewModel.searchText,
-            placement: .navigationBarDrawer(displayMode: .always),
-            prompt: "Find title"
-        )
+        .navigationSearch(text: $viewModel.searchText, prompt: "Find title")
         .toolbar {
             if case .loaded(let detail, _) = viewModel.state, detail.list.system != nil {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -95,6 +91,12 @@ struct LibraryDetailView: View {
                                     isLast: index == entries.count - 1
                                 )
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    Button("Remove", role: .destructive) {
+                                        Task { await remove(entry) }
+                                    }
+                                    .accessibilityLabel("Remove \(entry.title)")
+                                }
+                                .contextMenu {
                                     Button("Remove", role: .destructive) {
                                         Task { await remove(entry) }
                                     }

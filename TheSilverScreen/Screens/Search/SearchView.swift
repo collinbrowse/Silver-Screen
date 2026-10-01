@@ -48,14 +48,16 @@ struct SearchView: View {
         .navigationTitle("Search")
         .toolbarTitleDisplayMode(.inlineLarge)
         .background {
-            SearchFocusObserver { focused in
-                fieldPresented = focused
+            if !ProcessInfo.processInfo.isiOSAppOnMac {
+                SearchFocusObserver { focused in
+                    fieldPresented = focused
+                }
             }
         }
-        .searchable(
+        .navigationSearch(
             text: $viewModel.query,
-            placement: .navigationBarDrawer(displayMode: .always),
-            prompt: searchPrompt
+            prompt: searchPrompt,
+            isFocused: $fieldPresented
         )
         .scrollDismissesKeyboard(.immediately)
         .onChange(of: viewModel.query) { _, _ in
@@ -249,6 +251,9 @@ struct SearchView: View {
     }
 
     private func dismissSearchKeyboard() {
+        if ProcessInfo.processInfo.isiOSAppOnMac {
+            fieldPresented = false
+        }
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 

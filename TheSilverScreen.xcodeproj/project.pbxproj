@@ -40,6 +40,7 @@
 		B10001262788B823003D8011 /* AppDependencies.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10001272788B823003D8011 /* AppDependencies.swift */; };
 		B10001282788B823003D8011 /* RootTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10001292788B823003D8011 /* RootTabView.swift */; };
 		B100012C2788B823003D8011 /* EmptyStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100012D2788B823003D8011 /* EmptyStateView.swift */; };
+		M1C5E4A12F6D4A0E9B7C1D01 /* MacSearchField.swift in Sources */ = {isa = PBXBuildFile; fileRef = M1C5E4A12F6D4A0E9B7C1D02 /* MacSearchField.swift */; };
 		A1B000022788B823003D8011 /* AwardRowsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B000012788B823003D8011 /* AwardRowsSection.swift */; };
 		B100012E2788B823003D8011 /* ErrorStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100012F2788B823003D8011 /* ErrorStateView.swift */; };
 		B10002002788B823003D8011 /* MovieDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10002012788B823003D8011 /* MovieDetail.swift */; };
@@ -234,6 +235,7 @@
 		B10001272788B823003D8011 /* AppDependencies.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDependencies.swift; sourceTree = "<group>"; };
 		B10001292788B823003D8011 /* RootTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootTabView.swift; sourceTree = "<group>"; };
 		B100012D2788B823003D8011 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
+		M1C5E4A12F6D4A0E9B7C1D02 /* MacSearchField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacSearchField.swift; sourceTree = "<group>"; };
 		A1B000012788B823003D8011 /* AwardRowsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AwardRowsSection.swift; sourceTree = "<group>"; };
 		B100012F2788B823003D8011 /* ErrorStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorStateView.swift; sourceTree = "<group>"; };
 		B10002012788B823003D8011 /* MovieDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovieDetail.swift; sourceTree = "<group>"; };
@@ -492,6 +494,7 @@
 				C3A100052788B823003D8011 /* TrailerPlayerView.swift */,
 				E2A0002A2788B823003D8011 /* ReviewCard.swift */,
 				B100012D2788B823003D8011 /* EmptyStateView.swift */,
+				M1C5E4A12F6D4A0E9B7C1D02 /* MacSearchField.swift */,
 				A1B000012788B823003D8011 /* AwardRowsSection.swift */,
 				L1B000102788B823003D8011 /* ListMembershipButton.swift */,
 				L1B000122788B823003D8011 /* ListChangeNotice.swift */,
@@ -986,6 +989,7 @@
 				B10001022788B823003D8011 /* MovieGenreCatalog.swift in Sources */,
 				B100012E2788B823003D8011 /* ErrorStateView.swift in Sources */,
 				B100012C2788B823003D8011 /* EmptyStateView.swift in Sources */,
+				M1C5E4A12F6D4A0E9B7C1D01 /* MacSearchField.swift in Sources */,
 				A1B000022788B823003D8011 /* AwardRowsSection.swift in Sources */,
 				B10001282788B823003D8011 /* RootTabView.swift in Sources */,
 				B10001262788B823003D8011 /* AppDependencies.swift in Sources */,

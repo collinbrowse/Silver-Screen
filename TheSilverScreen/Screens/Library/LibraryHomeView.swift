@@ -47,11 +47,7 @@ struct LibraryHomeView: View {
                     .background(DesignTheme.canvas)
             }
         }
-        .searchable(
-            text: $viewModel.searchText,
-            placement: .navigationBarDrawer(displayMode: .always),
-            prompt: "Find list"
-        )
+        .navigationSearch(text: $viewModel.searchText, prompt: "Find list")
         .navigationTitle("Library")
         .toolbarTitleDisplayMode(.inlineLarge)
         .toolbar {
