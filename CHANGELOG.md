@@ -5,6 +5,10 @@ moves them under a `version+build` heading that matches the git tag.
 
 ## [Unreleased]
 
+- Movie and TV detail show where a title streams (flatrate providers), with logos you can tap to open the service app or App Store.
+- Search adds genre shelves that open a browse-style list for that genre.
+- Search no longer crashes when running the iOS app on Mac.
+
 ## [0.1.1+3] - 2026-09-28
 
 - A person's page leads with the work they are known for, and credits in that role rank ahead of a guest spot on a popular show.
