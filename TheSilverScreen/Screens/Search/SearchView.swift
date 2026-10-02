@@ -33,29 +33,31 @@ struct SearchView: View {
         .refreshable { await viewModel.refresh() }
         .safeAreaInset(edge: .top, spacing: 0) {
             if viewModel.showsScopePicker {
-            Picker("Search", selection: $viewModel.scope) {
-                ForEach(SearchScope.allCases, id: \.self) { scope in
-                    Text(scope.title).tag(scope)
+                Picker("Search", selection: $viewModel.scope) {
+                    ForEach(SearchScope.allCases, id: \.self) { scope in
+                        Text(scope.title).tag(scope)
+                    }
                 }
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal, DesignSpacing.lg)
-            .padding(.vertical, DesignSpacing.sm)
-            .background(DesignTheme.canvas)
-            .accessibilityLabel("Search category")
+                .pickerStyle(.segmented)
+                .padding(.horizontal, DesignSpacing.lg)
+                .padding(.vertical, DesignSpacing.sm)
+                .background(DesignTheme.canvas)
+                .accessibilityLabel("Search category")
             }
         }
         .navigationTitle("Search")
         .toolbarTitleDisplayMode(.inlineLarge)
         .background {
-            SearchFocusObserver { focused in
-                fieldPresented = focused
+            if !ProcessInfo.processInfo.isiOSAppOnMac {
+                SearchFocusObserver { focused in
+                    fieldPresented = focused
+                }
             }
         }
-        .searchable(
+        .navigationSearch(
             text: $viewModel.query,
-            placement: .navigationBarDrawer(displayMode: .always),
-            prompt: searchPrompt
+            prompt: searchPrompt,
+            isFocused: $fieldPresented
         )
         .scrollDismissesKeyboard(.immediately)
         .onChange(of: viewModel.query) { _, _ in
@@ -92,47 +94,73 @@ struct SearchView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             case .empty:
                 if viewModel.showsFocusedPlaceholder {
-                Button {
-                    dismissSearchKeyboard()
-                } label: {
-                    emptyState
-                }
-                .buttonStyle(.plain)
-                .accessibilityHint("Dismisses search and restores the last results")
+                    Button {
+                        dismissSearchKeyboard()
+                    } label: {
+                        emptyState
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Dismisses search and restores the last results")
                 } else {
-                emptyState
+                    emptyState
                 }
             case .loaded(let listing, let activity):
                 results(listing, activity: activity)
             case .failed(let error):
                 ErrorStateView(error: error) {
-                await viewModel.retry()
+                    await viewModel.retry()
                 }
         }
     }
 
     private var shelfGrid: some View {
         ScrollView {
-            LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: DesignSpacing.md),
-                    GridItem(.flexible(), spacing: DesignSpacing.md),
-                ],
-                spacing: DesignSpacing.md
-            ) {
-                ForEach(viewModel.shelves) { shelf in
-                    Button {
-                        openShelf(shelf)
-                    } label: {
-                        AwardShelfCard(shelf: shelf)
+            VStack(alignment: .leading, spacing: DesignSpacing.lg) {
+                shelfSection {
+                    ForEach(viewModel.shelves) { shelf in
+                        Button {
+                            openShelf(shelf)
+                        } label: {
+                            AwardShelfCard(shelf: shelf)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("\(shelf.title), \(shelf.subtitle)")
+                        .accessibilityHint("Opens this award list")
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("\(shelf.title), \(shelf.subtitle)")
-                    .accessibilityHint("Opens this award list")
                 }
+                
+                Text("Genre")
+                    .font(DesignTypography.section)
+                    .foregroundStyle(DesignTheme.textPrimary)
+                    .padding(.horizontal, DesignSpacing.lg)
+                
+                shelfSection {
+                    ForEach(MergedGenre.searchShelf, id: \.self) { genre in
+                        Button {
+                            open(.genreBrowse(genre))
+                        } label: {
+                            GenreShelfCard(genre: genre)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Opens this genre list")
+                    }
+                }
+                .padding(.vertical, DesignSpacing.lg)
             }
-            .padding(DesignSpacing.lg)
         }
+    }
+
+    private func shelfSection<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        LazyVGrid(
+            columns: [
+                GridItem(.flexible(), spacing: DesignSpacing.md),
+                GridItem(.flexible(), spacing: DesignSpacing.md),
+            ],
+            spacing: DesignSpacing.md
+        ) {
+            content()
+        }
+        .padding(.horizontal, DesignSpacing.lg)
     }
 
     private func openShelf(_ shelf: AwardShelf) {
@@ -249,6 +277,9 @@ struct SearchView: View {
     }
 
     private func dismissSearchKeyboard() {
+        if ProcessInfo.processInfo.isiOSAppOnMac {
+            fieldPresented = false
+        }
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 

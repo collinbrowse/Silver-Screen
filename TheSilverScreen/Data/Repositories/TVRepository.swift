@@ -33,7 +33,8 @@ final class TVRepository: Sendable {
         page: Int,
         locale: Locale = .current,
         today: Date = Date(),
-        timeZone: TimeZone = .current
+        timeZone: TimeZone = .current,
+        genreIDs: [Int] = []
     ) async throws -> TVSeriesPage {
         try await fetch(
             path: DiscoverKind.tv.path,
@@ -45,7 +46,8 @@ final class TVRepository: Sendable {
                 page: page,
                 locale: locale,
                 today: today,
-                timeZone: timeZone
+                timeZone: timeZone,
+                genreIDs: genreIDs
             )
         ) { data in
             let decoded = try TMDBPageDecoding.decode(

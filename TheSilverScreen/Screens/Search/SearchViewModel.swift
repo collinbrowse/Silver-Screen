@@ -14,7 +14,9 @@ import Foundation
 final class SearchViewModel {
     /// Queries are sent after the debounce, including a single character.
     var query: String = ""
+    
     var scope: SearchScope = .movies
+    private(set) var mediaType: MediaTypes = .all
     private(set) var state: LoadState<SearchListing> = .idle
     private(set) var hasMore = true
     /// The text whose pages are on screen. The view resets scroll when this changes.

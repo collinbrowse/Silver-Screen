@@ -60,6 +60,29 @@ struct RootTabView: View {
     }
 
     var body: some View {
+        tabs
+            .environment(listChanges)
+            .overlay(alignment: .bottom) {
+                ListChangeBanner(notice: listChanges)
+            }
+    }
+
+    /// On Mac this iOS app keeps a tab bar and does not minimize it. Hiding that
+    /// bar during search lays the system search field out through `UIScreen`
+    /// focus, which UIKit rejects and terminates the process. The search field
+    /// itself is a text field on Mac; see `MacSearchField`.
+    @ViewBuilder
+    private var tabs: some View {
+        if ProcessInfo.processInfo.isiOSAppOnMac {
+            tabView
+                .tabViewStyle(.tabBarOnly)
+                .tabBarMinimizeBehavior(.never)
+        } else {
+            tabView
+        }
+    }
+
+    private var tabView: some View {
         TabView(selection: $router.selectedTab) {
             Tab("Browse", systemImage: "square.grid.2x2", value: AppTab.browse) {
                 BrowseTabRoot(
@@ -105,10 +128,6 @@ struct RootTabView: View {
                     people: people
                 )
             }
-        }
-        .environment(listChanges)
-        .overlay(alignment: .bottom) {
-            ListChangeBanner(notice: listChanges)
         }
     }
 }

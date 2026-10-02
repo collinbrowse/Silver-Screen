@@ -30,6 +30,8 @@ cd "$ROOT" || emit_empty
 UDID="$(python3 -c '
 import json, subprocess, sys
 
+PREFERRED = "iPhone 17e"
+
 try:
     raw = subprocess.check_output(
         ["xcrun", "simctl", "list", "devices", "available", "-j"],
@@ -40,8 +42,7 @@ try:
 except Exception:
     sys.exit(0)
 
-booted = []
-available = []
+by_name = {}
 for runtime, devices in (data.get("devices") or {}).items():
     if "iOS" not in runtime:
         continue
@@ -50,14 +51,13 @@ for runtime, devices in (data.get("devices") or {}).items():
             continue
         name = device.get("name") or ""
         udid = device.get("udid") or ""
-        if "iPhone" not in name or not udid:
-            continue
-        if device.get("state") == "Booted":
-            booted.append(udid)
-        else:
-            available.append(udid)
+        if name == PREFERRED and udid:
+            by_name[PREFERRED] = udid
+            break
+    if PREFERRED in by_name:
+        break
 
-chosen = (booted[0] if booted else (available[0] if available else ""))
+chosen = by_name.get(PREFERRED, "")
 if chosen:
     print(chosen)
 ' 2>/dev/null || true)"

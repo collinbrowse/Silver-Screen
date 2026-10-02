@@ -1,25 +1,22 @@
 //
-//  BrowseListViewModel.swift
+//  GenreBrowseViewModel.swift
 //  TheSilverScreen
 //
-//  One list for Movies, TV, and the mixed All feed. Changing media, window,
-//  or sort drops the pages on screen. A response whose generation does not
-//  match that selection is ignored, including a page that arrives after refresh.
+//  Discover lists for one merged genre. Every fetch uses `/discover` with
+//  genre ids; there is no Now Playing or Upcoming on this screen.
 //
 
 import Foundation
 
 @Observable
 @MainActor
-final class BrowseListViewModel {
-    private(set) var media: MediaTypes = .movies
-    private(set) var window: BrowseWindow = .all
+final class GenreBrowseViewModel {
+    let genre: MergedGenre
+
+    private(set) var media: MediaTypes = .all
     private(set) var sort: BrowseSort = .popular
     private(set) var state: LoadState<[BrowseRow]> = .idle
-    /// Whether another page can still extend the list on screen.
     private(set) var hasMore = true
-
-    /// Changes when the three controls change, so the view can jump back to the top.
     private(set) var selectionToken = 0
 
     private let movies: MovieRepository
@@ -41,6 +38,7 @@ final class BrowseListViewModel {
     private var reloadTask: Task<Void, Never>?
 
     init(
+        genre: MergedGenre,
         movies: MovieRepository,
         shows: TVRepository,
         annotations: AnnotationsRepository,
@@ -48,6 +46,7 @@ final class BrowseListViewModel {
         timeZone: TimeZone = .current,
         today: @escaping @Sendable () -> Date = { Date() }
     ) {
+        self.genre = genre
         self.movies = movies
         self.shows = shows
         self.annotations = annotations
@@ -65,22 +64,13 @@ final class BrowseListViewModel {
         await reload(keepVisible: false)
     }
 
-    /// Pull to refresh. The rows stay up until the new first page arrives.
     func refresh() async {
         await reload(keepVisible: true)
     }
 
-    /// Each segment opens on that tab's popular list, the same lists Search shows before a query.
     func setMedia(_ media: MediaTypes) async {
         guard media != self.media else { return }
         self.media = media
-        selectionToken += 1
-        await reload(keepVisible: false)
-    }
-
-    func setWindow(_ window: BrowseWindow) async {
-        guard window != self.window else { return }
-        self.window = window
         selectionToken += 1
         await reload(keepVisible: false)
     }
@@ -97,9 +87,6 @@ final class BrowseListViewModel {
         state = .loaded(rows, activity: .failed(.persistence))
     }
 
-    /// Fetches the next page while keeping the current list on screen.
-    /// A second call while one is in flight does nothing. A page that belongs
-    /// to an older selection or an older refresh is discarded.
     func loadMore() async {
         guard hasMore, activePagingTicket == nil else { return }
         guard case .loaded(_, let activity) = state, activity == .none else { return }
@@ -117,6 +104,10 @@ final class BrowseListViewModel {
             activePagingTicket = nil
             pagingTask = nil
         }
+    }
+
+    func reloadDisplayedScores() async {
+        await stampScores(token: generation)
     }
 
     private func reload(keepVisible: Bool) async {
@@ -248,54 +239,28 @@ final class BrowseListViewModel {
         }
     }
 
-    /// Popular with the All window is the Search landing list.
-    /// Now Playing and Upcoming are TMDB's own lists and ignore sort.
-
     private func movieList(page: Int) async throws -> MoviePage {
-        switch window {
-            case .nowPlaying:
-                return try await movies.nowPlaying(page: page, locale: locale)
-            case .upcoming:
-                return try await movies.upcoming(page: page, locale: locale)
-            case .all:
-                if sort == .popular {
-                return try await movies.popular(page: page, locale: locale)
-                }
-                return try await movies.discover(
-                    sort: sort,
-                    window: .all,
-                    page: page,
-                    locale: locale,
-                    today: today(),
-                    timeZone: timeZone
-                )
-        }
+        try await movies.discover(
+            sort: sort,
+            window: .all,
+            page: page,
+            locale: locale,
+            today: today(),
+            timeZone: timeZone,
+            genreIDs: genre.movieGenreIDs
+        )
     }
 
     private func showList(page: Int) async throws -> TVSeriesPage {
-        switch window {
-            case .nowPlaying:
-                return try await shows.onTheAir(page: page, locale: locale)
-            case .upcoming:
-                return try await shows.upcoming(
-                    page: page,
-                    locale: locale,
-                    today: today(),
-                    timeZone: timeZone
-                )
-            case .all:
-                if sort == .popular {
-                return try await shows.popular(page: page, locale: locale)
-                }
-                return try await shows.discover(
-                    sort: sort,
-                    window: .all,
-                    page: page,
-                    locale: locale,
-                    today: today(),
-                    timeZone: timeZone
-                )
-        }
+        try await shows.discover(
+            sort: sort,
+            window: .all,
+            page: page,
+            locale: locale,
+            today: today(),
+            timeZone: timeZone,
+            genreIDs: genre.tvGenreIDs
+        )
     }
 
     private func apply(_ fresh: FreshPages) {
@@ -316,11 +281,6 @@ final class BrowseListViewModel {
         if media == .all {
             merge.consume(sort: sort, moviesHaveMore: movieHasMore, showsHaveMore: showHasMore)
         }
-    }
-
-    /// Reads saved scores onto the rows already on screen. Used when returning from a detail screen.
-    func reloadDisplayedScores() async {
-        await stampScores(token: generation)
     }
 
     private func stampScores(token: Int) async {
