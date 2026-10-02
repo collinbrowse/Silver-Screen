@@ -195,8 +195,29 @@ final class TVRepositoryTests: XCTestCase {
                     let series = try await repository.series(id: 9)
                     let url = await client.lastURL
                     let items = URLComponents(url: url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
-                    XCTAssertTrue(items.contains(URLQueryItem(name: "append_to_response", value: "images,aggregate_credits,recommendations,videos")))
+                    XCTAssertTrue(items.contains(URLQueryItem(name: "append_to_response", value: "images,aggregate_credits,recommendations,videos,watch/providers")))
                     XCTAssertEqual(series.trailers.map(\.title), ["Official Trailer", "Trailer 2"])
+                    }
+
+                    func test_streamingProviders_fetchesSeriesWatchEndpoint() async throws {
+                    let payload = Data("""
+                        {
+                          "id": 9,
+                          "results": {
+                            "US": {
+                              "flatrate": [
+                                {"provider_id": 8, "provider_name": "Netflix", "logo_path": "/netflix.jpg", "display_priority": 0}
+                              ]
+                            }
+                          }
+                        }
+                        """.utf8)
+                    let client = RecordingHTTPClient(stub: .success(payload))
+                    let repository = TVRepository.test(client: client)
+                    let providers = await repository.streamingProviders(seriesID: 9)
+                    let path = await client.lastPath
+                    XCTAssertEqual(path, "/3/tv/9/watch/providers")
+                    XCTAssertEqual(providers.map(\.name), ["Netflix"])
                     }
 
                     func test_season_appendsVideosAndMapsOfficialTrailers() async throws {

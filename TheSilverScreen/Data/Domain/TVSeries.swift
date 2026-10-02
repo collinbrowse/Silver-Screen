@@ -75,6 +75,8 @@ struct TVSeriesDetail: Sendable, Identifiable, Equatable {
     let genres: [MovieGenre]
     /// Official YouTube trailers, in TMDB order.
     let trailers: [MediaTrailer]
+    /// Subscription streaming services for the user's region, when TMDB lists them.
+    let streamingProviders: [StreamingProvider]
     /// TMDB user score, 0–10. Zero when the payload omitted it.
     let voteAverage: Double
     /// TMDB popularity copied onto a list entry. Zero when the payload omitted it.

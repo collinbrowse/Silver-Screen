@@ -143,11 +143,11 @@ final class TVRepository: Sendable {
             context: "TV series",
             queryItems: [
                 URLQueryItem(name: "language", value: TMDBLocale.languageTag(for: locale)),
-                URLQueryItem(name: "append_to_response", value: "images,aggregate_credits,recommendations,videos"),
+                URLQueryItem(name: "append_to_response", value: "images,aggregate_credits,recommendations,videos,watch/providers"),
                 URLQueryItem(name: "include_image_language", value: TMDBLocale.imageLanguages(for: locale)),
             ]
         ) { data in
-            try Self.decodeSeries(data, logger: logger)
+            try Self.decodeSeries(data, locale: locale, logger: logger)
         }
     }
 
@@ -161,6 +161,36 @@ final class TVRepository: Sendable {
             ]
         ) { data in
             try Self.decodeSeason(data, logger: logger)
+        }
+    }
+
+    /// Series-level subscription providers. Failures log and return an empty list.
+    func streamingProviders(seriesID: Int, locale: Locale = .current) async -> [StreamingProvider] {
+        do {
+            let request = try requests.get(
+                path: "tv/\(seriesID)/watch/providers",
+                queryItems: [
+                    URLQueryItem(name: "language", value: TMDBLocale.languageTag(for: locale)),
+                ]
+            )
+            let data = try await HTTPTransport.data(
+                for: request,
+                client: client,
+                logger: logger,
+                context: "TV watch providers",
+                sleeper: sleeper
+            )
+            return TMDBWatchProvidersDecoding.providers(
+                from: data,
+                locale: locale,
+                logger: logger,
+                context: "TV watch providers"
+            )
+        } catch is CancellationError {
+            return []
+        } catch {
+            logger.error("TV watch providers request failed", category: .networking)
+            return []
         }
     }
 
@@ -268,7 +298,7 @@ final class TVRepository: Sendable {
     // MARK: - Appended sections
 
     /// Core fields still fail the screen. A bad appended section is skipped and logged.
-    private static func decodeSeries(_ data: Data, logger: any AppLogging) throws -> TVSeriesDetail {
+    private static func decodeSeries(_ data: Data, locale: Locale, logger: any AppLogging) throws -> TVSeriesDetail {
         let dto = try JSONDecoder().decode(TVSeriesDetailDTO.self, from: data)
         logSkippedSections(dto.sectionFailures, context: "TV series", logger: logger)
         let images = imageItems(dto.images?.backdrops, logger: logger)
@@ -278,6 +308,12 @@ final class TVRepository: Sendable {
             .filter { $0.id != dto.id }
             .prefix(20)
             .map { $0 }
+        let streamingProviders = TMDBWatchProvidersDecoding.providers(
+            from: data,
+            locale: locale,
+            logger: logger,
+            context: "TV series"
+        )
         return mapSeries(
             dto,
             logger: logger,
@@ -285,7 +321,8 @@ final class TVRepository: Sendable {
             recommendations: recommendations,
             cast: credits.cast,
             directorsAndWriters: credits.crew,
-            trailers: TMDBTrailerDecoding.trailers(from: data, logger: logger, context: "TV series")
+            trailers: TMDBTrailerDecoding.trailers(from: data, logger: logger, context: "TV series"),
+            streamingProviders: streamingProviders
         )
     }
 
@@ -367,7 +404,8 @@ final class TVRepository: Sendable {
         recommendations: [TVSeriesSummary],
         cast: [TVCredit],
         directorsAndWriters: [TVCredit],
-        trailers: [MediaTrailer]
+        trailers: [MediaTrailer],
+        streamingProviders: [StreamingProvider] = []
     ) -> TVSeriesDetail {
         let creators = (dto.createdBy ?? []).compactMap { creator -> String? in
             let name = creator.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -385,6 +423,7 @@ final class TVRepository: Sendable {
             lastAirDate: MovieRepository.parseReleaseDate(dto.lastAirDate ?? ""),
             genres: (dto.genres ?? []).map { MovieGenre(id: $0.id, name: $0.name) },
             trailers: trailers,
+            streamingProviders: streamingProviders,
             voteAverage: dto.voteAverage ?? 0,
             popularity: dto.popularity ?? 0,
             creators: creators,
