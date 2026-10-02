@@ -1,31 +1,28 @@
 //
-//  SearchScope.swift
+//  MediaTypes.swift
 //  TheSilverScreen
 //
 //  Created by Collin Browse on 10/2/26.
 //
 
-
-import Foundation
-
-enum SearchScope: String, CaseIterable, Sendable, Equatable {
+enum MediaTypes: String, CaseIterable, Sendable, Equatable {
+    case all
     case movies
     case tv
-    case people
 
     var title: String {
         switch self {
+            case .all: "All"
             case .movies: "Movies"
-            case .tv: "TV"
-            case .people: "People"
+            case .tv: "TV Series"
         }
     }
-    
+
     var symbol: String {
         switch self {
+            case .all: "square.grid.2x2"
             case .movies: "film"
             case .tv: "tv"
-            case .people: "person"
         }
     }
 }

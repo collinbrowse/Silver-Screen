@@ -9,27 +9,6 @@
 
 import Foundation
 
-enum BrowseMedia: String, CaseIterable, Sendable, Equatable {
-    case all
-    case movies
-    case tv
-
-    var title: String {
-        switch self {
-            case .all: "All"
-            case .movies: "Movies"
-            case .tv: "TV Series"
-        }
-    }
-
-    var symbol: String {
-        switch self {
-            case .all: "square.grid.2x2"
-            case .movies: "film"
-            case .tv: "tv"
-        }
-    }
-}
 
 enum BrowseWindow: String, CaseIterable, Sendable, Equatable {
     case all
@@ -103,13 +82,19 @@ enum DiscoverQuery {
         page: Int,
         locale: Locale,
         today: Date,
-        timeZone: TimeZone = .current
+        timeZone: TimeZone = .current,
+        genreIDs: [Int] = []
     ) -> [URLQueryItem] {
         var extra = [
             URLQueryItem(name: "sort_by", value: sortBy(kind: kind, sort: sort)),
         ]
         if sort == .topRated {
             extra.append(URLQueryItem(name: "vote_count.gte", value: "50"))
+        }
+        if !genreIDs.isEmpty {
+            extra.append(
+                URLQueryItem(name: "with_genres", value: genreIDs.map(String.init).joined(separator: "|"))
+            )
         }
         extra.append(contentsOf: dateItems(kind: kind, window: window, today: today, timeZone: timeZone))
         return TMDBLocale.queryItems(locale: locale, page: page, extra: extra)

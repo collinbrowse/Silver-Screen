@@ -119,6 +119,17 @@ struct AppRouteDestination: View {
                     imageLoader: imageLoader,
                     router: router
                 )
+            case .genreBrowse(let genre):
+                GenreBrowseView(
+                    genre: genre,
+                    movies: movies,
+                    shows: shows,
+                    annotations: annotations,
+                    lists: lists,
+                    listsIndex: listsIndex,
+                    imageLoader: imageLoader,
+                    router: router
+                )
         }
     }
 }

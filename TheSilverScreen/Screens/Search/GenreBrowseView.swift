@@ -1,15 +1,15 @@
 //
-//  BrowseListView.swift
+//  GenreBrowseView.swift
 //  TheSilverScreen
 //
-//  Movies, TV, and the mixed list. Media spans the width under the title.
-//  Window and sort live in the Filters menu. The list control is its own button.
+//  Discover titles for one merged genre. Media and sort match Browse; window
+//  is always All and is not offered on this screen.
 //
 
 import SwiftUI
 
-struct BrowseListView: View {
-    @Bindable var viewModel: BrowseListViewModel
+struct GenreBrowseView: View {
+    @State private var viewModel: GenreBrowseViewModel
     let imageLoader: ImageLoader
     let lists: ListsRepository
     let listsIndex: ListsIndex
@@ -17,81 +17,70 @@ struct BrowseListView: View {
 
     @State private var scrolledID: String?
 
+    init(
+        genre: MergedGenre,
+        movies: MovieRepository,
+        shows: TVRepository,
+        annotations: AnnotationsRepository,
+        lists: ListsRepository,
+        listsIndex: ListsIndex,
+        imageLoader: ImageLoader,
+        router: NavigationRouter?
+    ) {
+        _viewModel = State(
+            initialValue: GenreBrowseViewModel(
+                genre: genre,
+                movies: movies,
+                shows: shows,
+                annotations: annotations
+            )
+        )
+        self.imageLoader = imageLoader
+        self.lists = lists
+        self.listsIndex = listsIndex
+        self.router = router
+    }
+
     var body: some View {
         content
-            .background(DesignTheme.canvas)
             .refreshable { await viewModel.refresh() }
-            .safeAreaInset(edge: .top, spacing: 0) {
-                mediaControl
-                    .background(DesignTheme.canvas)
-            }
-            .navigationTitle("Browse")
-            .toolbarTitleDisplayMode(.inlineLarge)
+            .navigationTitle(viewModel.genre.title)
+            .navigationBarTitleDisplayMode(.large)
+            .background(.bar)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    filterMenu
+                    sortMenu
                 }
             }
-        .task {
-            if case .idle = viewModel.state {
-                await viewModel.load()
+            .task {
+                if case .idle = viewModel.state {
+                    await viewModel.load()
+                }
             }
-        }
-        .onAppear {
-            Task { await viewModel.reloadDisplayedScores() }
-        }
-        .onChange(of: router?.path.count ?? 0) { _, _ in
-            Task { await viewModel.reloadDisplayedScores() }
-        }
-        .onChange(of: viewModel.selectionToken) { _, _ in
-            scrolledID = nil
-        }
+            .onAppear {
+                Task { await viewModel.reloadDisplayedScores() }
+            }
+            .onChange(of: router?.path.count ?? 0) { _, _ in
+                Task { await viewModel.reloadDisplayedScores() }
+            }
+            .onChange(of: viewModel.selectionToken) { _, _ in
+                scrolledID = nil
+            }
     }
-
-    private var mediaControl: some View {
-        FittingSegmentedControl(
-            title: "Media",
-            options: MediaTypes.allCases,
-            selection: Binding(
-                get: { viewModel.media },
-                set: { newValue in Task { await viewModel.setMedia(newValue) } }
-            ),
-            label: { $0.title },
-            symbol: { $0.symbol }
-        )
-        .padding(.horizontal, DesignSpacing.lg)
-        .padding(.vertical, DesignSpacing.sm)
-    }
-
-    /// Window and sort, in the trailing navigation-bar slot.
-    private var filterMenu: some View {
+    
+    private var sortMenu: some View {
         Menu {
-            Picker("Window", selection: windowSelection) {
-                ForEach(BrowseWindow.allCases, id: \.self) { option in
-                    Label(option.title, systemImage: option.symbol).tag(option)
-                }
-            }
-            .pickerStyle(.inline)
-
             Picker("Sort", selection: sortSelection) {
                 ForEach(BrowseSort.allCases, id: \.self) { option in
                     Label(option.title, systemImage: option.symbol).tag(option)
                 }
             }
             .pickerStyle(.inline)
-            .disabled(viewModel.window != .all)
         } label: {
             Image(systemName: "line.3.horizontal.decrease.circle")
         }
         .accessibilityLabel("Filters")
-        .accessibilityValue("\(viewModel.window.title), \(viewModel.sort.title)")
-    }
-
-    private var windowSelection: Binding<BrowseWindow> {
-        Binding(
-            get: { viewModel.window },
-            set: { newValue in Task { await viewModel.setWindow(newValue) } }
-        )
+        .accessibilityValue(viewModel.sort.title)
     }
 
     private var sortSelection: Binding<BrowseSort> {
@@ -106,18 +95,18 @@ struct BrowseListView: View {
         switch viewModel.state {
             case .idle, .loading:
                 ProgressView()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             case .empty:
                 EmptyStateView(
                     title: "Nothing to Browse",
-                    message: "No titles match \(viewModel.media.title), \(viewModel.window.title).",
+                    message: "No titles match \(viewModel.genre.title), \(viewModel.media.title).",
                     systemImage: "film"
                 )
             case .loaded(let rows, let activity):
                 list(rows, activity: activity)
             case .failed(let error):
                 ErrorStateView(error: error) {
-                await viewModel.retry()
+                    await viewModel.retry()
                 }
         }
     }
@@ -169,6 +158,20 @@ struct BrowseListView: View {
                         .frame(maxWidth: .infinity)
                         .listRowSeparator(.hidden)
                 }
+            } header: {
+                FittingSegmentedControl(
+                    title: "",
+                    options: MediaTypes.allCases,
+                    selection: Binding(
+                        get: { viewModel.media },
+                        set: { newValue in Task { await viewModel.setMedia(newValue) } }
+                    ),
+                    label: { $0.title },
+                    symbol: { $0.symbol }
+                )
+                .padding(.horizontal, DesignSpacing.lg)
+                .background(.clear)
+                .offset(y: -8)
             }
             .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
         }
