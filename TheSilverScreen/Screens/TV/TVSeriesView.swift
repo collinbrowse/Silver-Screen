@@ -149,6 +149,10 @@ struct TVSeriesView: View {
                         scrollTo: scrollTo
                     )
                 }
+                if !content.detail.streamingProviders.isEmpty {
+                    JustWatchAttributionFooter()
+                        .padding(.horizontal, DesignSpacing.lg)
+                }
             }
             .padding(.bottom, DesignSpacing.lg)
             .coordinateSpace(.named("detailScroll"))
@@ -170,7 +174,8 @@ struct TVSeriesView: View {
             transitionNamespace: heroTransition,
             onOpenPoster: { viewModel.openPoster() },
             onOpenImage: { viewModel.openImages(initialID: $0) },
-            genreNames: content.detail.genres.map(\.name)
+            genreNames: content.detail.genres.map(\.name),
+            streamingProviders: content.detail.streamingProviders
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.sm) {
                 Text("First aired \(content.formattedFirstAirDate)")

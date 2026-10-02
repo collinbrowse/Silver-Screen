@@ -25,6 +25,7 @@ struct TVEpisodeContent: Sendable, Equatable {
     /// The rest of this season, in episode order. The episode on screen is left out.
     let otherEpisodes: [TVEpisodeSummary]
     let trailers: [MediaTrailer]
+    let streamingProviders: [StreamingProvider]
     var fullscreenImages: FullscreenImages?
 
     /// Stills for the hero. The episode still leads when the gallery does not already include it.
@@ -76,8 +77,10 @@ final class TVEpisodeViewModel {
                 episodeNumber: episodeNumber
             )
             async let othersCall = otherEpisodes()
+            async let providersCall = shows.streamingProviders(seriesID: seriesID)
             let episode = try await episodeCall
             let others = try await othersCall
+            let streamingProviders = await providersCall
             let personal = try await personalDetail()
             awardRows = await awards.episodeAwards(
                 seriesID: seriesID,
@@ -85,7 +88,12 @@ final class TVEpisodeViewModel {
                 episodeNumber: episodeNumber
             )
             state = .loaded(
-                Self.makeContent(episode, otherEpisodes: others, personal: personal.detail),
+                Self.makeContent(
+                    episode,
+                    otherEpisodes: others,
+                    personal: personal.detail,
+                    streamingProviders: streamingProviders
+                ),
                 activity: personal.activity
             )
         } catch is CancellationError {
@@ -212,7 +220,8 @@ final class TVEpisodeViewModel {
     private static func makeContent(
         _ episode: TVEpisodeDetail,
         otherEpisodes: [TVEpisodeSummary],
-        personal: PersonalDetail
+        personal: PersonalDetail,
+        streamingProviders: [StreamingProvider]
     ) -> TVEpisodeContent {
         TVEpisodeContent(
             title: episode.title,
@@ -233,6 +242,7 @@ final class TVEpisodeViewModel {
             directorsAndWriters: episode.directorsAndWriters,
             otherEpisodes: otherEpisodes,
             trailers: episode.trailers,
+            streamingProviders: streamingProviders,
             fullscreenImages: nil
         )
     }
@@ -259,6 +269,7 @@ private extension TVEpisodeContent {
             directorsAndWriters: directorsAndWriters,
             otherEpisodes: otherEpisodes,
             trailers: trailers,
+            streamingProviders: streamingProviders,
             fullscreenImages: fullscreenImages
         )
     }

@@ -125,6 +125,10 @@ struct TVSeasonView: View {
                 if !content.episodes.isEmpty {
                     episodes(content.episodes, seriesName: content.seriesName)
                 }
+                if !content.streamingProviders.isEmpty {
+                    JustWatchAttributionFooter()
+                        .padding(.horizontal, DesignSpacing.lg)
+                }
             }
             .padding(.bottom, DesignSpacing.lg)
             .coordinateSpace(.named("detailScroll"))
@@ -143,7 +147,8 @@ struct TVSeasonView: View {
             imageLoader: imageLoader,
             transitionNamespace: heroTransition,
             onOpenPoster: { viewModel.openPoster() },
-            onOpenImage: { viewModel.openImages(initialID: $0) }
+            onOpenImage: { viewModel.openImages(initialID: $0) },
+            streamingProviders: content.streamingProviders
         ) {
             Text(content.formattedAirDate)
                 .font(DesignTypography.metadata)

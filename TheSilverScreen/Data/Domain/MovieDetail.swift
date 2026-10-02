@@ -22,6 +22,8 @@ struct MovieDetail: Sendable, Identifiable, Equatable, Hashable {
     let genres: [MovieGenre]
     /// Official YouTube trailers, in TMDB order.
     let trailers: [MediaTrailer]
+    /// Subscription streaming services for the user's region, when TMDB lists them.
+    let streamingProviders: [StreamingProvider]
     let budget: Int
     let revenue: Int
     let images: [MovieImage]

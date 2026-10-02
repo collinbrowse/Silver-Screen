@@ -137,6 +137,7 @@ actor ImageLoader {
         case poster
         case backdrop
         case profile
+        case logo
     }
 
     static func posterURL(path: String, targetWidthPoints: CGFloat, scale: CGFloat) -> URL? {
@@ -195,6 +196,12 @@ actor ImageLoader {
             case ..<45: return "w45"
             case ..<185: return "w185"
             default: return "h632"
+            }
+            case .logo:
+                switch pixels {
+            case ..<45: return "w45"
+            case ..<132: return "w92"
+            default: return "w185"
             }
         }
     }

@@ -205,7 +205,7 @@ final class MovieRepositoryTests: XCTestCase {
         let items = URLComponents(url: url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
         XCTAssertTrue(items.contains(URLQueryItem(name: "api_key", value: "test-key")))
         XCTAssertTrue(items.contains(URLQueryItem(name: "language", value: "en-US")))
-        XCTAssertTrue(items.contains(URLQueryItem(name: "append_to_response", value: "credits,images,similar,videos")))
+        XCTAssertTrue(items.contains(URLQueryItem(name: "append_to_response", value: "credits,images,similar,videos,watch/providers")))
         XCTAssertTrue(detail.trailers.isEmpty)
         XCTAssertTrue(items.contains(URLQueryItem(name: "include_image_language", value: "en,null")))
         let authorization = await client.lastAuthorizationHeader
@@ -360,6 +360,30 @@ final class MovieRepositoryTests: XCTestCase {
         let items = URLComponents(url: url!, resolvingAgainstBaseURL: false)?.queryItems
         XCTAssertEqual(url?.path, "/3/search/movie")
         XCTAssertEqual(items?.first { $0.name == "query" }?.value, "shawshank")
+    }
+
+    func test_movieDetail_mapsFlatrateStreamingProviders() async throws {
+        let payload = Data("""
+            {
+            "id": 1,
+            "title": "Dune",
+            "vote_average": 8,
+            "watch/providers": {
+              "results": {
+                "US": {
+                  "flatrate": [
+                    {"provider_id": 8, "provider_name": "Netflix", "logo_path": "/netflix.jpg", "display_priority": 1},
+                    {"provider_id": 337, "provider_name": "Disney Plus", "logo_path": "/disney.jpg", "display_priority": 2}
+                  ]
+                }
+              }
+            }
+            }
+            """.utf8)
+        let detail = try await MovieRepository.test(client: FakeHTTPClient(stub: .success(payload)))
+            .movieDetail(id: 1)
+        XCTAssertEqual(detail.streamingProviders.map(\.name), ["Netflix", "Disney+"])
+        XCTAssertEqual(detail.streamingProviders.map(\.logoPath), ["/netflix.jpg", "/disney.jpg"])
     }
 
     func test_movieDetail_mapsOfficialYouTubeTrailers() async throws {

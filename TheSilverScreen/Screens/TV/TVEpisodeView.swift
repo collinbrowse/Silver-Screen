@@ -143,6 +143,10 @@ struct TVEpisodeView: View {
                         router?.push(.person(id: person.id))
                     }
                 }
+                if !content.streamingProviders.isEmpty {
+                    JustWatchAttributionFooter()
+                        .padding(.horizontal, DesignSpacing.lg)
+                }
             }
             .padding(.bottom, DesignSpacing.lg)
             .coordinateSpace(.named("detailScroll"))
@@ -161,7 +165,8 @@ struct TVEpisodeView: View {
             imageLoader: imageLoader,
             transitionNamespace: heroTransition,
             onOpenPoster: {},
-            onOpenImage: { viewModel.openImages(initialID: $0) }
+            onOpenImage: { viewModel.openImages(initialID: $0) },
+            streamingProviders: content.streamingProviders
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.sm) {
                 Text(content.episodeNumberText)

@@ -2,6 +2,47 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>acorn</string>
+		<string>aiv</string>
+		<string>allblk</string>
+		<string>amcplus</string>
+		<string>britbox</string>
+		<string>criterionchannel</string>
+		<string>crunchyroll</string>
+		<string>curiositystream</string>
+		<string>discoveryplus</string>
+		<string>disneyplus</string>
+		<string>disneynow</string>
+		<string>espn</string>
+		<string>fubotv</string>
+		<string>hidive</string>
+		<string>hoichoi</string>
+		<string>hoopla</string>
+		<string>hulu</string>
+		<string>kanopy</string>
+		<string>kocowa</string>
+		<string>max</string>
+		<string>mgmplus</string>
+		<string>mubi</string>
+		<string>nflx</string>
+		<string>paramountplus</string>
+		<string>peacock</string>
+		<string>philo</string>
+		<string>plex</string>
+		<string>plutotv</string>
+		<string>pureflix</string>
+		<string>sho</string>
+		<string>shudder</string>
+		<string>sling</string>
+		<string>starz</string>
+		<string>tubitv</string>
+		<string>viki</string>
+		<string>videos</string>
+		<string>youtube</string>
+		<string>youtubetv</string>
+	</array>
 	<key>TMDBAPIKey</key>
 	<string>$(TMDB_API_KEY)</string>
 	<key>UIApplicationSceneManifest</key>
