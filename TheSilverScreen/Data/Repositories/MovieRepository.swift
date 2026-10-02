@@ -51,7 +51,8 @@ final class MovieRepository: Sendable {
         page: Int,
         locale: Locale = .current,
         today: Date = Date(),
-        timeZone: TimeZone = .current
+        timeZone: TimeZone = .current,
+        genreIDs: [Int] = []
     ) async throws -> MoviePage {
         try await fetchMoviePage(
             path: DiscoverKind.movie.path,
@@ -63,7 +64,8 @@ final class MovieRepository: Sendable {
                 page: page,
                 locale: locale,
                 today: today,
-                timeZone: timeZone
+                timeZone: timeZone,
+                genreIDs: genreIDs
             )
         )
     }

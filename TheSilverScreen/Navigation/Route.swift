@@ -53,4 +53,5 @@ enum Route: Hashable, Sendable, Codable {
     case libraryList(id: UUID)
     case awardFamily(AwardFamily)
     case awardTitles(AwardTitleRequest)
+    case genreBrowse(MergedGenre)
 }
