@@ -382,7 +382,7 @@ final class MovieRepositoryTests: XCTestCase {
             """.utf8)
         let detail = try await MovieRepository.test(client: FakeHTTPClient(stub: .success(payload)))
             .movieDetail(id: 1)
-        XCTAssertEqual(detail.streamingProviders.map(\.name), ["Netflix", "Disney Plus"])
+        XCTAssertEqual(detail.streamingProviders.map(\.name), ["Netflix", "Disney+"])
         XCTAssertEqual(detail.streamingProviders.map(\.logoPath), ["/netflix.jpg", "/disney.jpg"])
     }
 
