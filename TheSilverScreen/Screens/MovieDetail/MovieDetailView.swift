@@ -142,7 +142,8 @@ struct MovieDetailView: View {
                     transitionNamespace: heroTransition,
                     onOpenPoster: { viewModel.openPoster() },
                     onOpenImage: { viewModel.openImages(initialID: $0) },
-                    genreNames: content.detail.genres.map(\.name)
+                    genreNames: content.detail.genres.map(\.name),
+                    streamingProviders: content.detail.streamingProviders
                 ) {
                     if !content.detail.trailers.isEmpty {
                         MediaMetadataPills(
@@ -169,6 +170,10 @@ struct MovieDetailView: View {
                 }
                 if let reviews = content.reviews {
                     reviewsSection(reviews, scrollTo: scrollTo)
+                }
+                if !content.detail.streamingProviders.isEmpty {
+                    JustWatchAttributionFooter()
+                        .padding(.horizontal, DesignSpacing.lg)
                 }
             }
             .padding(.bottom, DesignSpacing.lg)

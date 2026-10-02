@@ -31,8 +31,9 @@ struct DetailHero<Metadata: View>: View {
     let transitionNamespace: Namespace.ID
     let onOpenPoster: () -> Void
     let onOpenImage: (String) -> Void
-    /// Genre names across the full width under the poster. Trailers stay in `metadata`, under the title.
+    /// Genre names across the full width under the poster. Streaming logos use the same inset and top spacing.
     var genreNames: [String] = []
+    var streamingProviders: [StreamingProvider] = []
     @ViewBuilder let metadata: () -> Metadata
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -59,6 +60,11 @@ struct DetailHero<Metadata: View>: View {
                 .padding(.top, hasPoster && !images.isEmpty ? DesignSpacing.sm : 0)
             if !genreNames.isEmpty {
                 GenreChipRow(names: genreNames)
+                    .padding(.horizontal, DesignSpacing.lg)
+                    .padding(.top, DesignSpacing.md)
+            }
+            if !streamingProviders.isEmpty {
+                StreamingProviderLogoRow(providers: streamingProviders, imageLoader: imageLoader)
                     .padding(.horizontal, DesignSpacing.lg)
                     .padding(.top, DesignSpacing.md)
             }

@@ -23,6 +23,7 @@ struct TVSeasonContent: Sendable, Equatable {
     let directorsAndWriters: [TVCredit]
     let episodes: [TVEpisodeSummary]
     let trailers: [MediaTrailer]
+    let streamingProviders: [StreamingProvider]
     var fullscreenImages: FullscreenImages?
 }
 
@@ -60,11 +61,19 @@ final class TVSeasonViewModel {
     func load() async {
         state = .loading
         do {
-            let season = try await shows.season(seriesID: seriesID, seasonNumber: seasonNumber)
+            async let seasonCall = shows.season(seriesID: seriesID, seasonNumber: seasonNumber)
+            async let providersCall = shows.streamingProviders(seriesID: seriesID)
+            let season = try await seasonCall
+            let streamingProviders = await providersCall
             let personal = try await personalDetail()
             awardRows = await awards.seasonAwards(seriesID: seriesID, seasonNumber: seasonNumber)
             state = .loaded(
-                Self.makeContent(season: season, seriesName: seriesName, personal: personal.detail),
+                Self.makeContent(
+                    season: season,
+                    seriesName: seriesName,
+                    personal: personal.detail,
+                    streamingProviders: streamingProviders
+                ),
                 activity: personal.activity
             )
         } catch is CancellationError {
@@ -190,7 +199,8 @@ final class TVSeasonViewModel {
     private static func makeContent(
         season: TVSeasonDetail,
         seriesName: String,
-        personal: PersonalDetail
+        personal: PersonalDetail,
+        streamingProviders: [StreamingProvider]
     ) -> TVSeasonContent {
         TVSeasonContent(
             seriesName: seriesName,
@@ -210,6 +220,7 @@ final class TVSeasonViewModel {
             directorsAndWriters: season.directorsAndWriters,
             episodes: season.episodes,
             trailers: season.trailers,
+            streamingProviders: streamingProviders,
             fullscreenImages: nil
         )
     }
@@ -235,6 +246,7 @@ private extension TVSeasonContent {
             directorsAndWriters: directorsAndWriters,
             episodes: episodes,
             trailers: trailers,
+            streamingProviders: streamingProviders,
             fullscreenImages: fullscreenImages
         )
     }
