@@ -13,6 +13,8 @@ struct TVEpisodeView: View {
     let seriesID: Int
     let seriesName: String
     let seasonNumber: Int
+    /// Series poster and metadata for list membership (episode stills are not list art).
+    let seriesSnapshot: SeriesListSnapshot
     var router: NavigationRouter?
     @State private var playingTrailer: MediaTrailer?
     @State private var loadingTrailerID: String?
@@ -63,16 +65,7 @@ struct TVEpisodeView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 ListMembershipButton(
-                    draft: ListItemDraft(
-                        id: seriesID,
-                        kind: .tv,
-                        title: seriesName,
-                        imagePath: nil,
-                        releaseDate: nil,
-                        genreNames: [],
-                        voteAverage: 0,
-                        popularity: 0
-                    ),
+                    draft: seriesSnapshot.listItem(id: seriesID, title: seriesName),
                     lists: lists,
                     index: listsIndex
                 ) {
@@ -215,7 +208,8 @@ struct TVEpisodeView: View {
                             seriesID: seriesID,
                             seriesName: seriesName,
                             seasonNumber: seasonNumber,
-                            episodeNumber: episode.episodeNumber
+                            episodeNumber: episode.episodeNumber,
+                            seriesSnapshot: seriesSnapshot
                         )
                     )
                 } label: {

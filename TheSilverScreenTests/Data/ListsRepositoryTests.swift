@@ -49,6 +49,131 @@ final class ListsRepositoryTests: XCTestCase {
         XCTAssertEqual(entry.kind, .movie)
     }
 
+    func test_enrich_fillsSparseSnapshotAndPreservesAddedAt() async throws {
+        let repository = makeRepository()
+        let watched = try await systemList(.watched, repository: repository)
+        let addedAt = TestMovies.date("2024-04-01")
+        _ = try await repository.add(
+            draft: ListItemDraft(
+                id: 99,
+                kind: .tv,
+                title: "Alone: Frozen",
+                imagePath: nil,
+                releaseDate: nil,
+                genreNames: [],
+                voteAverage: 0,
+                popularity: 0
+            ),
+            listID: watched.id,
+            at: addedAt
+        )
+
+        try await repository.enrich(
+            draft: ListItemDraft(
+                id: 99,
+                kind: .tv,
+                title: "Alone: Frozen",
+                imagePath: "/alone.jpg",
+                releaseDate: TestMovies.date("2022-08-11"),
+                genreNames: ["Reality"],
+                voteAverage: 7.5,
+                popularity: 12
+            )
+        )
+
+        let snapshot = try await repository.snapshot()
+        let entry = try XCTUnwrap(snapshot.entries.first { $0.itemID == 99 })
+        XCTAssertEqual(entry.imagePath, "/alone.jpg")
+        XCTAssertEqual(entry.releaseDate, TestMovies.date("2022-08-11"))
+        XCTAssertEqual(entry.genreNames, ["Reality"])
+        XCTAssertEqual(entry.voteAverage, 7.5)
+        XCTAssertEqual(entry.popularity, 12)
+        XCTAssertEqual(entry.addedAt, addedAt)
+    }
+
+    func test_enrich_leavesRicherRowAlone() async throws {
+        let repository = makeRepository()
+        let watched = try await systemList(.watched, repository: repository)
+        let addedAt = TestMovies.date("2024-04-01")
+        _ = try await repository.add(
+            draft: movie(
+                id: 1,
+                title: "Batman Begins",
+                vote: 8,
+                popularity: 40,
+                date: TestMovies.date("2005-06-10"),
+                genres: ["Action"],
+                imagePath: "/batman.jpg"
+            ),
+            listID: watched.id,
+            at: addedAt
+        )
+
+        try await repository.enrich(
+            draft: movie(
+                id: 1,
+                title: "Batman Begins",
+                vote: 1,
+                popularity: 1,
+                date: TestMovies.date("2099-01-01"),
+                genres: ["Wrong"],
+                imagePath: "/other.jpg"
+            )
+        )
+
+        let snapshot = try await repository.snapshot()
+        let entry = try XCTUnwrap(snapshot.entries.first)
+        XCTAssertEqual(entry.imagePath, "/batman.jpg")
+        XCTAssertEqual(entry.releaseDate, TestMovies.date("2005-06-10"))
+        XCTAssertEqual(entry.genreNames, ["Action"])
+        XCTAssertEqual(entry.voteAverage, 8)
+        XCTAssertEqual(entry.popularity, 40)
+        XCTAssertEqual(entry.addedAt, addedAt)
+    }
+
+    func test_addWhenAlreadyPresent_enrichesSparseSnapshot() async throws {
+        let repository = makeRepository()
+        let watched = try await systemList(.watched, repository: repository)
+        let addedAt = TestMovies.date("2024-04-01")
+        _ = try await repository.add(
+            draft: ListItemDraft(
+                id: 42,
+                kind: .tv,
+                title: "The Wire",
+                imagePath: nil,
+                releaseDate: nil,
+                genreNames: [],
+                voteAverage: 0,
+                popularity: 0
+            ),
+            listID: watched.id,
+            at: addedAt
+        )
+
+        let change = try await repository.add(
+            draft: ListItemDraft(
+                id: 42,
+                kind: .tv,
+                title: "The Wire",
+                imagePath: "/wire.jpg",
+                releaseDate: TestMovies.date("2002-06-02"),
+                genreNames: ["Drama", "Crime"],
+                voteAverage: 9.3,
+                popularity: 70
+            ),
+            listID: watched.id,
+            at: TestMovies.date("2024-08-01")
+        )
+
+        XCTAssertEqual(change.action, .unchanged)
+        let snapshot = try await repository.snapshot()
+        let entry = try XCTUnwrap(snapshot.entries.first { $0.itemID == 42 })
+        XCTAssertEqual(entry.imagePath, "/wire.jpg")
+        XCTAssertEqual(entry.releaseDate, TestMovies.date("2002-06-02"))
+        XCTAssertEqual(entry.genreNames, ["Drama", "Crime"])
+        XCTAssertEqual(entry.addedAt, addedAt)
+    }
+
     func test_watched_sortsFromStoredNumbers() async throws {
         let repository = makeRepository()
         let watched = try await systemList(.watched, repository: repository)
@@ -580,6 +705,26 @@ final class ListSnapshotMappingTests: XCTestCase {
         let tv = CatalogTVRow(series: series)
         XCTAssertEqual(tv.listItem().voteAverage, 4)
         XCTAssertEqual(tv.listItem().popularity, 9)
+    }
+
+    func test_seriesListSnapshot_prefersSeasonPosterThenFallsBackToSeries() throws {
+        let detail = try decodeSeries(
+            #"{"id":99,"name":"Alone: Frozen","poster_path":"/series.jpg","first_air_date":"2022-08-11","genres":[{"id":10764,"name":"Reality"}],"vote_average":7.5,"popularity":12}"#
+        )
+        let snapshot = SeriesListSnapshot(detail: detail)
+
+        let withSeasonArt = snapshot.listItem(id: 99, title: "Alone: Frozen", imagePath: "/season.jpg")
+        XCTAssertEqual(withSeasonArt.imagePath, "/season.jpg")
+        XCTAssertEqual(withSeasonArt.releaseDate, TestMovies.date("2022-08-11"))
+        XCTAssertEqual(withSeasonArt.genreNames, ["Reality"])
+        XCTAssertEqual(withSeasonArt.voteAverage, 7.5)
+
+        let episodeDraft = snapshot.listItem(id: 99, title: "Alone: Frozen")
+        XCTAssertEqual(episodeDraft.imagePath, "/series.jpg")
+        XCTAssertEqual(episodeDraft.releaseDate, TestMovies.date("2022-08-11"))
+
+        let missingSeasonArt = snapshot.listItem(id: 99, title: "Alone: Frozen", imagePath: nil)
+        XCTAssertEqual(missingSeasonArt.imagePath, "/series.jpg")
     }
 
     private func decodeMovie(_ json: String) throws -> MovieDetail {

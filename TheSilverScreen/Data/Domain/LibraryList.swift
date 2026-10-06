@@ -157,6 +157,60 @@ struct ListEntry: Codable, Sendable, Equatable, Identifiable, Hashable {
         self.voteAverage = draft.voteAverage
         self.popularity = draft.popularity
     }
+
+    /// Fills empty snapshot fields from `draft`. Membership identity and order stay put.
+    /// Returns `nil` when nothing improves so callers can skip a write.
+    func fillingGaps(from draft: ListItemDraft) -> ListEntry? {
+        guard draft.itemKey == itemKey else { return nil }
+        let nextTitle = title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? draft.title
+            : title
+        let nextImage = imagePath ?? draft.imagePath
+        let nextDate = releaseDate ?? draft.releaseDate
+        let nextGenres = genreNames.isEmpty ? draft.genreNames : genreNames
+        let nextVote = voteAverage == 0 ? draft.voteAverage : voteAverage
+        let nextPopularity = popularity == 0 ? draft.popularity : popularity
+        let updated = ListEntry(
+            listID: listID,
+            itemID: itemID,
+            kind: kind,
+            addedAt: addedAt,
+            position: position,
+            title: nextTitle,
+            imagePath: nextImage,
+            releaseDate: nextDate,
+            genreNames: nextGenres,
+            voteAverage: nextVote,
+            popularity: nextPopularity
+        )
+        return updated == self ? nil : updated
+    }
+
+    private init(
+        listID: UUID,
+        itemID: Int,
+        kind: ListItemKind,
+        addedAt: Date,
+        position: Int,
+        title: String,
+        imagePath: String?,
+        releaseDate: Date?,
+        genreNames: [String],
+        voteAverage: Double,
+        popularity: Double
+    ) {
+        self.listID = listID
+        self.itemID = itemID
+        self.kind = kind
+        self.addedAt = addedAt
+        self.position = position
+        self.title = title
+        self.imagePath = imagePath
+        self.releaseDate = releaseDate
+        self.genreNames = genreNames
+        self.voteAverage = voteAverage
+        self.popularity = popularity
+    }
 }
 
 /// On-disk library. Favorites are not imported into this snapshot.

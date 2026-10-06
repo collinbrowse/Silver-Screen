@@ -58,17 +58,20 @@ final class TVSeriesViewModel {
     private let seriesID: Int
     private let shows: TVRepository
     private let annotations: AnnotationsRepository
+    private let lists: ListsRepository
     private let awards: AwardsRepository
 
     init(
         seriesID: Int,
         shows: TVRepository,
         annotations: AnnotationsRepository,
+        lists: ListsRepository,
         awards: AwardsRepository = AwardsRepository(catalog: .empty)
     ) {
         self.seriesID = seriesID
         self.shows = shows
         self.annotations = annotations
+        self.lists = lists
         self.awards = awards
     }
 
@@ -83,6 +86,7 @@ final class TVSeriesViewModel {
                 Self.makeContent(detail: detail, reviews: reviews, personal: personal.detail),
                 activity: personal.activity
             )
+            await enrichListSnapshots(detail.listItem())
         } catch is CancellationError {
             return
         } catch let error as AppError {
@@ -169,6 +173,17 @@ final class TVSeriesViewModel {
 
     func noteListSaveFailed() {
         markPersistenceFailure()
+    }
+
+    /// Backfills Watched/Watchlist rows that were saved without a poster or other snapshot fields.
+    private func enrichListSnapshots(_ draft: ListItemDraft) async {
+        do {
+            try await lists.enrich(draft: draft)
+        } catch is CancellationError {
+            return
+        } catch {
+            // Soft failure: the detail on screen is still good; list art stays sparse until next visit.
+        }
     }
 
     private func markPersistenceFailure() {

@@ -15,6 +15,8 @@ struct TVSeasonView: View {
     @State private var loadingTrailerID: String?
     let seriesID: Int
     let seasonNumber: Int
+    /// Series poster and metadata for list membership (season art may be missing).
+    let seriesSnapshot: SeriesListSnapshot
 
     @Namespace private var heroTransition
     @State private var selectedBackdropID: String?
@@ -63,7 +65,10 @@ struct TVSeasonView: View {
             if case .loaded(let content, _) = viewModel.state {
                 ToolbarItem(placement: .topBarTrailing) {
                     ListMembershipButton(
-                        draft: seriesDraft(named: content.seriesName, posterPath: content.posterPath),
+                        draft: seriesDraft(
+                            named: content.seriesName,
+                            seasonPosterPath: content.posterPath
+                        ),
                         lists: lists,
                         index: listsIndex
                     ) {
@@ -184,18 +189,9 @@ struct TVSeasonView: View {
         .padding(.horizontal, DesignSpacing.lg)
     }
 
-    /// Season and episode screens save the series, using whatever series fields are already on screen.
-    private func seriesDraft(named name: String, posterPath: String?) -> ListItemDraft {
-        ListItemDraft(
-            id: seriesID,
-            kind: .tv,
-            title: name,
-            imagePath: posterPath,
-            releaseDate: nil,
-            genreNames: [],
-            voteAverage: 0,
-            popularity: 0
-        )
+    /// Season and episode screens save the series, using series fields plus season art when present.
+    private func seriesDraft(named name: String, seasonPosterPath: String?) -> ListItemDraft {
+        seriesSnapshot.listItem(id: seriesID, title: name, imagePath: seasonPosterPath)
     }
 
     private func episodes(_ episodes: [TVEpisodeSummary], seriesName: String) -> some View {
@@ -213,7 +209,8 @@ struct TVSeasonView: View {
                             seriesID: seriesID,
                             seriesName: seriesName,
                             seasonNumber: seasonNumber,
-                            episodeNumber: episode.episodeNumber
+                            episodeNumber: episode.episodeNumber,
+                            seriesSnapshot: seriesSnapshot
                         )
                     )
                 } label: {

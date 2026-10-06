@@ -56,6 +56,7 @@ final class MovieDetailViewModel {
             )
             awardRows = await awards.movieAwards(movieID: movieID)
             state = .loaded(content, activity: personal.activity)
+            await enrichListSnapshots(detail.listItem())
             if personal.detail.formattedUserScore != nil {
                 await ensureOnWatched(detail.listItem(), at: personal.watchedAt ?? Date())
             }
@@ -140,6 +141,17 @@ final class MovieDetailViewModel {
             return
         } catch {
             markPersistenceFailure()
+        }
+    }
+
+    /// Backfills Watched/Watchlist rows that were saved without a poster or other snapshot fields.
+    private func enrichListSnapshots(_ draft: ListItemDraft) async {
+        do {
+            try await lists.enrich(draft: draft)
+        } catch is CancellationError {
+            return
+        } catch {
+            // Soft failure: the detail on screen is still good; list art stays sparse until next visit.
         }
     }
 

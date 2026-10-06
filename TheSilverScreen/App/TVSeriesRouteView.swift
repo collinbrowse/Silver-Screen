@@ -27,6 +27,7 @@ struct TVSeriesRouteView: View {
                 seriesID: seriesID,
                 shows: shows,
                 annotations: annotations,
+                lists: lists,
                 awards: awards
             )
         )

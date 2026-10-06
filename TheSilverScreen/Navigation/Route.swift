@@ -47,8 +47,14 @@ enum Route: Hashable, Sendable, Codable {
     case personCredits(personID: Int, personName: String, department: CreditDepartment)
     case collection(id: Int)
     case tvSeries(id: Int)
-    case tvSeason(seriesID: Int, seriesName: String, seasonNumber: Int)
-    case tvEpisode(seriesID: Int, seriesName: String, seasonNumber: Int, episodeNumber: Int)
+    case tvSeason(seriesID: Int, seriesName: String, seasonNumber: Int, seriesSnapshot: SeriesListSnapshot)
+    case tvEpisode(
+        seriesID: Int,
+        seriesName: String,
+        seasonNumber: Int,
+        episodeNumber: Int,
+        seriesSnapshot: SeriesListSnapshot
+    )
     /// One library list. The id is the list's stable UUID.
     case libraryList(id: UUID)
     case awardFamily(AwardFamily)

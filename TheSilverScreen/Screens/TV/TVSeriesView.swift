@@ -224,7 +224,8 @@ struct TVSeriesView: View {
                         .tvSeason(
                             seriesID: content.detail.id,
                             seriesName: content.detail.name,
-                            seasonNumber: season.seasonNumber
+                            seasonNumber: season.seasonNumber,
+                            seriesSnapshot: SeriesListSnapshot(detail: content.detail)
                         )
                     )
                 } label: {
