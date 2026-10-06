@@ -13,7 +13,6 @@ struct TVEpisodeRouteView: View {
     let seriesID: Int
     let seriesName: String
     let seasonNumber: Int
-    let seriesSnapshot: SeriesListSnapshot
     let router: NavigationRouter
 
     init(
@@ -35,6 +34,7 @@ struct TVEpisodeRouteView: View {
                 seriesID: seriesID,
                 seasonNumber: seasonNumber,
                 episodeNumber: episodeNumber,
+                seriesSnapshot: seriesSnapshot,
                 shows: shows,
                 annotations: annotations,
                 awards: awards
@@ -46,7 +46,6 @@ struct TVEpisodeRouteView: View {
         self.seriesID = seriesID
         self.seriesName = seriesName
         self.seasonNumber = seasonNumber
-        self.seriesSnapshot = seriesSnapshot
         self.router = router
     }
 
@@ -59,7 +58,6 @@ struct TVEpisodeRouteView: View {
             seriesID: seriesID,
             seriesName: seriesName,
             seasonNumber: seasonNumber,
-            seriesSnapshot: seriesSnapshot,
             router: router
         )
     }

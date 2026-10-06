@@ -33,6 +33,50 @@ final class TVSeasonViewModelTests: XCTestCase {
         XCTAssertEqual(content.cast[0].name, "Bryan Cranston")
     }
 
+    func test_load_whenSeriesSnapshotEmpty_fetchesSeriesForMembership() async {
+        let client = RoutingHTTPClient(routes: [
+            "/tv/1396/season/1": .success(TMDBFixtures.tvSeasonPilot),
+            "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
+        ])
+        let viewModel = TVSeasonViewModel(
+            seriesID: 1396,
+            seriesName: "Breaking Bad",
+            seasonNumber: 1,
+            seriesSnapshot: .empty,
+            shows: TVRepository.test(client: client),
+            annotations: AnnotationsRepository.empty()
+        )
+
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.seriesSnapshot.posterPath, "/bb.jpg")
+        XCTAssertFalse(viewModel.seriesSnapshot.genreNames.isEmpty)
+        let draft = viewModel.seriesSnapshot.listItem(id: 1396, title: "Breaking Bad")
+        XCTAssertEqual(draft.imagePath, "/bb.jpg")
+    }
+
+    func test_load_whenSeriesSnapshotProvided_skipsSeriesFetch() async {
+        let provided = SeriesListSnapshot(
+            posterPath: "/from-route.jpg",
+            firstAirDate: TestMovies.date("2008-01-20"),
+            genreNames: ["Drama"],
+            voteAverage: 9,
+            popularity: 1
+        )
+        let viewModel = TVSeasonViewModel(
+            seriesID: 1396,
+            seriesName: "Breaking Bad",
+            seasonNumber: 1,
+            seriesSnapshot: provided,
+            shows: TVRepository.test(client: FakeHTTPClient(stub: .success(TMDBFixtures.tvSeasonPilot))),
+            annotations: AnnotationsRepository.empty()
+        )
+
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.seriesSnapshot, provided)
+    }
+
     func test_seasonTitle_usesTheNameWithoutANumberPrefix() {
         XCTAssertEqual(SeasonTitle.display(name: "Season 2", number: 2), "Season 2")
         XCTAssertEqual(SeasonTitle.display(name: "Specials", number: 0), "Specials")

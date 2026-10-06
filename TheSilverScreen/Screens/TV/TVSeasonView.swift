@@ -15,8 +15,6 @@ struct TVSeasonView: View {
     @State private var loadingTrailerID: String?
     let seriesID: Int
     let seasonNumber: Int
-    /// Series poster and metadata for list membership (season art may be missing).
-    let seriesSnapshot: SeriesListSnapshot
 
     @Namespace private var heroTransition
     @State private var selectedBackdropID: String?
@@ -191,7 +189,7 @@ struct TVSeasonView: View {
 
     /// Season and episode screens save the series, using series fields plus season art when present.
     private func seriesDraft(named name: String, seasonPosterPath: String?) -> ListItemDraft {
-        seriesSnapshot.listItem(id: seriesID, title: name, imagePath: seasonPosterPath)
+        viewModel.seriesSnapshot.listItem(id: seriesID, title: name, imagePath: seasonPosterPath)
     }
 
     private func episodes(_ episodes: [TVEpisodeSummary], seriesName: String) -> some View {
@@ -210,7 +208,7 @@ struct TVSeasonView: View {
                             seriesName: seriesName,
                             seasonNumber: seasonNumber,
                             episodeNumber: episode.episodeNumber,
-                            seriesSnapshot: seriesSnapshot
+                            seriesSnapshot: viewModel.seriesSnapshot
                         )
                     )
                 } label: {

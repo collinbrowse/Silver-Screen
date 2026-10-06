@@ -263,6 +263,15 @@ struct SeriesListSnapshot: Hashable, Sendable, Codable, Equatable {
         popularity: 0
     )
 
+    /// True when navigation did not carry series art or metadata (awards deep links).
+    var isEmpty: Bool {
+        posterPath == nil
+            && firstAirDate == nil
+            && genreNames.isEmpty
+            && voteAverage == 0
+            && popularity == 0
+    }
+
     init(
         posterPath: String?,
         firstAirDate: Date?,
