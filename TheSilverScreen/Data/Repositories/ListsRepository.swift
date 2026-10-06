@@ -70,7 +70,7 @@ actor ListsRepository {
     }
 
     /// Fills empty snapshot fields on every list that already has this title.
-    /// Used when detail loads a fuller draft than the row saved at add time.
+    /// Non-empty draft fields also refresh stale values (for example a new poster path).
     func enrich(draft: ListItemDraft) async throws {
         try await serializeWrite { [self] in
             try await performEnrich(draft: draft)
@@ -206,7 +206,7 @@ actor ListsRepository {
         var didChange = false
         snapshot.entries = snapshot.entries.map { entry in
             guard entry.itemKey == draft.itemKey,
-                  let updated = entry.fillingGaps(from: draft) else {
+                  let updated = entry.mergingSnapshot(from: draft) else {
                 return entry
             }
             didChange = true

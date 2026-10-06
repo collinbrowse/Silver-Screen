@@ -158,18 +158,18 @@ struct ListEntry: Codable, Sendable, Equatable, Identifiable, Hashable {
         self.popularity = draft.popularity
     }
 
-    /// Fills empty snapshot fields from `draft`. Membership identity and order stay put.
-    /// Returns `nil` when nothing improves so callers can skip a write.
-    func fillingGaps(from draft: ListItemDraft) -> ListEntry? {
+    /// Merges `draft` into this row. Non-empty draft fields win so detail can refresh a
+    /// stale poster; empty draft fields leave the stored value alone.
+    /// Returns `nil` when nothing changes so callers can skip a write.
+    func mergingSnapshot(from draft: ListItemDraft) -> ListEntry? {
         guard draft.itemKey == itemKey else { return nil }
-        let nextTitle = title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            ? draft.title
-            : title
-        let nextImage = imagePath ?? draft.imagePath
-        let nextDate = releaseDate ?? draft.releaseDate
-        let nextGenres = genreNames.isEmpty ? draft.genreNames : genreNames
-        let nextVote = voteAverage == 0 ? draft.voteAverage : voteAverage
-        let nextPopularity = popularity == 0 ? draft.popularity : popularity
+        let trimmedDraftTitle = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let nextTitle = trimmedDraftTitle.isEmpty ? title : draft.title
+        let nextImage = draft.imagePath ?? imagePath
+        let nextDate = draft.releaseDate ?? releaseDate
+        let nextGenres = draft.genreNames.isEmpty ? genreNames : draft.genreNames
+        let nextVote = draft.voteAverage != 0 ? draft.voteAverage : voteAverage
+        let nextPopularity = draft.popularity != 0 ? draft.popularity : popularity
         let updated = ListEntry(
             listID: listID,
             itemID: itemID,

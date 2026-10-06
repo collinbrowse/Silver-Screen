@@ -91,7 +91,7 @@ final class ListsRepositoryTests: XCTestCase {
         XCTAssertEqual(entry.addedAt, addedAt)
     }
 
-    func test_enrich_leavesRicherRowAlone() async throws {
+    func test_enrich_leavesRicherRowAloneWhenDraftIsSparse() async throws {
         let repository = makeRepository()
         let watched = try await systemList(.watched, repository: repository)
         let addedAt = TestMovies.date("2024-04-01")
@@ -110,15 +110,7 @@ final class ListsRepositoryTests: XCTestCase {
         )
 
         try await repository.enrich(
-            draft: movie(
-                id: 1,
-                title: "Batman Begins",
-                vote: 1,
-                popularity: 1,
-                date: TestMovies.date("2099-01-01"),
-                genres: ["Wrong"],
-                imagePath: "/other.jpg"
-            )
+            draft: movie(id: 1, title: "Batman Begins")
         )
 
         let snapshot = try await repository.snapshot()
@@ -128,6 +120,36 @@ final class ListsRepositoryTests: XCTestCase {
         XCTAssertEqual(entry.genreNames, ["Action"])
         XCTAssertEqual(entry.voteAverage, 8)
         XCTAssertEqual(entry.popularity, 40)
+        XCTAssertEqual(entry.addedAt, addedAt)
+    }
+
+    func test_enrich_replacesStalePosterWhenDraftHasImage() async throws {
+        let repository = makeRepository()
+        let watched = try await systemList(.watched, repository: repository)
+        let addedAt = TestMovies.date("2024-04-01")
+        _ = try await repository.add(
+            draft: movie(id: 1, title: "Batman Begins", imagePath: "/old.jpg"),
+            listID: watched.id,
+            at: addedAt
+        )
+
+        try await repository.enrich(
+            draft: movie(
+                id: 1,
+                title: "Batman Begins",
+                vote: 8,
+                popularity: 40,
+                date: TestMovies.date("2005-06-10"),
+                genres: ["Action"],
+                imagePath: "/batman.jpg"
+            )
+        )
+
+        let snapshot = try await repository.snapshot()
+        let entry = try XCTUnwrap(snapshot.entries.first)
+        XCTAssertEqual(entry.imagePath, "/batman.jpg")
+        XCTAssertEqual(entry.releaseDate, TestMovies.date("2005-06-10"))
+        XCTAssertEqual(entry.genreNames, ["Action"])
         XCTAssertEqual(entry.addedAt, addedAt)
     }
 
