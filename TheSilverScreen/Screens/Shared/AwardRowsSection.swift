@@ -7,11 +7,32 @@
 
 import SwiftUI
 
+/// How many award rows stay visible before the user expands the list.
+enum AwardRowsDisplay {
+    static let collapsedLimit = 5
+
+    /// Rows to render for the current expand state. Short lists always show in full.
+    static func visibleRows<Row>(from rows: [Row], isExpanded: Bool) -> [Row] {
+        guard rows.count > collapsedLimit, !isExpanded else { return rows }
+        return Array(rows.prefix(collapsedLimit))
+    }
+
+    /// Only offer Show more / Show less when the list is longer than the collapsed limit.
+    static func showsToggle(total: Int) -> Bool {
+        total > collapsedLimit
+    }
+
+    static func toggleTitle(isExpanded: Bool) -> String {
+        isExpanded ? "Show less" : "Show more"
+    }
+}
+
 /// Trophy, category, and a second line. A row opens its title when `route` is set.
 struct AwardRowsSection: View {
     let rows: [AwardRow]
     var open: (Route) -> Void = { _ in }
 
+    @State private var isExpanded = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var trophyHeight: CGFloat = 36
 
@@ -24,7 +45,7 @@ struct AwardRowsSection: View {
 
             SurfaceCard {
                 VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                    ForEach(Array(visibleRows.enumerated()), id: \.element.id) { index, row in
                         if index > 0 {
                             Divider()
                                 .padding(.vertical, DesignSpacing.md)
@@ -33,7 +54,30 @@ struct AwardRowsSection: View {
                     }
                 }
             }
+
+            if AwardRowsDisplay.showsToggle(total: rows.count) {
+                HStack {
+                    Spacer(minLength: 0)
+                    Button {
+                        isExpanded.toggle()
+                    } label: {
+                        Text(AwardRowsDisplay.toggleTitle(isExpanded: isExpanded))
+                            .font(DesignTypography.chip.weight(.semibold))
+                            .foregroundStyle(DesignTheme.accent)
+                            .padding(.horizontal, DesignSpacing.sm)
+                            .frame(minHeight: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(AwardRowsDisplay.toggleTitle(isExpanded: isExpanded))
+                    .accessibilityAddTraits(.isButton)
+                }
+            }
         }
+    }
+
+    private var visibleRows: [AwardRow] {
+        AwardRowsDisplay.visibleRows(from: rows, isExpanded: isExpanded)
     }
 
     @ViewBuilder
