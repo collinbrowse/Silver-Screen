@@ -39,6 +39,28 @@ final class TVEpisodeViewModelTests: XCTestCase {
         XCTAssertTrue(content.otherEpisodes.isEmpty)
     }
 
+    func test_load_whenSeriesSnapshotEmpty_fetchesSeriesForMembership() async {
+        let client = RoutingHTTPClient(routes: [
+            "/tv/1396/season/1/episode/1": .success(TMDBFixtures.tvEpisodePilot),
+            "/tv/1396/season/1": .success(TMDBFixtures.tvSeasonPilot),
+            "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
+        ])
+        let viewModel = TVEpisodeViewModel(
+            seriesID: 1396,
+            seasonNumber: 1,
+            episodeNumber: 1,
+            seriesSnapshot: .empty,
+            shows: TVRepository.test(client: client),
+            annotations: AnnotationsRepository.empty()
+        )
+
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.seriesSnapshot.posterPath, "/bb.jpg")
+        let draft = viewModel.seriesSnapshot.listItem(id: 1396, title: "Breaking Bad")
+        XCTAssertEqual(draft.imagePath, "/bb.jpg")
+    }
+
     func test_load_listsTheOtherEpisodesInTheSeason() async {
         let season = Data("""
             {

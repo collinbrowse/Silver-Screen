@@ -20,6 +20,7 @@ struct TVEpisodeRouteView: View {
         seriesName: String,
         seasonNumber: Int,
         episodeNumber: Int,
+        seriesSnapshot: SeriesListSnapshot,
         shows: TVRepository,
         lists: ListsRepository,
         listsIndex: ListsIndex,
@@ -33,6 +34,7 @@ struct TVEpisodeRouteView: View {
                 seriesID: seriesID,
                 seasonNumber: seasonNumber,
                 episodeNumber: episodeNumber,
+                seriesSnapshot: seriesSnapshot,
                 shows: shows,
                 annotations: annotations,
                 awards: awards

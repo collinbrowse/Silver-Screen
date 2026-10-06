@@ -70,11 +70,12 @@ struct AppRouteDestination: View {
                     imageLoader: imageLoader,
                     router: router
                 )
-            case .tvSeason(let seriesID, let seriesName, let seasonNumber):
+            case .tvSeason(let seriesID, let seriesName, let seasonNumber, let seriesSnapshot):
                 TVSeasonRouteView(
                     seriesID: seriesID,
                     seriesName: seriesName,
                     seasonNumber: seasonNumber,
+                    seriesSnapshot: seriesSnapshot,
                     shows: shows,
                     lists: lists,
                     listsIndex: listsIndex,
@@ -83,12 +84,13 @@ struct AppRouteDestination: View {
                     imageLoader: imageLoader,
                     router: router
                 )
-            case .tvEpisode(let seriesID, let seriesName, let seasonNumber, let episodeNumber):
+            case .tvEpisode(let seriesID, let seriesName, let seasonNumber, let episodeNumber, let seriesSnapshot):
                 TVEpisodeRouteView(
                     seriesID: seriesID,
                     seriesName: seriesName,
                     seasonNumber: seasonNumber,
                     episodeNumber: episodeNumber,
+                    seriesSnapshot: seriesSnapshot,
                     shows: shows,
                     lists: lists,
                     listsIndex: listsIndex,

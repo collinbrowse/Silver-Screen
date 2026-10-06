@@ -63,16 +63,7 @@ struct TVEpisodeView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 ListMembershipButton(
-                    draft: ListItemDraft(
-                        id: seriesID,
-                        kind: .tv,
-                        title: seriesName,
-                        imagePath: nil,
-                        releaseDate: nil,
-                        genreNames: [],
-                        voteAverage: 0,
-                        popularity: 0
-                    ),
+                    draft: viewModel.seriesSnapshot.listItem(id: seriesID, title: seriesName),
                     lists: lists,
                     index: listsIndex
                 ) {
@@ -215,7 +206,8 @@ struct TVEpisodeView: View {
                             seriesID: seriesID,
                             seriesName: seriesName,
                             seasonNumber: seasonNumber,
-                            episodeNumber: episode.episodeNumber
+                            episodeNumber: episode.episodeNumber,
+                            seriesSnapshot: viewModel.seriesSnapshot
                         )
                     )
                 } label: {

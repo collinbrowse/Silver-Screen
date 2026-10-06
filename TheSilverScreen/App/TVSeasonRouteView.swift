@@ -18,6 +18,7 @@ struct TVSeasonRouteView: View {
         seriesID: Int,
         seriesName: String,
         seasonNumber: Int,
+        seriesSnapshot: SeriesListSnapshot,
         shows: TVRepository,
         lists: ListsRepository,
         listsIndex: ListsIndex,
@@ -31,6 +32,7 @@ struct TVSeasonRouteView: View {
                 seriesID: seriesID,
                 seriesName: seriesName,
                 seasonNumber: seasonNumber,
+                seriesSnapshot: seriesSnapshot,
                 shows: shows,
                 annotations: annotations,
                 awards: awards

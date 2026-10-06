@@ -58,6 +58,7 @@ final class AwardDetailLabelTests: XCTestCase {
             seriesID: 1396,
             shows: TVRepository.test(client: client),
             annotations: AnnotationsRepository.empty(),
+            lists: ListsRepository.empty(),
             awards: AwardsRepository(catalog: Self.catalog)
         )
 

@@ -69,6 +69,14 @@ actor ListsRepository {
         }
     }
 
+    /// Fills empty snapshot fields on every list that already has this title.
+    /// Non-empty draft fields also refresh stale values (for example a new poster path).
+    func enrich(draft: ListItemDraft) async throws {
+        try await serializeWrite { [self] in
+            try await performEnrich(draft: draft)
+        }
+    }
+
     func remove(itemKey: String, listID: UUID) async throws -> MembershipChange {
         try await serializeWrite { [self] in
             try await performRemove(itemKey: itemKey, listID: listID)
@@ -163,6 +171,7 @@ actor ListsRepository {
             throw ListEditError.wrongSegment
         }
         if snapshot.entries.contains(where: { $0.listID == listID && $0.itemKey == draft.itemKey }) {
+            try await performEnrich(draft: draft)
             return MembershipChange(
                 action: .unchanged,
                 listID: list.id,
@@ -190,6 +199,21 @@ actor ListsRepository {
             restore: restore,
             removed: nil
         )
+    }
+
+    private func performEnrich(draft: ListItemDraft) async throws {
+        var snapshot = try await loadCache()
+        var didChange = false
+        snapshot.entries = snapshot.entries.map { entry in
+            guard entry.itemKey == draft.itemKey,
+                  let updated = entry.mergingSnapshot(from: draft) else {
+                return entry
+            }
+            didChange = true
+            return updated
+        }
+        guard didChange else { return }
+        try await persist(snapshot)
     }
 
     private func performRemove(itemKey: String, listID: UUID) async throws -> MembershipChange {

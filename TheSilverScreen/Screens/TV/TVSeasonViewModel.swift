@@ -34,6 +34,8 @@ final class TVSeasonViewModel {
     private(set) var state: LoadState<TVSeasonContent> = .idle
     /// Prizes for this season, newest ceremony first. The section is hidden when empty.
     private(set) var awardRows: [AwardRow] = []
+    /// Series fields for list membership. Filled from the route, or from a series fetch when empty.
+    private(set) var seriesSnapshot: SeriesListSnapshot
 
     private let seriesID: Int
     private let seriesName: String
@@ -46,6 +48,7 @@ final class TVSeasonViewModel {
         seriesID: Int,
         seriesName: String,
         seasonNumber: Int,
+        seriesSnapshot: SeriesListSnapshot = .empty,
         shows: TVRepository,
         annotations: AnnotationsRepository,
         awards: AwardsRepository = AwardsRepository(catalog: .empty)
@@ -53,6 +56,7 @@ final class TVSeasonViewModel {
         self.seriesID = seriesID
         self.seriesName = seriesName
         self.seasonNumber = seasonNumber
+        self.seriesSnapshot = seriesSnapshot
         self.shows = shows
         self.annotations = annotations
         self.awards = awards
@@ -63,8 +67,10 @@ final class TVSeasonViewModel {
         do {
             async let seasonCall = shows.season(seriesID: seriesID, seasonNumber: seasonNumber)
             async let providersCall = shows.streamingProviders(seriesID: seriesID)
+            async let snapshotCall = resolveSeriesSnapshot()
             let season = try await seasonCall
             let streamingProviders = await providersCall
+            seriesSnapshot = await snapshotCall
             let personal = try await personalDetail()
             awardRows = await awards.seasonAwards(seriesID: seriesID, seasonNumber: seasonNumber)
             state = .loaded(
@@ -82,6 +88,19 @@ final class TVSeasonViewModel {
             state = .failed(error)
         } catch {
             state = .failed(.unknown)
+        }
+    }
+
+    /// Awards deep links arrive without series art; load it once for the membership draft.
+    private func resolveSeriesSnapshot() async -> SeriesListSnapshot {
+        guard seriesSnapshot.isEmpty else { return seriesSnapshot }
+        do {
+            let detail = try await shows.series(id: seriesID)
+            return SeriesListSnapshot(detail: detail)
+        } catch is CancellationError {
+            return seriesSnapshot
+        } catch {
+            return seriesSnapshot
         }
     }
 

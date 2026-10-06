@@ -246,3 +246,67 @@ private func departmentNames(_ department: String?) -> [String] {
     }
     return [department]
 }
+
+/// Series fields carried into season/episode routes so membership saves a full snapshot.
+struct SeriesListSnapshot: Hashable, Sendable, Codable, Equatable {
+    var posterPath: String?
+    var firstAirDate: Date?
+    var genreNames: [String]
+    var voteAverage: Double
+    var popularity: Double
+
+    static let empty = SeriesListSnapshot(
+        posterPath: nil,
+        firstAirDate: nil,
+        genreNames: [],
+        voteAverage: 0,
+        popularity: 0
+    )
+
+    /// True when navigation did not carry series art or metadata (awards deep links).
+    var isEmpty: Bool {
+        posterPath == nil
+            && firstAirDate == nil
+            && genreNames.isEmpty
+            && voteAverage == 0
+            && popularity == 0
+    }
+
+    init(
+        posterPath: String?,
+        firstAirDate: Date?,
+        genreNames: [String],
+        voteAverage: Double,
+        popularity: Double
+    ) {
+        self.posterPath = posterPath
+        self.firstAirDate = firstAirDate
+        self.genreNames = genreNames
+        self.voteAverage = voteAverage
+        self.popularity = popularity
+    }
+
+    init(detail: TVSeriesDetail) {
+        self.init(
+            posterPath: detail.posterPath,
+            firstAirDate: detail.firstAirDate,
+            genreNames: detail.genres.map(\.name),
+            voteAverage: detail.voteAverage,
+            popularity: detail.popularity
+        )
+    }
+
+    /// Series list draft. Prefer `imagePath` when the season has its own poster.
+    func listItem(id: Int, title: String, imagePath: String? = nil) -> ListItemDraft {
+        ListItemDraft(
+            id: id,
+            kind: .tv,
+            title: title,
+            imagePath: imagePath ?? posterPath,
+            releaseDate: firstAirDate,
+            genreNames: genreNames,
+            voteAverage: voteAverage,
+            popularity: popularity
+        )
+    }
+}

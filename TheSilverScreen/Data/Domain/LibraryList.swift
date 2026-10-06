@@ -157,6 +157,60 @@ struct ListEntry: Codable, Sendable, Equatable, Identifiable, Hashable {
         self.voteAverage = draft.voteAverage
         self.popularity = draft.popularity
     }
+
+    /// Merges `draft` into this row. Non-empty draft fields win so detail can refresh a
+    /// stale poster; empty draft fields leave the stored value alone.
+    /// Returns `nil` when nothing changes so callers can skip a write.
+    func mergingSnapshot(from draft: ListItemDraft) -> ListEntry? {
+        guard draft.itemKey == itemKey else { return nil }
+        let trimmedDraftTitle = draft.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let nextTitle = trimmedDraftTitle.isEmpty ? title : draft.title
+        let nextImage = draft.imagePath ?? imagePath
+        let nextDate = draft.releaseDate ?? releaseDate
+        let nextGenres = draft.genreNames.isEmpty ? genreNames : draft.genreNames
+        let nextVote = draft.voteAverage != 0 ? draft.voteAverage : voteAverage
+        let nextPopularity = draft.popularity != 0 ? draft.popularity : popularity
+        let updated = ListEntry(
+            listID: listID,
+            itemID: itemID,
+            kind: kind,
+            addedAt: addedAt,
+            position: position,
+            title: nextTitle,
+            imagePath: nextImage,
+            releaseDate: nextDate,
+            genreNames: nextGenres,
+            voteAverage: nextVote,
+            popularity: nextPopularity
+        )
+        return updated == self ? nil : updated
+    }
+
+    private init(
+        listID: UUID,
+        itemID: Int,
+        kind: ListItemKind,
+        addedAt: Date,
+        position: Int,
+        title: String,
+        imagePath: String?,
+        releaseDate: Date?,
+        genreNames: [String],
+        voteAverage: Double,
+        popularity: Double
+    ) {
+        self.listID = listID
+        self.itemID = itemID
+        self.kind = kind
+        self.addedAt = addedAt
+        self.position = position
+        self.title = title
+        self.imagePath = imagePath
+        self.releaseDate = releaseDate
+        self.genreNames = genreNames
+        self.voteAverage = voteAverage
+        self.popularity = popularity
+    }
 }
 
 /// On-disk library. Favorites are not imported into this snapshot.

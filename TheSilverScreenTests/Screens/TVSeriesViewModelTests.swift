@@ -15,7 +15,8 @@ final class TVSeriesViewModelTests: XCTestCase {
             "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
             ])
         let viewModel = TVSeriesViewModel(seriesID: 1396, shows: TVRepository.test(client: client),
-            annotations: AnnotationsRepository.empty()
+            annotations: AnnotationsRepository.empty(),
+            lists: ListsRepository.empty()
         )
 
         await viewModel.load()
@@ -43,7 +44,8 @@ final class TVSeriesViewModelTests: XCTestCase {
             .success(TMDBFixtures.movieReviewsPage2),
             ])
         let viewModel = TVSeriesViewModel(seriesID: 1396, shows: TVRepository.test(client: client),
-            annotations: AnnotationsRepository.empty()
+            annotations: AnnotationsRepository.empty(),
+            lists: ListsRepository.empty()
         )
         await viewModel.load()
 
@@ -63,7 +65,8 @@ final class TVSeriesViewModelTests: XCTestCase {
             .failure(URLError(.notConnectedToInternet)),
             ])
         let viewModel = TVSeriesViewModel(seriesID: 1396, shows: TVRepository.test(client: client),
-            annotations: AnnotationsRepository.empty()
+            annotations: AnnotationsRepository.empty(),
+            lists: ListsRepository.empty()
         )
         await viewModel.load()
 
@@ -83,7 +86,8 @@ final class TVSeriesViewModelTests: XCTestCase {
             .failure(URLError(.notConnectedToInternet)),
             ])
         let viewModel = TVSeriesViewModel(seriesID: 1396, shows: TVRepository.test(client: client),
-            annotations: AnnotationsRepository.empty()
+            annotations: AnnotationsRepository.empty(),
+            lists: ListsRepository.empty()
         )
         await viewModel.load()
 
@@ -105,7 +109,8 @@ final class TVSeriesViewModelTests: XCTestCase {
                 .failure(URLError(.notConnectedToInternet)),
                 ])
             let viewModel = TVSeriesViewModel(seriesID: 1, shows: TVRepository.test(client: client),
-                annotations: AnnotationsRepository.empty()
+                annotations: AnnotationsRepository.empty(),
+                lists: ListsRepository.empty()
                 )
 
             await viewModel.load()
@@ -125,7 +130,8 @@ final class TVSeriesViewModelTests: XCTestCase {
                 "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
                 ])
             let viewModel = TVSeriesViewModel(seriesID: 1396, shows: TVRepository.test(client: client),
-                annotations: AnnotationsRepository.empty()
+                annotations: AnnotationsRepository.empty(),
+                lists: ListsRepository.empty()
                 )
             await viewModel.load()
 
@@ -150,7 +156,8 @@ final class TVSeriesViewModelTests: XCTestCase {
             let viewModel = TVSeriesViewModel(
                 seriesID: 1396,
                 shows: TVRepository.test(client: client),
-                annotations: annotations
+                annotations: annotations,
+                lists: ListsRepository.empty()
                 )
 
             await viewModel.load()
@@ -176,7 +183,8 @@ final class TVSeriesViewModelTests: XCTestCase {
                 let viewModel = TVSeriesViewModel(
                     seriesID: 1,
                     shows: TVRepository.test(client: SequencingHTTPClient(stubs: [.success(payload)])),
-                    annotations: AnnotationsRepository.empty()
+                    annotations: AnnotationsRepository.empty(),
+                    lists: ListsRepository.empty()
                     )
 
                 await viewModel.load()
@@ -206,7 +214,8 @@ final class TVSeriesViewModelTests: XCTestCase {
                 let viewModel = TVSeriesViewModel(
                     seriesID: 1396,
                     shows: TVRepository.test(client: client),
-                    annotations: annotations
+                    annotations: annotations,
+                    lists: ListsRepository.empty()
                     )
                 await viewModel.load()
                 await store.setSaveError(CocoaError(.fileWriteUnknown))

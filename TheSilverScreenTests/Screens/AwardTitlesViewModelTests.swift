@@ -28,6 +28,7 @@ final class AwardTitlesViewModelTests: XCTestCase {
         XCTAssertEqual(first.first?.title, "Film 2020")
         XCTAssertEqual(first.first?.awardYear, "2020")
         XCTAssertEqual(first.first?.genreLine, "")
+        XCTAssertNil(first.first?.listDraft)
         XCTAssertEqual(first.last?.title, "Film 2001")
         XCTAssertTrue(viewModel.hasMore)
         XCTAssertFalse(first.contains { $0.title == "Nominee" })
@@ -79,6 +80,7 @@ final class AwardTitlesViewModelTests: XCTestCase {
         XCTAssertEqual(rows.first?.awardYear, "2024")
         XCTAssertEqual(rows.first?.imagePath, "/from.jpg")
         XCTAssertEqual(rows.first?.route, .movieDetail(id: 872585))
+        XCTAssertEqual(rows.first?.listDraft?.imagePath, "/from.jpg")
     }
 
     private static let pagedCatalog: AwardsCatalog = {
