@@ -59,8 +59,11 @@ python3 scripts/release.py promote
 ```
 
 `check` runs in CI. It fails if the app target hardcodes a version, if
-`Version.xcconfig` is malformed, or if the export options disagree with the
-signing team.
+`Version.xcconfig` is malformed, if the export options disagree with the
+signing team, or if Debug/Release channel branding is wrong — Release must
+ship as `com.collinbrowse.thesilverscreen` / Silver Screen, never the Dev
+bundle id or Silver Dev. `archive` re-checks the built app's Info.plist
+before export so a contaminated binary cannot upload.
 
 ### TestFlight
 
@@ -133,4 +136,5 @@ Access → Integrations.
 
 The export plist keeps `manageAppVersionAndBuildNumber` off so Xcode cannot
 replace the numbers from `Version.xcconfig` during export. `archive` reads
-the archived app's Info.plist and stops if it disagrees.
+the archived app's Info.plist and stops if the version, shipping bundle id,
+or display name disagree.

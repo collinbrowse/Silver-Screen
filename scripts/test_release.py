@@ -30,6 +30,7 @@ PBXPROJ = """
 C77D45592788B823003D8011 /* Debug */ = {
 	isa = XCBuildConfiguration;
 	buildSettings = {
+		INFOPLIST_KEY_CFBundleDisplayName = "Silver Dev";
 		PRODUCT_BUNDLE_IDENTIFIER = com.collinbrowse.thesilverscreen.dev;
 		DEVELOPMENT_TEAM = 84XX2W7G34;
 	};
@@ -38,6 +39,7 @@ C77D45592788B823003D8011 /* Debug */ = {
 C77D455A2788B823003D8011 /* Release */ = {
 	isa = XCBuildConfiguration;
 	buildSettings = {
+		INFOPLIST_KEY_CFBundleDisplayName = "Silver Screen";
 		PRODUCT_BUNDLE_IDENTIFIER = com.collinbrowse.thesilverscreen;
 		DEVELOPMENT_TEAM = 84XX2W7G34;
 	};
@@ -151,6 +153,32 @@ class ProjectTests(unittest.TestCase):
         problems = release.version_overrides(drifted)
         self.assertEqual(len(problems), 1)
         self.assertIn("MARKETING_VERSION", problems[0])
+
+    def test_release_cannot_use_dev_display_name(self) -> None:
+        self.assertEqual(release.channel_branding(PBXPROJ), [])
+        contaminated = PBXPROJ.replace(
+            'INFOPLIST_KEY_CFBundleDisplayName = "Silver Screen";',
+            'INFOPLIST_KEY_CFBundleDisplayName = "Silver Dev";',
+        )
+        problems = release.channel_branding(contaminated)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("Silver Dev", problems[0])
+        self.assertIn("Silver Screen", problems[0])
+
+    def test_release_cannot_use_dev_bundle_id(self) -> None:
+        swapped = PBXPROJ.replace(
+            "PRODUCT_BUNDLE_IDENTIFIER = com.collinbrowse.thesilverscreen;",
+            "PRODUCT_BUNDLE_IDENTIFIER = com.collinbrowse.thesilverscreen.dev;",
+            1,
+        )
+        # Keep the Debug block unique so both configs still parse as app targets.
+        swapped = swapped.replace(
+            "PRODUCT_BUNDLE_IDENTIFIER = com.collinbrowse.thesilverscreen.dev;\n\t\tDEVELOPMENT_TEAM",
+            "PRODUCT_BUNDLE_IDENTIFIER = com.collinbrowse.thesilverscreen;\n\t\tDEVELOPMENT_TEAM",
+            1,
+        )
+        problems = release.channel_branding(swapped)
+        self.assertTrue(any("Release" in problem and "bundle id" in problem for problem in problems))
 
     def test_workspace_release_files_agree(self) -> None:
         root = Path(__file__).resolve().parents[1]

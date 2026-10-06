@@ -21,12 +21,25 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-APP_BUNDLE_IDS = frozenset(
-    {
-        "com.collinbrowse.thesilverscreen",
-        "com.collinbrowse.thesilverscreen.dev",
-    }
-)
+PROD_BUNDLE_ID = "com.collinbrowse.thesilverscreen"
+DEV_BUNDLE_ID = "com.collinbrowse.thesilverscreen.dev"
+PROD_DISPLAY_NAME = "Silver Screen"
+DEV_DISPLAY_NAME = "Silver Dev"
+
+APP_BUNDLE_IDS = frozenset({PROD_BUNDLE_ID, DEV_BUNDLE_ID})
+
+# Bundle id → home-screen name. Release (TestFlight / App Store) must never
+# inherit Debug's .dev id or "Silver Dev" label.
+CHANNEL_BRANDING = {
+    DEV_BUNDLE_ID: DEV_DISPLAY_NAME,
+    PROD_BUNDLE_ID: PROD_DISPLAY_NAME,
+}
+
+# Configuration name → which channel that Xcode configuration must be.
+CHANNEL_BY_CONFIGURATION = {
+    "Debug": DEV_BUNDLE_ID,
+    "Release": PROD_BUNDLE_ID,
+}
 
 MARKETING_RE = re.compile(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$")
 BUILD_RE = re.compile(r"^[1-9]\d*$")
@@ -174,6 +187,23 @@ def _bundle_identifier(body: str) -> str | None:
     return match.group(1).strip().strip('"')
 
 
+def _display_name(body: str) -> str | None:
+    match = re.search(
+        r'INFOPLIST_KEY_CFBundleDisplayName\s*=\s*(?:"([^"]*)"|([^;]+));',
+        body,
+    )
+    if not match:
+        return None
+    return (match.group(1) if match.group(1) is not None else match.group(2)).strip()
+
+
+def _configuration_name(body: str) -> str | None:
+    match = re.search(r"^\s*name\s*=\s*([^;]+);", body, re.M)
+    if not match:
+        return None
+    return match.group(1).strip().strip('"')
+
+
 def version_overrides(pbxproj: str) -> list[str]:
     """App-target settings that would shadow Version.xcconfig.
 
@@ -198,6 +228,40 @@ def version_overrides(pbxproj: str) -> list[str]:
         problems.append(
             "project.pbxproj is missing the app bundle id " + ", ".join(sorted(missing)) + "."
         )
+    return problems
+
+
+def channel_branding(pbxproj: str) -> list[str]:
+    """Keep Debug (Silver Dev) from contaminating TestFlight / App Store.
+
+    Release archives use the shipping bundle id and "Silver Screen". Debug runs
+    use the .dev id and "Silver Dev". A swapped name or id is a hard failure so
+    a TestFlight build cannot install as Silver Dev.
+    """
+    problems: list[str] = []
+    for body in configuration_bodies(pbxproj):
+        identifier = _bundle_identifier(body)
+        if identifier not in APP_BUNDLE_IDS:
+            continue
+        config = _configuration_name(body) or "(unknown)"
+        expected_id = CHANNEL_BY_CONFIGURATION.get(config)
+        if expected_id is not None and identifier != expected_id:
+            problems.append(
+                f"{config} app configuration uses bundle id {identifier}. "
+                f"It must be {expected_id}."
+            )
+        expected_name = CHANNEL_BRANDING[identifier]
+        display = _display_name(body)
+        if display is None:
+            problems.append(
+                f"{config} ({identifier}) is missing INFOPLIST_KEY_CFBundleDisplayName. "
+                f"It must be {expected_name!r}."
+            )
+        elif display != expected_name:
+            problems.append(
+                f"{config} ({identifier}) display name is {display!r}. "
+                f"It must be {expected_name!r}."
+            )
     return problems
 
 
@@ -236,6 +300,7 @@ def collect_problems(root: Path) -> list[str]:
 
     project = pbxproj.read_text(encoding="utf-8")
     problems.extend(version_overrides(project))
+    problems.extend(channel_branding(project))
     teams = set(re.findall(r"DEVELOPMENT_TEAM = ([A-Z0-9]+);", project))
 
     export_path = root / "distribution" / "ExportOptions.plist"
@@ -574,6 +639,18 @@ def _verify_archive(archive: Path, version: Version) -> None:
     if marketing != version.marketing or build != str(version.build):
         raise ReleaseError(
             f"The archive is {marketing} ({build}). Version.xcconfig is {version.label()}."
+        )
+    identifier = str(info.get("CFBundleIdentifier", ""))
+    if identifier != PROD_BUNDLE_ID:
+        raise ReleaseError(
+            f"The archive bundle id is {identifier!r}. "
+            f"TestFlight and App Store must be {PROD_BUNDLE_ID!r}."
+        )
+    display = str(info.get("CFBundleDisplayName") or info.get("CFBundleName") or "")
+    if display != PROD_DISPLAY_NAME:
+        raise ReleaseError(
+            f"The archive display name is {display!r}. "
+            f"TestFlight and App Store must be {PROD_DISPLAY_NAME!r}."
         )
 
 

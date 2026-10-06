@@ -20,3 +20,4 @@ alwaysApply: true
 - `cut` and `promote` commit or tag from a clean tree. Do not hand-tag, and do not retarget `v*` without `promote --retarget`.
 - Upload uses an App Store Connect API key from the environment. Never commit a `.p8` file.
 - No Fastlane and no other third-party release tool. Archive with `scripts/release.py archive`.
+- Debug is Silver Dev / `.dev`. Release (TestFlight and App Store) is Silver Screen / shipping bundle id. Never put Dev branding on Release. `python3 scripts/release.py check` and `archive` enforce this.
