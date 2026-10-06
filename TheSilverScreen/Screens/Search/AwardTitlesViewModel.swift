@@ -26,7 +26,7 @@ struct AwardTitleRow: Identifiable, Equatable, Sendable {
     let imagePath: String?
     let artwork: Artwork
     let route: Route
-    /// Snapshot for the list button. Nil when the credit cannot be saved.
+    /// Snapshot for the list button. Nil until TMDB hydration succeeds — never a blank draft.
     let listDraft: ListItemDraft?
 }
 
@@ -157,8 +157,6 @@ final class AwardTitlesViewModel {
                         imagePath = detail.posterPath
                         genreNames = detail.genres.map(\.name)
                         listDraft = detail.listItem()
-                    } else {
-                        listDraft = fallbackDraft(id: movieID, kind: .movie, title: title)
                     }
                     }
                 case .series:
@@ -169,8 +167,6 @@ final class AwardTitlesViewModel {
                         imagePath = detail.posterPath
                         genreNames = detail.genres.map(\.name)
                         listDraft = detail.listItem()
-                    } else {
-                        listDraft = fallbackDraft(id: seriesID, kind: .tv, title: title)
                     }
                     }
                 case .season:
@@ -183,12 +179,6 @@ final class AwardTitlesViewModel {
                     if let series = try? await shows.series(id: seriesID) {
                         genreNames = series.genres.map(\.name)
                         listDraft = series.listItem()
-                    } else {
-                        listDraft = fallbackDraft(
-                            id: seriesID,
-                            kind: .tv,
-                            title: seriesTitle(work, fallback: title)
-                        )
                     }
                     }
                 case .episode:
@@ -212,12 +202,6 @@ final class AwardTitlesViewModel {
                     if let series = try? await shows.series(id: seriesID) {
                         genreNames = series.genres.map(\.name)
                         listDraft = series.listItem()
-                    } else {
-                        listDraft = fallbackDraft(
-                            id: seriesID,
-                            kind: .tv,
-                            title: seriesTitle(work, fallback: title)
-                        )
                     }
                     }
             }
@@ -232,24 +216,6 @@ final class AwardTitlesViewModel {
             artwork: artwork,
             route: route,
             listDraft: listDraft
-        )
-    }
-
-    private nonisolated static func seriesTitle(_ work: AwardWork, fallback: String) -> String {
-        if let seriesName = work.seriesName, !seriesName.isEmpty { return seriesName }
-        return fallback
-    }
-
-    private nonisolated static func fallbackDraft(id: Int, kind: ListItemKind, title: String) -> ListItemDraft {
-        ListItemDraft(
-            id: id,
-            kind: kind,
-            title: title,
-            imagePath: nil,
-            releaseDate: nil,
-            genreNames: [],
-            voteAverage: 0,
-            popularity: 0
         )
     }
 }
