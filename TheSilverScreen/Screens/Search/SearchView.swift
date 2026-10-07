@@ -311,20 +311,26 @@ struct SearchView: View {
     private func itemLabel(_ item: SearchResultItem) -> some View {
         switch item {
             case .movie(let row):
-                movieRowLabel(row)
+                movieRowLabel(row, density: .standard, showsKind: true)
             case .tv(let row):
-                tvRowLabel(row)
+                tvRowLabel(row, density: .standard, showsKind: true)
             case .person(let row):
-                personRowLabel(row)
+                personRowLabel(row, density: .standard)
         }
     }
 
-    private func movieRowLabel(_ row: CatalogMovieRow) -> some View {
+    private func movieRowLabel(
+        _ row: CatalogMovieRow,
+        density: CatalogRowView.Density = .compact,
+        showsKind: Bool = false
+    ) -> some View {
         CatalogRowView(
             title: row.title,
             subtitle: row.genreNames.joined(separator: ", "),
             metadata: row.formattedReleaseDate,
             userScore: row.formattedUserScore,
+            kindLabel: showsKind ? "Movie" : nil,
+            density: density,
             imagePath: row.posterPath,
             imageKind: .poster,
             placeholderSystemImage: "film",
@@ -332,12 +338,18 @@ struct SearchView: View {
         )
     }
 
-    private func tvRowLabel(_ row: CatalogTVRow) -> some View {
+    private func tvRowLabel(
+        _ row: CatalogTVRow,
+        density: CatalogRowView.Density = .compact,
+        showsKind: Bool = false
+    ) -> some View {
         CatalogRowView(
             title: row.name,
             subtitle: row.genreNames.joined(separator: ", "),
             metadata: row.formattedFirstAirDate,
             userScore: row.formattedUserScore,
+            kindLabel: showsKind ? "TV" : nil,
+            density: density,
             imagePath: row.posterPath,
             imageKind: .poster,
             placeholderSystemImage: "tv",
@@ -345,11 +357,15 @@ struct SearchView: View {
         )
     }
 
-    private func personRowLabel(_ row: CatalogPersonRow) -> some View {
+    private func personRowLabel(
+        _ row: CatalogPersonRow,
+        density: CatalogRowView.Density = .compact
+    ) -> some View {
         CatalogRowView(
             title: row.name,
             subtitle: "",
             metadata: row.knownForDepartment ?? "",
+            density: density,
             imagePath: row.profilePath,
             imageKind: .profile,
             placeholderSystemImage: "person.fill",
@@ -404,7 +420,12 @@ struct SearchView: View {
             star()
         }
         .id(rowID)
-        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 8))
+        .listRowInsets(EdgeInsets(
+            top: loadsMore ? 8 : 4,
+            leading: 16,
+            bottom: loadsMore ? 8 : 4,
+            trailing: 8
+        ))
         .listRowSeparatorBetweenCells(isFirst: index == 0, isLast: index == count - 1 && !showsLoadingRow)
         .onAppear {
             if loadsMore, index == count - 1 {

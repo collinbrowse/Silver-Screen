@@ -8,20 +8,35 @@
 import SwiftUI
 
 struct CatalogRowView: View {
+    /// Standard browse/detail lists vs dense Search typeahead / View all.
+    enum Density: Sendable, Equatable {
+        case standard
+        /// Smaller poster and tighter type so many Search hits fit on one phone screen.
+        case compact
+    }
+
     let title: String
     let subtitle: String
     let metadata: String
     /// Personal score shown under the date. Not a control.
     var userScore: String? = nil
+    /// Optional media kind under the date (View all). Drawn as an accent chip.
+    var kindLabel: String? = nil
+    var density: Density = .standard
     let imagePath: String?
     let imageKind: ImageLoader.ImageKind
     let placeholderSystemImage: String
     let imageLoader: ImageLoader
 
-    private let imageWidth: CGFloat = 120
+    private var imageWidth: CGFloat {
+        switch density {
+            case .standard: 120
+            case .compact: 40
+        }
+    }
 
     var body: some View {
-        HStack(alignment: .top, spacing: DesignSpacing.md) {
+        HStack(alignment: density == .compact ? .center : .top, spacing: density == .compact ? DesignSpacing.sm : DesignSpacing.md) {
             RemoteImageView(
                 path: imagePath,
                 kind: imageKind,
@@ -30,12 +45,22 @@ struct CatalogRowView: View {
                 imageLoader: imageLoader,
                 placeholderSystemImage: placeholderSystemImage
             )
-            VStack(alignment: .leading, spacing: DesignSpacing.sm) {
+            VStack(alignment: .leading, spacing: density == .compact ? DesignSpacing.xs : DesignSpacing.sm) {
                 Text(title)
-                    .font(DesignTypography.section)
+                    .font(density == .compact ? DesignTypography.body : DesignTypography.section)
                     .foregroundStyle(DesignTheme.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-                if !subtitle.isEmpty {
+                    .lineLimit(density == .compact ? 1 : nil)
+                    .fixedSize(horizontal: false, vertical: density != .compact)
+                if let kindLabel, !kindLabel.isEmpty {
+                    Text(kindLabel)
+                        .font(DesignTypography.chip.weight(.semibold))
+                        .foregroundStyle(DesignTheme.accentOnFill)
+                        .padding(.horizontal, DesignSpacing.sm)
+                        .padding(.vertical, 2)
+                        .background(DesignTheme.accent, in: Capsule())
+                        .accessibilityAddTraits(.isStaticText)
+                }
+                if density == .standard, !subtitle.isEmpty {
                     Text(subtitle)
                         .font(DesignTypography.metadata)
                         .foregroundStyle(DesignTheme.textSecondary)
@@ -45,7 +70,8 @@ struct CatalogRowView: View {
                     Text(metadata)
                         .font(DesignTypography.chip)
                         .foregroundStyle(DesignTheme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(density == .compact ? 1 : nil)
+                        .fixedSize(horizontal: false, vertical: density != .compact)
                 }
                 if let userScore {
                     Text(userScore)
@@ -62,7 +88,7 @@ struct CatalogRowView: View {
     }
 
     private var accessibilityLabel: String {
-        [title, subtitle, metadata, userScore ?? ""]
+        [title, kindLabel ?? "", density == .standard ? subtitle : "", metadata, userScore ?? ""]
             .filter { !$0.isEmpty }
             .joined(separator: ", ")
     }
