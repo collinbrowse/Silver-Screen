@@ -36,6 +36,7 @@ struct TVSeriesContent: Sendable, Equatable {
     let creatorsText: String
     let formattedRating: String
     let ratingAccessibilityLabel: String
+    let userScore: Double?
     let formattedUserScore: String?
     let userScoreAccessibilityLabel: String
     let userNote: String?
@@ -365,6 +366,7 @@ final class TVSeriesViewModel {
             creatorsText: creators,
             formattedRating: TMDBRating.formatted(detail.voteAverage),
             ratingAccessibilityLabel: TMDBRating.accessibilityLabel(detail.voteAverage),
+            userScore: personal.userScore,
             formattedUserScore: personal.formattedUserScore,
             userScoreAccessibilityLabel: personal.userScoreAccessibilityLabel,
             userNote: personal.userNote,
@@ -385,6 +387,7 @@ final class TVSeriesViewModel {
 private extension TVSeriesContent {
     var personal: PersonalDetail {
         PersonalDetail(
+            userScore: userScore,
             formattedUserScore: formattedUserScore,
             userScoreAccessibilityLabel: userScoreAccessibilityLabel,
             userNote: userNote,
@@ -401,6 +404,7 @@ private extension TVSeriesContent {
             creatorsText: creatorsText,
             formattedRating: formattedRating,
             ratingAccessibilityLabel: ratingAccessibilityLabel,
+            userScore: personal.userScore,
             formattedUserScore: personal.formattedUserScore,
             userScoreAccessibilityLabel: personal.userScoreAccessibilityLabel,
             userNote: personal.userNote,
@@ -421,6 +425,7 @@ private extension TVSeriesContent {
             creatorsText: creatorsText,
             formattedRating: formattedRating,
             ratingAccessibilityLabel: ratingAccessibilityLabel,
+            userScore: userScore,
             formattedUserScore: formattedUserScore,
             userScoreAccessibilityLabel: userScoreAccessibilityLabel,
             userNote: userNote,

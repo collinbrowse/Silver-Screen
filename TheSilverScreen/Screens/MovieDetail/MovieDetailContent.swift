@@ -49,6 +49,7 @@ struct MovieDetailContent: Sendable, Equatable {
     let detail: MovieDetail
     let formattedRating: String
     let ratingAccessibilityLabel: String
+    let userScore: Double?
     let formattedUserScore: String?
     let userScoreAccessibilityLabel: String
     let userNote: String?

@@ -124,6 +124,8 @@ struct MediaAnnotation: Codable, Sendable, Equatable {
 
 /// Display values for the rating card and the description/notes section.
 struct PersonalDetail: Sendable, Equatable {
+    /// Raw half-point score for the annotation editor slider.
+    var userScore: Double?
     var formattedUserScore: String?
     var userScoreAccessibilityLabel: String
     var userNote: String?
@@ -136,6 +138,7 @@ struct PersonalDetail: Sendable, Equatable {
     var showsNotesFirst: Bool { userNote != nil }
 
     static let empty = PersonalDetail(
+        userScore: nil,
         formattedUserScore: nil,
         userScoreAccessibilityLabel: "Add rating",
         userNote: nil,
@@ -144,12 +147,14 @@ struct PersonalDetail: Sendable, Equatable {
     )
 
     init(
+        userScore: Double? = nil,
         formattedUserScore: String?,
         userScoreAccessibilityLabel: String,
         userNote: String?,
         formattedRatedOn: String?,
         formattedNotedOn: String?
     ) {
+        self.userScore = userScore
         self.formattedUserScore = formattedUserScore
         self.userScoreAccessibilityLabel = userScoreAccessibilityLabel
         self.userNote = userNote
@@ -163,6 +168,7 @@ struct PersonalDetail: Sendable, Equatable {
         let notedOn = annotation?.note == nil ? nil : watchedOn
         if let score = annotation?.score {
             self.init(
+                userScore: score,
                 formattedUserScore: UserScore.formatted(score),
                 userScoreAccessibilityLabel: UserScore.accessibilityLabel(score),
                 userNote: annotation?.note,
@@ -171,6 +177,7 @@ struct PersonalDetail: Sendable, Equatable {
             )
         } else {
             self.init(
+                userScore: nil,
                 formattedUserScore: nil,
                 userScoreAccessibilityLabel: "Add rating",
                 userNote: annotation?.note,

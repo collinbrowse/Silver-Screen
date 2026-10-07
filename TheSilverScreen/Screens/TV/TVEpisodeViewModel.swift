@@ -12,6 +12,7 @@ struct TVEpisodeContent: Sendable, Equatable {
     let formattedAirDate: String
     let formattedRating: String
     let ratingAccessibilityLabel: String
+    let userScore: Double?
     let formattedUserScore: String?
     let userScoreAccessibilityLabel: String
     let userNote: String?
@@ -249,6 +250,7 @@ final class TVEpisodeViewModel {
             formattedAirDate: DisplayDate.day(episode.airDate),
             formattedRating: TMDBRating.formatted(episode.voteAverage),
             ratingAccessibilityLabel: TMDBRating.accessibilityLabel(episode.voteAverage),
+            userScore: personal.userScore,
             formattedUserScore: personal.formattedUserScore,
             userScoreAccessibilityLabel: personal.userScoreAccessibilityLabel,
             userNote: personal.userNote,
@@ -276,6 +278,7 @@ private extension TVEpisodeContent {
             formattedAirDate: formattedAirDate,
             formattedRating: formattedRating,
             ratingAccessibilityLabel: ratingAccessibilityLabel,
+            userScore: personal.userScore,
             formattedUserScore: personal.formattedUserScore,
             userScoreAccessibilityLabel: personal.userScoreAccessibilityLabel,
             userNote: personal.userNote,

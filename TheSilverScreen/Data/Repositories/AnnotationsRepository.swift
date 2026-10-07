@@ -2,7 +2,7 @@
 //  AnnotationsRepository.swift
 //  TheSilverScreen
 //
-//  Personal scores and notes. A score and a note for the same title update independently.
+//  Personal scores and notes. Score and note can be saved together or independently.
 //  A blank note is stored as absent. Writes are serialized so two saves cannot clobber each other.
 //
 
@@ -43,6 +43,32 @@ actor AnnotationsRepository {
     /// Every stored score and note. An unreadable file yields an empty list.
     func saved() async -> [MediaAnnotation] {
         (try? await loadCache()) ?? []
+    }
+
+    /// Stores a half-point score and optional note in one write.
+    /// Whitespace clears the note. The watched day is recorded only the first time.
+    @discardableResult
+    func save(
+        score: Double,
+        note: String,
+        for key: AnnotationKey,
+        at watchedAt: Date = Date()
+    ) async throws -> MediaAnnotation {
+        guard UserScore.isValid(score) else {
+            logger.error("Rejected user score outside 0.5...10", category: .persistence)
+            throw AppError.persistence
+        }
+        let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanNote = trimmed.isEmpty ? nil : trimmed
+        return try await serializeWrite { [self] in
+            try await upsert(key: key) { record in
+                record.score = score
+                record.note = cleanNote
+                if record.watchedAt == nil {
+                    record.watchedAt = watchedAt
+                }
+            }
+        }
     }
 
     /// Stores a half-point score and leaves any existing note in place.
