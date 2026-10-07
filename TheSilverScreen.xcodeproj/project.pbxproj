@@ -16,6 +16,7 @@
 		65D9AEE27EF34D66A46416D8 /* LibraryTabRoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51A119E763A84F9B8F3E4569 /* LibraryTabRoot.swift */; };
 		66816916DEDB46EBB879BBCC /* MovieDetailRouteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CF94855E80A402B8E80DFD1 /* MovieDetailRouteView.swift */; };
 		6967801423F642408F80DC3C /* NoteEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD3C6E4615F147FD88C64386 /* NoteEditorSheet.swift */; };
+		AE0100022788B823003D8011 /* AnnotationEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE0100012788B823003D8011 /* AnnotationEditorSheet.swift */; };
 		7311D7AA085146D0A093643C /* TVSeriesRouteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2ED208C11B74F8DA374D318 /* TVSeriesRouteView.swift */; };
 		73E1003114C540E38B897890 /* ZoomableImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A69A5AF5B7D4118BCE0A893 /* ZoomableImage.swift */; };
 		7D45773BF8584C32BA97ADA6 /* HeroStatusBarBleed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DF9CC0D5DED4E839CA9088D /* HeroStatusBarBleed.swift */; };
@@ -313,6 +314,7 @@
 		B10004012788B823003D8011 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
 		BBB576C749CF40B88C23B3DF /* SearchGenreMatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchGenreMatch.swift; sourceTree = "<group>"; };
 		BD3C6E4615F147FD88C64386 /* NoteEditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteEditorSheet.swift; sourceTree = "<group>"; };
+		AE0100012788B823003D8011 /* AnnotationEditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationEditorSheet.swift; sourceTree = "<group>"; };
 		BE714FA9307044B100F6F593 /* MediaTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaTypes.swift; sourceTree = "<group>"; };
 		BE714FAB3070461B00F6F593 /* SearchScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchScope.swift; sourceTree = "<group>"; };
 		C20000012788B823003D8011 /* MediaAnnotation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaAnnotation.swift; sourceTree = "<group>"; };
@@ -587,6 +589,7 @@
 			isa = PBXGroup;
 			children = (
 				BD3C6E4615F147FD88C64386 /* NoteEditorSheet.swift */,
+				AE0100012788B823003D8011 /* AnnotationEditorSheet.swift */,
 				E2A000022788B823003D8011 /* DisplayDate.swift */,
 				F20000022788B823003D8011 /* TMDBRating.swift */,
 				B10002492788B823003D8011 /* DetailCarousel.swift */,
@@ -1087,6 +1090,7 @@
 				A96046B216C64FA592FE31FA /* BrowseTabRoot.swift in Sources */,
 				0C0B35E8A55E455C83F34C40 /* ListChangeBanner.swift in Sources */,
 				6967801423F642408F80DC3C /* NoteEditorSheet.swift in Sources */,
+				AE0100022788B823003D8011 /* AnnotationEditorSheet.swift in Sources */,
 				BAE017C75D3C48E4B6FB9CAC /* YouTubeEmbedView.swift in Sources */,
 				894798FBE73B43ECABAAA2A9 /* ReviewPageList.swift in Sources */,
 				CDB9FBB0679545CD8D0F0E60 /* LoadActivityBanner.swift in Sources */,
