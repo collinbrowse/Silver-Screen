@@ -37,6 +37,17 @@ struct MovieDetailView: View {
         )
     }
 
+    private var annotationEditorBinding: Binding<AnnotationEditorSession?> {
+        Binding(
+            get: { viewModel.annotationEditor },
+            set: { newValue in
+                if newValue == nil {
+                    viewModel.dismissAnnotationEditor()
+                }
+            }
+        )
+    }
+
     var body: some View {
         Group {
             switch viewModel.state {
@@ -77,6 +88,15 @@ struct MovieDetailView: View {
             }
         }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
+        .sheet(item: annotationEditorBinding) { session in
+            AnnotationEditorSheet(
+                score: session.score,
+                note: session.note,
+                canDeleteNote: session.canDeleteNote,
+                onSave: { await viewModel.saveUserAnnotation(score: $0, note: $1) },
+                onDeleteNote: { await viewModel.deleteUserNote() }
+            )
+        }
         .fullScreenCover(item: showsToolbarFavorite ? fullscreenBinding : .constant(nil)) { selection in
             FullscreenImageViewer(
                 images: selection.images,
@@ -200,16 +220,14 @@ struct MovieDetailView: View {
                 formattedRating: content.formattedRating,
                 accessibilityLabel: content.ratingAccessibilityLabel,
                 formattedUserScore: content.formattedUserScore,
-                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel
-            ) { score in
-                Task { await viewModel.saveUserScore(score) }
-            }
+                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+                onEdit: { viewModel.openAnnotationEditor() }
+            )
             MediaDescriptionSection(
                 overview: content.detail.overview,
                 note: content.userNote,
                 notedOn: content.formattedNotedOn,
-                onSave: { await viewModel.saveUserNote($0) },
-                onDelete: { await viewModel.deleteUserNote() }
+                onEdit: { viewModel.openAnnotationEditor() }
             )
             factsCard(content)
             if !viewModel.awardRows.isEmpty {

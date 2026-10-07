@@ -12,7 +12,7 @@ struct TMDBRatingCard: View {
     let accessibilityLabel: String
     let formattedUserScore: String?
     let userScoreAccessibilityLabel: String
-    let onSelectScore: (Double) -> Void
+    let onEdit: () -> Void
 
     var body: some View {
         SurfaceCard {
@@ -46,17 +46,12 @@ struct TMDBRatingCard: View {
     }
 
     private var userSide: some View {
-        Menu {
-            ForEach(UserScore.options, id: \.self) { value in
-                Button(UserScore.formatted(value)) {
-                    onSelectScore(value)
-                }
-                .accessibilityLabel(UserScore.accessibilityLabel(value))
-            }
-        } label: {
+        Button(action: onEdit) {
             userLabel
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .buttonStyle(.plain)
         .accessibilityLabel(userScoreAccessibilityLabel)
     }
 

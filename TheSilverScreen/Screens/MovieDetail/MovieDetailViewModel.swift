@@ -11,6 +11,8 @@ final class MovieDetailViewModel {
     private(set) var state: LoadState<MovieDetailContent> = .idle
     /// Prizes for this movie, newest ceremony first. The section is hidden when empty.
     private(set) var awardRows: [AwardRow] = []
+    /// Combined rating and note editor. Cleared on save, delete, or dismiss.
+    private(set) var annotationEditor: AnnotationEditorSession?
 
     private let movieID: Int
     private let movies: MovieRepository
@@ -73,30 +75,31 @@ final class MovieDetailViewModel {
         await load()
     }
 
-    /// Saves a half-point score and puts the movie on Watched.
-    /// A score that fails to save keeps the previous score on screen.
-    /// Returns the Watched membership change when the score was saved.
-    @discardableResult
-    func saveUserScore(_ score: Double) async -> MembershipChange? {
-        guard case .loaded(let content, _) = state else { return nil }
-        do {
-            let saved = try await annotations.saveScore(score, for: .movie(movieID))
-            apply(PersonalDetail(annotation: saved))
-            return try await lists.addToWatched(content.detail.listItem(), at: saved.watchedAt ?? Date())
-        } catch is CancellationError {
-            return nil
-        } catch {
-            markPersistenceFailure()
-            return nil
-        }
+    /// Opens the combined rating and note editor from the current personal values.
+    func openAnnotationEditor() {
+        guard case .loaded(let content, _) = state else { return }
+        annotationEditor = AnnotationEditorSession(
+            score: content.userScore ?? 7.0,
+            note: content.userNote ?? "",
+            canDeleteNote: content.userNote != nil
+        )
     }
 
-    /// Saves a note. Returns false when the write fails so the editor can stay open.
-    func saveUserNote(_ note: String) async -> Bool {
-        guard case .loaded = state else { return false }
+    /// Clears the editor after cancel or swipe-to-dismiss.
+    func dismissAnnotationEditor() {
+        annotationEditor = nil
+    }
+
+    /// Saves score and note together and puts the movie on Watched.
+    /// Returns false when the write fails so the editor can stay open.
+    @discardableResult
+    func saveUserAnnotation(score: Double, note: String) async -> Bool {
+        guard case .loaded(let content, _) = state else { return false }
         do {
-            let saved = try await annotations.saveNote(note, for: .movie(movieID))
+            let saved = try await annotations.save(score: score, note: note, for: .movie(movieID))
             apply(PersonalDetail(annotation: saved))
+            annotationEditor = nil
+            _ = try await lists.addToWatched(content.detail.listItem(), at: saved.watchedAt ?? Date())
             return true
         } catch is CancellationError {
             return false
@@ -112,6 +115,7 @@ final class MovieDetailViewModel {
         do {
             let saved = try await annotations.deleteNote(for: .movie(movieID))
             apply(PersonalDetail(annotation: saved))
+            annotationEditor = nil
             return true
         } catch is CancellationError {
             return false

@@ -197,3 +197,18 @@ enum AnnotationActivity {
         return activity
     }
 }
+
+/// Presentation state for the combined rating and note editor on a detail screen.
+struct AnnotationEditorSession: Sendable, Equatable, Identifiable {
+    let id: UUID
+    let score: Double
+    let note: String
+    let canDeleteNote: Bool
+
+    init(score: Double, note: String, canDeleteNote: Bool) {
+        self.id = UUID()
+        self.score = score
+        self.note = note
+        self.canDeleteNote = canDeleteNote
+    }
+}

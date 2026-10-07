@@ -37,6 +37,8 @@ final class TVSeasonViewModel {
     private(set) var awardRows: [AwardRow] = []
     /// Series fields for list membership. Filled from the route, or from a series fetch when empty.
     private(set) var seriesSnapshot: SeriesListSnapshot
+    /// Combined rating and note editor. Cleared on save, delete, or dismiss.
+    private(set) var annotationEditor: AnnotationEditorSession?
 
     private let seriesID: Int
     private let seriesName: String
@@ -109,31 +111,33 @@ final class TVSeasonViewModel {
         await load()
     }
 
-    /// Saves a half-point score. A failure keeps the score already on screen.
-    func saveUserScore(_ score: Double) async {
-        guard case .loaded = state else { return }
-        do {
-            let saved = try await annotations.saveScore(
-                score,
-                for: .season(seriesID: seriesID, seasonNumber: seasonNumber)
-            )
-            apply(PersonalDetail(annotation: saved))
-        } catch is CancellationError {
-            return
-        } catch {
-            markPersistenceFailure()
-        }
+    /// Opens the combined rating and note editor from the current personal values.
+    func openAnnotationEditor() {
+        guard case .loaded(let content, _) = state else { return }
+        annotationEditor = AnnotationEditorSession(
+            score: content.userScore ?? 7.0,
+            note: content.userNote ?? "",
+            canDeleteNote: content.userNote != nil
+        )
     }
 
-    /// Saves a note. Returns false when the write fails so the editor can stay open.
-    func saveUserNote(_ note: String) async -> Bool {
+    /// Clears the editor after cancel or swipe-to-dismiss.
+    func dismissAnnotationEditor() {
+        annotationEditor = nil
+    }
+
+    /// Saves score and note together. Returns false when the write fails so the editor can stay open.
+    @discardableResult
+    func saveUserAnnotation(score: Double, note: String) async -> Bool {
         guard case .loaded = state else { return false }
         do {
-            let saved = try await annotations.saveNote(
-                note,
+            let saved = try await annotations.save(
+                score: score,
+                note: note,
                 for: .season(seriesID: seriesID, seasonNumber: seasonNumber)
             )
             apply(PersonalDetail(annotation: saved))
+            annotationEditor = nil
             return true
         } catch is CancellationError {
             return false
@@ -151,6 +155,7 @@ final class TVSeasonViewModel {
                 for: .season(seriesID: seriesID, seasonNumber: seasonNumber)
             )
             apply(PersonalDetail(annotation: saved))
+            annotationEditor = nil
             return true
         } catch is CancellationError {
             return false

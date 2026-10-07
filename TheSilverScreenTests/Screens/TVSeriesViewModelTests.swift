@@ -203,7 +203,7 @@ final class TVSeriesViewModelTests: XCTestCase {
                     ).showsNotesFirst)
                 }
 
-                func test_saveUserNote_whenPersistenceFails_keepsPreviousNote() async throws {
+                func test_saveUserAnnotation_whenPersistenceFails_keepsPreviousNote() async throws {
                 let store = InMemoryAnnotationsStore()
                 let annotations = AnnotationsRepository(store: store, logger: SilentLogger())
                 _ = try await annotations.saveNote("Keep this", for: .series(1396))
@@ -218,11 +218,13 @@ final class TVSeriesViewModelTests: XCTestCase {
                     lists: ListsRepository.empty()
                     )
                 await viewModel.load()
+                viewModel.openAnnotationEditor()
                 await store.setSaveError(CocoaError(.fileWriteUnknown))
 
-                let saved = await viewModel.saveUserNote("Replacement")
+                let saved = await viewModel.saveUserAnnotation(score: 7, note: "Replacement")
 
                 XCTAssertFalse(saved)
+                XCTAssertNotNil(viewModel.annotationEditor)
                 guard case .loaded(let content, activity: .failed(.persistence)) = viewModel.state else {
                 return XCTFail("Expected loaded with persistence failure, got \(viewModel.state)")
                 }

@@ -14,38 +14,28 @@ struct MediaDescriptionSection: View {
     let note: String?
     /// Day the note was last saved.
     var notedOn: String? = nil
-    let onSave: (String) async -> Bool
-    let onDelete: () async -> Bool
+    let onEdit: () -> Void
 
     @State private var page: Page
     /// True when the storyline is arriving from the right. Notes arrive from the left.
     @State private var storylineFromTrailing = true
-    @State private var editor: EditorSession?
 
     init(
         overview: String,
         note: String?,
         notedOn: String? = nil,
-        onSave: @escaping (String) async -> Bool,
-        onDelete: @escaping () async -> Bool
+        onEdit: @escaping () -> Void
     ) {
         self.overview = overview
         self.note = note
         self.notedOn = notedOn
-        self.onSave = onSave
-        self.onDelete = onDelete
+        self.onEdit = onEdit
         _page = State(initialValue: note == nil ? .description : .notes)
     }
 
     private enum Page {
         case notes
         case description
-    }
-
-    private struct EditorSession: Identifiable {
-        let id = UUID()
-        let draft: String
-        let canDelete: Bool
     }
 
     var body: some View {
@@ -64,14 +54,6 @@ struct MediaDescriptionSection: View {
         .onChange(of: note) { _, _ in
             resetPage()
         }
-        .sheet(item: $editor) { session in
-            NoteEditorSheet(
-                draft: session.draft,
-                canDelete: session.canDelete,
-                onSave: onSave,
-                onDelete: onDelete
-            )
-        }
     }
 
     private var header: some View {
@@ -79,12 +61,6 @@ struct MediaDescriptionSection: View {
             if note == nil {
                 sectionTitle("Storyline")
                 Spacer(minLength: 0)
-                Button(action: add) {
-                    Label("Add note", systemImage: "plus")
-                        .font(DesignTypography.metadata.weight(.semibold))
-                        .frame(minHeight: 44)
-                }
-                .accessibilityLabel("Add note")
             } else if page == .notes {
                 editTitle
                 Spacer(minLength: 0)
@@ -112,7 +88,7 @@ struct MediaDescriptionSection: View {
 
     /// "Your notes" and the pencil are one control, including the space between them.
     private var editTitle: some View {
-        Button(action: edit) {
+        Button(action: onEdit) {
             HStack(spacing: DesignSpacing.sm) {
                 Text("Your notes")
                     .font(labelFont)
@@ -201,13 +177,5 @@ struct MediaDescriptionSection: View {
 
     private func resetPage() {
         page = note == nil ? .description : .notes
-    }
-
-    private func add() {
-        editor = EditorSession(draft: "", canDelete: false)
-    }
-
-    private func edit() {
-        editor = EditorSession(draft: note ?? "", canDelete: note != nil)
     }
 }
