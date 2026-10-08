@@ -18,7 +18,7 @@ struct TrailerPlayerView: View {
         NavigationStack {
             YouTubeEmbedView(url: trailer.watchURL)
                 .ignoresSafeArea(edges: .bottom)
-                .background(Color.black)
+                .background(Color(.systemBackground))
                 .accessibilityLabel(trailer.title)
                 .navigationTitle(trailer.title)
                 .navigationBarTitleDisplayMode(.inline)
@@ -30,7 +30,6 @@ struct TrailerPlayerView: View {
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
-        .preferredColorScheme(.dark)
     }
 }
 
