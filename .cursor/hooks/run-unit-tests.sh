@@ -6,7 +6,10 @@
 set -u
 
 PASS_FINGERPRINT_FILE=".cursor/hooks/.last-unit-test-pass"
+LOCK_DIR="/tmp/silverscreen-stop-tests.lock"
 LOG="/tmp/silverscreen-stop-tests.log"
+XCODEBUILD_PID=""
+LOCK_HELD=0
 
 emit_empty() {
   printf '%s\n' '{}'
@@ -18,8 +21,27 @@ emit_followup() {
   exit 0
 }
 
-# If Cursor kills this hook on timeout, tell the agent instead of looking like a pass.
-trap 'emit_followup "TheSilverScreenTests stop hook was interrupted (timeout or signal). Re-run tests, then continue. Log: '"$LOG"'"' TERM INT
+release_lock() {
+  if [[ "${LOCK_HELD}" -eq 1 ]]; then
+    rm -rf "${LOCK_DIR}" 2>/dev/null || true
+    LOCK_HELD=0
+  fi
+}
+
+on_interrupt() {
+  if [[ -n "${XCODEBUILD_PID}" ]]; then
+    kill "${XCODEBUILD_PID}" 2>/dev/null || true
+    wait "${XCODEBUILD_PID}" 2>/dev/null || true
+    XCODEBUILD_PID=""
+  fi
+  release_lock
+  emit_followup "TheSilverScreenTests stop hook was interrupted (timeout or signal). The suite did not finish — do not treat this as green. Re-run \`xcodebuild test\` for TheSilverScreenTests (no -derivedDataPath), then continue. Log: ${LOG}"
+}
+
+# Cursor sends TERM on hook timeout. Do not trap INT — a child interrupt must not
+# look like a hook timeout and kick off another agent loop.
+trap on_interrupt TERM
+trap release_lock EXIT
 
 INPUT="$(cat || true)"
 
@@ -39,6 +61,20 @@ esac
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT" || emit_empty
+
+# One stop-hook xcodebuild at a time across chats/worktrees sharing this Mac.
+# mkdir is atomic; clear a stale lock if the recorded pid is dead.
+if ! mkdir "${LOCK_DIR}" 2>/dev/null; then
+  OLD_PID="$(cat "${LOCK_DIR}/pid" 2>/dev/null || true)"
+  if [[ -n "${OLD_PID}" ]] && ! kill -0 "${OLD_PID}" 2>/dev/null; then
+    rm -rf "${LOCK_DIR}" 2>/dev/null || true
+  fi
+  if ! mkdir "${LOCK_DIR}" 2>/dev/null; then
+    emit_followup "TheSilverScreenTests stop hook skipped: another unit-test run already holds ${LOCK_DIR}. Wait for it to finish (or inspect ${LOG}), then continue."
+  fi
+fi
+printf '%s\n' "$$" > "${LOCK_DIR}/pid"
+LOCK_HELD=1
 
 UDID="$(python3 -c '
 import json, subprocess, sys
@@ -123,16 +159,61 @@ if [[ -n "${FINGERPRINT}" && -f "${PASS_FINGERPRINT_FILE}" ]]; then
   fi
 fi
 
-# Do not pass -derivedDataPath: Xcode's default is hashed per project path, so
-# each git worktree stays isolated and warm across agent stops.
+# Boot preferred sim up front so install/launch is not starting from a cold device.
+xcrun simctl boot "${UDID}" >/dev/null 2>&1 || true
+
+# Split build + test. A single `xcodebuild test` often hangs after codesign on this
+# toolchain (no further log until Cursor's stop-hook timeout). build-for-testing +
+# test-without-building completes in tens of seconds once DerivedData is warm.
+# Do not pass -derivedDataPath: Xcode's default is hashed per project path.
+: >"$LOG"
 set +e
-xcodebuild test \
+xcodebuild build-for-testing \
+  -project TheSilverScreen.xcodeproj \
+  -scheme TheSilverScreen \
+  -destination "platform=iOS Simulator,id=${UDID}" \
+  >>"$LOG" 2>&1 &
+XCODEBUILD_PID=$!
+wait "${XCODEBUILD_PID}"
+BUILD_EXIT=$?
+XCODEBUILD_PID=""
+set -e
+
+if [[ "$BUILD_EXIT" -ne 0 ]]; then
+  SUMMARY="$(python3 -c '
+import re, sys
+from pathlib import Path
+path = Path(sys.argv[1])
+try:
+    text = path.read_text(errors="replace")
+except Exception:
+    print("build-for-testing failed; log unavailable at " + sys.argv[1])
+    raise SystemExit(0)
+lines = text.splitlines()
+interesting = [line for line in lines if re.search(r"error:|BUILD FAILED|\*\* BUILD|BUILD INTERRUPTED", line)]
+chunks = []
+if interesting:
+    chunks.append("Signals:\n" + "\n".join(interesting[-60:]))
+chunks.append("Log tail (" + sys.argv[1] + "):\n" + "\n".join(lines[-80:]))
+print("\n\n".join(chunks))
+' "$LOG" 2>/dev/null || true)"
+  emit_followup "TheSilverScreenTests build-for-testing failed. Fix the failures, then continue.
+
+${SUMMARY:-see ${LOG}}"
+fi
+
+set +e
+xcodebuild test-without-building \
   -project TheSilverScreen.xcodeproj \
   -scheme TheSilverScreen \
   -only-testing:TheSilverScreenTests \
   -destination "platform=iOS Simulator,id=${UDID}" \
-  >"$LOG" 2>&1
+  -parallel-testing-enabled NO \
+  >>"$LOG" 2>&1 &
+XCODEBUILD_PID=$!
+wait "${XCODEBUILD_PID}"
 EXIT_CODE=$?
+XCODEBUILD_PID=""
 set -e
 
 if [[ "$EXIT_CODE" -eq 0 ]]; then
@@ -157,12 +238,11 @@ lines = text.splitlines()
 interesting = []
 for line in lines:
     if re.search(
-        r"error:|TEST FAILED|TEST SUCCEEDED|failed \(|\*\* TEST|Test Case .* failed",
+        r"error:|TEST FAILED|TEST SUCCEEDED|failed \(|\*\* TEST|Test Case .* failed|BUILD INTERRUPTED",
         line,
     ):
         interesting.append(line)
 
-# Prefer failed test case names near the end.
 failed_cases = [
     line for line in lines
     if "Test Case" in line and " failed (" in line

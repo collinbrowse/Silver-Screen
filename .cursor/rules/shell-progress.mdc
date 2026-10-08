@@ -36,4 +36,5 @@ grep -E 'Test Case|TEST SUCCEEDED|TEST FAILED|error:.*\.swift' /tmp/search-tests
 ## DerivedData and test scope
 
 - Do **not** pass `-derivedDataPath` for normal verification. Use Xcode’s default DerivedData so each git worktree stays isolated and warm across runs. Inventing `/tmp/…` DerivedData forces a cold full rebuild and can take minutes.
+- Prefer `xcodebuild build-for-testing` then `xcodebuild test-without-building` over a single `xcodebuild test` — the combined command can hang after codesign with no further log.
 - Mid-turn checks may use `-only-testing:TheSilverScreenTests/<ClassUnderChange>`. That is not “suite green.” The stop hook runs the full `TheSilverScreenTests` target (and skips only when the source fingerprint matches the last pass).

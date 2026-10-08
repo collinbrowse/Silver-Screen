@@ -4,9 +4,9 @@
     "stop": [
       {
         "command": ".cursor/hooks/run-unit-tests.sh",
-        "timeout": 300,
+        "timeout": 600,
         "failClosed": false,
-        "loop_limit": 3
+        "loop_limit": 1
       }
     ],
     "beforeShellExecution": [
