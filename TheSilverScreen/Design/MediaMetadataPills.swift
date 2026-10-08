@@ -2,7 +2,7 @@
 //  MediaMetadataPills.swift
 //  TheSilverScreen
 //
-//  Genre pills and trailer play pills on detail screens.
+//  Trailer play pills (and optional genre pills) on detail screens.
 //
 
 import SwiftUI

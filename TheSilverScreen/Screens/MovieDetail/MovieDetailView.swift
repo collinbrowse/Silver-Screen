@@ -142,15 +142,23 @@ struct MovieDetailView: View {
                     transitionNamespace: heroTransition,
                     onOpenPoster: { viewModel.openPoster() },
                     onOpenImage: { viewModel.openImages(initialID: $0) },
-                    genreNames: content.detail.genres.map(\.name),
                     streamingProviders: content.detail.streamingProviders
                 ) {
-                    if !content.detail.trailers.isEmpty {
-                        MediaMetadataPills(
-                            trailers: content.detail.trailers,
-                            loadingTrailerID: loadingTrailerID,
-                            playTrailer: { presentTrailer($0, loadingID: $loadingTrailerID, selection: $playingTrailer) }
-                        )
+                    VStack(alignment: .leading, spacing: DesignSpacing.lg) {
+                        if !content.heroMetadataLine.isEmpty {
+                            Text(content.heroMetadataLine)
+                                .font(DesignTypography.metadata)
+                                .foregroundStyle(DesignTheme.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityLabel(content.heroMetadataAccessibilityLabel)
+                        }
+                        if !content.detail.trailers.isEmpty {
+                            MediaMetadataPills(
+                                trailers: content.detail.trailers,
+                                loadingTrailerID: loadingTrailerID,
+                                playTrailer: { presentTrailer($0, loadingID: $loadingTrailerID, selection: $playingTrailer) }
+                            )
+                        }
                     }
                 }
 

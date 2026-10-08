@@ -23,6 +23,14 @@ enum DisplayDate {
         return stable.formatted(style)
     }
 
+    /// Calendar year for a TMDB date, or `nil` when the date is missing.
+    static func year(_ date: Date?) -> String? {
+        guard let date else { return nil }
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = TimeZone(secondsFromGMT: 0)!
+        return String(utc.component(.year, from: date))
+    }
+
     /// The calendar day a person rated a title or saved a note, in the device timezone.
     static func localDay(_ date: Date, locale: Locale = .current) -> String {
         date.formatted(
