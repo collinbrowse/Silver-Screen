@@ -15,6 +15,8 @@ struct MacSearchField: View {
     var prompt: String
     /// Mirrors keyboard focus when the screen needs to dismiss the field itself.
     var isFocused: Binding<Bool>?
+    /// Called when the user submits from the keyboard (Search key / Return).
+    var onSubmit: (() -> Void)?
 
     @FocusState private var focused: Bool
 
@@ -29,6 +31,7 @@ struct MacSearchField: View {
                 .autocorrectionDisabled()
                 .submitLabel(.search)
                 .font(DesignTypography.body)
+                .onSubmit { onSubmit?() }
             if !text.isEmpty {
                 Button {
                     text = ""
@@ -73,7 +76,7 @@ extension View {
     /// focus bounds, which UIKit rejects and terminates the process.
     @ViewBuilder
     func navigationSearch(text: Binding<String>, prompt: String) -> some View {
-        navigationSearch(text: text, prompt: prompt, isFocused: nil)
+        navigationSearch(text: text, prompt: prompt, isFocused: nil, onSubmit: nil)
     }
 
     @ViewBuilder
@@ -82,9 +85,24 @@ extension View {
         prompt: String,
         isFocused: Binding<Bool>?
     ) -> some View {
+        navigationSearch(text: text, prompt: prompt, isFocused: isFocused, onSubmit: nil)
+    }
+
+    @ViewBuilder
+    func navigationSearch(
+        text: Binding<String>,
+        prompt: String,
+        isFocused: Binding<Bool>?,
+        onSubmit: (() -> Void)?
+    ) -> some View {
         if ProcessInfo.processInfo.isiOSAppOnMac {
             safeAreaInset(edge: .top, spacing: 0) {
-                MacSearchField(text: text, prompt: prompt, isFocused: isFocused)
+                MacSearchField(
+                    text: text,
+                    prompt: prompt,
+                    isFocused: isFocused,
+                    onSubmit: onSubmit
+                )
             }
         } else {
             searchable(
@@ -92,6 +110,9 @@ extension View {
                 placement: .navigationBarDrawer(displayMode: .always),
                 prompt: prompt
             )
+            .onSubmit(of: .search) {
+                onSubmit?()
+            }
         }
     }
 }
