@@ -159,7 +159,7 @@ struct LibraryDetailView: View {
         } label: {
             CatalogRowView(
                 title: entry.title,
-                subtitle: entry.genreNames.joined(separator: ", "),
+                subtitle: entry.genreNames.prefix(2).joined(separator: ", "),
                 metadata: metadata(for: entry),
                 userScore: viewModel.userScores[entry.itemKey]?.formatted,
                 imagePath: entry.imagePath,
@@ -183,7 +183,7 @@ struct LibraryDetailView: View {
     private func metadata(for entry: ListEntry) -> String {
         switch entry.kind {
             case .person: "Person"
-            case .movie, .tv: DisplayDate.day(entry.releaseDate)
+            case .movie, .tv: DisplayDate.year(entry.releaseDate) ?? ""
         }
     }
 

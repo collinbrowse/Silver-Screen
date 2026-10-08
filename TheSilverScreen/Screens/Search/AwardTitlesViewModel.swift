@@ -210,7 +210,7 @@ final class AwardTitlesViewModel {
             id: credit.key,
             title: title,
             awardYear: String(credit.year),
-            genreLine: genreNames.joined(separator: ", "),
+            genreLine: genreNames.prefix(2).joined(separator: ", "),
             userScore: scoreKey.flatMap { scores[$0]?.formatted },
             imagePath: imagePath,
             artwork: artwork,
