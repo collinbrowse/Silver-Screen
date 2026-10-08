@@ -1,0 +1,34 @@
+---
+description: Keep long-running shell output observable — no buffering tail on builds/tests.
+alwaysApply: true
+---
+
+# Shell progress for long commands
+
+Agents must be able to see progress while `xcodebuild`, installs, and other long jobs run. A pipe that buffers until EOF hides that progress and looks like a hang.
+
+## Do not
+
+- Pipe a long-running command into `tail -N` **without** `-f`. `tail -N` waits for the producer to exit, so the terminal log stays empty for the whole build.
+- Pipe `tee` into a filter (`cmd | tee log | grep …`). When `grep` matches rarely (most of an `xcodebuild` compile), the pipe buffer fills, `tee` blocks, and the build looks hung while the log file also stops growing.
+- Rely on a filtering pipe alone (`… | grep …`) when you also need a full log for diagnosis — grep’s stdout can look idle during compile, and a failed match leaves you with nothing to inspect.
+
+## Do
+
+- End the live command at `tee` so stdout keeps flowing into the session log **and** a file:
+
+```bash
+xcodebuild test -scheme TheSilverScreen \
+  -destination 'platform=iOS Simulator,id=<iphone-17e-udid>' \
+  -only-testing:TheSilverScreenTests/SearchViewModelTests \
+  2>&1 | tee /tmp/search-tests.log
+```
+
+- After the command finishes (or in a **separate** check while it runs), summarize from the file:
+
+```bash
+tail -n 40 /tmp/search-tests.log
+grep -E 'Test Case|TEST SUCCEEDED|TEST FAILED|error:.*\.swift' /tmp/search-tests.log | tail -n 50
+```
+
+`tail -f` on the log file is fine for a live follow. The ban is `tail -N` / `grep` **on the live command pipe**.
