@@ -174,23 +174,23 @@ struct TVSeriesView: View {
             transitionNamespace: heroTransition,
             onOpenPoster: { viewModel.openPoster() },
             onOpenImage: { viewModel.openImages(initialID: $0) },
-            genreNames: content.detail.genres.map(\.name),
             streamingProviders: content.detail.streamingProviders
         ) {
-            VStack(alignment: .leading, spacing: DesignSpacing.sm) {
-                Text("First aired \(content.formattedFirstAirDate)")
-                Text(content.formattedLastAirDate)
-                Text(content.creatorsText)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .font(DesignTypography.metadata)
-            .foregroundStyle(DesignTheme.textSecondary)
-            if !content.detail.trailers.isEmpty {
-                MediaMetadataPills(
-                    trailers: content.detail.trailers,
-                    loadingTrailerID: loadingTrailerID,
-                    playTrailer: { presentTrailer($0, loadingID: $loadingTrailerID, selection: $playingTrailer) }
-                )
+            VStack(alignment: .leading, spacing: DesignSpacing.lg) {
+                if !content.heroMetadataLine.isEmpty {
+                    Text(content.heroMetadataLine)
+                        .font(DesignTypography.metadata)
+                        .foregroundStyle(DesignTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityLabel(content.heroMetadataAccessibilityLabel)
+                }
+                if !content.detail.trailers.isEmpty {
+                    MediaMetadataPills(
+                        trailers: content.detail.trailers,
+                        loadingTrailerID: loadingTrailerID,
+                        playTrailer: { presentTrailer($0, loadingID: $loadingTrailerID, selection: $playingTrailer) }
+                    )
+                }
             }
         }
     }
@@ -241,7 +241,7 @@ struct TVSeriesView: View {
                         .carouselCard(width: 140, aspectRatio: 2 / 3)
                         VStack(alignment: .leading, spacing: DesignSpacing.xs) {
                             Text(season.name)
-                                .font(DesignTypography.metadata.weight(.semibold))
+                                .font(DesignTypography.section.weight(.semibold))
                                 .foregroundStyle(DesignTheme.textPrimary)
                                 .fixedSize(horizontal: false, vertical: true)
                             Text(season.formattedAirDate)

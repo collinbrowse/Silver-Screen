@@ -31,9 +31,9 @@ struct TVSeriesContent: Sendable, Equatable {
     }
 
     let detail: TVSeriesDetail
-    let formattedFirstAirDate: String
-    let formattedLastAirDate: String
-    let creatorsText: String
+    /// `2 Seasons · Drama · 2008 - 2013` under the title. Empty when every part is missing.
+    let heroMetadataLine: String
+    let heroMetadataAccessibilityLabel: String
     let formattedRating: String
     let ratingAccessibilityLabel: String
     let formattedUserScore: String?
@@ -342,8 +342,6 @@ final class TVSeriesViewModel {
         reviews: TVSeriesContent.ReviewsSection?,
         personal: PersonalDetail
     ) -> TVSeriesContent {
-        let creators = detail.creators.isEmpty ? "Creator unknown" : detail.creators.joined(separator: ", ")
-        let lastAirDate = detail.lastAirDate.map { "Last Air Date: \(DisplayDate.day($0))" } ?? "Last Air Date: Unknown"
         let seasons = detail.seasons.map { season in
             TVSeriesContent.SeasonRow(
                 id: season.id,
@@ -358,11 +356,11 @@ final class TVSeriesViewModel {
             TVSeriesContent.RecommendationRow(id: $0.id, name: $0.name, posterPath: $0.posterPath)
         }
         let reviewsSection = reviews
+        let heroMetadata = formatHeroMetadata(detail: detail)
         return TVSeriesContent(
             detail: detail,
-            formattedFirstAirDate: DisplayDate.day(detail.firstAirDate),
-            formattedLastAirDate: lastAirDate,
-            creatorsText: creators,
+            heroMetadataLine: heroMetadata.line,
+            heroMetadataAccessibilityLabel: heroMetadata.accessibility,
             formattedRating: TMDBRating.formatted(detail.voteAverage),
             ratingAccessibilityLabel: TMDBRating.accessibilityLabel(detail.voteAverage),
             formattedUserScore: personal.formattedUserScore,
@@ -380,6 +378,44 @@ final class TVSeriesViewModel {
     private static func episodeCountText(_ count: Int) -> String {
         count == 1 ? "1 episode" : "\(count) episodes"
     }
+
+    /// Season count (excluding specials) · leading genres · first–last air years.
+    static func formatHeroMetadata(detail: TVSeriesDetail) -> (line: String, accessibility: String) {
+        var visible: [String] = []
+        var spoken: [String] = []
+
+        let seasonCount = detail.seasons.filter { $0.seasonNumber > 0 }.count
+        if seasonCount > 0 {
+            let text = seasonCount == 1 ? "1 Season" : "\(seasonCount) Seasons"
+            visible.append(text)
+            spoken.append(text)
+        }
+
+        let leadingGenres = detail.genres.map(\.name).prefix(2).filter { !$0.isEmpty }
+        if !leadingGenres.isEmpty {
+            let genreText = leadingGenres.joined(separator: ", ")
+            visible.append(genreText)
+            spoken.append(genreText)
+        }
+
+        let firstYear = DisplayDate.year(detail.firstAirDate)
+        let lastYear = DisplayDate.year(detail.lastAirDate)
+        switch (firstYear, lastYear) {
+            case let (first?, last?):
+                visible.append("\(first) - \(last)")
+                spoken.append("\(first) to \(last)")
+            case let (first?, nil):
+                visible.append(first)
+                spoken.append(first)
+            case let (nil, last?):
+                visible.append(last)
+                spoken.append(last)
+            case (nil, nil):
+                break
+        }
+
+        return (visible.joined(separator: " · "), spoken.joined(separator: ", "))
+    }
 }
 
 private extension TVSeriesContent {
@@ -396,9 +432,8 @@ private extension TVSeriesContent {
     func withPersonal(_ personal: PersonalDetail) -> TVSeriesContent {
         TVSeriesContent(
             detail: detail,
-            formattedFirstAirDate: formattedFirstAirDate,
-            formattedLastAirDate: formattedLastAirDate,
-            creatorsText: creatorsText,
+            heroMetadataLine: heroMetadataLine,
+            heroMetadataAccessibilityLabel: heroMetadataAccessibilityLabel,
             formattedRating: formattedRating,
             ratingAccessibilityLabel: ratingAccessibilityLabel,
             formattedUserScore: personal.formattedUserScore,
@@ -416,9 +451,8 @@ private extension TVSeriesContent {
     func replacing(reviews: ReviewsSection?) -> TVSeriesContent {
         TVSeriesContent(
             detail: detail,
-            formattedFirstAirDate: formattedFirstAirDate,
-            formattedLastAirDate: formattedLastAirDate,
-            creatorsText: creatorsText,
+            heroMetadataLine: heroMetadataLine,
+            heroMetadataAccessibilityLabel: heroMetadataAccessibilityLabel,
             formattedRating: formattedRating,
             ratingAccessibilityLabel: ratingAccessibilityLabel,
             formattedUserScore: formattedUserScore,
