@@ -110,6 +110,9 @@ extension View {
                 placement: .navigationBarDrawer(displayMode: .always),
                 prompt: prompt
             )
+            .onSubmit(of: .search) {
+                onSubmit?()
+            }
         }
     }
 }

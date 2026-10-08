@@ -8,10 +8,10 @@
 import SwiftUI
 
 struct CatalogRowView: View {
-    /// Standard browse/detail lists vs dense Search typeahead / View all.
+    /// Standard browse/detail / Search View-all rows vs dense Search typeahead.
     enum Density: Sendable, Equatable {
         case standard
-        /// Smaller poster and tighter type so many Search hits fit on one phone screen.
+        /// Smaller poster and tighter type so many Search typeahead hits fit on one phone screen.
         case compact
     }
 
@@ -20,7 +20,7 @@ struct CatalogRowView: View {
     let metadata: String
     /// Personal score shown under the date. Not a control.
     var userScore: String? = nil
-    /// Optional media kind under the date (View all). Drawn as an accent chip.
+    /// Optional media kind chip above genres and date (Search View all).
     var kindLabel: String? = nil
     var density: Density = .standard
     let imagePath: String?

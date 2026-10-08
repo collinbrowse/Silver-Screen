@@ -10,7 +10,6 @@
 		03E398084C83473897647EA3 /* FittingSegmentedControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0297CAE4343649148152A5AA /* FittingSegmentedControl.swift */; };
 		0C0B35E8A55E455C83F34C40 /* ListChangeBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40E232642C3849EDA1C21FB7 /* ListChangeBanner.swift */; };
 		27947E37F891460DBF889492 /* SearchFocusObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5939FD58B12C4CEC80243B31 /* SearchFocusObserver.swift */; };
-		29D0CFB1C38C4A9B92AEAFA4 /* SearchGenreMatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBB576C749CF40B88C23B3DF /* SearchGenreMatch.swift */; };
 		3D7D58FD6AC042FE8CEBEC9D /* FullscreenImagePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D8BDC41D4CE4FD397D60DBC /* FullscreenImagePage.swift */; };
 		5E0E7AEC654544BE8CDB8F31 /* TVEpisodeRouteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EE6B7491F684DA4874CD1D5 /* TVEpisodeRouteView.swift */; };
 		65D9AEE27EF34D66A46416D8 /* LibraryTabRoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51A119E763A84F9B8F3E4569 /* LibraryTabRoot.swift */; };
@@ -313,7 +312,6 @@
 		B10003192788B823003D8011 /* PersonDetailViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonDetailViewModelTests.swift; sourceTree = "<group>"; };
 		B100031B2788B823003D8011 /* CreditsListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditsListViewModelTests.swift; sourceTree = "<group>"; };
 		B10004012788B823003D8011 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
-		BBB576C749CF40B88C23B3DF /* SearchGenreMatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchGenreMatch.swift; sourceTree = "<group>"; };
 		BD3C6E4615F147FD88C64386 /* NoteEditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoteEditorSheet.swift; sourceTree = "<group>"; };
 		BE714FA9307044B100F6F593 /* MediaTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaTypes.swift; sourceTree = "<group>"; };
 		BE714FAB3070461B00F6F593 /* SearchScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchScope.swift; sourceTree = "<group>"; };
@@ -758,7 +756,6 @@
 			isa = PBXGroup;
 			children = (
 				BE714FAB3070461B00F6F593 /* SearchScope.swift */,
-				BBB576C749CF40B88C23B3DF /* SearchGenreMatch.swift */,
 				7ACD7D92A3E24C179BCBB979 /* SearchListing.swift */,
 				F15000022788B823003D8011 /* SearchFilterPills.swift */,
 				F15000042788B823003D8011 /* SearchViewAllRow.swift */,
@@ -1107,7 +1104,6 @@
 				3D7D58FD6AC042FE8CEBEC9D /* FullscreenImagePage.swift in Sources */,
 				E3A0FE7867AF44B1B9E29BF3 /* CreditsListRow.swift in Sources */,
 				C7CEF1A6B5614A5E8F40C54E /* BiographySection.swift in Sources */,
-				29D0CFB1C38C4A9B92AEAFA4 /* SearchGenreMatch.swift in Sources */,
 				92749A1D386F40EA875C9E69 /* SearchListing.swift in Sources */,
 				27947E37F891460DBF889492 /* SearchFocusObserver.swift in Sources */,
 				A4FEC6FC4B73434EA8963693 /* AwardShelfCard.swift in Sources */,
