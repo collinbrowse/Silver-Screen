@@ -83,6 +83,8 @@ final class SearchViewModelTests: XCTestCase {
         }
         XCTAssertEqual(sections.movies.map(\.id), [240])
         XCTAssertEqual(sections.tv.map(\.name), ["Breaking Bad"])
+        XCTAssertEqual(sections.tv[0].genreNames, ["Drama", "Crime"])
+        XCTAssertEqual(sections.tv[0].formattedFirstAirDate, "2008")
         XCTAssertEqual(sections.people.map(\.name), ["Brad Pitt"])
         XCTAssertFalse(viewModel.showsFilterPills)
         XCTAssertEqual(viewModel.typeNiche, .all)

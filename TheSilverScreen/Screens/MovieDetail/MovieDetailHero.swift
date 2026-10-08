@@ -31,8 +31,9 @@ struct DetailHero<Metadata: View>: View {
     let transitionNamespace: Namespace.ID
     let onOpenPoster: () -> Void
     let onOpenImage: (String) -> Void
-    /// Genre names across the full width under the poster. Streaming logos use the same inset and top spacing.
+    /// Optional genre pills under the poster. Movies put genres in the hero metadata line instead.
     var genreNames: [String] = []
+    /// Streaming logos share the genre-row inset and top spacing.
     var streamingProviders: [StreamingProvider] = []
     @ViewBuilder let metadata: () -> Metadata
 

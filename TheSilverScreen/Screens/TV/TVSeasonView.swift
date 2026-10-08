@@ -153,15 +153,21 @@ struct TVSeasonView: View {
             onOpenImage: { viewModel.openImages(initialID: $0) },
             streamingProviders: content.streamingProviders
         ) {
-            Text(content.formattedAirDate)
-                .font(DesignTypography.metadata)
-                .foregroundStyle(DesignTheme.textSecondary)
-            if !content.trailers.isEmpty {
-                MediaMetadataPills(
-                    trailers: content.trailers,
-                    loadingTrailerID: loadingTrailerID,
-                    playTrailer: { presentTrailer($0, loadingID: $loadingTrailerID, selection: $playingTrailer) }
-                )
+            VStack(alignment: .leading, spacing: DesignSpacing.lg) {
+                if !content.heroMetadataLine.isEmpty {
+                    Text(content.heroMetadataLine)
+                        .font(DesignTypography.metadata)
+                        .foregroundStyle(DesignTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityLabel(content.heroMetadataAccessibilityLabel)
+                }
+                if !content.trailers.isEmpty {
+                    MediaMetadataPills(
+                        trailers: content.trailers,
+                        loadingTrailerID: loadingTrailerID,
+                        playTrailer: { presentTrailer($0, loadingID: $loadingTrailerID, selection: $playingTrailer) }
+                    )
+                }
             }
         }
     }

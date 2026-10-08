@@ -28,7 +28,7 @@ final class CollectionViewModelTests: XCTestCase {
         XCTAssertEqual(content.posterPath, "/collection.jpg")
         XCTAssertEqual(content.parts.map(\.title), ["The Godfather", "The Godfather Part II"])
         XCTAssertEqual(content.parts[0].genreNames, ["Drama"])
-        XCTAssertEqual(content.parts[0].formattedReleaseDate, "Mar 14, 1972")
+        XCTAssertEqual(content.parts[0].formattedReleaseDate, "1972")
     }
 
     func test_load_sortsUndatedPartsBeforeOldestRelease() async {

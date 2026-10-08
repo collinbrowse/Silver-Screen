@@ -347,7 +347,7 @@ struct BrowseRow: Sendable, Equatable, Identifiable {
         genreNames.joined(separator: ", ")
     }
 
-    init(candidate: BrowseCandidate, locale: Locale = .current) {
+    init(candidate: BrowseCandidate) {
         identity = candidate.identity
         media = candidate.media
         mediaID = candidate.id
@@ -355,11 +355,11 @@ struct BrowseRow: Sendable, Equatable, Identifiable {
         posterPath = candidate.posterPath
         switch candidate.media {
             case .movie:
-                genreNames = MovieGenreCatalog.names(for: candidate.genreIDs)
+                genreNames = Array(MovieGenreCatalog.names(for: candidate.genreIDs).prefix(2))
             case .tv:
-                genreNames = TVGenreCatalog.names(for: candidate.genreIDs)
+                genreNames = Array(TVGenreCatalog.names(for: candidate.genreIDs).prefix(2))
         }
-        formattedDate = DisplayDate.day(candidate.date, locale: locale)
+        formattedDate = DisplayDate.year(candidate.date) ?? ""
         date = candidate.date
         voteAverage = candidate.voteAverage
         genreIDs = candidate.genreIDs

@@ -335,7 +335,7 @@ final class BrowseListViewModel {
     }
 
     private func publish(activity: LoadActivity) {
-        let rows = currentCandidates.map { BrowseRow(candidate: $0, locale: locale) }
+        let rows = currentCandidates.map { BrowseRow(candidate: $0) }
         switch media {
             case .movies:
                 hasMore = movieHasMore

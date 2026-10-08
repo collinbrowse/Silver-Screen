@@ -25,9 +25,8 @@ final class TVSeriesViewModelTests: XCTestCase {
             return XCTFail("Expected loaded, got \(viewModel.state)")
         }
         XCTAssertEqual(content.detail.name, "Breaking Bad")
-        XCTAssertEqual(content.formattedFirstAirDate, "Jan 20, 2008")
-        XCTAssertEqual(content.formattedLastAirDate, "Last Air Date: Sep 29, 2013")
-        XCTAssertEqual(content.creatorsText, "Vince Gilligan")
+        XCTAssertEqual(content.heroMetadataLine, "2 Seasons · Drama · 2008 - 2013")
+        XCTAssertEqual(content.heroMetadataAccessibilityLabel, "2 Seasons, Drama, 2008 to 2013")
         XCTAssertEqual(content.formattedRating, "8.9 / 10")
         XCTAssertEqual(content.ratingAccessibilityLabel, "Rated 8.9 out of 10")
         XCTAssertEqual(content.seasons.map(\.seasonNumber), [1, 2])
@@ -100,29 +99,28 @@ final class TVSeriesViewModelTests: XCTestCase {
         XCTAssertEqual(activity, .failed(.offline))
     }
 
-    func test_load_usesUnknownCopyWhenCreatorAndLastAirDateAreMissing() async {
+    func test_load_whenSparseSeries_omitsHeroMetadataParts() async {
         let payload = Data("""
             {"id": 1, "name": "Untitled", "overview": "", "created_by": []}
             """.utf8)
-            let client = SequencingHTTPClient(stubs: [
-                .success(payload),
-                .failure(URLError(.notConnectedToInternet)),
-                ])
-            let viewModel = TVSeriesViewModel(seriesID: 1, shows: TVRepository.test(client: client),
-                annotations: AnnotationsRepository.empty(),
-                lists: ListsRepository.empty()
-                )
+        let client = SequencingHTTPClient(stubs: [
+            .success(payload),
+            .failure(URLError(.notConnectedToInternet)),
+            ])
+        let viewModel = TVSeriesViewModel(seriesID: 1, shows: TVRepository.test(client: client),
+            annotations: AnnotationsRepository.empty(),
+            lists: ListsRepository.empty()
+        )
 
-            await viewModel.load()
+        await viewModel.load()
 
-            guard case .loaded(let content, _) = viewModel.state else {
+        guard case .loaded(let content, _) = viewModel.state else {
             return XCTFail("Expected loaded, got \(viewModel.state)")
-            }
-            XCTAssertEqual(content.creatorsText, "Creator unknown")
-            XCTAssertEqual(content.formattedLastAirDate, "Last Air Date: Unknown")
-            XCTAssertEqual(content.formattedRating, "Unavailable")
-            XCTAssertEqual(content.ratingAccessibilityLabel, "TMDB rating unavailable")
-            }
+        }
+        XCTAssertEqual(content.heroMetadataLine, "")
+        XCTAssertEqual(content.formattedRating, "Unavailable")
+        XCTAssertEqual(content.ratingAccessibilityLabel, "TMDB rating unavailable")
+    }
 
             func test_openPoster_setsFullscreenPoster() async {
             let client = RoutingHTTPClient(routes: [

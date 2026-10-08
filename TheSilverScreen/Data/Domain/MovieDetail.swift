@@ -19,6 +19,8 @@ struct MovieDetail: Sendable, Identifiable, Equatable, Hashable {
     let voteAverage: Double
     /// TMDB popularity copied onto a list entry. Zero when the payload omitted it.
     let popularity: Double
+    /// Runtime in minutes. `nil` when TMDB omitted it or reported zero.
+    let runtimeMinutes: Int?
     let genres: [MovieGenre]
     /// Official YouTube trailers, in TMDB order.
     let trailers: [MediaTrailer]

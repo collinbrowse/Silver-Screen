@@ -31,7 +31,7 @@ func test_load_whenClientIsOffline_setsFailedState() async {
 
 Empty test bodies and Xcode placeholders (`testExample`, `testPerformanceExample`) are banned. `scripts/validate-tests.py` fails the harness job if a test asserts nothing.
 
-When verifying mid-turn with `xcodebuild test`, do not pass `-derivedDataPath` (use Xcode’s default). Narrow with `-only-testing:TheSilverScreenTests/<Class>`; the stop hook still runs the full target — see [`shell-progress.mdc`](shell-progress.mdc).
+When verifying mid-turn with `xcodebuild test`, do not pass `-derivedDataPath` (use Xcode’s default). Narrow with `-only-testing:TheSilverScreenTests/<Class>`; the stop hook still runs the full target — see [`shell-progress.mdc`](.cursor/rules/shell-progress.mdc).
 
 - View models are `@MainActor`: mark tests `@MainActor` and `await` the work instead of using expectations with timeouts.
 - One behavior per test. Add a regression test with every bug fix.

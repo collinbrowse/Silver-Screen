@@ -306,7 +306,8 @@ final class MovieRepository: Sendable {
         streamingProviders: [StreamingProvider] = [],
         logger: any AppLogging
     ) -> MovieDetail {
-        MovieDetail(
+        let runtime = dto.runtime.flatMap { $0 > 0 ? $0 : nil }
+        return MovieDetail(
             id: dto.id,
             title: dto.title,
             overview: dto.overview?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
@@ -314,6 +315,7 @@ final class MovieRepository: Sendable {
             releaseDate: parseReleaseDate(dto.releaseDate ?? ""),
             voteAverage: dto.voteAverage,
             popularity: dto.popularity ?? 0,
+            runtimeMinutes: runtime,
             genres: (dto.genres ?? []).map { MovieGenre(id: $0.id, name: $0.name) },
             trailers: trailers,
             streamingProviders: streamingProviders,

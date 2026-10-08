@@ -121,6 +121,7 @@ enum TMDBFixtures {
           "poster_path": "/poster.jpg",
           "release_date": "1994-09-23",
           "vote_average": 8.7,
+          "runtime": 142,
           "budget": 25000000,
           "revenue": 28341469,
           "genres": [
