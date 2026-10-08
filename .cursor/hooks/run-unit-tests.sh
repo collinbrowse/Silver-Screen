@@ -1,12 +1,25 @@
 #!/usr/bin/env bash
-# stop hook: run TheSilverScreenTests. Fail-open (print {}) if aborted, missing simulator, or unexpected errors.
+# stop hook: run TheSilverScreenTests against Xcode's default DerivedData (per-worktree).
+# Skip xcodebuild when the relevant sources match the last passing fingerprint.
+# Fail-open (print {}) if aborted, missing simulator, or unexpected errors.
 
 set -u
+
+PASS_FINGERPRINT_FILE=".cursor/hooks/.last-unit-test-pass"
+LOG="/tmp/silverscreen-stop-tests.log"
 
 emit_empty() {
   printf '%s\n' '{}'
   exit 0
 }
+
+emit_followup() {
+  python3 -c 'import json,sys; print(json.dumps({"followup_message": sys.argv[1]}))' "$1"
+  exit 0
+}
+
+# If Cursor kills this hook on timeout, tell the agent instead of looking like a pass.
+trap 'emit_followup "TheSilverScreenTests stop hook was interrupted (timeout or signal). Re-run tests, then continue. Log: '"$LOG"'"' TERM INT
 
 INPUT="$(cat || true)"
 
@@ -66,21 +79,52 @@ if [[ -z "${UDID}" ]]; then
   emit_empty
 fi
 
-# Cheap gate before spending a simulator boot: empty / placeholder tests.
+# Cheap gate before spending a simulator run: empty / placeholder tests.
 if ! python3 "$ROOT/scripts/validate-tests.py" >/dev/null 2>&1; then
   DETAIL="$(python3 "$ROOT/scripts/validate-tests.py" 2>&1 || true)"
-  python3 -c '
-import json, sys
-print(json.dumps({
-    "followup_message": "Test suite gates failed (empty or placeholder tests). Fix these before continuing.\n\n" + sys.argv[1]
-}))
-' "$DETAIL"
-  exit 0
+  emit_followup "Test suite gates failed (empty or placeholder tests). Fix these before continuing.
+
+${DETAIL}"
 fi
 
-LOG="$(mktemp -t urbnflicks-tests.XXXXXX)"
-trap 'rm -f "$LOG"' EXIT
+FINGERPRINT="$(python3 -c '
+import hashlib
+from pathlib import Path
 
+root = Path(".").resolve()
+paths = []
+for pattern in (
+    "TheSilverScreen/**/*.swift",
+    "TheSilverScreenTests/**/*.swift",
+):
+    paths.extend(sorted(root.glob(pattern)))
+for extra in (
+    "TheSilverScreen.xcodeproj/project.pbxproj",
+    "Version.xcconfig",
+):
+    path = root / extra
+    if path.is_file():
+        paths.append(path)
+
+digest = hashlib.sha256()
+for path in paths:
+    rel = path.relative_to(root).as_posix()
+    digest.update(rel.encode())
+    digest.update(b"\0")
+    digest.update(path.read_bytes())
+    digest.update(b"\0")
+print(digest.hexdigest())
+' 2>/dev/null || true)"
+
+if [[ -n "${FINGERPRINT}" && -f "${PASS_FINGERPRINT_FILE}" ]]; then
+  LAST="$(tr -d '[:space:]' < "${PASS_FINGERPRINT_FILE}" 2>/dev/null || true)"
+  if [[ -n "${LAST}" && "${LAST}" == "${FINGERPRINT}" ]]; then
+    emit_empty
+  fi
+fi
+
+# Do not pass -derivedDataPath: Xcode's default is hashed per project path, so
+# each git worktree stays isolated and warm across agent stops.
 set +e
 xcodebuild test \
   -project TheSilverScreen.xcodeproj \
@@ -92,27 +136,53 @@ EXIT_CODE=$?
 set -e
 
 if [[ "$EXIT_CODE" -eq 0 ]]; then
+  if [[ -n "${FINGERPRINT}" ]]; then
+    printf '%s\n' "${FINGERPRINT}" > "${PASS_FINGERPRINT_FILE}"
+  fi
   emit_empty
 fi
 
-python3 -c '
-import json, sys
+SUMMARY="$(python3 -c '
+import re, sys
+from pathlib import Path
 
-path = sys.argv[1]
+path = Path(sys.argv[1])
 try:
-    with open(path, "r", errors="replace") as handle:
-        text = handle.read()
+    text = path.read_text(errors="replace")
 except Exception:
-    text = "xcodebuild test failed; log unavailable."
+    print("xcodebuild test failed; log unavailable at " + sys.argv[1])
+    raise SystemExit(0)
 
-limit = 4000
-if len(text) > limit:
-    text = text[-limit:]
-    text = "(truncated)\n" + text
+lines = text.splitlines()
+interesting = []
+for line in lines:
+    if re.search(
+        r"error:|TEST FAILED|TEST SUCCEEDED|failed \(|\*\* TEST|Test Case .* failed",
+        line,
+    ):
+        interesting.append(line)
 
-print(json.dumps({
-    "followup_message": "TheSilverScreenTests failed. Fix the failures, then continue.\n\n" + text
-}))
-' "$LOG"
+# Prefer failed test case names near the end.
+failed_cases = [
+    line for line in lines
+    if "Test Case" in line and " failed (" in line
+]
 
-exit 0
+chunks = []
+if failed_cases:
+    chunks.append("Failed tests:\n" + "\n".join(failed_cases[-40:]))
+if interesting:
+    chunks.append("Signals:\n" + "\n".join(interesting[-60:]))
+
+tail = "\n".join(lines[-80:])
+chunks.append("Log tail (" + sys.argv[1] + "):\n" + tail)
+print("\n\n".join(chunks))
+' "$LOG" 2>/dev/null || true)"
+
+if [[ -z "${SUMMARY}" ]]; then
+  SUMMARY="xcodebuild test failed (exit ${EXIT_CODE}); see ${LOG}"
+fi
+
+emit_followup "TheSilverScreenTests failed. Fix the failures, then continue.
+
+${SUMMARY}"

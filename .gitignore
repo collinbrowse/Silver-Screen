@@ -34,6 +34,9 @@ xcuserdata/
 ## Test result bundles (CI uploads these as artifacts; never commit them)
 *.xcresult
 
+## Stop-hook unit-test pass fingerprint (per worktree; local only)
+.cursor/hooks/.last-unit-test-pass
+
 ## Obj-C/Swift specific
 *.hmap
 *.ipa
