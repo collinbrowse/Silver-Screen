@@ -3,8 +3,8 @@
 //  TheSilverScreen
 //
 //  Search tab. An empty field shows award shelves. Typing shows a Spotify-style
-//  preview (top five Movies, TV, People). View all / Enter opens the interleaved
-//  list with niche and Genre filters.
+//  preview (top five per type; People first when results say so). View all /
+//  Enter opens the ranked list with niche and Genre filters.
 //
 
 import SwiftUI
@@ -57,9 +57,6 @@ struct SearchView: View {
             isFocused: $fieldPresented,
             onSubmit: { viewModel.openAllResults() }
         )
-        .onSubmit(of: .search) {
-            viewModel.openAllResults()
-        }
         .scrollDismissesKeyboard(.immediately)
         .onChange(of: viewModel.query) { _, _ in
             viewModel.scheduleQueryChange()
@@ -182,78 +179,23 @@ struct SearchView: View {
     private func results(_ content: SearchContent, activity: LoadActivity) -> some View {
         switch content {
             case .preview(let sections):
-                previewList(sections)
+                previewList(sections, activity: activity)
             case .allResults(let items):
                 allResultsList(items, activity: activity)
         }
     }
 
-    private func previewList(_ sections: SearchPreviewSections) -> some View {
+    private func previewList(_ sections: SearchPreviewSections, activity: LoadActivity) -> some View {
         List {
-            if !sections.movies.isEmpty {
-                Section {
-                    ForEach(Array(sections.movies.enumerated()), id: \.element.id) { index, row in
-                        resultButton(
-                            index: index,
-                            count: sections.movies.count,
-                            showsLoadingRow: false,
-                            rowID: "m-\(row.id)",
-                            loadsMore: false
-                        ) {
-                            open(.movieDetail(id: row.id))
-                        } label: {
-                            movieRowLabel(row)
-                        } star: {
-                            listControl(row.listItem())
-                        }
-                    }
-                } header: {
-                    Text("Movies")
-                }
-            }
-
-            if !sections.tv.isEmpty {
-                Section {
-                    ForEach(Array(sections.tv.enumerated()), id: \.element.id) { index, row in
-                        resultButton(
-                            index: index,
-                            count: sections.tv.count,
-                            showsLoadingRow: false,
-                            rowID: "t-\(row.id)",
-                            loadsMore: false
-                        ) {
-                            open(.tvSeries(id: row.id))
-                        } label: {
-                            tvRowLabel(row)
-                        } star: {
-                            listControl(row.listItem())
-                        }
-                    }
-                } header: {
-                    Text("TV")
-                }
-            }
-
-            if !sections.people.isEmpty {
-                Section {
-                    ForEach(Array(sections.people.enumerated()), id: \.element.id) { index, row in
-                        resultButton(
-                            index: index,
-                            count: sections.people.count,
-                            showsLoadingRow: false,
-                            rowID: "p-\(row.id)",
-                            loadsMore: false
-                        ) {
-                            open(.person(id: row.id))
-                        } label: {
-                            personRowLabel(row)
-                        } star: {
-                            listControl(row.listItem())
-                        }
-                    }
-                } header: {
-                    Text("People")
-                }
+            switch sections.emphasis {
+                case .titlesFirst:
+                    previewMoviesSection(sections.movies)
+                    previewTVSection(sections.tv)
+                    previewPeopleSection(sections.people)
+                case .peopleFirst:
+                    previewPeopleSection(sections.people)
+                    previewMoviesSection(sections.movies)
+                    previewTVSection(sections.tv)
             }
 
             Section {
@@ -271,6 +213,84 @@ struct SearchView: View {
         }
         .listStyle(.plain)
         .scrollPosition(id: $scrollID)
+        .overlay(alignment: .top) {
+            LoadActivityBanner(activity: activity)
+        }
+    }
+
+    @ViewBuilder
+    private func previewMoviesSection(_ rows: [CatalogMovieRow]) -> some View {
+        if !rows.isEmpty {
+            Section {
+                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                    resultButton(
+                        index: index,
+                        count: rows.count,
+                        showsLoadingRow: false,
+                        rowID: "m-\(row.id)",
+                        loadsMore: false
+                    ) {
+                        open(.movieDetail(id: row.id))
+                    } label: {
+                        movieRowLabel(row)
+                    } star: {
+                        listControl(row.listItem())
+                    }
+                }
+            } header: {
+                Text("Movies")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func previewTVSection(_ rows: [CatalogTVRow]) -> some View {
+        if !rows.isEmpty {
+            Section {
+                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                    resultButton(
+                        index: index,
+                        count: rows.count,
+                        showsLoadingRow: false,
+                        rowID: "t-\(row.id)",
+                        loadsMore: false
+                    ) {
+                        open(.tvSeries(id: row.id))
+                    } label: {
+                        tvRowLabel(row)
+                    } star: {
+                        listControl(row.listItem())
+                    }
+                }
+            } header: {
+                Text("TV")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func previewPeopleSection(_ rows: [CatalogPersonRow]) -> some View {
+        if !rows.isEmpty {
+            Section {
+                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                    resultButton(
+                        index: index,
+                        count: rows.count,
+                        showsLoadingRow: false,
+                        rowID: "p-\(row.id)",
+                        loadsMore: false
+                    ) {
+                        open(.person(id: row.id))
+                    } label: {
+                        personRowLabel(row)
+                    } star: {
+                        listControl(row.listItem())
+                    }
+                }
+            } header: {
+                Text("People")
+            }
+        }
     }
 
     private func allResultsList(_ items: [SearchResultItem], activity: LoadActivity) -> some View {
@@ -315,7 +335,7 @@ struct SearchView: View {
             case .tv(let row):
                 tvRowLabel(row, density: .standard, showsKind: true)
             case .person(let row):
-                personRowLabel(row, density: .standard)
+                personRowLabel(row, density: .standard, showsKind: true)
         }
     }
 
@@ -359,12 +379,14 @@ struct SearchView: View {
 
     private func personRowLabel(
         _ row: CatalogPersonRow,
-        density: CatalogRowView.Density = .compact
+        density: CatalogRowView.Density = .compact,
+        showsKind: Bool = false
     ) -> some View {
         CatalogRowView(
             title: row.name,
             subtitle: "",
             metadata: row.knownForDepartment ?? "",
+            kindLabel: showsKind ? "Person" : nil,
             density: density,
             imagePath: row.profilePath,
             imageKind: .profile,

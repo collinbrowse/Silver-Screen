@@ -3,8 +3,8 @@
 //  TheSilverScreen
 //
 //  Unified type-ahead across movies, TV, and people. Preview shows the top
-//  five of each type; View all interweaves by match then popularity, with
-//  optional Movies / TV / People niche and Genre filters.
+//  five of each type; View all ranks by match then popularity. When people
+//  results beat titles for the query, People stay first (frozen for that query).
 //
 
 import Foundation
@@ -236,8 +236,14 @@ final class SearchViewModel {
             await awards.prepare()
             return
         }
+        // Keep the on-screen type order; a refresh must not flash People ↔ Movies.
+        let frozenEmphasis = caches[activeKey]?.emphasis
         caches[activeKey] = nil
-        await showCachedOrFetch(query: activeKey, keepingVisible: true)
+        await showCachedOrFetch(
+            query: activeKey,
+            keepingVisible: true,
+            frozenEmphasis: frozenEmphasis
+        )
     }
 
     /// Writes saved scores onto the rows already on screen, including after returning from detail.
@@ -272,7 +278,10 @@ final class SearchViewModel {
             for kind in scopes where cache.bucket(for: kind).hasMore {
                 let page = cache.bucket(for: kind).nextPage
                 let fetched = try await fetch(kind: kind, query: key, page: page)
-                guard token == requestGeneration else { return }
+                guard token == requestGeneration else {
+                    clearLoadingMoreIfStale()
+                    return
+                }
                 var bucket = cache.bucket(for: kind)
                 let before = bucket.items.count
                 bucket.items = appending(fetched.items, to: bucket.items)
@@ -281,19 +290,30 @@ final class SearchViewModel {
                 bucket.hasMore = fetched.hasMore && grew
                 cache.setBucket(bucket, for: kind)
             }
-            guard token == requestGeneration else { return }
+            guard token == requestGeneration else {
+                clearLoadingMoreIfStale()
+                return
+            }
             caches[key] = cache
             publish(from: cache)
             await reloadDisplayedScores()
         } catch is CancellationError {
             if token == requestGeneration, let cached = caches[key] {
                 publish(from: cached)
+            } else {
+                clearLoadingMoreIfStale()
             }
         } catch let error as AppError {
-            guard token == requestGeneration else { return }
+            guard token == requestGeneration else {
+                clearLoadingMoreIfStale()
+                return
+            }
             state = .loaded(displayedContent(from: cache), activity: .failed(error))
         } catch {
-            guard token == requestGeneration else { return }
+            guard token == requestGeneration else {
+                clearLoadingMoreIfStale()
+                return
+            }
             state = .loaded(displayedContent(from: cache), activity: .failed(.unknown))
         }
     }
@@ -347,6 +367,8 @@ final class SearchViewModel {
         var movies: TypeBucket
         var tv: TypeBucket
         var people: TypeBucket
+        /// Set once when this query's first page is stored; loadMore / filters / refresh keep it.
+        var emphasis: SearchResultEmphasis
 
         func bucket(for kind: SearchMediaKind) -> TypeBucket {
             switch kind {
@@ -371,7 +393,11 @@ final class SearchViewModel {
         let hasMore: Bool
     }
 
-    private func showCachedOrFetch(query: String, keepingVisible: Bool = false) async {
+    private func showCachedOrFetch(
+        query: String,
+        keepingVisible: Bool = false,
+        frozenEmphasis: SearchResultEmphasis? = nil
+    ) async {
         stashed = nil
         showsFocusedPlaceholder = false
         if let cached = caches[query] {
@@ -395,53 +421,133 @@ final class SearchViewModel {
         }
 
         let task = Task { @MainActor in
-            await self.performFetch(query: query, token: token, keepingVisible: keepingVisible)
+            await self.performFetch(
+                query: query,
+                token: token,
+                keepingVisible: keepingVisible,
+                frozenEmphasis: frozenEmphasis
+            )
         }
         requestTask = task
         await task.value
     }
 
-    private func performFetch(query: String, token: Int, keepingVisible: Bool) async {
-        do {
-            async let moviePage = fetchFirstPage(kind: .movies, query: query, token: token)
-            async let tvPage = fetchFirstPage(kind: .tv, query: query, token: token)
-            async let peoplePage = fetchFirstPage(kind: .people, query: query, token: token)
-            let (movies, tv, people) = try await (moviePage, tvPage, peoplePage)
-            guard token == requestGeneration, !Task.isCancelled else { return }
+    /// Outcome of one media-type first-page fetch. Failures do not cancel the other types.
+    private enum PageLoad {
+        case page(FetchedTypePage)
+        case failed(AppError)
+        case cancelled
 
-            let cache = QueryCache(
-                movies: TypeBucket(items: movies.items, nextPage: movies.page + 1, hasMore: movies.hasMore),
-                tv: TypeBucket(items: tv.items, nextPage: tv.page + 1, hasMore: tv.hasMore),
-                people: TypeBucket(items: people.items, nextPage: people.page + 1, hasMore: people.hasMore)
-            )
-            caches[query] = cache
-            activeKey = query
-            committedQuery = query
-            publish(from: cache)
-            await reloadDisplayedScores()
-        } catch is CancellationError {
-            return
-        } catch {
-            guard token == requestGeneration else { return }
-            let appError = (error as? AppError) ?? .unknown
+        var page: FetchedTypePage? {
+            if case .page(let page) = self { return page }
+            return nil
+        }
+
+        var appError: AppError? {
+            if case .failed(let error) = self { return error }
+            return nil
+        }
+    }
+
+    /// Fetches movies, TV, and people in parallel. A type that fails becomes an empty
+    /// bucket so the other types still publish; cold failure only when every type fails.
+    private func performFetch(
+        query: String,
+        token: Int,
+        keepingVisible: Bool,
+        frozenEmphasis: SearchResultEmphasis?
+    ) async {
+        async let movieLoad = loadFirstPage(kind: .movies, query: query, token: token)
+        async let tvLoad = loadFirstPage(kind: .tv, query: query, token: token)
+        async let peopleLoad = loadFirstPage(kind: .people, query: query, token: token)
+        let (movies, tv, people) = await (movieLoad, tvLoad, peopleLoad)
+        guard token == requestGeneration, !Task.isCancelled else { return }
+
+        let loads = [movies, tv, people]
+        let succeeded = loads.contains { $0.page != nil }
+        let errors = loads.compactMap(\.appError)
+
+        guard succeeded else {
+            if errors.isEmpty { return }
+            let appError = errors[0]
             if keepingVisible, case .loaded(let current, _) = state {
                 state = .loaded(current, activity: .failed(appError))
             } else {
                 state = .failed(appError)
             }
+            return
+        }
+
+        let movieBucket = typeBucket(from: movies)
+        let tvBucket = typeBucket(from: tv)
+        let peopleBucket = typeBucket(from: people)
+        let emphasis = frozenEmphasis ?? SearchResultEmphasisResolver.emphasis(
+            movies: movieBucket.items,
+            tv: tvBucket.items,
+            people: peopleBucket.items,
+            query: query
+        )
+        let cache = QueryCache(
+            movies: movieBucket,
+            tv: tvBucket,
+            people: peopleBucket,
+            emphasis: emphasis
+        )
+        caches[query] = cache
+        activeKey = query
+        committedQuery = query
+        hasMore = hasMorePages(in: cache)
+        let content = displayedContent(from: cache)
+        if content.isEmpty {
+            if let error = errors.first {
+                if keepingVisible, case .loaded(let current, _) = state {
+                    state = .loaded(current, activity: .failed(error))
+                } else {
+                    state = .failed(error)
+                }
+            } else {
+                state = .empty
+            }
+        } else if let error = errors.first {
+            state = .loaded(content, activity: .failed(error))
+        } else {
+            state = .loaded(content)
+        }
+        await reloadDisplayedScores()
+    }
+
+    private func loadFirstPage(kind: SearchMediaKind, query: String, token: Int) async -> PageLoad {
+        do {
+            let fetched = try await fetch(kind: kind, query: query, page: 1)
+            let ranked = await rankedFirstPage(fetched.items, kind: kind, query: query, token: token)
+            return .page(FetchedTypePage(items: ranked, page: fetched.page, hasMore: fetched.hasMore))
+        } catch is CancellationError {
+            return .cancelled
+        } catch let error as AppError {
+            return .failed(error)
+        } catch {
+            return .failed(.unknown)
         }
     }
 
-    private func fetchFirstPage(kind: SearchMediaKind, query: String, token: Int) async throws -> FetchedTypePage {
-        let fetched = try await fetch(kind: kind, query: query, page: 1)
-        let ranked = await rankedFirstPage(fetched.items, kind: kind, query: query, token: token)
-        return FetchedTypePage(items: ranked, page: fetched.page, hasMore: fetched.hasMore)
+    private func typeBucket(from load: PageLoad) -> TypeBucket {
+        guard let page = load.page else {
+            return TypeBucket(items: [], nextPage: 2, hasMore: false)
+        }
+        return TypeBucket(items: page.items, nextPage: page.page + 1, hasMore: page.hasMore)
     }
 
     private func cancelRequest() {
         requestTask?.cancel()
         requestTask = nil
         requestGeneration += 1
+    }
+
+    /// A newer request cancelled paging; clear a stuck spinner if nothing else republished yet.
+    private func clearLoadingMoreIfStale() {
+        if case .loaded(let current, .loadingMore) = state {
+            state = .loaded(current, activity: .none)
+        }
     }
 
     private func republishFromCache() {
@@ -466,7 +572,8 @@ final class SearchViewModel {
         SearchPreviewSections(
             movies: cache.movies.items.compactMap(\.movieRow).prefix(previewLimit).map { $0 },
             tv: cache.tv.items.compactMap(\.tvRow).prefix(previewLimit).map { $0 },
-            people: cache.people.items.compactMap(\.personRow).prefix(previewLimit).map { $0 }
+            people: cache.people.items.compactMap(\.personRow).prefix(previewLimit).map { $0 },
+            emphasis: cache.emphasis
         )
     }
 
@@ -474,9 +581,12 @@ final class SearchViewModel {
         let items: [SearchResultItem]
         switch typeNiche {
             case .all:
-                items = interweave(
-                    cache.movies.items + cache.tv.items + cache.people.items,
-                    query: activeKey
+                items = arrangeAllResults(
+                    movies: cache.movies.items,
+                    tv: cache.tv.items,
+                    people: cache.people.items,
+                    query: activeKey,
+                    emphasis: cache.emphasis
                 )
             case .movies:
                 items = cache.movies.items
@@ -572,8 +682,21 @@ final class SearchViewModel {
         }
     }
 
-    private func interweave(_ items: [SearchResultItem], query: String) -> [SearchResultItem] {
-        ranked(items, query: query)
+    /// Titles-first keeps cross-type match/popularity order. People-first lists every
+    /// person ahead of titles so View all matches the frozen preview section order.
+    private func arrangeAllResults(
+        movies: [SearchResultItem],
+        tv: [SearchResultItem],
+        people: [SearchResultItem],
+        query: String,
+        emphasis: SearchResultEmphasis
+    ) -> [SearchResultItem] {
+        switch emphasis {
+            case .titlesFirst:
+                return ranked(movies + tv + people, query: query)
+            case .peopleFirst:
+                return ranked(people, query: query) + ranked(movies + tv, query: query)
+        }
     }
 
     private func comesBefore(

@@ -50,11 +50,46 @@ enum SearchResultItem: Sendable, Equatable, Identifiable {
     }
 }
 
+/// Whether People float above Movies/TV for one committed query's results.
+/// Decided from the first successful page and then frozen — never flipped on screen.
+enum SearchResultEmphasis: Sendable, Equatable {
+    /// Preview / blocks: Movies, then TV, then People.
+    case titlesFirst
+    /// Preview / blocks: People, then Movies, then TV.
+    case peopleFirst
+}
+
+/// Picks emphasis by comparing the strongest fuzzy-matched person to the strongest matched title.
+enum SearchResultEmphasisResolver {
+    static func emphasis(
+        movies: [SearchResultItem],
+        tv: [SearchResultItem],
+        people: [SearchResultItem],
+        query: String
+    ) -> SearchResultEmphasis {
+        let matchingPeople = people.filter {
+            FuzzyTextMatch.matches(query: query, candidate: $0.displayName)
+        }
+        guard let bestPerson = matchingPeople.max(by: { $0.popularity < $1.popularity }) else {
+            return .titlesFirst
+        }
+        let matchingTitles = (movies + tv).filter {
+            FuzzyTextMatch.matches(query: query, candidate: $0.displayName)
+        }
+        guard let bestTitle = matchingTitles.max(by: { $0.popularity < $1.popularity }) else {
+            return .peopleFirst
+        }
+        return bestPerson.popularity >= bestTitle.popularity ? .peopleFirst : .titlesFirst
+    }
+}
+
 /// Capped typeahead sections shown before View all.
 struct SearchPreviewSections: Sendable, Equatable {
     var movies: [CatalogMovieRow]
     var tv: [CatalogTVRow]
     var people: [CatalogPersonRow]
+    /// Frozen with the query cache so section order does not flash after first paint.
+    var emphasis: SearchResultEmphasis = .titlesFirst
 
     var isEmpty: Bool {
         movies.isEmpty && tv.isEmpty && people.isEmpty
@@ -64,7 +99,8 @@ struct SearchPreviewSections: Sendable, Equatable {
         SearchPreviewSections(
             movies: movies.map { $0.withUserScore(scores[.movie($0.id)]) },
             tv: tv.map { $0.withUserScore(scores[.series($0.id)]) },
-            people: people
+            people: people,
+            emphasis: emphasis
         )
     }
 }
