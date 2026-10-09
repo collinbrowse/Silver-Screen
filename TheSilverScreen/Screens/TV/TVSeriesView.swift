@@ -10,12 +10,17 @@ struct TVSeriesView: View {
     let imageLoader: ImageLoader
     let lists: ListsRepository
     let listsIndex: ListsIndex
+    let shows: TVRepository
+    let tvWatch: TVWatchRepository
     var router: NavigationRouter?
 
+    @Environment(ListChangeNotice.self) private var notice
     @Namespace private var heroTransition
     @State private var selectedBackdropID: String?
     @State private var playingTrailer: MediaTrailer?
     @State private var loadingTrailerID: String?
+    /// Pending score + unmarked episode count for Story 5 confirm before bulk mark.
+    @State private var pendingScoreConfirm: (score: Double, episodeCount: Int)?
 
     private var fullscreenBinding: Binding<FullscreenImages?> {
         Binding(
@@ -60,12 +65,26 @@ struct TVSeriesView: View {
         .toolbar {
             if case .loaded(let content, _) = viewModel.state {
                 ToolbarItem(placement: .topBarTrailing) {
-                    ListMembershipButton(
-                        draft: content.detail.listItem(),
-                        lists: lists,
-                        index: listsIndex
-                    ) {
-                        viewModel.noteListSaveFailed()
+                    HStack(spacing: 4) {
+                        WatchedToggleButton(
+                            draft: content.detail.listItem(),
+                            lists: lists,
+                            index: listsIndex,
+                            tvWatch: tvWatch,
+                            shows: shows,
+                            seasons: content.detail.seasons,
+                            chrome: false,
+                            onFailure: { viewModel.noteListSaveFailed() },
+                            onToggleComplete: { Task { await viewModel.reloadNextUp() } }
+                        )
+
+                        ListMembershipButton(
+                            draft: content.detail.listItem(),
+                            lists: lists,
+                            index: listsIndex
+                        ) {
+                            viewModel.noteListSaveFailed()
+                        }
                     }
                 }
             }
@@ -73,6 +92,25 @@ struct TVSeriesView: View {
         .task {
             if case .idle = viewModel.state {
                 await viewModel.load()
+            }
+        }
+        .onAppear {
+            // Season page (and series eye) write the watch ledger; refresh badges/Next up on return.
+            Task { await viewModel.reloadNextUp() }
+        }
+        .onChange(of: notice.watchRevision) { _, _ in
+            Task { await viewModel.reloadNextUp() }
+        }
+        .alert(TVWatchConfirm.seriesTitle, isPresented: scoreConfirmPresented) {
+            Button("Cancel", role: .cancel) {
+                pendingScoreConfirm = nil
+            }
+            Button(TVWatchConfirm.confirmButtonTitle) {
+                Task { await confirmSaveScoreAndMarkSeries() }
+            }
+        } message: {
+            if let pending = pendingScoreConfirm {
+                Text(TVWatchConfirm.message(episodeCount: pending.episodeCount))
             }
         }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
@@ -197,13 +235,16 @@ struct TVSeriesView: View {
 
     private func seriesFacts(_ content: TVSeriesContent) -> some View {
         VStack(alignment: .leading, spacing: DesignSpacing.md) {
+            if let nextUp = viewModel.nextUpSubtitle {
+                TVNextUpLabel(subtitle: nextUp)
+            }
             TMDBRatingCard(
                 formattedRating: content.formattedRating,
                 accessibilityLabel: content.ratingAccessibilityLabel,
                 formattedUserScore: content.formattedUserScore,
                 userScoreAccessibilityLabel: content.userScoreAccessibilityLabel
             ) { score in
-                Task { await viewModel.saveUserScore(score) }
+                Task { await requestSaveScore(score) }
             }
             MediaDescriptionSection(
                 overview: content.detail.overview,
@@ -225,7 +266,8 @@ struct TVSeriesView: View {
                             seriesID: content.detail.id,
                             seriesName: content.detail.name,
                             seasonNumber: season.seasonNumber,
-                            seriesSnapshot: SeriesListSnapshot(detail: content.detail)
+                            seriesSnapshot: SeriesListSnapshot(detail: content.detail),
+                            scrollToEpisodeNumber: nil
                         )
                     )
                 } label: {
@@ -239,6 +281,13 @@ struct TVSeriesView: View {
                             placeholderSystemImage: "tv"
                         )
                         .carouselCard(width: 140, aspectRatio: 2 / 3)
+                        .overlay(alignment: .topTrailing) {
+                            CarouselRatingBadge(
+                                formattedScore: viewModel.seasonScores[season.seasonNumber],
+                                isWatched: viewModel.watchedSeasonNumbers.contains(season.seasonNumber)
+                            )
+                            .padding(DesignSpacing.xs)
+                        }
                         VStack(alignment: .leading, spacing: DesignSpacing.xs) {
                             Text(season.name)
                                 .font(DesignTypography.section.weight(.semibold))
@@ -256,10 +305,20 @@ struct TVSeriesView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(season.name), \(season.formattedAirDate), \(season.episodeCountText)")
+                .accessibilityLabel(seasonAccessibilityLabel(season))
                 .accessibilityAddTraits(.isButton)
             }
         }
+    }
+
+    private func seasonAccessibilityLabel(_ season: TVSeriesContent.SeasonRow) -> String {
+        var parts = [season.name, season.formattedAirDate, season.episodeCountText]
+        if let score = viewModel.seasonScores[season.seasonNumber] {
+            parts.append("Your rating \(score)")
+        } else if viewModel.watchedSeasonNumbers.contains(season.seasonNumber) {
+            parts.append("Watched")
+        }
+        return parts.joined(separator: ", ")
     }
 
     private func recommendationsCarousel(_ content: TVSeriesContent) -> some View {
@@ -274,6 +333,15 @@ struct TVSeriesView: View {
                             imageLoader: imageLoader,
                             width: 140
                         )
+                        .overlay(alignment: .topTrailing) {
+                            CarouselRatingBadge(
+                                formattedScore: viewModel.recommendationScores[show.id],
+                                isWatched: listsIndex.isOnWatched(
+                                    ListEntry.itemKey(id: show.id, kind: .tv)
+                                )
+                            )
+                            .padding(DesignSpacing.xs)
+                        }
                         Text(show.name)
                             .font(DesignTypography.metadata.weight(.semibold))
                             .foregroundStyle(DesignTheme.textPrimary)
@@ -283,9 +351,64 @@ struct TVSeriesView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel(show.name)
+                .accessibilityLabel(recommendationAccessibilityLabel(show))
                 .accessibilityAddTraits(.isButton)
             }
         }
+    }
+
+    private var scoreConfirmPresented: Binding<Bool> {
+        Binding(
+            get: { pendingScoreConfirm != nil },
+            set: { presented in
+                if !presented { pendingScoreConfirm = nil }
+            }
+        )
+    }
+
+    private func requestSaveScore(_ score: Double) async {
+        let unmarked = await viewModel.unmarkedEpisodeCountForSeries()
+        if unmarked > 0 {
+            pendingScoreConfirm = (score, unmarked)
+        } else {
+            await performSaveScore(score)
+        }
+    }
+
+    private func confirmSaveScoreAndMarkSeries() async {
+        guard let pending = pendingScoreConfirm else { return }
+        pendingScoreConfirm = nil
+        await performSaveScore(pending.score)
+    }
+
+    private func performSaveScore(_ score: Double) async {
+        guard let outcome = await viewModel.saveUserScore(score) else { return }
+        if let change = outcome.membershipChange, change.confirmation != nil {
+            notice.show(
+                change,
+                using: lists,
+                ratingKey: .series(viewModelSeriesID),
+                tvWatch: tvWatch,
+                watchUndo: outcome.watchUndo
+            )
+        }
+        await viewModel.reloadNextUp()
+    }
+
+    private var viewModelSeriesID: Int {
+        if case .loaded(let content, _) = viewModel.state {
+            return content.detail.id
+        }
+        return 0
+    }
+
+    private func recommendationAccessibilityLabel(_ show: TVSeriesContent.RecommendationRow) -> String {
+        var parts = [show.name]
+        if let score = viewModel.recommendationScores[show.id] {
+            parts.append("Your rating \(score)")
+        } else if listsIndex.isOnWatched(ListEntry.itemKey(id: show.id, kind: .tv)) {
+            parts.append("Watched")
+        }
+        return parts.joined(separator: ", ")
     }
 }

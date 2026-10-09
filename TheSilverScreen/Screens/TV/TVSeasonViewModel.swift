@@ -38,12 +38,27 @@ final class TVSeasonViewModel {
     private(set) var awardRows: [AwardRow] = []
     /// Series fields for list membership. Filled from the route, or from a series fetch when empty.
     private(set) var seriesSnapshot: SeriesListSnapshot
+    /// Catalog seasons for completion checks. Loaded with the series snapshot.
+    private(set) var catalogSeasons: [TVSeasonSummary] = []
+    /// Episode numbers in this season marked completed.
+    private(set) var completedEpisodeNumbers: Set<Int> = []
+    /// Personal scores for episodes in this season, keyed by episode number.
+    private(set) var episodeScores: [Int: String] = [:]
+    /// Series-level `Next up: S·E·title` while in progress; nil when unknown or finished.
+    private(set) var nextUpSubtitle: String?
+
+    /// True when every listed episode in this season is completed.
+    var isSeasonFullyWatched: Bool {
+        guard case .loaded(let content, _) = state, !content.episodes.isEmpty else { return false }
+        return content.episodes.allSatisfy { completedEpisodeNumbers.contains($0.episodeNumber) }
+    }
 
     private let seriesID: Int
     private let seriesName: String
     private let seasonNumber: Int
     private let shows: TVRepository
     private let annotations: AnnotationsRepository
+    private let tvWatch: TVWatchRepository?
     private let awards: AwardsRepository
 
     init(
@@ -53,6 +68,7 @@ final class TVSeasonViewModel {
         seriesSnapshot: SeriesListSnapshot = .empty,
         shows: TVRepository,
         annotations: AnnotationsRepository,
+        tvWatch: TVWatchRepository? = nil,
         awards: AwardsRepository = AwardsRepository(catalog: .empty)
     ) {
         self.seriesID = seriesID
@@ -61,6 +77,7 @@ final class TVSeasonViewModel {
         self.seriesSnapshot = seriesSnapshot
         self.shows = shows
         self.annotations = annotations
+        self.tvWatch = tvWatch
         self.awards = awards
     }
 
@@ -69,11 +86,16 @@ final class TVSeasonViewModel {
         do {
             async let seasonCall = shows.season(seriesID: seriesID, seasonNumber: seasonNumber)
             async let providersCall = shows.streamingProviders(seriesID: seriesID)
-            async let snapshotCall = resolveSeriesSnapshot()
+            async let catalogCall = resolveCatalog()
             let season = try await seasonCall
             let streamingProviders = await providersCall
-            seriesSnapshot = await snapshotCall
+            let catalog = await catalogCall
+            seriesSnapshot = catalog.snapshot
+            catalogSeasons = catalog.seasons
             let personal = try await personalDetail()
+            await reloadCompletedEpisodes(from: season.episodes)
+            await reloadEpisodeScores(from: season.episodes)
+            await reloadNextUp()
             awardRows = await awards.seasonAwards(seriesID: seriesID, seasonNumber: seasonNumber)
             state = .loaded(
                 Self.makeContent(
@@ -93,36 +115,215 @@ final class TVSeasonViewModel {
         }
     }
 
-    /// Awards deep links arrive without series art; load it once for the membership draft.
-    private func resolveSeriesSnapshot() async -> SeriesListSnapshot {
-        guard seriesSnapshot.isEmpty else { return seriesSnapshot }
+    /// Awards deep links arrive without series art; load seasons for watch completion too.
+    private func resolveCatalog() async -> (snapshot: SeriesListSnapshot, seasons: [TVSeasonSummary]) {
         do {
             let detail = try await shows.series(id: seriesID)
-            return SeriesListSnapshot(detail: detail)
+            let snapshot = seriesSnapshot.isEmpty ? SeriesListSnapshot(detail: detail) : seriesSnapshot
+            return (snapshot, detail.seasons)
         } catch is CancellationError {
-            return seriesSnapshot
+            return (seriesSnapshot, catalogSeasons)
         } catch {
-            return seriesSnapshot
+            return (seriesSnapshot, catalogSeasons)
         }
+    }
+
+    private func reloadCompletedEpisodes(from episodes: [TVEpisodeSummary]) async {
+        guard let tvWatch else {
+            completedEpisodeNumbers = []
+            return
+        }
+        do {
+            let state = try await tvWatch.state(seriesID: seriesID)
+            completedEpisodeNumbers = Set(
+                episodes.compactMap { episode in
+                    state?.contains(seasonNumber: seasonNumber, episodeNumber: episode.episodeNumber) == true
+                        ? episode.episodeNumber
+                        : nil
+                }
+            )
+        } catch {
+            completedEpisodeNumbers = []
+        }
+    }
+
+    /// Refreshes personal episode scores for the season list (e.g. after a toast rating).
+    func reloadEpisodeScores() async {
+        guard case .loaded(let content, _) = state else { return }
+        await reloadEpisodeScores(from: content.episodes)
+    }
+
+    /// Reloads the Next up line after episode / season watch changes.
+    func reloadNextUp() async {
+        guard let tvWatch else {
+            nextUpSubtitle = nil
+            return
+        }
+        do {
+            let watchState = try await tvWatch.syncNextUp(
+                seriesID: seriesID,
+                seasons: catalogSeasons
+            )
+            nextUpSubtitle = watchState?.progressSubtitle
+        } catch {
+            nextUpSubtitle = nil
+        }
+    }
+
+    /// Reloads completed eyes and Next up after toast Undo restores the ledger.
+    func reloadWatchChrome() async {
+        guard case .loaded(let content, _) = state else { return }
+        await reloadCompletedEpisodes(from: content.episodes)
+        await reloadNextUp()
+    }
+
+    private func reloadEpisodeScores(from episodes: [TVEpisodeSummary]) async {
+        let scores = await annotations.formattedScores()
+        var mapped: [Int: String] = [:]
+        for episode in episodes {
+            let key = AnnotationKey.episode(
+                seriesID: seriesID,
+                seasonNumber: seasonNumber,
+                episodeNumber: episode.episodeNumber
+            )
+            if let formatted = scores[key]?.formatted {
+                mapped[episode.episodeNumber] = formatted
+            }
+        }
+        episodeScores = mapped
+    }
+
+    func unmarkedEpisodeCountForSeason() async -> Int {
+        guard case .loaded(let content, _) = state, let tvWatch else { return 0 }
+        do {
+            return try await tvWatch.unmarkedEpisodeCount(
+                seriesID: seriesID,
+                seasonNumber: seasonNumber,
+                episodeCount: content.episodes.count
+            )
+        } catch {
+            return 0
+        }
+    }
+
+    @discardableResult
+    func toggleEpisodeWatched(_ episode: TVEpisodeSummary) async -> TVWatchOutcome? {
+        guard case .loaded = state, let tvWatch else { return nil }
+        let draft = seriesSnapshot.listItem(id: seriesID, title: seriesName)
+        do {
+            let outcome: TVWatchOutcome
+            let knownTitles = Dictionary(
+                uniqueKeysWithValues: (loadedEpisodes() ?? []).map { row in
+                    (
+                        TVEpisodeRef(seasonNumber: seasonNumber, episodeNumber: row.episodeNumber),
+                        row.title
+                    )
+                }
+            )
+            if completedEpisodeNumbers.contains(episode.episodeNumber) {
+                outcome = try await tvWatch.unmarkEpisode(
+                    seriesID: seriesID,
+                    seasonNumber: seasonNumber,
+                    episodeNumber: episode.episodeNumber,
+                    draft: draft,
+                    seasons: catalogSeasons
+                )
+            } else {
+                outcome = try await tvWatch.markEpisode(
+                    seriesID: seriesID,
+                    seasonNumber: seasonNumber,
+                    episodeNumber: episode.episodeNumber,
+                    title: episode.title,
+                    draft: draft,
+                    seasons: catalogSeasons,
+                    knownTitles: knownTitles
+                )
+            }
+            if let content = loadedEpisodes() {
+                await reloadCompletedEpisodes(from: content)
+            }
+            await reloadNextUp()
+            return outcome
+        } catch is CancellationError {
+            return nil
+        } catch {
+            markPersistenceFailure()
+            return nil
+        }
+    }
+
+    @discardableResult
+    func markSeasonWatched() async -> TVWatchOutcome? {
+        guard case .loaded(let content, _) = state, let tvWatch else { return nil }
+        let titles = Dictionary(uniqueKeysWithValues: content.episodes.map { ($0.episodeNumber, $0.title) })
+        do {
+            let outcome = try await tvWatch.markSeason(
+                seriesID: seriesID,
+                seasonNumber: seasonNumber,
+                episodeCount: content.episodes.count,
+                episodeTitles: titles,
+                draft: seriesSnapshot.listItem(id: seriesID, title: seriesName),
+                seasons: catalogSeasons
+            )
+            await reloadCompletedEpisodes(from: content.episodes)
+            await reloadNextUp()
+            return outcome
+        } catch is CancellationError {
+            return nil
+        } catch {
+            markPersistenceFailure()
+            return nil
+        }
+    }
+
+    @discardableResult
+    func unmarkSeasonWatched() async -> TVWatchOutcome? {
+        guard case .loaded(let content, _) = state, let tvWatch else { return nil }
+        do {
+            let outcome = try await tvWatch.unmarkSeason(
+                seriesID: seriesID,
+                seasonNumber: seasonNumber,
+                episodeCount: content.episodes.count,
+                draft: seriesSnapshot.listItem(id: seriesID, title: seriesName),
+                seasons: catalogSeasons
+            )
+            await reloadCompletedEpisodes(from: content.episodes)
+            await reloadNextUp()
+            return outcome
+        } catch is CancellationError {
+            return nil
+        } catch {
+            markPersistenceFailure()
+            return nil
+        }
+    }
+
+    private func loadedEpisodes() -> [TVEpisodeSummary]? {
+        guard case .loaded(let content, _) = state else { return nil }
+        return content.episodes
     }
 
     func retry() async {
         await load()
     }
 
-    /// Saves a half-point score. A failure keeps the score already on screen.
-    func saveUserScore(_ score: Double) async {
-        guard case .loaded = state else { return }
+    /// Saves a half-point score and marks this season’s episodes completed.
+    /// Callers must confirm when `unmarkedEpisodeCountForSeason()` is greater than zero.
+    @discardableResult
+    func saveUserScore(_ score: Double) async -> TVWatchOutcome? {
+        guard case .loaded = state else { return nil }
         do {
             let saved = try await annotations.saveScore(
                 score,
                 for: .season(seriesID: seriesID, seasonNumber: seasonNumber)
             )
             apply(PersonalDetail(annotation: saved))
+            return await markSeasonWatched()
         } catch is CancellationError {
-            return
+            return nil
         } catch {
             markPersistenceFailure()
+            return nil
         }
     }
 

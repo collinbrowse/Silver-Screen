@@ -41,6 +41,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                     logger: dependencies.logger
                 )
             }
+            // Silent cold-launch catalog check. Must not delay first frame.
+            Task {
+                await TVWatchReconcile.refreshWatchedCatalogs(
+                    tvWatch: dependencies.tvWatch,
+                    shows: dependencies.shows,
+                    lists: dependencies.lists,
+                    listChanges: dependencies.listChanges,
+                    logger: dependencies.logger
+                )
+            }
             let root = RootTabView(
                 router: dependencies.router,
                 movies: dependencies.movies,
@@ -50,6 +60,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 listsIndex: dependencies.listsIndex,
                 listChanges: dependencies.listChanges,
                 annotations: dependencies.annotations,
+                tvWatch: dependencies.tvWatch,
                 awards: dependencies.awards,
                 imageLoader: dependencies.imageLoader,
                 libraryHomeViewModel: libraryHomeViewModel

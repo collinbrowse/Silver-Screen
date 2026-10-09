@@ -11,6 +11,8 @@ final class MovieDetailViewModel {
     private(set) var state: LoadState<MovieDetailContent> = .idle
     /// Prizes for this movie, newest ceremony first. The section is hidden when empty.
     private(set) var awardRows: [AwardRow] = []
+    /// Personal scores for similar / collection posters (carousel badges).
+    private(set) var relatedUserScores: [Int: String] = [:]
 
     private let movieID: Int
     private let movies: MovieRepository
@@ -56,6 +58,7 @@ final class MovieDetailViewModel {
             )
             awardRows = await awards.movieAwards(movieID: movieID)
             state = .loaded(content, activity: personal.activity)
+            await reloadRelatedUserScores(content)
             await enrichListSnapshots(detail.listItem())
             if personal.detail.formattedUserScore != nil {
                 await ensureOnWatched(detail.listItem(), at: personal.watchedAt ?? Date())
@@ -71,6 +74,11 @@ final class MovieDetailViewModel {
 
     func retry() async {
         await load()
+    }
+
+    /// Formatted personal score for a related movie poster, if any.
+    func userScore(forMovieID id: Int) -> String? {
+        relatedUserScores[id]
     }
 
     /// Saves a half-point score and puts the movie on Watched.
@@ -153,6 +161,22 @@ final class MovieDetailViewModel {
         } catch {
             // Soft failure: the detail on screen is still good; list art stays sparse until next visit.
         }
+    }
+
+    private func reloadRelatedUserScores(_ content: MovieDetailContent) async {
+        let scores = await annotations.formattedScores()
+        var related: [Int: String] = [:]
+        for item in content.similar?.items ?? [] {
+            if let formatted = scores[.movie(item.id)]?.formatted {
+                related[item.id] = formatted
+            }
+        }
+        for movie in content.collection?.movies ?? [] {
+            if let formatted = scores[.movie(movie.id)]?.formatted {
+                related[movie.id] = formatted
+            }
+        }
+        relatedUserScores = related
     }
 
     private func apply(_ personal: PersonalDetail) {

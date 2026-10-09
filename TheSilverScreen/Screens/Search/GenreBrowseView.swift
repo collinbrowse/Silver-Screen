@@ -13,6 +13,8 @@ struct GenreBrowseView: View {
     let imageLoader: ImageLoader
     let lists: ListsRepository
     let listsIndex: ListsIndex
+    let shows: TVRepository
+    let tvWatch: TVWatchRepository
     var router: NavigationRouter?
 
     @State private var scrolledID: String?
@@ -24,6 +26,7 @@ struct GenreBrowseView: View {
         annotations: AnnotationsRepository,
         lists: ListsRepository,
         listsIndex: ListsIndex,
+        tvWatch: TVWatchRepository,
         imageLoader: ImageLoader,
         router: NavigationRouter?
     ) {
@@ -38,6 +41,8 @@ struct GenreBrowseView: View {
         self.imageLoader = imageLoader
         self.lists = lists
         self.listsIndex = listsIndex
+        self.shows = shows
+        self.tvWatch = tvWatch
         self.router = router
     }
 
@@ -132,10 +137,12 @@ struct GenreBrowseView: View {
                         }
                         .buttonStyle(.plain)
 
-                        ListMembershipButton(
+                        WatchedToggleButton(
                             draft: row.listItem(),
                             lists: lists,
-                            index: listsIndex
+                            index: listsIndex,
+                            tvWatch: tvWatch,
+                            shows: shows
                         ) {
                             viewModel.noteListSaveFailed()
                         }

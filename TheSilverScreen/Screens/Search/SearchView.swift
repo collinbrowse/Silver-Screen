@@ -15,6 +15,8 @@ struct SearchView: View {
     let imageLoader: ImageLoader
     let lists: ListsRepository
     let listsIndex: ListsIndex
+    let shows: TVRepository
+    let tvWatch: TVWatchRepository
     var router: NavigationRouter?
 
     @State private var scrollID: String?
@@ -456,9 +458,23 @@ struct SearchView: View {
         }
     }
 
+    @ViewBuilder
     private func listControl(_ draft: ListItemDraft) -> some View {
-        ListMembershipButton(draft: draft, lists: lists, index: listsIndex) {
-            viewModel.noteListSaveFailed()
+        switch draft.kind {
+            case .movie, .tv:
+                WatchedToggleButton(
+                    draft: draft,
+                    lists: lists,
+                    index: listsIndex,
+                    tvWatch: tvWatch,
+                    shows: shows
+                ) {
+                    viewModel.noteListSaveFailed()
+                }
+            case .person:
+                ListMembershipButton(draft: draft, lists: lists, index: listsIndex) {
+                    viewModel.noteListSaveFailed()
+                }
         }
     }
 }

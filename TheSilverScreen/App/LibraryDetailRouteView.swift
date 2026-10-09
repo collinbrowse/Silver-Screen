@@ -15,6 +15,7 @@ struct LibraryDetailRouteView: View {
         listID: UUID,
         lists: ListsRepository,
         annotations: AnnotationsRepository,
+        tvWatch: TVWatchRepository,
         imageLoader: ImageLoader,
         router: NavigationRouter
     ) {
@@ -22,7 +23,8 @@ struct LibraryDetailRouteView: View {
             initialValue: LibraryDetailViewModel(
                 listID: listID,
                 lists: lists,
-                annotations: annotations
+                annotations: annotations,
+                tvWatch: tvWatch
             )
         )
         self.lists = lists

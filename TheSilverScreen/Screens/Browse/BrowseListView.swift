@@ -13,6 +13,8 @@ struct BrowseListView: View {
     let imageLoader: ImageLoader
     let lists: ListsRepository
     let listsIndex: ListsIndex
+    let shows: TVRepository
+    let tvWatch: TVWatchRepository
     var router: NavigationRouter?
 
     @State private var scrolledID: String?
@@ -143,10 +145,12 @@ struct BrowseListView: View {
                         }
                         .buttonStyle(.plain)
 
-                        ListMembershipButton(
+                        WatchedToggleButton(
                             draft: row.listItem(),
                             lists: lists,
-                            index: listsIndex
+                            index: listsIndex,
+                            tvWatch: tvWatch,
+                            shows: shows
                         ) {
                             viewModel.noteListSaveFailed()
                         }
