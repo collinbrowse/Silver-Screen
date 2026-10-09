@@ -432,25 +432,72 @@ final class MovieDetailViewModelTests: XCTestCase {
         XCTAssertFalse(snapshot.entries.contains { $0.listID == watchlist.id && $0.itemID == 278 })
     }
 
-    func test_saveUserAnnotation_whenListSaveFails_keepsTheNewScore() async throws {
+    func test_saveUserAnnotation_whenListSaveFails_rollsBackAnnotation() async throws {
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        _ = try await annotations.saveScore(7.5, for: .movie(278))
         let store = InMemoryListsStore()
         let lists = ListsRepository(store: store, logger: SilentLogger())
-        let viewModel = makeViewModel(stub: .success(TMDBFixtures.movieDetailShawshank), lists: lists)
+        let viewModel = makeViewModel(
+            stub: .success(TMDBFixtures.movieDetailShawshank),
+            annotations: annotations,
+            lists: lists
+        )
         await viewModel.load()
+        // Load puts a scored title on Watched; remove it so the next add must persist and can fail.
+        let before = try await lists.snapshot()
+        let watched = try XCTUnwrap(before.list(.watched))
+        let entry = try XCTUnwrap(before.entries.first { $0.listID == watched.id && $0.itemID == 278 })
+        _ = try await lists.remove(itemKey: entry.itemKey, listID: watched.id)
+        viewModel.openAnnotationEditor()
         await store.setSaveError(CocoaError(.fileWriteUnknown))
 
-        let saved = await viewModel.saveUserAnnotation(score: 8, note: "")
+        let saved = await viewModel.saveUserAnnotation(score: 8, note: "Nope")
 
         XCTAssertFalse(saved)
+        XCTAssertNotNil(viewModel.annotationEditor)
         guard case .loaded(let content, activity: .failed(let error)) = viewModel.state else {
             return XCTFail("Expected loaded with failed activity, got \(viewModel.state)")
         }
-        XCTAssertEqual(content.formattedUserScore, "8.0 / 10")
+        XCTAssertEqual(content.formattedUserScore, "7.5 / 10")
+        XCTAssertNil(content.userNote)
         XCTAssertEqual(error, .persistence)
+        let record = try await annotations.annotation(for: .movie(278))
+        XCTAssertEqual(record?.score, 7.5)
+        XCTAssertNil(record?.note)
+        await store.setSaveError(nil)
+        let snapshot = try await lists.snapshot()
+        XCTAssertFalse(snapshot.entries.contains { $0.listID == watched.id && $0.itemID == 278 })
+    }
+
+    func test_saveUserAnnotation_whenListSaveFails_withNoPriorScore_removesAnnotation() async throws {
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        let store = InMemoryListsStore()
+        let lists = ListsRepository(store: store, logger: SilentLogger())
+        let viewModel = makeViewModel(
+            stub: .success(TMDBFixtures.movieDetailShawshank),
+            annotations: annotations,
+            lists: lists
+        )
+        await viewModel.load()
+        viewModel.openAnnotationEditor()
+        await store.setSaveError(CocoaError(.fileWriteUnknown))
+
+        let saved = await viewModel.saveUserAnnotation(score: 8, note: "Solid")
+
+        XCTAssertFalse(saved)
+        XCTAssertNotNil(viewModel.annotationEditor)
+        guard case .loaded(let content, activity: .failed(let error)) = viewModel.state else {
+            return XCTFail("Expected loaded with failed activity, got \(viewModel.state)")
+        }
+        XCTAssertNil(content.formattedUserScore)
+        XCTAssertNil(content.userNote)
+        XCTAssertEqual(error, .persistence)
+        let record = try await annotations.annotation(for: .movie(278))
+        XCTAssertNil(record)
         await store.setSaveError(nil)
         let snapshot = try await lists.snapshot()
         let watched = try XCTUnwrap(snapshot.list(.watched))
-        XCTAssertFalse(snapshot.entries.contains { $0.listID == watched.id })
+        XCTAssertFalse(snapshot.entries.contains { $0.listID == watched.id && $0.itemID == 278 })
     }
 
     func test_load_withSavedScore_addsTheMovieToWatchedOnTheRatedDay() async throws {
