@@ -371,6 +371,11 @@ final class MovieDetailViewModel {
         let similar = similarItems.isEmpty
             ? nil
             : MovieDetailContent.SimilarSection(items: similarItems)
+        let heroMetadata = formatHeroMetadata(
+            releaseDate: detail.releaseDate,
+            runtimeMinutes: detail.runtimeMinutes,
+            genreNames: detail.genres.map(\.name)
+        )
 
         return MovieDetailContent(
             detail: detail,
@@ -387,6 +392,8 @@ final class MovieDetailViewModel {
             formattedRevenue: revenue.display,
             revenueAccessibilityLabel: revenue.accessibility,
             formattedReleaseDate: formatReleaseDate(detail.releaseDate),
+            heroMetadataLine: heroMetadata.line,
+            heroMetadataAccessibilityLabel: heroMetadata.accessibility,
             images: images,
             cast: cast,
             crew: crew,
@@ -429,6 +436,33 @@ final class MovieDetailViewModel {
     static func formatReleaseDate(_ date: Date?) -> String {
         guard date != nil else { return "Not available" }
         return DisplayDate.day(date)
+    }
+
+    /// Year · runtime · up to two leading genres for the line under the title.
+    static func formatHeroMetadata(
+        releaseDate: Date?,
+        runtimeMinutes: Int?,
+        genreNames: [String]
+    ) -> (line: String, accessibility: String) {
+        var visible: [String] = []
+        var spoken: [String] = []
+
+        if let year = DisplayDate.year(releaseDate) {
+            visible.append(year)
+            spoken.append(year)
+        }
+        if let runtimeMinutes, runtimeMinutes > 0 {
+            visible.append("\(runtimeMinutes) mins")
+            spoken.append(runtimeMinutes == 1 ? "1 minute" : "\(runtimeMinutes) minutes")
+        }
+        let leadingGenres = genreNames.prefix(2).filter { !$0.isEmpty }
+        if !leadingGenres.isEmpty {
+            let genreText = leadingGenres.joined(separator: ", ")
+            visible.append(genreText)
+            spoken.append(genreText)
+        }
+
+        return (visible.joined(separator: " · "), spoken.joined(separator: ", "))
     }
 
     static func formatCurrency(_ amount: Int) -> (display: String, accessibility: String) {
@@ -555,6 +589,8 @@ private extension MovieDetailContent {
             formattedRevenue: formattedRevenue,
             revenueAccessibilityLabel: revenueAccessibilityLabel,
             formattedReleaseDate: formattedReleaseDate,
+            heroMetadataLine: heroMetadataLine,
+            heroMetadataAccessibilityLabel: heroMetadataAccessibilityLabel,
             images: images,
             cast: cast,
             crew: crew,
@@ -581,6 +617,8 @@ private extension MovieDetailContent {
             formattedRevenue: formattedRevenue,
             revenueAccessibilityLabel: revenueAccessibilityLabel,
             formattedReleaseDate: formattedReleaseDate,
+            heroMetadataLine: heroMetadataLine,
+            heroMetadataAccessibilityLabel: heroMetadataAccessibilityLabel,
             images: images,
             cast: cast,
             crew: crew,

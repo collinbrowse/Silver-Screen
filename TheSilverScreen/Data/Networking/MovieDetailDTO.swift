@@ -138,6 +138,8 @@ struct MovieDetailDTO: Decodable, Sendable {
     let releaseDate: String?
     let voteAverage: Double
     let popularity: Double?
+    /// Runtime in minutes. Absent or zero when TMDB does not know it.
+    let runtime: Int?
     let genres: [MovieGenreDTO]?
     let budget: Int?
     let revenue: Int?
@@ -154,6 +156,7 @@ struct MovieDetailDTO: Decodable, Sendable {
         case releaseDate = "release_date"
         case voteAverage = "vote_average"
         case popularity
+        case runtime
         case genres
         case budget
         case revenue

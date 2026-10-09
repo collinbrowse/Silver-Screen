@@ -60,6 +60,9 @@ struct MovieDetailContent: Sendable, Equatable {
     let formattedRevenue: String
     let revenueAccessibilityLabel: String
     let formattedReleaseDate: String
+    /// Year · runtime · leading genres under the title. Empty when every part is missing.
+    let heroMetadataLine: String
+    let heroMetadataAccessibilityLabel: String
     let images: ImagesSection?
     let cast: CastSection?
     let crew: CrewSection?

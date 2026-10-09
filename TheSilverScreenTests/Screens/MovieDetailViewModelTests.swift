@@ -21,6 +21,9 @@ final class MovieDetailViewModelTests: XCTestCase {
         XCTAssertEqual(content.detail.title, "The Shawshank Redemption")
         XCTAssertEqual(content.detail.overview, "Framed in the 1940s for a double murder.")
         XCTAssertEqual(content.detail.genres.map(\.name), ["Drama", "Crime"])
+        XCTAssertEqual(content.detail.runtimeMinutes, 142)
+        XCTAssertEqual(content.heroMetadataLine, "1994 · 142 mins · Drama, Crime")
+        XCTAssertEqual(content.heroMetadataAccessibilityLabel, "1994, 142 minutes, Drama, Crime")
         XCTAssertEqual(content.formattedRating, "8.7 / 10")
         XCTAssertEqual(content.ratingAccessibilityLabel, "Rated 8.7 out of 10")
         XCTAssertEqual(content.formattedBudget, "$25.0M")
@@ -247,6 +250,20 @@ final class MovieDetailViewModelTests: XCTestCase {
         XCTAssertEqual(content.formattedRevenue, "Not available")
         XCTAssertEqual(content.formattedReleaseDate, "Not available")
         XCTAssertTrue(content.detail.genres.isEmpty)
+        XCTAssertEqual(content.heroMetadataLine, "")
+        XCTAssertNil(content.detail.runtimeMinutes)
+    }
+
+    func test_formatHeroMetadata_keepsOnlyLeadingTwoGenres() {
+        let date = Calendar(identifier: .gregorian).date(from: DateComponents(timeZone: TimeZone(secondsFromGMT: 0), year: 2026, month: 3, day: 1))
+        let formatted = MovieDetailViewModel.formatHeroMetadata(
+            releaseDate: date,
+            runtimeMinutes: 98,
+            genreNames: ["Drama", "Crime", "Thriller"]
+        )
+
+        XCTAssertEqual(formatted.line, "2026 · 98 mins · Drama, Crime")
+        XCTAssertEqual(formatted.accessibility, "2026, 98 minutes, Drama, Crime")
     }
 
     func test_load_whenOffline_setsFailedOffline() async {

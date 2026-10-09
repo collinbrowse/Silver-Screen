@@ -3,7 +3,7 @@
 //  TheSilverScreen
 //
 //  Display rows for browsable movie, TV, and people lists. Genre names and
-//  dates are resolved here so list views only render strings.
+//  release/air years are resolved here so list views only render strings.
 //
 
 import Foundation
@@ -29,11 +29,11 @@ struct CatalogMovieRow: Sendable, Identifiable, Equatable, Hashable {
         title = movie.title
         posterPath = movie.posterPath
         genreIDs = movie.genreIDs
-        genreNames = MovieGenreCatalog.names(for: movie.genreIDs)
+        genreNames = Array(MovieGenreCatalog.names(for: movie.genreIDs).prefix(2))
         releaseDate = movie.releaseDate
         voteAverage = movie.voteAverage
         popularity = movie.popularity
-        formattedReleaseDate = DisplayDate.day(movie.releaseDate)
+        formattedReleaseDate = DisplayDate.year(movie.releaseDate) ?? ""
         formattedUserScore = nil
         formattedRatedOn = nil
     }
@@ -80,11 +80,11 @@ struct CatalogTVRow: Sendable, Identifiable, Equatable, Hashable {
         name = series.name
         posterPath = series.posterPath
         genreIDs = series.genreIDs
-        genreNames = TVGenreCatalog.names(for: series.genreIDs)
+        genreNames = Array(TVGenreCatalog.names(for: series.genreIDs).prefix(2))
         firstAirDate = series.firstAirDate
         voteAverage = series.voteAverage
         popularity = series.popularity
-        formattedFirstAirDate = DisplayDate.day(series.firstAirDate)
+        formattedFirstAirDate = DisplayDate.year(series.firstAirDate) ?? ""
         formattedUserScore = nil
         formattedRatedOn = nil
     }

@@ -2,8 +2,9 @@
 //  SearchView.swift
 //  TheSilverScreen
 //
-//  Search tab. An empty field shows award shelves. A query searches Movies,
-//  TV, and People. Dismissing the keyboard leaves the current results in place.
+//  Search tab. An empty field shows award shelves. Typing shows a Spotify-style
+//  preview (top five per type; People first when results say so). View all /
+//  Enter opens the ranked list with niche and Genre filters.
 //
 
 import SwiftUI
@@ -16,7 +17,7 @@ struct SearchView: View {
     let listsIndex: ListsIndex
     var router: NavigationRouter?
 
-    @State private var scrollIDs: [SearchScope: Int] = [:]
+    @State private var scrollID: String?
     /// Mirrors the system search field's focus. Not passed into `.searchable`,
     /// because binding `isPresented` clears the visible query after a pop.
     @State private var fieldPresented = false
@@ -32,17 +33,13 @@ struct SearchView: View {
         .background(DesignTheme.canvas)
         .refreshable { await viewModel.refresh() }
         .safeAreaInset(edge: .top, spacing: 0) {
-            if viewModel.showsScopePicker {
-                Picker("Search", selection: $viewModel.scope) {
-                    ForEach(SearchScope.allCases, id: \.self) { scope in
-                        Text(scope.title).tag(scope)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal, DesignSpacing.lg)
-                .padding(.vertical, DesignSpacing.sm)
-                .background(DesignTheme.canvas)
-                .accessibilityLabel("Search category")
+            if viewModel.showsFilterPills {
+                SearchFilterPills(
+                    typeNiche: viewModel.typeNiche,
+                    genreFilter: viewModel.genreFilter,
+                    onSelectNiche: { viewModel.selectTypeNiche($0) },
+                    onSelectGenre: { viewModel.selectGenreFilter($0) }
+                )
             }
         }
         .navigationTitle("Search")
@@ -56,15 +53,13 @@ struct SearchView: View {
         }
         .navigationSearch(
             text: $viewModel.query,
-            prompt: searchPrompt,
-            isFocused: $fieldPresented
+            prompt: "Search movies, TV, and people",
+            isFocused: $fieldPresented,
+            onSubmit: { viewModel.openAllResults() }
         )
         .scrollDismissesKeyboard(.immediately)
         .onChange(of: viewModel.query) { _, _ in
             viewModel.scheduleQueryChange()
-        }
-        .onChange(of: viewModel.scope) { _, _ in
-            Task { await viewModel.reloadForScopeChange() }
         }
         .onChange(of: fieldPresented) { _, focused in
             viewModel.setFieldFocused(focused)
@@ -76,7 +71,7 @@ struct SearchView: View {
             Task { await viewModel.reloadDisplayedScores() }
         }
         .onChange(of: viewModel.committedQuery) { _, _ in
-            scrollIDs = [:]
+            scrollID = nil
         }
         .onDisappear { viewModel.cancelDebounce() }
         .task {
@@ -91,7 +86,7 @@ struct SearchView: View {
         switch viewModel.state {
             case .idle, .loading:
                 ProgressView()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             case .empty:
                 if viewModel.showsFocusedPlaceholder {
                     Button {
@@ -104,8 +99,8 @@ struct SearchView: View {
                 } else {
                     emptyState
                 }
-            case .loaded(let listing, let activity):
-                results(listing, activity: activity)
+            case .loaded(let content, let activity):
+                results(content, activity: activity)
             case .failed(let error):
                 ErrorStateView(error: error) {
                     await viewModel.retry()
@@ -128,12 +123,12 @@ struct SearchView: View {
                         .accessibilityHint("Opens this award list")
                     }
                 }
-                
+
                 Text("Genre")
                     .font(DesignTypography.section)
                     .foregroundStyle(DesignTheme.textPrimary)
                     .padding(.horizontal, DesignSpacing.lg)
-                
+
                 shelfSection {
                     ForEach(MergedGenre.searchShelf, id: \.self) { genre in
                         Button {
@@ -180,76 +175,141 @@ struct SearchView: View {
         )
     }
 
-    private var searchPrompt: String {
-        guard viewModel.showsScopePicker else { return "Search movies, TV, and people" }
-        switch viewModel.scope {
-            case .movies: return "Search movies"
-            case .tv: return "Search TV"
-            case .people: return "Search people"
+    @ViewBuilder
+    private func results(_ content: SearchContent, activity: LoadActivity) -> some View {
+        switch content {
+            case .preview(let sections):
+                previewList(sections, activity: activity)
+            case .allResults(let items):
+                allResultsList(items, activity: activity)
+        }
+    }
+
+    private func previewList(_ sections: SearchPreviewSections, activity: LoadActivity) -> some View {
+        List {
+            switch sections.emphasis {
+                case .titlesFirst:
+                    previewMoviesSection(sections.movies)
+                    previewTVSection(sections.tv)
+                    previewPeopleSection(sections.people)
+                case .peopleFirst:
+                    previewPeopleSection(sections.people)
+                    previewMoviesSection(sections.movies)
+                    previewTVSection(sections.tv)
+            }
+
+            Section {
+                SearchViewAllRow(query: viewModel.committedQuery) {
+                    viewModel.openAllResults()
+                }
+                .listRowInsets(EdgeInsets(
+                    top: DesignSpacing.sm,
+                    leading: DesignSpacing.lg,
+                    bottom: DesignSpacing.md,
+                    trailing: DesignSpacing.lg
+                ))
+                .listRowSeparator(.hidden)
+            }
+        }
+        .listStyle(.plain)
+        .scrollPosition(id: $scrollID)
+        .overlay(alignment: .top) {
+            LoadActivityBanner(activity: activity)
         }
     }
 
     @ViewBuilder
-    private func results(_ listing: SearchListing, activity: LoadActivity) -> some View {
+    private func previewMoviesSection(_ rows: [CatalogMovieRow]) -> some View {
+        if !rows.isEmpty {
+            Section {
+                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                    resultButton(
+                        index: index,
+                        count: rows.count,
+                        showsLoadingRow: false,
+                        rowID: "m-\(row.id)",
+                        loadsMore: false
+                    ) {
+                        open(.movieDetail(id: row.id))
+                    } label: {
+                        movieRowLabel(row)
+                    } star: {
+                        listControl(row.listItem())
+                    }
+                }
+            } header: {
+                Text("Movies")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func previewTVSection(_ rows: [CatalogTVRow]) -> some View {
+        if !rows.isEmpty {
+            Section {
+                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                    resultButton(
+                        index: index,
+                        count: rows.count,
+                        showsLoadingRow: false,
+                        rowID: "t-\(row.id)",
+                        loadsMore: false
+                    ) {
+                        open(.tvSeries(id: row.id))
+                    } label: {
+                        tvRowLabel(row)
+                    } star: {
+                        listControl(row.listItem())
+                    }
+                }
+            } header: {
+                Text("TV")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func previewPeopleSection(_ rows: [CatalogPersonRow]) -> some View {
+        if !rows.isEmpty {
+            Section {
+                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                    resultButton(
+                        index: index,
+                        count: rows.count,
+                        showsLoadingRow: false,
+                        rowID: "p-\(row.id)",
+                        loadsMore: false
+                    ) {
+                        open(.person(id: row.id))
+                    } label: {
+                        personRowLabel(row)
+                    } star: {
+                        listControl(row.listItem())
+                    }
+                }
+            } header: {
+                Text("People")
+            }
+        }
+    }
+
+    private func allResultsList(_ items: [SearchResultItem], activity: LoadActivity) -> some View {
         List {
             Section {
-                switch listing {
-                    case .movies(let rows):
-                        ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                        resultButton(index: index, count: rows.count, showsLoadingRow: activity == .loadingMore, rowID: row.id) {
-                            open(.movieDetail(id: row.id))
-                        } label: {
-                            CatalogRowView(
-                                title: row.title,
-                                subtitle: row.genreNames.joined(separator: ", "),
-                                metadata: row.formattedReleaseDate,
-                                userScore: row.formattedUserScore,
-                                imagePath: row.posterPath,
-                                imageKind: .poster,
-                                placeholderSystemImage: "film",
-                                imageLoader: imageLoader
-                            )
-                        } star: {
-                            listControl(row.listItem())
-                        }
-                        }
-                    case .tv(let rows):
-                        ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                        resultButton(index: index, count: rows.count, showsLoadingRow: activity == .loadingMore, rowID: row.id) {
-                            open(.tvSeries(id: row.id))
-                        } label: {
-                            CatalogRowView(
-                                title: row.name,
-                                subtitle: row.genreNames.joined(separator: ", "),
-                                metadata: row.formattedFirstAirDate,
-                                userScore: row.formattedUserScore,
-                                imagePath: row.posterPath,
-                                imageKind: .poster,
-                                placeholderSystemImage: "tv",
-                                imageLoader: imageLoader
-                            )
-                        } star: {
-                            listControl(row.listItem())
-                        }
-                        }
-                    case .people(let rows):
-                        ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                        resultButton(index: index, count: rows.count, showsLoadingRow: activity == .loadingMore, rowID: row.id) {
-                            open(.person(id: row.id))
-                        } label: {
-                            CatalogRowView(
-                                title: row.name,
-                                subtitle: "",
-                                metadata: row.knownForDepartment ?? "",
-                                imagePath: row.profilePath,
-                                imageKind: .profile,
-                                placeholderSystemImage: "person.fill",
-                                imageLoader: imageLoader
-                            )
-                        } star: {
-                            listControl(row.listItem())
-                        }
-                        }
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                    resultButton(
+                        index: index,
+                        count: items.count,
+                        showsLoadingRow: activity == .loadingMore,
+                        rowID: item.id,
+                        loadsMore: true
+                    ) {
+                        open(route(for: item))
+                    } label: {
+                        itemLabel(item)
+                    } star: {
+                        listControl(listItem(for: item))
+                    }
                 }
 
                 if activity == .loadingMore {
@@ -261,12 +321,93 @@ struct SearchView: View {
             .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
         }
         .listStyle(.plain)
-        .scrollPosition(id: Binding(
-            get: { scrollIDs[viewModel.scope] },
-            set: { scrollIDs[viewModel.scope] = $0 }
-        ))
+        .scrollPosition(id: $scrollID)
         .overlay(alignment: .top) {
             LoadActivityBanner(activity: activity)
+        }
+    }
+
+    @ViewBuilder
+    private func itemLabel(_ item: SearchResultItem) -> some View {
+        switch item {
+            case .movie(let row):
+                movieRowLabel(row, density: .standard, showsKind: true)
+            case .tv(let row):
+                tvRowLabel(row, density: .standard, showsKind: true)
+            case .person(let row):
+                personRowLabel(row, density: .standard, showsKind: true)
+        }
+    }
+
+    private func movieRowLabel(
+        _ row: CatalogMovieRow,
+        density: CatalogRowView.Density = .compact,
+        showsKind: Bool = false
+    ) -> some View {
+        CatalogRowView(
+            title: row.title,
+            subtitle: row.genreNames.joined(separator: ", "),
+            metadata: row.formattedReleaseDate,
+            userScore: row.formattedUserScore,
+            kindLabel: showsKind ? "Movie" : nil,
+            density: density,
+            imagePath: row.posterPath,
+            imageKind: .poster,
+            placeholderSystemImage: "film",
+            imageLoader: imageLoader
+        )
+    }
+
+    private func tvRowLabel(
+        _ row: CatalogTVRow,
+        density: CatalogRowView.Density = .compact,
+        showsKind: Bool = false
+    ) -> some View {
+        CatalogRowView(
+            title: row.name,
+            subtitle: row.genreNames.joined(separator: ", "),
+            metadata: row.formattedFirstAirDate,
+            userScore: row.formattedUserScore,
+            kindLabel: showsKind ? "TV" : nil,
+            density: density,
+            imagePath: row.posterPath,
+            imageKind: .poster,
+            placeholderSystemImage: "tv",
+            imageLoader: imageLoader
+        )
+    }
+
+    private func personRowLabel(
+        _ row: CatalogPersonRow,
+        density: CatalogRowView.Density = .compact,
+        showsKind: Bool = false
+    ) -> some View {
+        CatalogRowView(
+            title: row.name,
+            subtitle: "",
+            metadata: row.knownForDepartment ?? "",
+            kindLabel: showsKind ? "Person" : nil,
+            density: density,
+            imagePath: row.profilePath,
+            imageKind: .profile,
+            placeholderSystemImage: "person.fill",
+            imageLoader: imageLoader
+        )
+    }
+
+    private func route(for item: SearchResultItem) -> Route {
+        switch item {
+            case .movie(let row): .movieDetail(id: row.id)
+            case .tv(let row): .tvSeries(id: row.id)
+            case .person(let row): .person(id: row.id)
+        }
+    }
+
+    private func listItem(for item: SearchResultItem) -> ListItemDraft {
+        switch item {
+            case .movie(let row): row.listItem()
+            case .tv(let row): row.listItem()
+            case .person(let row): row.listItem()
         }
     }
 
@@ -287,7 +428,8 @@ struct SearchView: View {
         index: Int,
         count: Int,
         showsLoadingRow: Bool,
-        rowID: Int,
+        rowID: String,
+        loadsMore: Bool,
         action: @escaping () -> Void,
         @ViewBuilder label: () -> Label,
         @ViewBuilder star: () -> Star
@@ -300,10 +442,15 @@ struct SearchView: View {
             star()
         }
         .id(rowID)
-        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 8))
+        .listRowInsets(EdgeInsets(
+            top: loadsMore ? 8 : 4,
+            leading: 16,
+            bottom: loadsMore ? 8 : 4,
+            trailing: 8
+        ))
         .listRowSeparatorBetweenCells(isFirst: index == 0, isLast: index == count - 1 && !showsLoadingRow)
         .onAppear {
-            if index == count - 1 {
+            if loadsMore, index == count - 1 {
                 Task { await viewModel.loadMore() }
             }
         }

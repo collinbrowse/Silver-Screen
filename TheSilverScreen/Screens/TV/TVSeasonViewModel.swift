@@ -9,7 +9,9 @@ struct TVSeasonContent: Sendable, Equatable {
     let seriesName: String
     let displayName: String
     let overview: String
-    let formattedAirDate: String
+    /// `7 Episodes · 2008` under the title. Empty when every part is missing.
+    let heroMetadataLine: String
+    let heroMetadataAccessibilityLabel: String
     let formattedRating: String
     let ratingAccessibilityLabel: String
     let userScore: Double?
@@ -244,11 +246,13 @@ final class TVSeasonViewModel {
         personal: PersonalDetail,
         streamingProviders: [StreamingProvider]
     ) -> TVSeasonContent {
-        TVSeasonContent(
+        let heroMetadata = formatHeroMetadata(season: season)
+        return TVSeasonContent(
             seriesName: seriesName,
             displayName: SeasonTitle.display(name: season.name, number: season.seasonNumber),
             overview: season.overview,
-            formattedAirDate: DisplayDate.day(season.airDate),
+            heroMetadataLine: heroMetadata.line,
+            heroMetadataAccessibilityLabel: heroMetadata.accessibility,
             formattedRating: TMDBRating.formatted(season.voteAverage),
             ratingAccessibilityLabel: TMDBRating.accessibilityLabel(season.voteAverage),
             userScore: personal.userScore,
@@ -267,6 +271,25 @@ final class TVSeasonViewModel {
             fullscreenImages: nil
         )
     }
+
+    /// Episode count · air year for the line under the season title.
+    static func formatHeroMetadata(season: TVSeasonDetail) -> (line: String, accessibility: String) {
+        var visible: [String] = []
+        var spoken: [String] = []
+
+        let episodeCount = season.episodes.count
+        if episodeCount > 0 {
+            let text = episodeCount == 1 ? "1 Episode" : "\(episodeCount) Episodes"
+            visible.append(text)
+            spoken.append(text)
+        }
+        if let year = DisplayDate.year(season.airDate) {
+            visible.append(year)
+            spoken.append(year)
+        }
+
+        return (visible.joined(separator: " · "), spoken.joined(separator: ", "))
+    }
 }
 
 private extension TVSeasonContent {
@@ -275,7 +298,8 @@ private extension TVSeasonContent {
             seriesName: seriesName,
             displayName: displayName,
             overview: overview,
-            formattedAirDate: formattedAirDate,
+            heroMetadataLine: heroMetadataLine,
+            heroMetadataAccessibilityLabel: heroMetadataAccessibilityLabel,
             formattedRating: formattedRating,
             ratingAccessibilityLabel: ratingAccessibilityLabel,
             userScore: personal.userScore,

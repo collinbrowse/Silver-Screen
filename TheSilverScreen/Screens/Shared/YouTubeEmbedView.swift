@@ -19,8 +19,8 @@ struct YouTubeEmbedView: UIViewRepresentable {
         webView.customUserAgent = Self.safariUserAgent
         webView.scrollView.isScrollEnabled = true
         webView.isOpaque = false
-        webView.backgroundColor = .black
-        webView.scrollView.backgroundColor = .black
+        webView.backgroundColor = .systemBackground
+        webView.scrollView.backgroundColor = .systemBackground
         webView.accessibilityLabel = "Trailer video"
         return webView
     }

@@ -25,7 +25,8 @@ final class TVSeasonViewModelTests: XCTestCase {
         }
         XCTAssertEqual(content.seriesName, "Breaking Bad")
         XCTAssertEqual(content.displayName, "The Beginning")
-        XCTAssertEqual(content.formattedAirDate, "Jan 20, 2008")
+        XCTAssertEqual(content.heroMetadataLine, "1 Episode · 2008")
+        XCTAssertEqual(content.heroMetadataAccessibilityLabel, "1 Episode, 2008")
         XCTAssertEqual(content.formattedRating, "8.4 / 10")
         XCTAssertEqual(content.ratingAccessibilityLabel, "Rated 8.4 out of 10")
         XCTAssertEqual(content.overview, "Walter starts cooking.")

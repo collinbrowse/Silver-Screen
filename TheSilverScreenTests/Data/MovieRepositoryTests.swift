@@ -198,6 +198,7 @@ final class MovieRepositoryTests: XCTestCase {
         XCTAssertEqual(detail.budget, 25_000_000)
         XCTAssertEqual(detail.revenue, 28_341_469)
         XCTAssertEqual(detail.genres.map(\.name), ["Drama", "Crime"])
+        XCTAssertEqual(detail.runtimeMinutes, 142)
 
         let path = await client.lastPath
         XCTAssertEqual(path, "/3/movie/278")
