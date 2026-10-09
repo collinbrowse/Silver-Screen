@@ -136,6 +136,7 @@ final class TVEpisodeViewModel {
     func openAnnotationEditor() {
         guard case .loaded(let content, _) = state else { return }
         annotationEditor = DetailAnnotationWriter.session(
+            title: content.title,
             score: content.userScore,
             note: content.userNote
         )

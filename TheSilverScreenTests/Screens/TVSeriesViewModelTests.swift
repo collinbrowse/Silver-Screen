@@ -249,6 +249,7 @@ final class TVSeriesViewModelTests: XCTestCase {
                 viewModel.openAnnotationEditor()
 
                 let session = try XCTUnwrap(viewModel.annotationEditor)
+                XCTAssertEqual(session.title, "Breaking Bad")
                 XCTAssertEqual(session.score, 9)
                 XCTAssertEqual(session.note, "Peak television")
                 XCTAssertTrue(session.canDeleteNote)

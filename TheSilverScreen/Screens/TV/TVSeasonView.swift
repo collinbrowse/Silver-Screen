@@ -94,13 +94,11 @@ struct TVSeasonView: View {
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
         .sheet(item: annotationEditorBinding) { session in
             AnnotationEditorSheet(
+                title: session.title,
                 score: session.score,
                 note: session.note,
-                canDeleteNote: session.canDeleteNote,
-                hasExistingScore: session.hasExistingScore,
                 canClear: session.canClear,
                 onSave: { await viewModel.saveUserAnnotation(score: $0, note: $1) },
-                onDeleteNote: { await viewModel.deleteUserNote() },
                 onClear: { await viewModel.clearUserAnnotation() }
             )
         }
@@ -126,10 +124,13 @@ struct TVSeasonView: View {
 
     private func loaded(_ content: TVSeasonContent) -> some View {
         let bleedsToTop = !content.images.isEmpty
-        return ScrollView {
+        return ScrollViewReader { proxy in
+            ScrollView {
             VStack(alignment: .leading, spacing: DesignSpacing.xl) {
                 seasonHero(content)
-                seasonFacts(content)
+                seasonFacts(content, scrollTo: { id in
+                    proxy.scrollTo(id, anchor: .top)
+                })
                 if !viewModel.awardRows.isEmpty {
                     AwardRowsSection(rows: viewModel.awardRows)
                         .padding(.horizontal, DesignSpacing.lg)
@@ -158,6 +159,7 @@ struct TVSeasonView: View {
             }
             .padding(.bottom, DesignSpacing.lg)
             .coordinateSpace(.named("detailScroll"))
+            }
         }
         .heroStatusBarBleed(enabled: bleedsToTop)
         .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
@@ -189,7 +191,10 @@ struct TVSeasonView: View {
         }
     }
 
-    private func seasonFacts(_ content: TVSeasonContent) -> some View {
+    private func seasonFacts(
+        _ content: TVSeasonContent,
+        scrollTo: @escaping (String) -> Void
+    ) -> some View {
         VStack(alignment: .leading, spacing: DesignSpacing.md) {
             TMDBRatingCard(
                 formattedRating: content.formattedRating,
@@ -202,7 +207,8 @@ struct TVSeasonView: View {
                 overview: content.overview,
                 note: content.userNote,
                 notedOn: content.formattedNotedOn,
-                onEdit: { viewModel.openAnnotationEditor() }
+                onEdit: { viewModel.openAnnotationEditor() },
+                scrollTo: scrollTo
             )
         }
         .padding(.horizontal, DesignSpacing.lg)

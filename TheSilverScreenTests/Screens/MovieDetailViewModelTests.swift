@@ -337,6 +337,7 @@ final class MovieDetailViewModelTests: XCTestCase {
         viewModel.openAnnotationEditor()
 
         let session = try XCTUnwrap(viewModel.annotationEditor)
+        XCTAssertEqual(session.title, "The Shawshank Redemption")
         XCTAssertEqual(session.score, 8.5)
         XCTAssertEqual(session.note, "A favorite")
         XCTAssertTrue(session.canDeleteNote)

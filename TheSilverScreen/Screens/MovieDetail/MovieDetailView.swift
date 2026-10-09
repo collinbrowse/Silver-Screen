@@ -90,13 +90,11 @@ struct MovieDetailView: View {
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
         .sheet(item: annotationEditorBinding) { session in
             AnnotationEditorSheet(
+                title: session.title,
                 score: session.score,
                 note: session.note,
-                canDeleteNote: session.canDeleteNote,
-                hasExistingScore: session.hasExistingScore,
                 canClear: session.canClear,
                 onSave: { await viewModel.saveUserAnnotation(score: $0, note: $1) },
-                onDeleteNote: { await viewModel.deleteUserNote() },
                 onClear: { await viewModel.clearUserAnnotation() }
             )
         }
@@ -177,7 +175,7 @@ struct MovieDetailView: View {
                     }
                 }
 
-                metadataBlock(content)
+                metadataBlock(content, scrollTo: scrollTo)
 
                 if let cast = content.cast {
                     castCarousel(cast)
@@ -217,7 +215,10 @@ struct MovieDetailView: View {
         }
     }
 
-    private func metadataBlock(_ content: MovieDetailContent) -> some View {
+    private func metadataBlock(
+        _ content: MovieDetailContent,
+        scrollTo: @escaping (String) -> Void
+    ) -> some View {
         VStack(alignment: .leading, spacing: DesignSpacing.xl) {
             TMDBRatingCard(
                 formattedRating: content.formattedRating,
@@ -230,7 +231,8 @@ struct MovieDetailView: View {
                 overview: content.detail.overview,
                 note: content.userNote,
                 notedOn: content.formattedNotedOn,
-                onEdit: { viewModel.openAnnotationEditor() }
+                onEdit: { viewModel.openAnnotationEditor() },
+                scrollTo: scrollTo
             )
             factsCard(content)
             if !viewModel.awardRows.isEmpty {

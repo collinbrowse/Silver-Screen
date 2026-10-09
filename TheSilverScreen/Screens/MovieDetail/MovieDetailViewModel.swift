@@ -80,6 +80,7 @@ final class MovieDetailViewModel {
     func openAnnotationEditor() {
         guard case .loaded(let content, _) = state else { return }
         annotationEditor = DetailAnnotationWriter.session(
+            title: content.detail.title,
             score: content.userScore,
             note: content.userNote
         )

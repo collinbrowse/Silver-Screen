@@ -11,8 +11,9 @@ import Foundation
 @MainActor
 enum DetailAnnotationWriter {
     /// Opens the combined editor from the personal values already on screen.
-    static func session(score: Double?, note: String?) -> AnnotationEditorSession {
+    static func session(title: String, score: Double?, note: String?) -> AnnotationEditorSession {
         AnnotationEditorSession(
+            title: title,
             score: score,
             note: note ?? "",
             canDeleteNote: note != nil,

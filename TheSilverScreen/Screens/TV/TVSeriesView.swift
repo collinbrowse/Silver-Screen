@@ -89,13 +89,11 @@ struct TVSeriesView: View {
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
         .sheet(item: annotationEditorBinding) { session in
             AnnotationEditorSheet(
+                title: session.title,
                 score: session.score,
                 note: session.note,
-                canDeleteNote: session.canDeleteNote,
-                hasExistingScore: session.hasExistingScore,
                 canClear: session.canClear,
                 onSave: { await viewModel.saveUserAnnotation(score: $0, note: $1) },
-                onDeleteNote: { await viewModel.deleteUserNote() },
                 onClear: { await viewModel.clearUserAnnotation() }
             )
         }
@@ -132,7 +130,7 @@ struct TVSeriesView: View {
         return ScrollView {
             VStack(alignment: .leading, spacing: DesignSpacing.xl) {
                 seriesHero(content)
-                seriesFacts(content)
+                seriesFacts(content, scrollTo: scrollTo)
                 if !viewModel.awardRows.isEmpty {
                     AwardRowsSection(rows: viewModel.awardRows)
                         .padding(.horizontal, DesignSpacing.lg)
@@ -218,7 +216,10 @@ struct TVSeriesView: View {
         }
     }
 
-    private func seriesFacts(_ content: TVSeriesContent) -> some View {
+    private func seriesFacts(
+        _ content: TVSeriesContent,
+        scrollTo: @escaping (String) -> Void
+    ) -> some View {
         VStack(alignment: .leading, spacing: DesignSpacing.md) {
             TMDBRatingCard(
                 formattedRating: content.formattedRating,
@@ -231,7 +232,8 @@ struct TVSeriesView: View {
                 overview: content.detail.overview,
                 note: content.userNote,
                 notedOn: content.formattedNotedOn,
-                onEdit: { viewModel.openAnnotationEditor() }
+                onEdit: { viewModel.openAnnotationEditor() },
+                scrollTo: scrollTo
             )
         }
         .padding(.horizontal, DesignSpacing.lg)

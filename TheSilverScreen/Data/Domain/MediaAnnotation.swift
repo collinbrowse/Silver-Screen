@@ -204,6 +204,8 @@ enum AnnotationActivity {
 /// Notes require a rating going forward; note-only rows still load for older data.
 struct AnnotationEditorSession: Sendable, Equatable, Identifiable {
     let id: UUID
+    /// Movie, series, season, or episode name shown as the sheet title.
+    let title: String
     /// Saved score to prefill, or nil when the user must choose one before saving.
     let score: Double?
     let note: String
@@ -213,8 +215,9 @@ struct AnnotationEditorSession: Sendable, Equatable, Identifiable {
     /// Score and/or note on disk so the sheet can offer Remove rating.
     let canClear: Bool
 
-    init(score: Double?, note: String, canDeleteNote: Bool, hasExistingScore: Bool) {
+    init(title: String, score: Double?, note: String, canDeleteNote: Bool, hasExistingScore: Bool) {
         self.id = UUID()
+        self.title = title
         self.score = score
         self.note = note
         self.canDeleteNote = canDeleteNote

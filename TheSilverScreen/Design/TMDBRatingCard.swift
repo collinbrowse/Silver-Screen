@@ -47,10 +47,18 @@ struct TMDBRatingCard: View {
 
     private var userSide: some View {
         Button(action: onEdit) {
-            userLabel
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
+            HStack {
+                userLabel
+                    .contentShape(Rectangle())
+                if formattedUserScore != nil {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 18).weight(.bold))
+                        .foregroundStyle(DesignTheme.textPrimary)
+                        .accessibilityHidden(true)
+                }
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .buttonStyle(.plain)
         .accessibilityLabel(userScoreAccessibilityLabel)
     }
@@ -61,7 +69,7 @@ struct TMDBRatingCard: View {
             VStack(alignment: .leading, spacing: DesignSpacing.xs) {
                 Text(formattedUserScore)
                     .font(DesignTypography.ratingValue)
-                    .foregroundStyle(DesignTheme.textPrimary)
+                    .foregroundStyle(DesignTheme.accent)
                 Text("YOUR RATING")
                     .font(DesignTypography.factLabel)
                     .foregroundStyle(DesignTheme.textMuted)

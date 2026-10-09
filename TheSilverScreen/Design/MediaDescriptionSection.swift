@@ -2,9 +2,9 @@
 //  MediaDescriptionSection.swift
 //  TheSilverScreen
 //
-//  TMDB overview and the viewer's note for one title. A saved note is the page
-//  that shows first. An arrow beside Storyline opens the overview.
-//  An arrow beside Your notes, kept on the right, returns.
+//  TMDB overview and the viewer's review for one title. A saved note is the page
+//  that shows first. Headers sit outside the surface card; the review body matches
+//  the Reviews card (name, date, text, Show More). The card opens the editor.
 //
 
 import SwiftUI
@@ -12,24 +12,28 @@ import SwiftUI
 struct MediaDescriptionSection: View {
     let overview: String
     let note: String?
-    /// Day the note was last saved.
+    /// Day the note was first saved.
     var notedOn: String? = nil
     let onEdit: () -> Void
+    /// Keeps the note card on screen when collapsing a long note that started above the fold.
+    var scrollTo: (String) -> Void = { _ in }
 
     @State private var page: Page
-    /// True when the storyline is arriving from the right. Notes arrive from the left.
-    @State private var storylineFromTrailing = true
+
+    private static let noteCardID = "user-note"
 
     init(
         overview: String,
         note: String?,
         notedOn: String? = nil,
-        onEdit: @escaping () -> Void
+        onEdit: @escaping () -> Void,
+        scrollTo: @escaping (String) -> Void = { _ in }
     ) {
         self.overview = overview
         self.note = note
         self.notedOn = notedOn
         self.onEdit = onEdit
+        self.scrollTo = scrollTo
         _page = State(initialValue: note == nil ? .description : .notes)
     }
 
@@ -41,15 +45,12 @@ struct MediaDescriptionSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DesignSpacing.sm) {
             header
-            textBlock
-            if page == .notes, let notedOn {
-                Text(notedOn)
-                    .font(DesignTypography.chip)
-                    .foregroundStyle(DesignTheme.textSecondary)
-                    .accessibilityLabel("Note saved \(notedOn)")
+            SurfaceCard {
+                cardBody
             }
+            .id(Self.noteCardID)
+            .animation(.smooth(duration: 0.35), value: page)
         }
-        .clipped()
         .onAppear(perform: resetPage)
         .onChange(of: note) { _, _ in
             resetPage()
@@ -62,7 +63,7 @@ struct MediaDescriptionSection: View {
                 sectionTitle("Storyline")
                 Spacer(minLength: 0)
             } else if page == .notes {
-                editTitle
+                sectionTitle("Your review")
                 Spacer(minLength: 0)
                 pageSwitch(title: "Storyline", arrow: "arrow.right", arrowFirst: false, label: "Show storyline") {
                     showStoryline()
@@ -70,39 +71,18 @@ struct MediaDescriptionSection: View {
             } else {
                 sectionTitle("Storyline")
                 Spacer(minLength: 0)
-                pageSwitch(title: "Your notes", arrow: "arrow.left", arrowFirst: true, label: "Show your notes") {
+                pageSwitch(title: "Your review", arrow: "arrow.left", arrowFirst: true, label: "Show your review") {
                     showNotes()
                 }
             }
         }
     }
 
-    /// Two points smaller than the section headline, and still scaled with Dynamic Type.
-    private var labelFont: Font { .subheadline.weight(.semibold) }
-
     private func sectionTitle(_ title: String) -> some View {
         Text(title)
-            .font(labelFont)
+            .font(DesignTypography.section)
             .foregroundStyle(DesignTheme.textPrimary)
-    }
-
-    /// "Your notes" and the pencil are one control, including the space between them.
-    private var editTitle: some View {
-        Button(action: onEdit) {
-            HStack(spacing: DesignSpacing.sm) {
-                Text("Your notes")
-                    .font(labelFont)
-                    .foregroundStyle(DesignTheme.textPrimary)
-                Image(systemName: "pencil")
-                    .font(labelFont)
-                    .foregroundStyle(DesignTheme.textPrimary)
-            }
-            .frame(minHeight: 44)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Edit rating and note")
+            .accessibilityAddTraits(.isHeader)
     }
 
     private func pageSwitch(
@@ -124,7 +104,7 @@ struct MediaDescriptionSection: View {
                         .accessibilityHidden(true)
                 }
             }
-            .font(labelFont)
+            .font(DesignTypography.metadata.weight(.semibold))
             .foregroundStyle(DesignTheme.accent)
             .frame(minHeight: 44)
         }
@@ -132,47 +112,83 @@ struct MediaDescriptionSection: View {
         .accessibilityLabel(label)
     }
 
-    private var textBlock: some View {
-        Text(visibleText)
+    @ViewBuilder
+    private var cardBody: some View {
+        if page == .notes, let note {
+            noteCard(note)
+        } else {
+            storylineCard
+        }
+    }
+
+    private func noteCard(_ note: String) -> some View {
+        VStack(alignment: .leading, spacing: DesignSpacing.sm) {
+            Button(action: onEdit) {
+                VStack(alignment: .leading, spacing: DesignSpacing.sm) {
+                    HStack(alignment: .firstTextBaseline, spacing: DesignSpacing.sm) {
+                        // No account yet — local reviews are attributed to the person using the device.
+                        Text("You")
+                            .font(DesignTypography.metadata.weight(.bold))
+                            .foregroundStyle(DesignTheme.textPrimary)
+                        Spacer(minLength: DesignSpacing.sm)
+                        Image(systemName: "pencil")
+                            .font(DesignTypography.metadata.weight(.semibold))
+                            .foregroundStyle(DesignTheme.textSecondary)
+                            .accessibilityHidden(true)
+                    }
+                    if let notedOn {
+                        Text(notedOn)
+                            .font(DesignTypography.chip)
+                            .foregroundStyle(DesignTheme.textSecondary)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Edit rating and note. \(noteAccessibilityLabel(note))")
+
+            // Outside the edit button so Show More does not open the editor.
+            ExpandableTextToggle(
+                text: note,
+                scrollTo: scrollTo,
+                scrollID: Self.noteCardID,
+                onTextTap: onEdit
+            )
+        }
+    }
+
+    private var storylineCard: some View {
+        Text(overview.isEmpty ? "No description available." : overview)
             .font(DesignTypography.body)
             .foregroundStyle(DesignTheme.textSecondary)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .textSelection(.enabled)
-            .id(page)
-            .transition(textTransition)
-            .accessibilityLabel(page == .notes && note != nil ? "Your notes. \(visibleText)" : "Storyline. \(visibleText)")
+            .accessibilityLabel(
+                overview.isEmpty ? "Storyline. No description available." : "Storyline. \(overview)"
+            )
     }
 
-    /// Storyline slides in from the right. Notes slide in from the left.
-    private var textTransition: AnyTransition {
-        let edge: Edge = storylineFromTrailing ? .trailing : .leading
-        let exit: Edge = storylineFromTrailing ? .leading : .trailing
-        return .asymmetric(
-            insertion: .move(edge: edge).combined(with: .opacity),
-            removal: .move(edge: exit).combined(with: .opacity)
-        )
+    private func noteAccessibilityLabel(_ note: String) -> String {
+        var parts = ["You"]
+        if let notedOn {
+            parts.append(notedOn)
+        }
+        parts.append(note)
+        return parts.joined(separator: ". ")
     }
 
     private func showStoryline() {
-        storylineFromTrailing = true
         withAnimation(.smooth(duration: 0.35)) {
             page = .description
         }
     }
 
     private func showNotes() {
-        storylineFromTrailing = false
         withAnimation(.smooth(duration: 0.35)) {
             page = .notes
         }
-    }
-
-    private var visibleText: String {
-        if page == .notes, let note {
-            return note
-        }
-        return overview.isEmpty ? "No description available." : overview
     }
 
     private func resetPage() {
