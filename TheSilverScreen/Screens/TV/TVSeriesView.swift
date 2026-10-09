@@ -92,6 +92,7 @@ struct TVSeriesView: View {
                 score: session.score,
                 note: session.note,
                 canDeleteNote: session.canDeleteNote,
+                hasExistingScore: session.hasExistingScore,
                 onSave: { await viewModel.saveUserAnnotation(score: $0, note: $1) },
                 onDeleteNote: { await viewModel.deleteUserNote() }
             )

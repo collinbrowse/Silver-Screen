@@ -102,7 +102,7 @@ struct MediaDescriptionSection: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Edit note")
+        .accessibilityLabel("Edit rating and note")
     }
 
     private func pageSwitch(

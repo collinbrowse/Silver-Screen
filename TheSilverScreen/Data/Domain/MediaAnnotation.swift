@@ -199,16 +199,22 @@ enum AnnotationActivity {
 }
 
 /// Presentation state for the combined rating and note editor on a detail screen.
+/// `score` is nil until the title already has a rating or the user chooses one.
+/// Notes require a rating going forward; note-only rows still load for older data.
 struct AnnotationEditorSession: Sendable, Equatable, Identifiable {
     let id: UUID
-    let score: Double
+    /// Saved score to prefill, or nil when the user must choose one before saving.
+    let score: Double?
     let note: String
     let canDeleteNote: Bool
+    /// Whether a score already exists so deleting the note can promise it stays.
+    let hasExistingScore: Bool
 
-    init(score: Double, note: String, canDeleteNote: Bool) {
+    init(score: Double?, note: String, canDeleteNote: Bool, hasExistingScore: Bool) {
         self.id = UUID()
         self.score = score
         self.note = note
         self.canDeleteNote = canDeleteNote
+        self.hasExistingScore = hasExistingScore
     }
 }

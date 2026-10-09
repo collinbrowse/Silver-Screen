@@ -2,36 +2,49 @@
 //  AnnotationEditorSheet.swift
 //  TheSilverScreen
 //
-//  Combined rating and note editor. X discards the draft. Trash confirms note
-//  deletion. A failed save stays on this sheet.
+//  Combined rating and note editor. A new rating must be chosen before Save.
+//  X discards the draft. Trash confirms note deletion. A failed save stays on
+//  this sheet. The view model owns dismissal after a successful write.
 //
 
 import SwiftUI
 
 struct AnnotationEditorSheet: View {
     let canDeleteNote: Bool
+    let hasExistingScore: Bool
     let onSave: (Double, String) async -> Bool
     let onDeleteNote: () async -> Bool
 
     @Environment(\.dismiss) private var dismiss
-    @State private var score: Double
+    /// Committed rating for Save. Nil until the title already had one or the slider moves.
+    @State private var score: Double?
+    /// Slider thumb position; does not imply a chosen score until `score` is set.
+    @State private var sliderValue: Double
     @State private var note: String
     @State private var confirmDelete = false
     @State private var saveError: AppError?
     @State private var isSaving = false
 
     init(
-        score: Double,
+        score: Double?,
         note: String,
         canDeleteNote: Bool,
+        hasExistingScore: Bool,
         onSave: @escaping (Double, String) async -> Bool,
         onDeleteNote: @escaping () async -> Bool
     ) {
         self.canDeleteNote = canDeleteNote
+        self.hasExistingScore = hasExistingScore
         self.onSave = onSave
         self.onDeleteNote = onDeleteNote
-        _score = State(initialValue: Self.snapped(score))
+        let initial = score.map(Self.snapped)
+        _score = State(initialValue: initial)
+        _sliderValue = State(initialValue: initial ?? 5.5)
         _note = State(initialValue: note)
+    }
+
+    private var canSave: Bool {
+        score != nil && !isSaving
     }
 
     var body: some View {
@@ -48,19 +61,35 @@ struct AnnotationEditorSheet: View {
                 }
 
                 VStack(alignment: .leading, spacing: DesignSpacing.sm) {
-                    Text(UserScore.formatted(score))
-                        .font(DesignTypography.ratingValue)
-                        .foregroundStyle(DesignTheme.textPrimary)
-                        .accessibilityLabel(UserScore.accessibilityLabel(score))
+                    if let score {
+                        Text(UserScore.formatted(score))
+                            .font(DesignTypography.ratingValue)
+                            .foregroundStyle(DesignTheme.textPrimary)
+                            .accessibilityLabel(UserScore.accessibilityLabel(score))
+                    } else {
+                        Text("Choose a rating")
+                            .font(DesignTypography.ratingValue)
+                            .foregroundStyle(DesignTheme.textSecondary)
+                            .accessibilityLabel("Choose a rating")
+                    }
 
                     Slider(
-                        value: $score,
+                        value: Binding(
+                            get: { sliderValue },
+                            set: { newValue in
+                                sliderValue = newValue
+                                score = Self.snapped(newValue)
+                            }
+                        ),
                         in: 0.5...10,
                         step: 0.5
                     )
                     .tint(DesignTheme.accent)
+                    .disabled(isSaving)
                     .accessibilityLabel("Your rating")
-                    .accessibilityValue(UserScore.formatted(score))
+                    .accessibilityValue(
+                        score.map(UserScore.formatted) ?? "No rating chosen"
+                    )
                 }
 
                 TextField("Note (optional)", text: $note, axis: .vertical)
@@ -69,6 +98,7 @@ struct AnnotationEditorSheet: View {
                     .padding(DesignSpacing.sm)
                     .background(DesignTheme.surface)
                     .clipShape(RoundedRectangle(cornerRadius: DesignRadius.card, style: .continuous))
+                    .disabled(isSaving)
                     .accessibilityLabel("Note")
             }
             .padding(DesignSpacing.lg)
@@ -83,6 +113,7 @@ struct AnnotationEditorSheet: View {
                     } label: {
                         Image(systemName: "xmark")
                     }
+                    .disabled(isSaving)
                     .accessibilityLabel("Cancel")
                 }
                 if canDeleteNote {
@@ -92,6 +123,7 @@ struct AnnotationEditorSheet: View {
                         } label: {
                             Image(systemName: "trash")
                         }
+                        .disabled(isSaving)
                         .accessibilityLabel("Delete note")
                     }
                     ToolbarSpacer(.fixed, placement: .confirmationAction)
@@ -100,7 +132,7 @@ struct AnnotationEditorSheet: View {
                     Button("Save") {
                         Task { await save() }
                     }
-                    .disabled(isSaving)
+                    .disabled(!canSave)
                 }
             }
             .alert("Delete this note?", isPresented: $confirmDelete) {
@@ -109,19 +141,27 @@ struct AnnotationEditorSheet: View {
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("This removes your note for this title. Your rating stays.")
+                Text(deleteMessage)
             }
         }
         .presentationDetents([.medium, .large])
+        .interactiveDismissDisabled(isSaving)
+    }
+
+    private var deleteMessage: String {
+        if hasExistingScore {
+            return "This removes your note for this title. Your rating stays."
+        }
+        return "This removes your note for this title."
     }
 
     private func save() async {
+        guard let score else { return }
         isSaving = true
-        let saved = await onSave(Self.snapped(score), note)
+        let saved = await onSave(score, note)
         isSaving = false
         if saved {
             saveError = nil
-            dismiss()
         } else {
             saveError = .persistence
         }
@@ -133,7 +173,6 @@ struct AnnotationEditorSheet: View {
         isSaving = false
         if deleted {
             saveError = nil
-            dismiss()
         } else {
             saveError = .persistence
         }

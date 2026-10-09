@@ -341,6 +341,40 @@ final class MovieDetailViewModelTests: XCTestCase {
         XCTAssertEqual(session.score, 8.5)
         XCTAssertEqual(session.note, "A favorite")
         XCTAssertTrue(session.canDeleteNote)
+        XCTAssertTrue(session.hasExistingScore)
+    }
+
+    func test_openAnnotationEditor_withoutScore_leavesScoreUnset() async {
+        let viewModel = makeViewModel(stub: .success(TMDBFixtures.movieDetailShawshank))
+        await viewModel.load()
+
+        viewModel.openAnnotationEditor()
+
+        guard let session = viewModel.annotationEditor else {
+            return XCTFail("Expected an editor session")
+        }
+        XCTAssertNil(session.score)
+        XCTAssertEqual(session.note, "")
+        XCTAssertFalse(session.canDeleteNote)
+        XCTAssertFalse(session.hasExistingScore)
+    }
+
+    func test_openAnnotationEditor_noteOnly_leavesScoreUnset() async throws {
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        _ = try await annotations.saveNote("Remember this", for: .movie(278))
+        let viewModel = makeViewModel(
+            stub: .success(TMDBFixtures.movieDetailShawshank),
+            annotations: annotations
+        )
+        await viewModel.load()
+
+        viewModel.openAnnotationEditor()
+
+        let session = try XCTUnwrap(viewModel.annotationEditor)
+        XCTAssertNil(session.score)
+        XCTAssertEqual(session.note, "Remember this")
+        XCTAssertTrue(session.canDeleteNote)
+        XCTAssertFalse(session.hasExistingScore)
     }
 
     func test_saveUserAnnotation_whenPersistenceFails_keepsPreviousScore() async throws {

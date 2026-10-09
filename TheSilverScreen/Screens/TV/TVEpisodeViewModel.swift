@@ -132,12 +132,14 @@ final class TVEpisodeViewModel {
     }
 
     /// Opens the combined rating and note editor from the current personal values.
+    /// Does not invent a score; the sheet requires an explicit rating before Save.
     func openAnnotationEditor() {
         guard case .loaded(let content, _) = state else { return }
         annotationEditor = AnnotationEditorSession(
-            score: content.userScore ?? 7.0,
+            score: content.userScore,
             note: content.userNote ?? "",
-            canDeleteNote: content.userNote != nil
+            canDeleteNote: content.userNote != nil,
+            hasExistingScore: content.userScore != nil
         )
     }
 
