@@ -106,6 +106,24 @@ actor AnnotationsRepository {
         }
     }
 
+    /// Puts `record` back for `key`, or removes the row when `record` is nil.
+    /// Used to roll back a successful annotation write when a dependent save fails.
+    func restore(_ record: MediaAnnotation?, for key: AnnotationKey) async throws {
+        try await serializeWrite { [self] in
+            var records = try await loadCache()
+            if let index = records.firstIndex(where: { $0.key == key }) {
+                if let record {
+                    records[index] = record
+                } else {
+                    records.remove(at: index)
+                }
+            } else if let record {
+                records.append(record)
+            }
+            try await persist(records)
+        }
+    }
+
     private func writeNote(_ note: String?, for key: AnnotationKey, at notedAt: Date) async throws -> MediaAnnotation? {
         var records = try await loadCache()
         if let index = records.firstIndex(where: { $0.key == key }) {

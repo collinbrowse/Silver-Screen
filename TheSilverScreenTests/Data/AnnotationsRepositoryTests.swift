@@ -92,6 +92,32 @@ final class AnnotationsRepositoryTests: XCTestCase {
         XCTAssertEqual(saved.watchedAt, watched)
     }
 
+    func test_restore_putsBackPreviousAnnotation() async throws {
+        let repository = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        let previous = try await repository.save(
+            score: 7.5,
+            note: "Keep",
+            for: .movie(12),
+            at: updatedAt
+        )
+        _ = try await repository.save(score: 9, note: "Temp", for: .movie(12), at: updatedAt)
+
+        try await repository.restore(previous, for: .movie(12))
+
+        let loaded = try await repository.annotation(for: .movie(12))
+        XCTAssertEqual(loaded, previous)
+    }
+
+    func test_restore_nil_removesAnnotation() async throws {
+        let repository = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        _ = try await repository.save(score: 8, note: "Temp", for: .movie(12), at: updatedAt)
+
+        try await repository.restore(nil, for: .movie(12))
+
+        let loaded = try await repository.annotation(for: .movie(12))
+        XCTAssertNil(loaded)
+    }
+
     func test_saveScore_leavesExistingNote() async throws {
         let repository = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
         _ = try await repository.saveNote("A note", for: .movie(1), at: updatedAt)
