@@ -2,8 +2,10 @@
 //  AnnotationsRepository.swift
 //  TheSilverScreen
 //
-//  Personal scores and notes. Score and note can be saved together or independently.
-//  A blank note is stored as absent. Writes are serialized so two saves cannot clobber each other.
+//  Personal scores and notes. A note always rides with a score going forward:
+//  `save` writes both; `deleteNote` clears only the note; `clear` removes the
+//  whole row. Legacy note-only rows still load from disk but cannot be created
+//  here. Writes are serialized so two saves cannot clobber each other.
 //
 
 import Foundation
@@ -12,6 +14,7 @@ actor AnnotationsRepository {
     private let store: any AnnotationsStore
     private let logger: any AppLogging
     private var cached: [MediaAnnotation]?
+    private var loadTask: Task<[MediaAnnotation], Error>?
     private var writeBarrier: Task<Void, Never>?
 
     init(store: any AnnotationsStore, logger: any AppLogging) {
@@ -73,6 +76,7 @@ actor AnnotationsRepository {
 
     /// Stores a half-point score and leaves any existing note in place.
     /// The watched day is recorded only the first time a score or note is saved.
+    /// Does not create note-only rows; a note already on disk (legacy) is kept.
     @discardableResult
     func saveScore(_ score: Double, for key: AnnotationKey, at watchedAt: Date = Date()) async throws -> MediaAnnotation {
         guard UserScore.isValid(score) else {
@@ -89,20 +93,23 @@ actor AnnotationsRepository {
         }
     }
 
-    /// Stores a note. Whitespace clears the note. Returns nil when the title has neither a score nor a note.
-    @discardableResult
-    func saveNote(_ note: String, for key: AnnotationKey, at notedAt: Date = Date()) async throws -> MediaAnnotation? {
-        let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
-        return try await serializeWrite { [self] in
-            try await writeNote(trimmed.isEmpty ? nil : trimmed, for: key, at: notedAt)
-        }
-    }
-
     /// Removes the note and leaves the score. Returns nil when the title has no score left.
+    /// Legacy note-only rows are removed entirely.
     @discardableResult
     func deleteNote(for key: AnnotationKey) async throws -> MediaAnnotation? {
         try await serializeWrite { [self] in
-            try await writeNote(nil, for: key, at: Date())
+            try await writeNote(nil, for: key)
+        }
+    }
+
+    /// Removes the score and note for `key`. No-op when nothing is stored.
+    func clear(for key: AnnotationKey) async throws {
+        try await serializeWrite { [self] in
+            var records = try await loadCache()
+            let before = records.count
+            records.removeAll { $0.key == key }
+            guard records.count != before else { return }
+            try await persist(records)
         }
     }
 
@@ -124,26 +131,20 @@ actor AnnotationsRepository {
         }
     }
 
-    private func writeNote(_ note: String?, for key: AnnotationKey, at notedAt: Date) async throws -> MediaAnnotation? {
+    /// Updates the note on an existing row. Never creates a note-only record.
+    private func writeNote(_ note: String?, for key: AnnotationKey) async throws -> MediaAnnotation? {
         var records = try await loadCache()
-        if let index = records.firstIndex(where: { $0.key == key }) {
-            var record = records[index]
-            record.note = note
-            if note != nil, record.watchedAt == nil {
-                record.watchedAt = notedAt
-            }
-            guard record.normalized() != nil else {
-                records.remove(at: index)
-                try await persist(records)
-                return nil
-            }
-            records[index] = record
-            try await persist(records)
-            return record
+        guard let index = records.firstIndex(where: { $0.key == key }) else {
+            return nil
         }
-        guard let note else { return nil }
-        let record = MediaAnnotation(key: key, score: nil, note: note, watchedAt: notedAt)
-        records.append(record)
+        var record = records[index]
+        record.note = note
+        guard record.normalized() != nil else {
+            records.remove(at: index)
+            try await persist(records)
+            return nil
+        }
+        records[index] = record
         try await persist(records)
         return record
     }
@@ -173,20 +174,43 @@ actor AnnotationsRepository {
         let previous = writeBarrier
         let task = Task<T, Error> {
             _ = await previous?.value
+            try Task.checkCancellation()
             return try await work()
         }
         writeBarrier = Task { _ = try? await task.value }
-        return try await task.value
+        return try await withTaskCancellationHandler {
+            try await task.value
+        } onCancel: {
+            task.cancel()
+        }
     }
 
     private func loadCache() async throws -> [MediaAnnotation] {
         if let cached {
             return cached
         }
+        if let loadTask {
+            return try await loadTask.value
+        }
+        let task = Task { try await self.performLoad() }
+        loadTask = task
+        do {
+            let records = try await task.value
+            loadTask = nil
+            return records
+        } catch {
+            loadTask = nil
+            throw error
+        }
+    }
+
+    private func performLoad() async throws -> [MediaAnnotation] {
         do {
             let records = try await store.load()
             cached = records
             return records
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
             logger.error("Annotations load failed", category: .persistence)
             throw AppError.persistence

@@ -45,7 +45,8 @@ struct AnnotationKey: Codable, Sendable, Equatable, Hashable {
     }
 }
 
-/// Half-point user score from 0.5 through 10. There is no zero and no way to clear a score.
+/// Half-point user score from 0.5 through 10. There is no zero.
+/// Clearing a rating uses `AnnotationsRepository.clear`, which also drops the note.
 enum UserScore {
     static let options: [Double] = (1...20).reversed().map { Double($0) / 2.0 }
 
@@ -209,6 +210,8 @@ struct AnnotationEditorSession: Sendable, Equatable, Identifiable {
     let canDeleteNote: Bool
     /// Whether a score already exists so deleting the note can promise it stays.
     let hasExistingScore: Bool
+    /// Score and/or note on disk so the sheet can offer Remove rating.
+    let canClear: Bool
 
     init(score: Double?, note: String, canDeleteNote: Bool, hasExistingScore: Bool) {
         self.id = UUID()
@@ -216,5 +219,13 @@ struct AnnotationEditorSession: Sendable, Equatable, Identifiable {
         self.note = note
         self.canDeleteNote = canDeleteNote
         self.hasExistingScore = hasExistingScore
+        self.canClear = hasExistingScore || canDeleteNote
     }
+}
+
+/// Outcome of a sheet-driven annotation write. Cancel must not look like a disk failure.
+enum AnnotationEditorWriteResult: Sendable, Equatable {
+    case succeeded
+    case cancelled
+    case failed
 }
