@@ -107,11 +107,9 @@ final class TVSeriesViewModel {
     /// Does not invent a score; the sheet requires an explicit rating before Save.
     func openAnnotationEditor() {
         guard case .loaded(let content, _) = state else { return }
-        annotationEditor = AnnotationEditorSession(
+        annotationEditor = DetailAnnotationWriter.session(
             score: content.userScore,
-            note: content.userNote ?? "",
-            canDeleteNote: content.userNote != nil,
-            hasExistingScore: content.userScore != nil
+            note: content.userNote
         )
     }
 
@@ -120,37 +118,56 @@ final class TVSeriesViewModel {
         annotationEditor = nil
     }
 
-    /// Saves score and note together. Returns false when the write fails so the editor can stay open.
+    /// Saves score and note together. Series ratings do not auto-add Watched.
     @discardableResult
-    func saveUserAnnotation(score: Double, note: String) async -> Bool {
-        guard case .loaded = state else { return false }
-        do {
-            let saved = try await annotations.save(score: score, note: note, for: .series(seriesID))
-            apply(PersonalDetail(annotation: saved))
-            annotationEditor = nil
-            return true
-        } catch is CancellationError {
-            return false
-        } catch {
-            markPersistenceFailure()
-            return false
-        }
+    func saveUserAnnotation(score: Double, note: String) async -> AnnotationEditorWriteResult {
+        guard case .loaded = state else { return .failed }
+        let (result, saved) = await DetailAnnotationWriter.save(
+            score: score,
+            note: note,
+            for: .series(seriesID),
+            annotations: annotations
+        )
+        return finishAnnotationWrite(result, annotation: saved)
     }
 
-    /// Removes the note and leaves the score. Returns false when the write fails.
-    func deleteUserNote() async -> Bool {
-        guard case .loaded = state else { return false }
-        do {
-            let saved = try await annotations.deleteNote(for: .series(seriesID))
-            apply(PersonalDetail(annotation: saved))
-            annotationEditor = nil
-            return true
-        } catch is CancellationError {
-            return false
-        } catch {
-            markPersistenceFailure()
-            return false
+    /// Removes the note and leaves the score.
+    @discardableResult
+    func deleteUserNote() async -> AnnotationEditorWriteResult {
+        guard case .loaded = state else { return .failed }
+        let (result, saved) = await DetailAnnotationWriter.deleteNote(
+            for: .series(seriesID),
+            annotations: annotations
+        )
+        return finishAnnotationWrite(result, annotation: saved)
+    }
+
+    /// Removes the score and note.
+    @discardableResult
+    func clearUserAnnotation() async -> AnnotationEditorWriteResult {
+        guard case .loaded = state else { return .failed }
+        let result = await DetailAnnotationWriter.clear(
+            for: .series(seriesID),
+            annotations: annotations
+        )
+        return finishAnnotationWrite(result, annotation: nil, cleared: true)
+    }
+
+    private func finishAnnotationWrite(
+        _ result: AnnotationEditorWriteResult,
+        annotation: MediaAnnotation?,
+        cleared: Bool = false
+    ) -> AnnotationEditorWriteResult {
+        switch result {
+            case .succeeded:
+                apply(cleared ? .empty : PersonalDetail(annotation: annotation))
+                annotationEditor = nil
+            case .cancelled:
+                break
+            case .failed:
+                markPersistenceFailure()
         }
+        return result
     }
 
     private func personalDetail() async throws -> (detail: PersonalDetail, activity: LoadActivity) {

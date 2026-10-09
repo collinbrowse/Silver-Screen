@@ -3,8 +3,9 @@
 //  TheSilverScreen
 //
 //  Combined rating and note editor. A new rating must be chosen before Save.
-//  X discards the draft. Trash confirms note deletion. A failed save stays on
-//  this sheet. The view model owns dismissal after a successful write.
+//  X discards the draft. Trash confirms note deletion. Remove rating clears
+//  score and note. A failed save stays on this sheet. Cancelled writes do not
+//  show a persistence banner. The view model owns dismissal after success.
 //
 
 import SwiftUI
@@ -12,8 +13,10 @@ import SwiftUI
 struct AnnotationEditorSheet: View {
     let canDeleteNote: Bool
     let hasExistingScore: Bool
-    let onSave: (Double, String) async -> Bool
-    let onDeleteNote: () async -> Bool
+    let canClear: Bool
+    let onSave: (Double, String) async -> AnnotationEditorWriteResult
+    let onDeleteNote: () async -> AnnotationEditorWriteResult
+    let onClear: () async -> AnnotationEditorWriteResult
 
     @Environment(\.dismiss) private var dismiss
     /// Committed rating for Save. Nil until the title already had one or the slider moves.
@@ -22,6 +25,7 @@ struct AnnotationEditorSheet: View {
     @State private var sliderValue: Double
     @State private var note: String
     @State private var confirmDelete = false
+    @State private var confirmClear = false
     @State private var saveError: AppError?
     @State private var isSaving = false
 
@@ -30,13 +34,17 @@ struct AnnotationEditorSheet: View {
         note: String,
         canDeleteNote: Bool,
         hasExistingScore: Bool,
-        onSave: @escaping (Double, String) async -> Bool,
-        onDeleteNote: @escaping () async -> Bool
+        canClear: Bool,
+        onSave: @escaping (Double, String) async -> AnnotationEditorWriteResult,
+        onDeleteNote: @escaping () async -> AnnotationEditorWriteResult,
+        onClear: @escaping () async -> AnnotationEditorWriteResult
     ) {
         self.canDeleteNote = canDeleteNote
         self.hasExistingScore = hasExistingScore
+        self.canClear = canClear
         self.onSave = onSave
         self.onDeleteNote = onDeleteNote
+        self.onClear = onClear
         let initial = score.map(Self.snapped)
         _score = State(initialValue: initial)
         _sliderValue = State(initialValue: initial ?? 5.5)
@@ -67,7 +75,7 @@ struct AnnotationEditorSheet: View {
                             .foregroundStyle(DesignTheme.textPrimary)
                             .accessibilityLabel(UserScore.accessibilityLabel(score))
                     } else {
-                        Text("Choose a rating")
+                        Text("-")
                             .font(DesignTypography.ratingValue)
                             .foregroundStyle(DesignTheme.textSecondary)
                             .accessibilityLabel("Choose a rating")
@@ -100,6 +108,14 @@ struct AnnotationEditorSheet: View {
                     .clipShape(RoundedRectangle(cornerRadius: DesignRadius.card, style: .continuous))
                     .disabled(isSaving)
                     .accessibilityLabel("Note")
+
+                if canClear {
+                    Button("Remove rating", role: .destructive) {
+                        confirmClear = true
+                    }
+                    .disabled(isSaving)
+                    .accessibilityLabel(clearAccessibilityLabel)
+                }
             }
             .padding(DesignSpacing.lg)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -130,6 +146,8 @@ struct AnnotationEditorSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
+                        guard !isSaving else { return }
+                        isSaving = true
                         Task { await save() }
                     }
                     .disabled(!canSave)
@@ -137,11 +155,23 @@ struct AnnotationEditorSheet: View {
             }
             .alert("Delete this note?", isPresented: $confirmDelete) {
                 Button("Delete", role: .destructive) {
+                    guard !isSaving else { return }
+                    isSaving = true
                     Task { await deleteNote() }
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text(deleteMessage)
+            }
+            .alert(clearAlertTitle, isPresented: $confirmClear) {
+                Button("Remove", role: .destructive) {
+                    guard !isSaving else { return }
+                    isSaving = true
+                    Task { await clearAnnotation() }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text(clearMessage)
             }
         }
         .presentationDetents([.medium, .large])
@@ -155,26 +185,44 @@ struct AnnotationEditorSheet: View {
         return "This removes your note for this title."
     }
 
-    private func save() async {
-        guard let score else { return }
-        isSaving = true
-        let saved = await onSave(score, note)
-        isSaving = false
-        if saved {
-            saveError = nil
-        } else {
-            saveError = .persistence
+    private var clearAlertTitle: String {
+        hasExistingScore ? "Remove your rating?" : "Remove this note?"
+    }
+
+    private var clearMessage: String {
+        if hasExistingScore {
+            return "This removes your rating and note for this title."
         }
+        return "This removes your note for this title."
+    }
+
+    private var clearAccessibilityLabel: String {
+        hasExistingScore ? "Remove rating" : "Remove note"
+    }
+
+    private func save() async {
+        guard let score else {
+            isSaving = false
+            return
+        }
+        finish(await onSave(score, note))
     }
 
     private func deleteNote() async {
-        isSaving = true
-        let deleted = await onDeleteNote()
+        finish(await onDeleteNote())
+    }
+
+    private func clearAnnotation() async {
+        finish(await onClear())
+    }
+
+    private func finish(_ result: AnnotationEditorWriteResult) {
         isSaving = false
-        if deleted {
-            saveError = nil
-        } else {
-            saveError = .persistence
+        switch result {
+            case .succeeded, .cancelled:
+                saveError = nil
+            case .failed:
+                saveError = .persistence
         }
     }
 

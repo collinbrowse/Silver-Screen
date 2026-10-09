@@ -79,11 +79,9 @@ final class MovieDetailViewModel {
     /// Does not invent a score; the sheet requires an explicit rating before Save.
     func openAnnotationEditor() {
         guard case .loaded(let content, _) = state else { return }
-        annotationEditor = AnnotationEditorSession(
+        annotationEditor = DetailAnnotationWriter.session(
             score: content.userScore,
-            note: content.userNote ?? "",
-            canDeleteNote: content.userNote != nil,
-            hasExistingScore: content.userScore != nil
+            note: content.userNote
         )
     }
 
@@ -93,56 +91,112 @@ final class MovieDetailViewModel {
     }
 
     /// Saves score and note together and puts the movie on Watched as one unit of work.
-    /// If Watched fails, the annotation write is rolled back. Returns false so the editor stays open.
+    /// If Watched fails, the annotation write is rolled back. UI is re-read from disk after
+    /// any rollback attempt so a failed restore cannot leave the screen lying.
     @discardableResult
-    func saveUserAnnotation(score: Double, note: String) async -> Bool {
-        guard case .loaded(let content, _) = state else { return false }
+    func saveUserAnnotation(score: Double, note: String) async -> AnnotationEditorWriteResult {
+        guard case .loaded(let content, _) = state else { return .failed }
         let key = AnnotationKey.movie(movieID)
+        let previous: MediaAnnotation?
         do {
-            let previous = try await annotations.annotation(for: key)
-            let saved = try await annotations.save(score: score, note: note, for: key)
-            do {
-                _ = try await lists.addToWatched(
-                    content.detail.listItem(),
-                    at: saved.watchedAt ?? Date()
-                )
-            } catch is CancellationError {
-                try await annotations.restore(previous, for: key)
-                return false
-            } catch {
-                do {
-                    try await annotations.restore(previous, for: key)
-                } catch {
-                    markPersistenceFailure()
-                    return false
-                }
-                markPersistenceFailure()
-                return false
-            }
-            apply(PersonalDetail(annotation: saved))
-            annotationEditor = nil
-            return true
+            previous = try await annotations.annotation(for: key)
         } catch is CancellationError {
-            return false
+            return .cancelled
         } catch {
             markPersistenceFailure()
-            return false
+            return .failed
         }
+
+        let saved: MediaAnnotation
+        do {
+            saved = try await annotations.save(score: score, note: note, for: key)
+        } catch is CancellationError {
+            await rollBackAnnotation(previous, for: key)
+            return .cancelled
+        } catch {
+            markPersistenceFailure()
+            return .failed
+        }
+
+        do {
+            _ = try await lists.addToWatched(
+                content.detail.listItem(),
+                at: saved.watchedAt ?? Date()
+            )
+        } catch is CancellationError {
+            await rollBackAnnotation(previous, for: key)
+            return .cancelled
+        } catch {
+            await rollBackAnnotation(previous, for: key)
+            markPersistenceFailure()
+            return .failed
+        }
+
+        apply(PersonalDetail(annotation: saved))
+        annotationEditor = nil
+        return .succeeded
     }
 
-    /// Removes the note and leaves the score. Returns false when the write fails.
-    func deleteUserNote() async -> Bool {
-        guard case .loaded = state else { return false }
+    /// Removes the note and leaves the score.
+    @discardableResult
+    func deleteUserNote() async -> AnnotationEditorWriteResult {
+        guard case .loaded = state else { return .failed }
+        let (result, saved) = await DetailAnnotationWriter.deleteNote(
+            for: .movie(movieID),
+            annotations: annotations
+        )
+        switch result {
+            case .succeeded:
+                apply(PersonalDetail(annotation: saved))
+                annotationEditor = nil
+            case .cancelled:
+                break
+            case .failed:
+                markPersistenceFailure()
+        }
+        return result
+    }
+
+    /// Removes the score and note. Leaves Watched membership alone.
+    @discardableResult
+    func clearUserAnnotation() async -> AnnotationEditorWriteResult {
+        guard case .loaded = state else { return .failed }
+        let result = await DetailAnnotationWriter.clear(
+            for: .movie(movieID),
+            annotations: annotations
+        )
+        switch result {
+            case .succeeded:
+                apply(.empty)
+                annotationEditor = nil
+            case .cancelled:
+                break
+            case .failed:
+                markPersistenceFailure()
+        }
+        return result
+    }
+
+    /// Restores the prior annotation when possible, then applies whatever is on disk.
+    private func rollBackAnnotation(_ previous: MediaAnnotation?, for key: AnnotationKey) async {
         do {
-            let saved = try await annotations.deleteNote(for: .movie(movieID))
-            apply(PersonalDetail(annotation: saved))
-            annotationEditor = nil
-            return true
+            try await annotations.restore(previous, for: key)
         } catch is CancellationError {
-            return false
+            return
+        } catch {
+            // Disk may still hold the new write; applyFromDisk surfaces that truth.
+        }
+        await applyPersonalFromDisk(key)
+    }
+
+    private func applyPersonalFromDisk(_ key: AnnotationKey) async {
+        do {
+            let record = try await annotations.annotation(for: key)
+            apply(PersonalDetail(annotation: record))
+        } catch is CancellationError {
+            return
         } catch {
             markPersistenceFailure()
-            return false
         }
     }
 

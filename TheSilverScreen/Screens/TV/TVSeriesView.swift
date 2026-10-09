@@ -93,8 +93,10 @@ struct TVSeriesView: View {
                 note: session.note,
                 canDeleteNote: session.canDeleteNote,
                 hasExistingScore: session.hasExistingScore,
+                canClear: session.canClear,
                 onSave: { await viewModel.saveUserAnnotation(score: $0, note: $1) },
-                onDeleteNote: { await viewModel.deleteUserNote() }
+                onDeleteNote: { await viewModel.deleteUserNote() },
+                onClear: { await viewModel.clearUserAnnotation() }
             )
         }
         .fullScreenCover(item: fullscreenBinding) { selection in

@@ -107,8 +107,11 @@ final class TVSeasonViewModelTests: XCTestCase {
 
     func test_load_withSavedScoreAndNote_showsThem() async throws {
         let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
-        _ = try await annotations.saveScore(8.5, for: .season(seriesID: 1396, seasonNumber: 1))
-        _ = try await annotations.saveNote("Slow start", for: .season(seriesID: 1396, seasonNumber: 1))
+        _ = try await annotations.save(
+            score: 8.5,
+            note: "Slow start",
+            for: .season(seriesID: 1396, seasonNumber: 1)
+        )
         let viewModel = TVSeasonViewModel(
             seriesID: 1396,
             seriesName: "Breaking Bad",
@@ -178,7 +181,7 @@ final class TVSeasonViewModelTests: XCTestCase {
 
             let saved = await viewModel.saveUserAnnotation(score: 10, note: "")
 
-            XCTAssertFalse(saved)
+            XCTAssertEqual(saved, .failed)
             XCTAssertNotNil(viewModel.annotationEditor)
             guard case .loaded(let content, activity: .failed(.persistence)) = viewModel.state else {
             return XCTFail("Expected loaded with persistence failure, got \(viewModel.state)")
