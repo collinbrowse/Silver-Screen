@@ -30,6 +30,12 @@ final class ListsIndex {
         membersByList[listID, default: []].contains(itemKey)
     }
 
+    /// Whether the title is on the Watched system list.
+    func isOnWatched(_ itemKey: String) -> Bool {
+        guard let watched = lists.first(where: { $0.system == .watched }) else { return false }
+        return contains(itemKey, listID: watched.id)
+    }
+
     func replace(with snapshot: LibrarySnapshot) {
         lists = snapshot.lists
         var members: [UUID: Set<String>] = [:]
