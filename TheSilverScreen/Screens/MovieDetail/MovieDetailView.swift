@@ -14,6 +14,7 @@ struct MovieDetailView: View {
     var showsToolbarFavorite: Bool = true
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(ListChangeNotice.self) private var notice
     @Namespace private var heroTransition
     @State private var selectedBackdropID: String?
     @State private var playingTrailer: MediaTrailer?
@@ -61,12 +62,22 @@ struct MovieDetailView: View {
         .toolbar {
             if showsToolbarFavorite, case .loaded(let content, _) = viewModel.state {
                 ToolbarItem(placement: .topBarTrailing) {
-                    ListMembershipButton(
-                        draft: content.detail.listItem(),
-                        lists: lists,
-                        index: listsIndex
-                    ) {
-                        viewModel.noteListSaveFailed()
+                    HStack(spacing: 4) {
+                        WatchedToggleButton(
+                            draft: content.detail.listItem(),
+                            lists: lists,
+                            index: listsIndex,
+                            chrome: false
+                        ) {
+                            viewModel.noteListSaveFailed()
+                        }
+                        ListMembershipButton(
+                            draft: content.detail.listItem(),
+                            lists: lists,
+                            index: listsIndex
+                        ) {
+                            viewModel.noteListSaveFailed()
+                        }
                     }
                 }
             }
@@ -210,7 +221,11 @@ struct MovieDetailView: View {
                 formattedUserScore: content.formattedUserScore,
                 userScoreAccessibilityLabel: content.userScoreAccessibilityLabel
             ) { score in
-                Task { await viewModel.saveUserScore(score) }
+                Task {
+                    guard let change = await viewModel.saveUserScore(score),
+                          change.action != .unchanged else { return }
+                    notice.show(change, using: lists)
+                }
             }
             MediaDescriptionSection(
                 overview: content.detail.overview,
@@ -267,16 +282,6 @@ struct MovieDetailView: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(router == nil)
-                .overlay(alignment: .topTrailing) {
-                    ListMembershipButton(
-                        draft: member.listItem(),
-                        lists: lists,
-                        index: listsIndex
-                    ) {
-                        viewModel.noteListSaveFailed()
-                    }
-                    .padding(DesignSpacing.xs)
-                }
                 .accessibilityElement(children: .contain)
                 .accessibilityAddTraits(router == nil ? [] : .isButton)
             }
@@ -321,10 +326,6 @@ struct MovieDetailView: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(router == nil)
-                .overlay(alignment: .topTrailing) {
-                    listControl(person.listItem())
-                    .padding(DesignSpacing.xs)
-                }
                 .accessibilityElement(children: .contain)
                 .accessibilityAddTraits(router == nil ? [] : .isButton)
             }
@@ -366,7 +367,10 @@ struct MovieDetailView: View {
                 width: portraitCardWidth
             )
             .overlay(alignment: .topTrailing) {
-                listControl(item.movie.listItem())
+                CarouselRatingBadge(
+                    formattedScore: viewModel.userScore(forMovieID: item.id),
+                    isWatched: listsIndex.isOnWatched(item.movie.listItem().itemKey)
+                )
                 .padding(DesignSpacing.xs)
             }
 
@@ -413,7 +417,10 @@ struct MovieDetailView: View {
                 width: portraitCardWidth
             )
             .overlay(alignment: .topTrailing) {
-                listControl(movie.listItem())
+                CarouselRatingBadge(
+                    formattedScore: viewModel.userScore(forMovieID: movie.id),
+                    isWatched: listsIndex.isOnWatched(movie.listItem().itemKey)
+                )
                 .padding(DesignSpacing.xs)
             }
 
@@ -442,12 +449,6 @@ struct MovieDetailView: View {
     }
 
     // MARK: - Reviews
-
-    private func listControl(_ draft: ListItemDraft) -> some View {
-        ListMembershipButton(draft: draft, lists: lists, index: listsIndex) {
-            viewModel.noteListSaveFailed()
-        }
-    }
 
     private func reviewsSection(
         _ section: MovieDetailContent.ReviewsSection,

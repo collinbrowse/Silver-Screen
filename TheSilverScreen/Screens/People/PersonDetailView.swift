@@ -364,8 +364,11 @@ struct PersonDetailView: View {
             )
             .carouselCard(width: portraitCardWidth, aspectRatio: 2 / 3)
             .overlay(alignment: .topTrailing) {
-                creditListControl(credit)
-                    .padding(DesignSpacing.xs)
+                CarouselRatingBadge(
+                    formattedScore: viewModel.userScore(for: credit),
+                    isWatched: listsIndex.isOnWatched(credit.listItem().itemKey)
+                )
+                .padding(DesignSpacing.xs)
             }
 
             Text(credit.title)
@@ -388,12 +391,6 @@ struct PersonDetailView: View {
             }
         }
         .accessibilityElement(children: .contain)
-    }
-
-    private func creditListControl(_ credit: PersonCredit) -> some View {
-        ListMembershipButton(draft: credit.listItem(), lists: lists, index: listsIndex) {
-            viewModel.noteListSaveFailed()
-        }
     }
 
     private func creditAccessibilityLabel(_ credit: PersonCredit) -> String {

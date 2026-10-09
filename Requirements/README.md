@@ -26,6 +26,7 @@ The tables keep the original scope. Where the shipping screen diverged, the epic
 | [TV Series](tv-series-view.md) | Series page: seasons, cast, crew, recommendations, reviews. |
 | [TV Season](tv-series-season-view.md) | Season page: images, cast, crew, episodes. |
 | [TV Episode](tv-episode.md) | Episode page: images, cast, guest stars, crew. |
+| [TV Watch Progress](tv-watch-progress.md) | Episode ledger, In Progress list, Watched auto-moves, cold-launch season refresh. |
 | [Search scopes](advanced-search-tab.md) | Movies, TV, and People on Search. |
 
 ## Where the data comes from

@@ -54,11 +54,20 @@ final class TVSeriesViewModel {
     private(set) var state: LoadState<TVSeriesContent> = .idle
     /// Prizes stored on this series, newest ceremony first. The section is hidden when empty.
     private(set) var awardRows: [AwardRow] = []
+    /// `Next up: S·E·title` while the series is in progress; nil when unknown or finished.
+    private(set) var nextUpSubtitle: String?
+    /// Fully watched regular seasons — drives the seasons-carousel eye badge.
+    private(set) var watchedSeasonNumbers: Set<Int> = []
+    /// Personal season scores for the carousel rating badge, keyed by season number.
+    private(set) var seasonScores: [Int: String] = [:]
+    /// Personal series scores for the recommendations carousel badge, keyed by series id.
+    private(set) var recommendationScores: [Int: String] = [:]
 
     private let seriesID: Int
     private let shows: TVRepository
     private let annotations: AnnotationsRepository
     private let lists: ListsRepository
+    private let tvWatch: TVWatchRepository?
     private let awards: AwardsRepository
 
     init(
@@ -66,13 +75,28 @@ final class TVSeriesViewModel {
         shows: TVRepository,
         annotations: AnnotationsRepository,
         lists: ListsRepository,
+        tvWatch: TVWatchRepository? = nil,
         awards: AwardsRepository = AwardsRepository(catalog: .empty)
     ) {
         self.seriesID = seriesID
         self.shows = shows
         self.annotations = annotations
         self.lists = lists
+        self.tvWatch = tvWatch
         self.awards = awards
+    }
+
+    /// Episodes that would be newly marked if the whole series is marked watched.
+    func unmarkedEpisodeCountForSeries() async -> Int {
+        guard case .loaded(let content, _) = state, let tvWatch else { return 0 }
+        do {
+            return try await tvWatch.unmarkedEpisodeCount(
+                seriesID: seriesID,
+                seasons: content.detail.seasons
+            )
+        } catch {
+            return 0
+        }
     }
 
     func load() async {
@@ -86,6 +110,7 @@ final class TVSeriesViewModel {
                 Self.makeContent(detail: detail, reviews: reviews, personal: personal.detail),
                 activity: personal.activity
             )
+            await reloadWatchProgress(seasons: detail.seasons)
             await enrichListSnapshots(detail.listItem())
         } catch is CancellationError {
             return
@@ -100,16 +125,100 @@ final class TVSeriesViewModel {
         await load()
     }
 
-    /// Saves a half-point score. A failure keeps the score already on screen.
-    func saveUserScore(_ score: Double) async {
-        guard case .loaded = state else { return }
+    /// Reloads Next up and seasons-carousel watch/rating badges (e.g. after popping back).
+    func reloadNextUp() async {
+        guard case .loaded(let content, _) = state else { return }
+        await reloadWatchProgress(seasons: content.detail.seasons)
+    }
+
+    private func reloadWatchProgress(seasons: [TVSeasonSummary]) async {
+        await reloadNextUpLine(seasons: seasons)
+        await reloadSeasonBadges(seasons: seasons)
+        if case .loaded(let content, _) = state {
+            await reloadRecommendationScores(content)
+        }
+    }
+
+    private func reloadRecommendationScores(_ content: TVSeriesContent) async {
+        let scores = await annotations.formattedScores()
+        var map: [Int: String] = [:]
+        for row in content.recommendations {
+            if let formatted = scores[.series(row.id)]?.formatted {
+                map[row.id] = formatted
+            }
+        }
+        recommendationScores = map
+    }
+
+    private func reloadNextUpLine(seasons: [TVSeasonSummary]) async {
+        guard let tvWatch else {
+            nextUpSubtitle = nil
+            return
+        }
+        do {
+            let watchState = try await tvWatch.syncNextUp(seriesID: seriesID, seasons: seasons)
+            nextUpSubtitle = watchState?.progressSubtitle
+        } catch {
+            nextUpSubtitle = nil
+        }
+    }
+
+    private func reloadSeasonBadges(seasons: [TVSeasonSummary]) async {
+        let scores = await annotations.formattedScores()
+        var scoreMap: [Int: String] = [:]
+        for season in seasons where season.seasonNumber > 0 {
+            let key = AnnotationKey.season(seriesID: seriesID, seasonNumber: season.seasonNumber)
+            if let formatted = scores[key]?.formatted {
+                scoreMap[season.seasonNumber] = formatted
+            }
+        }
+        seasonScores = scoreMap
+
+        guard let tvWatch else {
+            watchedSeasonNumbers = []
+            return
+        }
+        do {
+            let watchState = try await tvWatch.state(seriesID: seriesID)
+                ?? TVSeriesWatchState(seriesID: seriesID)
+            watchedSeasonNumbers = Set(
+                seasons.compactMap { season in
+                    guard season.seasonNumber > 0,
+                          watchState.isSeasonComplete(
+                            seasonNumber: season.seasonNumber,
+                            episodeCount: season.episodeCount
+                          ) else {
+                        return nil
+                    }
+                    return season.seasonNumber
+                }
+            )
+        } catch {
+            watchedSeasonNumbers = []
+        }
+    }
+
+    /// Saves a half-point score and marks the series watched (completes every episode).
+    /// Callers must confirm when `unmarkedEpisodeCountForSeries()` is greater than zero.
+    @discardableResult
+    func saveUserScore(_ score: Double) async -> TVWatchOutcome? {
+        guard case .loaded(let content, _) = state else { return nil }
         do {
             let saved = try await annotations.saveScore(score, for: .series(seriesID))
             apply(PersonalDetail(annotation: saved))
+            guard let tvWatch else { return nil }
+            let outcome = try await tvWatch.markSeries(
+                seriesID: seriesID,
+                seasons: content.detail.seasons,
+                draft: content.detail.listItem()
+            )
+            await reloadWatchProgress(seasons: content.detail.seasons)
+            return outcome
         } catch is CancellationError {
-            return
+            return nil
         } catch {
             markPersistenceFailure()
+            return nil
         }
     }
 
@@ -207,6 +316,7 @@ final class TVSeriesViewModel {
                 Self.makeContent(detail: detail, reviews: reviews, personal: personal.detail),
                 activity: personal.activity
             )
+            await reloadWatchProgress(seasons: detail.seasons)
         } catch is CancellationError {
             state = .loaded(current, activity: .none)
         } catch let error as AppError {

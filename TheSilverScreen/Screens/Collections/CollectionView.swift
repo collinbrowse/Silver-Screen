@@ -104,7 +104,7 @@ struct CollectionView: View {
                                 )
                             }
                             .buttonStyle(.plain)
-                            ListMembershipButton(
+                            WatchedToggleButton(
                                 draft: row.listItem(),
                                 lists: lists,
                                 index: listsIndex

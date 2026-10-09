@@ -296,6 +296,17 @@ struct SeriesListSnapshot: Hashable, Sendable, Codable, Equatable {
         )
     }
 
+    /// Snapshot from a library row when deep-linking without a series detail payload.
+    init(entry: ListEntry) {
+        self.init(
+            posterPath: entry.imagePath,
+            firstAirDate: entry.releaseDate,
+            genreNames: entry.genreNames,
+            voteAverage: entry.voteAverage,
+            popularity: entry.popularity
+        )
+    }
+
     /// Series list draft. Prefer `imagePath` when the season has its own poster.
     func listItem(id: Int, title: String, imagePath: String? = nil) -> ListItemDraft {
         ListItemDraft(

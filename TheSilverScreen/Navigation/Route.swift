@@ -47,7 +47,15 @@ enum Route: Hashable, Sendable, Codable {
     case personCredits(personID: Int, personName: String, department: CreditDepartment)
     case collection(id: Int)
     case tvSeries(id: Int)
-    case tvSeason(seriesID: Int, seriesName: String, seasonNumber: Int, seriesSnapshot: SeriesListSnapshot)
+    /// Season detail. When `scrollToEpisodeNumber` is set (In Progress continue), the season
+    /// scrolls so that episode sits at the top of the viewport after load.
+    case tvSeason(
+        seriesID: Int,
+        seriesName: String,
+        seasonNumber: Int,
+        seriesSnapshot: SeriesListSnapshot,
+        scrollToEpisodeNumber: Int?
+    )
     case tvEpisode(
         seriesID: Int,
         seriesName: String,

@@ -133,7 +133,8 @@ struct AwardWork: Codable, Hashable, Sendable, Equatable {
                     seriesID: seriesID,
                     seriesName: displaySeriesName(fallback: fallbackSeriesName),
                     seasonNumber: seasonNumber,
-                    seriesSnapshot: .empty
+                    seriesSnapshot: .empty,
+                    scrollToEpisodeNumber: nil
                 )
             case .episode:
                 guard let seriesID, let seasonNumber, let episodeNumber else { return nil }

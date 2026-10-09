@@ -10,6 +10,8 @@ struct AwardTitlesView: View {
     let imageLoader: ImageLoader
     let lists: ListsRepository
     let listsIndex: ListsIndex
+    let shows: TVRepository
+    let tvWatch: TVWatchRepository
     var router: NavigationRouter?
 
     init(
@@ -20,6 +22,7 @@ struct AwardTitlesView: View {
         annotations: AnnotationsRepository,
         lists: ListsRepository,
         listsIndex: ListsIndex,
+        tvWatch: TVWatchRepository,
         imageLoader: ImageLoader,
         router: NavigationRouter?
     ) {
@@ -35,6 +38,8 @@ struct AwardTitlesView: View {
         self.imageLoader = imageLoader
         self.lists = lists
         self.listsIndex = listsIndex
+        self.shows = shows
+        self.tvWatch = tvWatch
         self.router = router
     }
 
@@ -106,10 +111,12 @@ struct AwardTitlesView: View {
                         .buttonStyle(.plain)
 
                         if let draft = row.listDraft {
-                            ListMembershipButton(
+                            WatchedToggleButton(
                                 draft: draft,
                                 lists: lists,
-                                index: listsIndex
+                                index: listsIndex,
+                                tvWatch: tvWatch,
+                                shows: shows
                             )
                         }
                     }

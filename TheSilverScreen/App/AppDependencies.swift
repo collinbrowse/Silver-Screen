@@ -14,6 +14,7 @@ struct AppDependencies {
     let listsIndex: ListsIndex
     let listChanges: ListChangeNotice
     let annotations: AnnotationsRepository
+    let tvWatch: TVWatchRepository
     let awards: AwardsRepository
     let imageLoader: ImageLoader
     let router: AppRouter
@@ -45,10 +46,16 @@ struct AppDependencies {
             logger: logger,
             index: listsIndex
         )
-        let listChanges = ListChangeNotice()
         let annotationsStoreURL = try FileAnnotationsStore.applicationSupportURL()
         let annotations = AnnotationsRepository(
             store: FileAnnotationsStore(fileURL: annotationsStoreURL),
+            logger: logger
+        )
+        let listChanges = ListChangeNotice(annotations: annotations)
+        let tvWatchStoreURL = try FileTVWatchStore.applicationSupportURL()
+        let tvWatch = TVWatchRepository(
+            store: FileTVWatchStore(fileURL: tvWatchStoreURL),
+            lists: lists,
             logger: logger
         )
         let imageLoader = ImageLoader(client: URLSessionHTTPClient.images(), logger: logger)
@@ -67,6 +74,7 @@ struct AppDependencies {
             listsIndex: listsIndex,
             listChanges: listChanges,
             annotations: annotations,
+            tvWatch: tvWatch,
             awards: awards,
             imageLoader: imageLoader,
             router: router,

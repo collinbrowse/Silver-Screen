@@ -13,6 +13,7 @@ struct AppRouteDestination: View {
     let lists: ListsRepository
     let listsIndex: ListsIndex
     let annotations: AnnotationsRepository
+    let tvWatch: TVWatchRepository
     let awards: AwardsRepository
     let imageLoader: ImageLoader
     let router: NavigationRouter
@@ -36,6 +37,7 @@ struct AppRouteDestination: View {
                     people: people,
                     lists: lists,
                     listsIndex: listsIndex,
+                    annotations: annotations,
                     awards: awards,
                     imageLoader: imageLoader,
                     router: router
@@ -66,20 +68,29 @@ struct AppRouteDestination: View {
                     lists: lists,
                     listsIndex: listsIndex,
                     annotations: annotations,
+                    tvWatch: tvWatch,
                     awards: awards,
                     imageLoader: imageLoader,
                     router: router
                 )
-            case .tvSeason(let seriesID, let seriesName, let seasonNumber, let seriesSnapshot):
+            case .tvSeason(
+                let seriesID,
+                let seriesName,
+                let seasonNumber,
+                let seriesSnapshot,
+                let scrollToEpisodeNumber
+            ):
                 TVSeasonRouteView(
                     seriesID: seriesID,
                     seriesName: seriesName,
                     seasonNumber: seasonNumber,
                     seriesSnapshot: seriesSnapshot,
+                    scrollToEpisodeNumber: scrollToEpisodeNumber,
                     shows: shows,
                     lists: lists,
                     listsIndex: listsIndex,
                     annotations: annotations,
+                    tvWatch: tvWatch,
                     awards: awards,
                     imageLoader: imageLoader,
                     router: router
@@ -95,6 +106,7 @@ struct AppRouteDestination: View {
                     lists: lists,
                     listsIndex: listsIndex,
                     annotations: annotations,
+                    tvWatch: tvWatch,
                     awards: awards,
                     imageLoader: imageLoader,
                     router: router
@@ -104,6 +116,7 @@ struct AppRouteDestination: View {
                     listID: id,
                     lists: lists,
                     annotations: annotations,
+                    tvWatch: tvWatch,
                     imageLoader: imageLoader,
                     router: router
                 )
@@ -118,6 +131,7 @@ struct AppRouteDestination: View {
                     annotations: annotations,
                     lists: lists,
                     listsIndex: listsIndex,
+                    tvWatch: tvWatch,
                     imageLoader: imageLoader,
                     router: router
                 )
@@ -129,6 +143,7 @@ struct AppRouteDestination: View {
                     annotations: annotations,
                     lists: lists,
                     listsIndex: listsIndex,
+                    tvWatch: tvWatch,
                     imageLoader: imageLoader,
                     router: router
                 )

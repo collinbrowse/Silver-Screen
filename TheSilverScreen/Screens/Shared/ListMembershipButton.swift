@@ -11,7 +11,9 @@ import SwiftUI
 struct ListMembershipButton: View {
     let draft: ListItemDraft
     let lists: ListsRepository
-    let index: ListsIndex
+    @Bindable var index: ListsIndex
+    /// Extra system lists to hide. Watched and In Progress are always hidden for movies & TV.
+    var excludedSystemKinds: Set<SystemListKind> = []
     var onFailure: () -> Void = {}
 
     @Environment(ListChangeNotice.self) private var notice
@@ -20,11 +22,19 @@ struct ListMembershipButton: View {
     @State private var nameError: String?
 
     private var segmentLists: [LibraryList] {
-        index.lists(in: draft.kind.segment)
+        let hidden: Set<SystemListKind> = draft.kind.segment == .moviesAndTV
+            ? excludedSystemKinds.union(SystemListKind.membershipMenuHidden)
+            : excludedSystemKinds
+        return index.lists(in: draft.kind.segment).filter { list in
+            guard let system = list.system else { return true }
+            return !hidden.contains(system)
+        }
     }
 
+    /// Checkmark only when on Watchlist or a custom list — not Watched / In Progress
+    /// (those are the eye’s job).
     private var isListed: Bool {
-        index.contains(draft.itemKey)
+        segmentLists.contains { index.contains(draft.itemKey, listID: $0.id) }
     }
 
     var body: some View {
