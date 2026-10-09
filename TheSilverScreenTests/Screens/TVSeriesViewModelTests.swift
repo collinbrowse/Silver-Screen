@@ -143,6 +143,132 @@ final class TVSeriesViewModelTests: XCTestCase {
             XCTAssertEqual(content.fullscreenImages?.images.count, 1)
             }
 
+            func test_load_marksCompletedSeasonAndScoreForCarouselBadge() async throws {
+                let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+                let tvWatch = TVWatchRepository(
+                    store: InMemoryTVWatchStore(),
+                    lists: lists,
+                    logger: SilentLogger()
+                )
+                let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+                let draft = ListItemDraft(
+                    id: 1396,
+                    kind: .tv,
+                    title: "Breaking Bad",
+                    imagePath: nil,
+                    releaseDate: nil,
+                    genreNames: [],
+                    voteAverage: 0,
+                    popularity: 0
+                )
+                let seasons = [
+                    TVSeasonSummary(
+                        id: 1,
+                        name: "The Beginning",
+                        seasonNumber: 1,
+                        episodeCount: 7,
+                        airDate: nil,
+                        posterPath: nil
+                    ),
+                    TVSeasonSummary(
+                        id: 2,
+                        name: "Season 2",
+                        seasonNumber: 2,
+                        episodeCount: 13,
+                        airDate: nil,
+                        posterPath: nil
+                    ),
+                ]
+                _ = try await tvWatch.markSeason(
+                    seriesID: 1396,
+                    seasonNumber: 1,
+                    episodeCount: 7,
+                    draft: draft,
+                    seasons: seasons
+                )
+                _ = try await annotations.saveScore(8.5, for: .season(seriesID: 1396, seasonNumber: 1))
+                let client = RoutingHTTPClient(routes: [
+                    "/tv/1396/reviews": .success(TMDBFixtures.movieReviewsEmpty),
+                    "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
+                ])
+                let viewModel = TVSeriesViewModel(
+                    seriesID: 1396,
+                    shows: TVRepository.test(client: client),
+                    annotations: annotations,
+                    lists: lists,
+                    tvWatch: tvWatch
+                )
+
+                await viewModel.load()
+
+                XCTAssertTrue(viewModel.watchedSeasonNumbers.contains(1))
+                XCTAssertFalse(viewModel.watchedSeasonNumbers.contains(2))
+                XCTAssertEqual(viewModel.seasonScores[1], "8.5 / 10")
+            }
+
+            func test_reloadNextUp_refreshesSeasonBadgesAfterWatchChange() async throws {
+                let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+                let tvWatch = TVWatchRepository(
+                    store: InMemoryTVWatchStore(),
+                    lists: lists,
+                    logger: SilentLogger()
+                )
+                let client = RoutingHTTPClient(routes: [
+                    "/tv/1396/reviews": .success(TMDBFixtures.movieReviewsEmpty),
+                    "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
+                ])
+                let viewModel = TVSeriesViewModel(
+                    seriesID: 1396,
+                    shows: TVRepository.test(client: client),
+                    annotations: AnnotationsRepository.empty(),
+                    lists: lists,
+                    tvWatch: tvWatch
+                )
+                await viewModel.load()
+                XCTAssertTrue(viewModel.watchedSeasonNumbers.isEmpty)
+
+                let draft = ListItemDraft(
+                    id: 1396,
+                    kind: .tv,
+                    title: "Breaking Bad",
+                    imagePath: nil,
+                    releaseDate: nil,
+                    genreNames: [],
+                    voteAverage: 0,
+                    popularity: 0
+                )
+                let seasons = [
+                    TVSeasonSummary(
+                        id: 1,
+                        name: "The Beginning",
+                        seasonNumber: 1,
+                        episodeCount: 7,
+                        airDate: nil,
+                        posterPath: nil
+                    ),
+                    TVSeasonSummary(
+                        id: 2,
+                        name: "Season 2",
+                        seasonNumber: 2,
+                        episodeCount: 13,
+                        airDate: nil,
+                        posterPath: nil
+                    ),
+                ]
+                _ = try await tvWatch.markSeason(
+                    seriesID: 1396,
+                    seasonNumber: 1,
+                    episodeCount: 7,
+                    draft: draft,
+                    seasons: seasons
+                )
+
+                await viewModel.reloadNextUp()
+
+                XCTAssertTrue(viewModel.watchedSeasonNumbers.contains(1))
+                XCTAssertFalse(viewModel.watchedSeasonNumbers.contains(2))
+            }
+
             func test_load_withSavedScoreAndNote_showsThem() async throws {
             let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
             _ = try await annotations.saveScore(9, for: .series(1396))

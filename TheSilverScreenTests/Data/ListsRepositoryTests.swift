@@ -9,14 +9,14 @@ import XCTest
 @MainActor
 final class ListsRepositoryTests: XCTestCase {
 
-    func test_snapshot_seedsWatchedAndWatchlistSortedByDateAdded() async throws {
+    func test_snapshot_seedsSystemListsSortedByDateAdded() async throws {
         let repository = makeRepository()
 
         let snapshot = try await repository.snapshot()
 
         let movies = snapshot.lists(in: .moviesAndTV)
-        XCTAssertEqual(movies.map(\.name), ["Watched", "Watchlist"])
-        XCTAssertEqual(movies.map(\.sort), [.dateAdded, .dateAdded])
+        XCTAssertEqual(movies.map(\.name), ["Watched", "In Progress", "Watchlist"])
+        XCTAssertEqual(movies.map(\.sort), [.dateAdded, .dateAdded, .dateAdded])
         XCTAssertTrue(snapshot.lists(in: .people).isEmpty)
     }
 
@@ -295,6 +295,21 @@ final class ListsRepositoryTests: XCTestCase {
         XCTAssertEqual(entry.title, "Heat")
         XCTAssertFalse(snapshot.entries.contains { $0.listID == watchlist.id && $0.itemID == 15 })
         XCTAssertTrue(snapshot.entries.contains { $0.listID == custom.id && $0.itemID == 15 })
+    }
+
+    func test_toggleWatched_addsThenRemoves() async throws {
+        let repository = makeRepository()
+        let draft = movie(id: 22, title: "Heat")
+
+        let added = try await repository.toggleWatched(draft)
+        XCTAssertEqual(added.action, .added)
+        XCTAssertEqual(added.confirmation, "Added to Watched")
+
+        let removed = try await repository.toggleWatched(draft)
+        XCTAssertEqual(removed.action, .removed)
+        let snapshot = try await repository.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        XCTAssertFalse(snapshot.entries.contains { $0.listID == watched.id && $0.itemID == 22 })
     }
 
     func test_addToWatched_again_keepsTheAddedDate() async throws {

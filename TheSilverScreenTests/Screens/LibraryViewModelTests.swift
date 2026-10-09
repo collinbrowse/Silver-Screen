@@ -39,7 +39,10 @@ final class LibraryViewModelTests: XCTestCase {
         _ = try await repository.createList(name: "Friday", segment: .moviesAndTV)
         await viewModel.load()
 
-        XCTAssertEqual(viewModel.displayedLists.prefix(2).map(\.name), ["Watched", "Watchlist"])
+        XCTAssertEqual(
+            viewModel.displayedLists.prefix(3).map(\.name),
+            ["Watched", "In Progress", "Watchlist"]
+        )
         XCTAssertEqual(viewModel.displayedLists.last?.name, "Friday")
         XCTAssertTrue(viewModel.canReorderLists)
     }
@@ -53,7 +56,7 @@ final class LibraryViewModelTests: XCTestCase {
 
         XCTAssertFalse(saved)
         XCTAssertEqual(viewModel.nameError, ListEditError.duplicateName.message)
-        XCTAssertEqual(viewModel.displayedLists.map(\.name), ["Watched", "Watchlist"])
+        XCTAssertEqual(viewModel.displayedLists.map(\.name), ["Watched", "In Progress", "Watchlist"])
     }
 
     func test_detail_dateAddedIsDefaultAndReorderIsDisabledForWatched() async throws {
@@ -186,12 +189,18 @@ final class LibraryViewModelTests: XCTestCase {
         await viewModel.load()
         let snapshot = try await repository.snapshot()
         let watched = try XCTUnwrap(snapshot.list(.watched))
+        let inProgress = try XCTUnwrap(snapshot.list(.inProgress))
         let watchlist = try XCTUnwrap(snapshot.list(.watchlist))
         _ = try await repository.add(draft: draft(id: 1, title: "Heat", imagePath: "/heat.jpg"), listID: watched.id)
         _ = try await repository.add(draft: draft(id: 2, title: "Alien", imagePath: "/alien.jpg"), listID: watchlist.id)
+        _ = try await repository.add(
+            draft: draft(id: 3, title: "Severance", imagePath: "/sev.jpg"),
+            listID: inProgress.id
+        )
         await viewModel.load()
 
         XCTAssertEqual(viewModel.artwork(for: watched), .watched)
+        XCTAssertEqual(viewModel.artwork(for: inProgress), .inProgress)
         XCTAssertEqual(viewModel.artwork(for: watchlist), .watchlist)
     }
 
@@ -262,6 +271,172 @@ final class LibraryViewModelTests: XCTestCase {
         await viewModel.load()
 
         XCTAssertEqual(viewModel.artwork(for: list), .images(["/face.jpg"]))
+    }
+
+    func test_detail_inProgressTVRouteOpensSeasonScrolledToLastWatched() async throws {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let tvWatch = TVWatchRepository(
+            store: InMemoryTVWatchStore(),
+            lists: lists,
+            logger: SilentLogger()
+        )
+        let seriesDraft = ListItemDraft(
+            id: 42,
+            kind: .tv,
+            title: "Severance",
+            imagePath: "/sev.jpg",
+            releaseDate: nil,
+            genreNames: ["Drama"],
+            voteAverage: 8,
+            popularity: 10
+        )
+        let seasons = [
+            TVSeasonSummary(
+                id: 1,
+                name: "Season 1",
+                seasonNumber: 1,
+                episodeCount: 5,
+                airDate: nil,
+                posterPath: nil
+            )
+        ]
+        _ = try await tvWatch.markEpisode(
+            seriesID: 42,
+            seasonNumber: 1,
+            episodeNumber: 2,
+            title: "Half Loop",
+            draft: seriesDraft,
+            seasons: seasons
+        )
+        let snapshot = try await lists.snapshot()
+        let inProgress = try XCTUnwrap(snapshot.list(.inProgress))
+        let viewModel = LibraryDetailViewModel(
+            listID: inProgress.id,
+            lists: lists,
+            annotations: AnnotationsRepository.empty(),
+            tvWatch: tvWatch
+        )
+        await viewModel.load()
+        let entry = try XCTUnwrap(viewModel.displayedEntries.first)
+
+        let route = viewModel.route(for: entry)
+
+        XCTAssertEqual(
+            route,
+            .tvSeason(
+                seriesID: 42,
+                seriesName: "Severance",
+                seasonNumber: 1,
+                seriesSnapshot: SeriesListSnapshot(entry: entry),
+                scrollToEpisodeNumber: 2
+            )
+        )
+    }
+
+    func test_detail_watchedTVRouteOpensSeries() async throws {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let snapshot = try await lists.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        _ = try await lists.add(
+            draft: draft(id: 7, title: "Finished Show", imagePath: "/done.jpg", kind: .tv),
+            listID: watched.id
+        )
+        let viewModel = LibraryDetailViewModel(
+            listID: watched.id,
+            lists: lists,
+            annotations: AnnotationsRepository.empty()
+        )
+        await viewModel.load()
+        let entry = try XCTUnwrap(viewModel.displayedEntries.first)
+
+        XCTAssertEqual(viewModel.route(for: entry), .tvSeries(id: 7))
+    }
+
+    func test_detail_inProgressCaption_usesProgressSubtitle() async throws {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let tvWatch = TVWatchRepository(
+            store: InMemoryTVWatchStore(),
+            lists: lists,
+            logger: SilentLogger()
+        )
+        let seriesDraft = draft(id: 42, title: "Severance", imagePath: "/sev.jpg", kind: .tv)
+        let seasons = [
+            TVSeasonSummary(
+                id: 1,
+                name: "Season 1",
+                seasonNumber: 1,
+                episodeCount: 5,
+                airDate: nil,
+                posterPath: nil
+            ),
+        ]
+        _ = try await tvWatch.markEpisode(
+            seriesID: 42,
+            seasonNumber: 1,
+            episodeNumber: 2,
+            title: "Half Loop",
+            draft: seriesDraft,
+            seasons: seasons,
+            knownTitles: [
+                TVEpisodeRef(seasonNumber: 1, episodeNumber: 3): "In Perpetuity",
+            ]
+        )
+        let snapshot = try await lists.snapshot()
+        let inProgress = try XCTUnwrap(snapshot.list(.inProgress))
+        let viewModel = LibraryDetailViewModel(
+            listID: inProgress.id,
+            lists: lists,
+            annotations: AnnotationsRepository.empty(),
+            tvWatch: tvWatch
+        )
+        await viewModel.load()
+        let entry = try XCTUnwrap(viewModel.displayedEntries.first)
+
+        XCTAssertEqual(
+            viewModel.progressCaptions[entry.itemKey],
+            "Next up: S1 · E3 · In Perpetuity"
+        )
+    }
+
+    func test_detail_watchedCaption_usesSeasonCount() async throws {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let tvWatch = TVWatchRepository(
+            store: InMemoryTVWatchStore(),
+            lists: lists,
+            logger: SilentLogger()
+        )
+        let seriesDraft = draft(id: 9, title: "Done", imagePath: "/d.jpg", kind: .tv)
+        let seasons = [
+            TVSeasonSummary(
+                id: 1,
+                name: "Season 1",
+                seasonNumber: 1,
+                episodeCount: 1,
+                airDate: nil,
+                posterPath: nil
+            ),
+            TVSeasonSummary(
+                id: 2,
+                name: "Season 2",
+                seasonNumber: 2,
+                episodeCount: 1,
+                airDate: nil,
+                posterPath: nil
+            ),
+        ]
+        _ = try await tvWatch.markSeries(seriesID: 9, seasons: seasons, draft: seriesDraft)
+        let snapshot = try await lists.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        let viewModel = LibraryDetailViewModel(
+            listID: watched.id,
+            lists: lists,
+            annotations: AnnotationsRepository.empty(),
+            tvWatch: tvWatch
+        )
+        await viewModel.load()
+        let entry = try XCTUnwrap(viewModel.displayedEntries.first)
+
+        XCTAssertEqual(viewModel.progressCaptions[entry.itemKey], "2 seasons")
     }
 
     private func draft(
