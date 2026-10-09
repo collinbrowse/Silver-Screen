@@ -95,8 +95,11 @@ final class TVEpisodeViewModelTests: XCTestCase {
 
             func test_load_withSavedScoreAndNote_showsThem() async throws {
             let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
-            _ = try await annotations.saveScore(10, for: .episode(seriesID: 1396, seasonNumber: 1, episodeNumber: 1))
-            _ = try await annotations.saveNote("The pilot", for: .episode(seriesID: 1396, seasonNumber: 1, episodeNumber: 1))
+            _ = try await annotations.save(
+                score: 10,
+                note: "The pilot",
+                for: .episode(seriesID: 1396, seasonNumber: 1, episodeNumber: 1)
+            )
             let viewModel = TVEpisodeViewModel(
                 seriesID: 1396,
                 seasonNumber: 1,
@@ -149,10 +152,14 @@ final class TVEpisodeViewModelTests: XCTestCase {
                     ).showsNotesFirst)
                 }
 
-                func test_saveUserNote_whenPersistenceFails_keepsPreviousNote() async throws {
+                func test_saveUserAnnotation_whenPersistenceFails_keepsPreviousNote() async throws {
                 let store = InMemoryAnnotationsStore()
                 let annotations = AnnotationsRepository(store: store, logger: SilentLogger())
-                _ = try await annotations.saveNote("Keep", for: .episode(seriesID: 1396, seasonNumber: 1, episodeNumber: 1))
+                _ = try await annotations.save(
+                    score: 9,
+                    note: "Keep",
+                    for: .episode(seriesID: 1396, seasonNumber: 1, episodeNumber: 1)
+                )
                 let viewModel = TVEpisodeViewModel(
                     seriesID: 1396,
                     seasonNumber: 1,
@@ -161,11 +168,13 @@ final class TVEpisodeViewModelTests: XCTestCase {
                     annotations: annotations
                     )
                 await viewModel.load()
+                viewModel.openAnnotationEditor()
                 await store.setSaveError(CocoaError(.fileWriteUnknown))
 
-                let saved = await viewModel.saveUserNote("Nope")
+                let saved = await viewModel.saveUserAnnotation(score: 7, note: "Nope")
 
-                XCTAssertFalse(saved)
+                XCTAssertEqual(saved, .failed)
+                XCTAssertNotNil(viewModel.annotationEditor)
                 guard case .loaded(let content, activity: .failed(.persistence)) = viewModel.state else {
                 return XCTFail("Expected loaded with persistence failure, got \(viewModel.state)")
                 }

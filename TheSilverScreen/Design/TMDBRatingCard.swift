@@ -12,7 +12,7 @@ struct TMDBRatingCard: View {
     let accessibilityLabel: String
     let formattedUserScore: String?
     let userScoreAccessibilityLabel: String
-    let onSelectScore: (Double) -> Void
+    let onEdit: () -> Void
 
     var body: some View {
         SurfaceCard {
@@ -46,17 +46,20 @@ struct TMDBRatingCard: View {
     }
 
     private var userSide: some View {
-        Menu {
-            ForEach(UserScore.options, id: \.self) { value in
-                Button(UserScore.formatted(value)) {
-                    onSelectScore(value)
+        Button(action: onEdit) {
+            HStack {
+                userLabel
+                    .contentShape(Rectangle())
+                if formattedUserScore != nil {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 18).weight(.bold))
+                        .foregroundStyle(DesignTheme.textPrimary)
+                        .accessibilityHidden(true)
                 }
-                .accessibilityLabel(UserScore.accessibilityLabel(value))
             }
-        } label: {
-            userLabel
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .buttonStyle(.plain)
         .accessibilityLabel(userScoreAccessibilityLabel)
     }
 
@@ -66,7 +69,7 @@ struct TMDBRatingCard: View {
             VStack(alignment: .leading, spacing: DesignSpacing.xs) {
                 Text(formattedUserScore)
                     .font(DesignTypography.ratingValue)
-                    .foregroundStyle(DesignTheme.textPrimary)
+                    .foregroundStyle(DesignTheme.accent)
                 Text("YOUR RATING")
                     .font(DesignTypography.factLabel)
                     .foregroundStyle(DesignTheme.textMuted)

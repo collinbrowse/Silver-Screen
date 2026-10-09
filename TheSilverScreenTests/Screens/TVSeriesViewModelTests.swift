@@ -145,8 +145,7 @@ final class TVSeriesViewModelTests: XCTestCase {
 
             func test_load_withSavedScoreAndNote_showsThem() async throws {
             let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
-            _ = try await annotations.saveScore(9, for: .series(1396))
-            _ = try await annotations.saveNote("Peak television", for: .series(1396))
+            _ = try await annotations.save(score: 9, note: "Peak television", for: .series(1396))
             let client = RoutingHTTPClient(routes: [
                 "/tv/1396/reviews": .success(TMDBFixtures.movieReviewsEmpty),
                 "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
@@ -201,10 +200,10 @@ final class TVSeriesViewModelTests: XCTestCase {
                     ).showsNotesFirst)
                 }
 
-                func test_saveUserNote_whenPersistenceFails_keepsPreviousNote() async throws {
+                func test_saveUserAnnotation_whenPersistenceFails_keepsPreviousNote() async throws {
                 let store = InMemoryAnnotationsStore()
                 let annotations = AnnotationsRepository(store: store, logger: SilentLogger())
-                _ = try await annotations.saveNote("Keep this", for: .series(1396))
+                _ = try await annotations.save(score: 8, note: "Keep this", for: .series(1396))
                 let client = RoutingHTTPClient(routes: [
                     "/tv/1396/reviews": .success(TMDBFixtures.movieReviewsEmpty),
                     "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
@@ -216,14 +215,69 @@ final class TVSeriesViewModelTests: XCTestCase {
                     lists: ListsRepository.empty()
                     )
                 await viewModel.load()
+                viewModel.openAnnotationEditor()
                 await store.setSaveError(CocoaError(.fileWriteUnknown))
 
-                let saved = await viewModel.saveUserNote("Replacement")
+                let saved = await viewModel.saveUserAnnotation(score: 7, note: "Replacement")
 
-                XCTAssertFalse(saved)
+                XCTAssertEqual(saved, .failed)
+                XCTAssertNotNil(viewModel.annotationEditor)
                 guard case .loaded(let content, activity: .failed(.persistence)) = viewModel.state else {
                 return XCTFail("Expected loaded with persistence failure, got \(viewModel.state)")
                 }
                 XCTAssertEqual(content.userNote, "Keep this")
+                XCTAssertEqual(content.formattedUserScore, "8.0 / 10")
+                }
+
+                func test_openAnnotationEditor_prefillsScoreAndNote() async throws {
+                let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+                _ = try await annotations.save(score: 9, note: "Peak television", for: .series(1396))
+                let client = RoutingHTTPClient(routes: [
+                    "/tv/1396/reviews": .success(TMDBFixtures.movieReviewsEmpty),
+                    "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
+                    ])
+                let viewModel = TVSeriesViewModel(
+                    seriesID: 1396,
+                    shows: TVRepository.test(client: client),
+                    annotations: annotations,
+                    lists: ListsRepository.empty()
+                    )
+                await viewModel.load()
+
+                viewModel.openAnnotationEditor()
+
+                let session = try XCTUnwrap(viewModel.annotationEditor)
+                XCTAssertEqual(session.title, "Breaking Bad")
+                XCTAssertEqual(session.score, 9)
+                XCTAssertEqual(session.note, "Peak television")
+                XCTAssertTrue(session.canDeleteNote)
+                XCTAssertTrue(session.hasExistingScore)
+                XCTAssertTrue(session.canClear)
+                }
+
+                func test_clearUserAnnotation_removesScoreAndNote() async throws {
+                let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+                _ = try await annotations.save(score: 9, note: "Peak television", for: .series(1396))
+                let client = RoutingHTTPClient(routes: [
+                    "/tv/1396/reviews": .success(TMDBFixtures.movieReviewsEmpty),
+                    "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
+                    ])
+                let viewModel = TVSeriesViewModel(
+                    seriesID: 1396,
+                    shows: TVRepository.test(client: client),
+                    annotations: annotations,
+                    lists: ListsRepository.empty()
+                    )
+                await viewModel.load()
+
+                let cleared = await viewModel.clearUserAnnotation()
+
+                XCTAssertEqual(cleared, .succeeded)
+                XCTAssertNil(viewModel.annotationEditor)
+                guard case .loaded(let content, activity: .none) = viewModel.state else {
+                return XCTFail("Expected loaded, got \(viewModel.state)")
+                }
+                XCTAssertNil(content.formattedUserScore)
+                XCTAssertNil(content.userNote)
                 }
                 }

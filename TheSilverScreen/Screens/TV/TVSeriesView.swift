@@ -33,6 +33,17 @@ struct TVSeriesView: View {
         )
     }
 
+    private var annotationEditorBinding: Binding<AnnotationEditorSession?> {
+        Binding(
+            get: { viewModel.annotationEditor },
+            set: { newValue in
+                if newValue == nil {
+                    viewModel.dismissAnnotationEditor()
+                }
+            }
+        )
+    }
+
     var body: some View {
         Group {
             switch viewModel.state {
@@ -76,6 +87,16 @@ struct TVSeriesView: View {
             }
         }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
+        .sheet(item: annotationEditorBinding) { session in
+            AnnotationEditorSheet(
+                title: session.title,
+                score: session.score,
+                note: session.note,
+                canClear: session.canClear,
+                onSave: { await viewModel.saveUserAnnotation(score: $0, note: $1) },
+                onClear: { await viewModel.clearUserAnnotation() }
+            )
+        }
         .fullScreenCover(item: fullscreenBinding) { selection in
             FullscreenImageViewer(
                 images: selection.images,
@@ -109,7 +130,7 @@ struct TVSeriesView: View {
         return ScrollView {
             VStack(alignment: .leading, spacing: DesignSpacing.xl) {
                 seriesHero(content)
-                seriesFacts(content)
+                seriesFacts(content, scrollTo: scrollTo)
                 if !viewModel.awardRows.isEmpty {
                     AwardRowsSection(rows: viewModel.awardRows)
                         .padding(.horizontal, DesignSpacing.lg)
@@ -195,22 +216,24 @@ struct TVSeriesView: View {
         }
     }
 
-    private func seriesFacts(_ content: TVSeriesContent) -> some View {
+    private func seriesFacts(
+        _ content: TVSeriesContent,
+        scrollTo: @escaping (String) -> Void
+    ) -> some View {
         VStack(alignment: .leading, spacing: DesignSpacing.md) {
             TMDBRatingCard(
                 formattedRating: content.formattedRating,
                 accessibilityLabel: content.ratingAccessibilityLabel,
                 formattedUserScore: content.formattedUserScore,
-                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel
-            ) { score in
-                Task { await viewModel.saveUserScore(score) }
-            }
+                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+                onEdit: { viewModel.openAnnotationEditor() }
+            )
             MediaDescriptionSection(
                 overview: content.detail.overview,
                 note: content.userNote,
                 notedOn: content.formattedNotedOn,
-                onSave: { await viewModel.saveUserNote($0) },
-                onDelete: { await viewModel.deleteUserNote() }
+                onEdit: { viewModel.openAnnotationEditor() },
+                scrollTo: scrollTo
             )
         }
         .padding(.horizontal, DesignSpacing.lg)

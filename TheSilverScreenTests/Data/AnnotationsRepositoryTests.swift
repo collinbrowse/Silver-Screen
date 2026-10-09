@@ -19,8 +19,7 @@ final class AnnotationsRepositoryTests: XCTestCase {
         ]
 
         for key in keys {
-            _ = try await repository.saveScore(7.5, for: key, at: updatedAt)
-            _ = try await repository.saveNote("Worth rewatching", for: key, at: updatedAt)
+            _ = try await repository.save(score: 7.5, note: "Worth rewatching", for: key, at: updatedAt)
         }
 
         let movie = try await repository.annotation(for: .movie(500))
@@ -37,9 +36,92 @@ final class AnnotationsRepositoryTests: XCTestCase {
         XCTAssertEqual(episode?.key.episodeNumber, 3)
     }
 
-    func test_saveScore_leavesExistingNote() async throws {
+    func test_save_scoreAndNote_together_roundTrips() async throws {
         let repository = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
-        _ = try await repository.saveNote("A note", for: .movie(1), at: updatedAt)
+
+        let saved = try await repository.save(
+            score: 8.5,
+            note: "Together",
+            for: .movie(12),
+            at: updatedAt
+        )
+
+        XCTAssertEqual(saved.score, 8.5)
+        XCTAssertEqual(saved.note, "Together")
+        XCTAssertEqual(saved.watchedAt, updatedAt)
+        let loaded = try await repository.annotation(for: .movie(12))
+        XCTAssertEqual(loaded, saved)
+    }
+
+    func test_save_blankNote_clearsExistingNote() async throws {
+        let repository = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        _ = try await repository.save(score: 7, note: "Keep for now", for: .movie(12), at: updatedAt)
+
+        let saved = try await repository.save(score: 7, note: "  \n", for: .movie(12), at: updatedAt)
+
+        XCTAssertEqual(saved.score, 7)
+        XCTAssertNil(saved.note)
+    }
+
+    func test_save_rejectsInvalidScore() async {
+        let repository = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+
+        do {
+            _ = try await repository.save(score: 0, note: "Nope", for: .movie(12), at: updatedAt)
+            XCTFail("Expected persistence error")
+        } catch let error as AppError {
+            XCTAssertEqual(error, .persistence)
+        } catch {
+            XCTFail("Unexpected error \(error)")
+        }
+        let loaded = try? await repository.annotation(for: .movie(12))
+        XCTAssertNil(loaded)
+    }
+
+    func test_save_again_keepsTheWatchedDay() async throws {
+        let repository = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        let watched = Date(timeIntervalSince1970: 1_700_000_000)
+        let later = Date(timeIntervalSince1970: 1_800_000_000)
+        _ = try await repository.save(score: 7.5, note: "First", for: .movie(12), at: watched)
+
+        let saved = try await repository.save(score: 9, note: "Second", for: .movie(12), at: later)
+
+        XCTAssertEqual(saved.score, 9)
+        XCTAssertEqual(saved.note, "Second")
+        XCTAssertEqual(saved.watchedAt, watched)
+    }
+
+    func test_restore_putsBackPreviousAnnotation() async throws {
+        let repository = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        let previous = try await repository.save(
+            score: 7.5,
+            note: "Keep",
+            for: .movie(12),
+            at: updatedAt
+        )
+        _ = try await repository.save(score: 9, note: "Temp", for: .movie(12), at: updatedAt)
+
+        try await repository.restore(previous, for: .movie(12))
+
+        let loaded = try await repository.annotation(for: .movie(12))
+        XCTAssertEqual(loaded, previous)
+    }
+
+    func test_restore_nil_removesAnnotation() async throws {
+        let repository = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        _ = try await repository.save(score: 8, note: "Temp", for: .movie(12), at: updatedAt)
+
+        try await repository.restore(nil, for: .movie(12))
+
+        let loaded = try await repository.annotation(for: .movie(12))
+        XCTAssertNil(loaded)
+    }
+
+    func test_saveScore_leavesExistingLegacyNote() async throws {
+        let store = InMemoryAnnotationsStore(records: [
+            MediaAnnotation(key: .movie(1), score: nil, note: "A note", watchedAt: updatedAt),
+        ])
+        let repository = AnnotationsRepository(store: store, logger: SilentLogger())
 
         let saved = try await repository.saveScore(8, for: .movie(1), at: updatedAt)
 
@@ -50,8 +132,7 @@ final class AnnotationsRepositoryTests: XCTestCase {
 
     func test_deleteNote_leavesScore() async throws {
         let repository = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
-        _ = try await repository.saveScore(9.5, for: .movie(1), at: updatedAt)
-        _ = try await repository.saveNote("A note", for: .movie(1), at: updatedAt)
+        _ = try await repository.save(score: 9.5, note: "A note", for: .movie(1), at: updatedAt)
 
         let saved = try await repository.deleteNote(for: .movie(1))
 
@@ -60,24 +141,35 @@ final class AnnotationsRepositoryTests: XCTestCase {
         XCTAssertEqual(saved?.watchedAt, updatedAt)
     }
 
-    func test_saveWhitespaceNote_storesItAsAbsent() async throws {
-        let repository = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
-        _ = try await repository.saveScore(6, for: .movie(1), at: updatedAt)
+    func test_deleteNote_onLegacyNoteOnly_removesTheRecord() async throws {
+        let store = InMemoryAnnotationsStore(records: [
+            MediaAnnotation(key: .series(2), score: nil, note: "Hello", watchedAt: updatedAt),
+        ])
+        let repository = AnnotationsRepository(store: store, logger: SilentLogger())
 
-        let saved = try await repository.saveNote("   \n", for: .movie(1), at: updatedAt)
-
-        XCTAssertEqual(saved?.score, 6)
-        XCTAssertNil(saved?.note)
-    }
-
-    func test_saveWhitespaceNote_withoutScore_removesTheRecord() async throws {
-        let repository = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
-        _ = try await repository.saveNote("Hello", for: .series(2), at: updatedAt)
-
-        let saved = try await repository.saveNote("  ", for: .series(2), at: updatedAt)
+        let saved = try await repository.deleteNote(for: .series(2))
 
         XCTAssertNil(saved)
         let loaded = try await repository.annotation(for: .series(2))
+        XCTAssertNil(loaded)
+    }
+
+    func test_clear_removesScoreAndNote() async throws {
+        let repository = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        _ = try await repository.save(score: 8, note: "Gone", for: .movie(1), at: updatedAt)
+
+        try await repository.clear(for: .movie(1))
+
+        let loaded = try await repository.annotation(for: .movie(1))
+        XCTAssertNil(loaded)
+    }
+
+    func test_clear_whenMissing_isNoOp() async throws {
+        let repository = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+
+        try await repository.clear(for: .movie(1))
+
+        let loaded = try await repository.annotation(for: .movie(1))
         XCTAssertNil(loaded)
     }
 
@@ -127,15 +219,28 @@ final class AnnotationsRepositoryTests: XCTestCase {
         XCTAssertEqual(saved.watchedAt, watched)
     }
 
-    func test_saveNote_doesNotMoveTheRatingDate() async throws {
+    func test_save_noteChange_doesNotMoveTheRatingDate() async throws {
         let repository = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
         let rated = Date(timeIntervalSince1970: 1_700_000_000)
         let noted = Date(timeIntervalSince1970: 1_800_000_000)
-        _ = try await repository.saveScore(7.5, for: .movie(1), at: rated)
+        _ = try await repository.save(score: 7.5, note: "First", for: .movie(1), at: rated)
 
-        let saved = try await repository.saveNote("Later", for: .movie(1), at: noted)
+        let saved = try await repository.save(score: 7.5, note: "Later", for: .movie(1), at: noted)
 
-        XCTAssertEqual(saved?.watchedAt, rated)
+        XCTAssertEqual(saved.watchedAt, rated)
+        XCTAssertEqual(saved.note, "Later")
+    }
+
+    func test_legacyNoteOnly_stillLoads() async throws {
+        let store = InMemoryAnnotationsStore(records: [
+            MediaAnnotation(key: .movie(9), score: nil, note: "Old note", watchedAt: updatedAt),
+        ])
+        let repository = AnnotationsRepository(store: store, logger: SilentLogger())
+
+        let loaded = try await repository.annotation(for: .movie(9))
+
+        XCTAssertNil(loaded?.score)
+        XCTAssertEqual(loaded?.note, "Old note")
     }
 }
 

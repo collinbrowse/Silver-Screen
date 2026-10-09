@@ -36,8 +36,6 @@ enum ReviewWindow {
 struct ReviewCard: View {
     let review: MovieReview
     var scrollTo: (String) -> Void = { _ in }
-    @State private var expanded = false
-    @State private var topOffset: CGFloat = 0
 
     var body: some View {
         SurfaceCard {
@@ -51,43 +49,17 @@ struct ReviewCard: View {
                 Text(DisplayDate.day(review.updatedAt))
                     .font(DesignTypography.chip)
                     .foregroundStyle(DesignTheme.textMuted)
-                Text(review.content)
-                    .font(DesignTypography.body)
-                    .foregroundStyle(DesignTheme.textSecondary)
-                    .lineLimit(expanded ? nil : 6)
-                    .fixedSize(horizontal: false, vertical: true)
-                if review.content.count > 280 {
-                    Button(expanded ? "Show Less" : "Show More") {
-                        toggleExpanded()
-                    }
-                    .font(DesignTypography.chip.weight(.semibold))
-                    .foregroundStyle(DesignTheme.accent)
-                }
+                ExpandableTextToggle(
+                    text: review.content,
+                    scrollTo: scrollTo,
+                    scrollID: review.id
+                )
             }
         }
-        .background {
-            GeometryReader { geo in
-                Color.clear
-                    .onChange(of: geo.frame(in: .named("detailScroll")).minY, initial: true) { _, minY in
-                        topOffset = minY
-                    }
-            }
-        }
-        .animation(.smooth(duration: 0.35), value: expanded)
+        .id(review.id)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
             "\(review.author), \(review.username), \(DisplayDate.day(review.updatedAt)). \(review.content)"
         )
-    }
-
-    /// Grow and shrink the card in one motion. If the open card starts above the screen,
-    /// keep that card on screen so the collapse does not snap the scroll offset.
-    private func toggleExpanded() {
-        withAnimation(.smooth(duration: 0.35)) {
-            if expanded, topOffset < 0 {
-                scrollTo(review.id)
-            }
-            expanded.toggle()
-        }
     }
 }

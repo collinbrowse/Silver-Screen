@@ -369,8 +369,17 @@ final class ListsRepositoryTests: XCTestCase {
 
     func test_sync_ignoresNotesAndSeriesScores() async throws {
         let lists = makeRepository()
-        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
-        _ = try await annotations.saveNote("Just a note", for: .movie(278))
+        let annotations = AnnotationsRepository(
+            store: InMemoryAnnotationsStore(records: [
+                MediaAnnotation(
+                    key: .movie(278),
+                    score: nil,
+                    note: "Just a note",
+                    watchedAt: TestMovies.date("2021-01-01")
+                ),
+            ]),
+            logger: SilentLogger()
+        )
         _ = try await annotations.saveScore(9, for: .series(1396), at: TestMovies.date("2021-01-01"))
         let movies = MovieRepository.test(
             client: FakeHTTPClient(stub: .success(TMDBFixtures.movieDetailShawshank))

@@ -35,6 +35,17 @@ struct TVSeasonView: View {
         )
     }
 
+    private var annotationEditorBinding: Binding<AnnotationEditorSession?> {
+        Binding(
+            get: { viewModel.annotationEditor },
+            set: { newValue in
+                if newValue == nil {
+                    viewModel.dismissAnnotationEditor()
+                }
+            }
+        )
+    }
+
     var body: some View {
         Group {
             switch viewModel.state {
@@ -81,6 +92,16 @@ struct TVSeasonView: View {
             }
         }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
+        .sheet(item: annotationEditorBinding) { session in
+            AnnotationEditorSheet(
+                title: session.title,
+                score: session.score,
+                note: session.note,
+                canClear: session.canClear,
+                onSave: { await viewModel.saveUserAnnotation(score: $0, note: $1) },
+                onClear: { await viewModel.clearUserAnnotation() }
+            )
+        }
         .fullScreenCover(item: fullscreenBinding) { selection in
             FullscreenImageViewer(
                 images: selection.images,
@@ -103,10 +124,13 @@ struct TVSeasonView: View {
 
     private func loaded(_ content: TVSeasonContent) -> some View {
         let bleedsToTop = !content.images.isEmpty
-        return ScrollView {
+        return ScrollViewReader { proxy in
+            ScrollView {
             VStack(alignment: .leading, spacing: DesignSpacing.xl) {
                 seasonHero(content)
-                seasonFacts(content)
+                seasonFacts(content, scrollTo: { id in
+                    proxy.scrollTo(id, anchor: .top)
+                })
                 if !viewModel.awardRows.isEmpty {
                     AwardRowsSection(rows: viewModel.awardRows)
                         .padding(.horizontal, DesignSpacing.lg)
@@ -135,6 +159,7 @@ struct TVSeasonView: View {
             }
             .padding(.bottom, DesignSpacing.lg)
             .coordinateSpace(.named("detailScroll"))
+            }
         }
         .heroStatusBarBleed(enabled: bleedsToTop)
         .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
@@ -172,22 +197,24 @@ struct TVSeasonView: View {
         }
     }
 
-    private func seasonFacts(_ content: TVSeasonContent) -> some View {
+    private func seasonFacts(
+        _ content: TVSeasonContent,
+        scrollTo: @escaping (String) -> Void
+    ) -> some View {
         VStack(alignment: .leading, spacing: DesignSpacing.md) {
             TMDBRatingCard(
                 formattedRating: content.formattedRating,
                 accessibilityLabel: content.ratingAccessibilityLabel,
                 formattedUserScore: content.formattedUserScore,
-                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel
-            ) { score in
-                Task { await viewModel.saveUserScore(score) }
-            }
+                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+                onEdit: { viewModel.openAnnotationEditor() }
+            )
             MediaDescriptionSection(
                 overview: content.overview,
                 note: content.userNote,
                 notedOn: content.formattedNotedOn,
-                onSave: { await viewModel.saveUserNote($0) },
-                onDelete: { await viewModel.deleteUserNote() }
+                onEdit: { viewModel.openAnnotationEditor() },
+                scrollTo: scrollTo
             )
         }
         .padding(.horizontal, DesignSpacing.lg)

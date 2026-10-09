@@ -45,7 +45,8 @@ struct AnnotationKey: Codable, Sendable, Equatable, Hashable {
     }
 }
 
-/// Half-point user score from 0.5 through 10. There is no zero and no way to clear a score.
+/// Half-point user score from 0.5 through 10. There is no zero.
+/// Clearing a rating uses `AnnotationsRepository.clear`, which also drops the note.
 enum UserScore {
     static let options: [Double] = (1...20).reversed().map { Double($0) / 2.0 }
 
@@ -124,6 +125,8 @@ struct MediaAnnotation: Codable, Sendable, Equatable {
 
 /// Display values for the rating card and the description/notes section.
 struct PersonalDetail: Sendable, Equatable {
+    /// Raw half-point score for the annotation editor slider.
+    var userScore: Double?
     var formattedUserScore: String?
     var userScoreAccessibilityLabel: String
     var userNote: String?
@@ -136,6 +139,7 @@ struct PersonalDetail: Sendable, Equatable {
     var showsNotesFirst: Bool { userNote != nil }
 
     static let empty = PersonalDetail(
+        userScore: nil,
         formattedUserScore: nil,
         userScoreAccessibilityLabel: "Add rating",
         userNote: nil,
@@ -144,12 +148,14 @@ struct PersonalDetail: Sendable, Equatable {
     )
 
     init(
+        userScore: Double? = nil,
         formattedUserScore: String?,
         userScoreAccessibilityLabel: String,
         userNote: String?,
         formattedRatedOn: String?,
         formattedNotedOn: String?
     ) {
+        self.userScore = userScore
         self.formattedUserScore = formattedUserScore
         self.userScoreAccessibilityLabel = userScoreAccessibilityLabel
         self.userNote = userNote
@@ -163,6 +169,7 @@ struct PersonalDetail: Sendable, Equatable {
         let notedOn = annotation?.note == nil ? nil : watchedOn
         if let score = annotation?.score {
             self.init(
+                userScore: score,
                 formattedUserScore: UserScore.formatted(score),
                 userScoreAccessibilityLabel: UserScore.accessibilityLabel(score),
                 userNote: annotation?.note,
@@ -171,6 +178,7 @@ struct PersonalDetail: Sendable, Equatable {
             )
         } else {
             self.init(
+                userScore: nil,
                 formattedUserScore: nil,
                 userScoreAccessibilityLabel: "Add rating",
                 userNote: annotation?.note,
@@ -189,4 +197,38 @@ enum AnnotationActivity {
         }
         return activity
     }
+}
+
+/// Presentation state for the combined rating and note editor on a detail screen.
+/// `score` is nil until the title already has a rating or the user chooses one.
+/// Notes require a rating going forward; note-only rows still load for older data.
+struct AnnotationEditorSession: Sendable, Equatable, Identifiable {
+    let id: UUID
+    /// Movie, series, season, or episode name shown as the sheet title.
+    let title: String
+    /// Saved score to prefill, or nil when the user must choose one before saving.
+    let score: Double?
+    let note: String
+    let canDeleteNote: Bool
+    /// Whether a score already exists so deleting the note can promise it stays.
+    let hasExistingScore: Bool
+    /// Score and/or note on disk so the sheet can offer Remove rating.
+    let canClear: Bool
+
+    init(title: String, score: Double?, note: String, canDeleteNote: Bool, hasExistingScore: Bool) {
+        self.id = UUID()
+        self.title = title
+        self.score = score
+        self.note = note
+        self.canDeleteNote = canDeleteNote
+        self.hasExistingScore = hasExistingScore
+        self.canClear = hasExistingScore || canDeleteNote
+    }
+}
+
+/// Outcome of a sheet-driven annotation write. Cancel must not look like a disk failure.
+enum AnnotationEditorWriteResult: Sendable, Equatable {
+    case succeeded
+    case cancelled
+    case failed
 }
