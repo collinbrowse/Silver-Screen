@@ -298,8 +298,7 @@ final class MovieDetailViewModelTests: XCTestCase {
     func test_load_withSavedScoreAndNote_showsThemAndDefaultsToNotes() async throws {
         let store = InMemoryAnnotationsStore()
         let annotations = AnnotationsRepository(store: store, logger: SilentLogger())
-        _ = try await annotations.saveScore(7.5, for: .movie(278))
-        _ = try await annotations.saveNote("A favorite", for: .movie(278))
+        _ = try await annotations.save(score: 7.5, note: "A favorite", for: .movie(278))
         let viewModel = MovieDetailViewModel(
             movieID: 278,
             movies: MovieRepository.test(client: DetailStubHTTPClient(detail: .success(TMDBFixtures.movieDetailShawshank))),
@@ -343,7 +342,68 @@ final class MovieDetailViewModelTests: XCTestCase {
         ).showsNotesFirst)
     }
 
-    func test_saveUserScore_whenPersistenceFails_keepsPreviousScore() async throws {
+    func test_openAnnotationEditor_prefillsScoreAndNote() async throws {
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        _ = try await annotations.save(score: 8.5, note: "A favorite", for: .movie(278))
+        let viewModel = makeViewModel(
+            stub: .success(TMDBFixtures.movieDetailShawshank),
+            annotations: annotations
+        )
+        await viewModel.load()
+
+        viewModel.openAnnotationEditor()
+
+        let session = try XCTUnwrap(viewModel.annotationEditor)
+        XCTAssertEqual(session.title, "The Shawshank Redemption")
+        XCTAssertEqual(session.score, 8.5)
+        XCTAssertEqual(session.note, "A favorite")
+        XCTAssertTrue(session.canDeleteNote)
+        XCTAssertTrue(session.hasExistingScore)
+    }
+
+    func test_openAnnotationEditor_withoutScore_leavesScoreUnset() async {
+        let viewModel = makeViewModel(stub: .success(TMDBFixtures.movieDetailShawshank))
+        await viewModel.load()
+
+        viewModel.openAnnotationEditor()
+
+        guard let session = viewModel.annotationEditor else {
+            return XCTFail("Expected an editor session")
+        }
+        XCTAssertNil(session.score)
+        XCTAssertEqual(session.note, "")
+        XCTAssertFalse(session.canDeleteNote)
+        XCTAssertFalse(session.hasExistingScore)
+    }
+
+    func test_openAnnotationEditor_noteOnly_leavesScoreUnset() async throws {
+        let annotations = AnnotationsRepository(
+            store: InMemoryAnnotationsStore(records: [
+                MediaAnnotation(
+                    key: .movie(278),
+                    score: nil,
+                    note: "Remember this",
+                    watchedAt: Date(timeIntervalSince1970: 1_700_000_000)
+                ),
+            ]),
+            logger: SilentLogger()
+        )
+        let viewModel = makeViewModel(
+            stub: .success(TMDBFixtures.movieDetailShawshank),
+            annotations: annotations
+        )
+        await viewModel.load()
+
+        viewModel.openAnnotationEditor()
+
+        let session = try XCTUnwrap(viewModel.annotationEditor)
+        XCTAssertNil(session.score)
+        XCTAssertEqual(session.note, "Remember this")
+        XCTAssertTrue(session.canDeleteNote)
+        XCTAssertFalse(session.hasExistingScore)
+    }
+
+    func test_saveUserAnnotation_whenPersistenceFails_keepsPreviousScore() async throws {
         let store = InMemoryAnnotationsStore()
         let annotations = AnnotationsRepository(store: store, logger: SilentLogger())
         _ = try await annotations.saveScore(7.5, for: .movie(278))
@@ -354,10 +414,13 @@ final class MovieDetailViewModelTests: XCTestCase {
             lists: .empty()
         )
         await viewModel.load()
+        viewModel.openAnnotationEditor()
         await store.setSaveError(CocoaError(.fileWriteUnknown))
 
-        await viewModel.saveUserScore(9)
+        let saved = await viewModel.saveUserAnnotation(score: 9, note: "")
 
+        XCTAssertEqual(saved, .failed)
+        XCTAssertNotNil(viewModel.annotationEditor)
         guard case .loaded(let content, activity: .failed(let error)) = viewModel.state else {
             return XCTFail("Expected loaded with failed activity, got \(viewModel.state)")
         }
@@ -365,15 +428,15 @@ final class MovieDetailViewModelTests: XCTestCase {
         XCTAssertEqual(error, .persistence)
     }
 
-    func test_saveUserScore_addsTheMovieToWatched() async throws {
+    func test_saveUserAnnotation_addsTheMovieToWatched() async throws {
         let lists = ListsRepository.empty()
         let viewModel = makeViewModel(stub: .success(TMDBFixtures.movieDetailShawshank), lists: lists)
         await viewModel.load()
 
-        let change = await viewModel.saveUserScore(8)
+        let saved = await viewModel.saveUserAnnotation(score: 8, note: "Solid")
 
-        XCTAssertEqual(change?.action, .added)
-        XCTAssertEqual(change?.confirmation, "Added to Watched")
+        XCTAssertEqual(saved, .succeeded)
+        XCTAssertNil(viewModel.annotationEditor)
         let snapshot = try await lists.snapshot()
         let watched = try XCTUnwrap(snapshot.list(.watched))
         let entry = try XCTUnwrap(snapshot.entries.first { $0.listID == watched.id })
@@ -384,20 +447,22 @@ final class MovieDetailViewModelTests: XCTestCase {
             return XCTFail("Expected loaded, got \(viewModel.state)")
         }
         XCTAssertEqual(content.formattedUserScore, "8.0 / 10")
+        XCTAssertEqual(content.userNote, "Solid")
+        XCTAssertEqual(content.userScore, 8)
     }
 
-    func test_saveUserScore_again_keepsTheWatchedDate() async throws {
+    func test_saveUserAnnotation_again_keepsTheWatchedDate() async throws {
         let lists = ListsRepository.empty()
         let viewModel = makeViewModel(stub: .success(TMDBFixtures.movieDetailShawshank), lists: lists)
         await viewModel.load()
-        _ = await viewModel.saveUserScore(8)
+        _ = await viewModel.saveUserAnnotation(score: 8, note: "")
         let first = try await lists.snapshot()
         let watched = try XCTUnwrap(first.list(.watched))
         let addedAt = try XCTUnwrap(first.entries.first { $0.listID == watched.id }?.addedAt)
 
-        let change = await viewModel.saveUserScore(9)
+        let saved = await viewModel.saveUserAnnotation(score: 9, note: "")
 
-        XCTAssertEqual(change?.action, .unchanged)
+        XCTAssertEqual(saved, .succeeded)
         let second = try await lists.snapshot()
         XCTAssertEqual(second.entries.filter { $0.listID == watched.id }.count, 1)
         XCTAssertEqual(second.entries.first { $0.listID == watched.id }?.addedAt, addedAt)
@@ -407,7 +472,7 @@ final class MovieDetailViewModelTests: XCTestCase {
         XCTAssertEqual(content.formattedUserScore, "9.0 / 10")
     }
 
-    func test_saveUserScore_movesTheMovieOffWatchlist() async throws {
+    func test_saveUserAnnotation_movesTheMovieOffWatchlist() async throws {
         let lists = ListsRepository.empty()
         let viewModel = makeViewModel(stub: .success(TMDBFixtures.movieDetailShawshank), lists: lists)
         await viewModel.load()
@@ -418,35 +483,81 @@ final class MovieDetailViewModelTests: XCTestCase {
         let watchlist = try XCTUnwrap(seeded.list(.watchlist))
         _ = try await lists.add(draft: content.detail.listItem(), listID: watchlist.id)
 
-        let change = await viewModel.saveUserScore(8)
+        let saved = await viewModel.saveUserAnnotation(score: 8, note: "")
 
-        XCTAssertEqual(change?.action, .added)
-        XCTAssertEqual(change?.restore?.listID, watchlist.id)
+        XCTAssertEqual(saved, .succeeded)
         let snapshot = try await lists.snapshot()
         let watched = try XCTUnwrap(snapshot.list(.watched))
         XCTAssertTrue(snapshot.entries.contains { $0.listID == watched.id && $0.itemID == 278 })
         XCTAssertFalse(snapshot.entries.contains { $0.listID == watchlist.id && $0.itemID == 278 })
     }
 
-    func test_saveUserScore_whenListSaveFails_keepsTheNewScore() async throws {
+    func test_saveUserAnnotation_whenListSaveFails_rollsBackAnnotation() async throws {
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        _ = try await annotations.saveScore(7.5, for: .movie(278))
         let store = InMemoryListsStore()
         let lists = ListsRepository(store: store, logger: SilentLogger())
-        let viewModel = makeViewModel(stub: .success(TMDBFixtures.movieDetailShawshank), lists: lists)
+        let viewModel = makeViewModel(
+            stub: .success(TMDBFixtures.movieDetailShawshank),
+            annotations: annotations,
+            lists: lists
+        )
         await viewModel.load()
+        // Load puts a scored title on Watched; remove it so the next add must persist and can fail.
+        let before = try await lists.snapshot()
+        let watched = try XCTUnwrap(before.list(.watched))
+        let entry = try XCTUnwrap(before.entries.first { $0.listID == watched.id && $0.itemID == 278 })
+        _ = try await lists.remove(itemKey: entry.itemKey, listID: watched.id)
+        viewModel.openAnnotationEditor()
         await store.setSaveError(CocoaError(.fileWriteUnknown))
 
-        let change = await viewModel.saveUserScore(8)
+        let saved = await viewModel.saveUserAnnotation(score: 8, note: "Nope")
 
-        XCTAssertNil(change)
+        XCTAssertEqual(saved, .failed)
+        XCTAssertNotNil(viewModel.annotationEditor)
         guard case .loaded(let content, activity: .failed(let error)) = viewModel.state else {
             return XCTFail("Expected loaded with failed activity, got \(viewModel.state)")
         }
-        XCTAssertEqual(content.formattedUserScore, "8.0 / 10")
+        XCTAssertEqual(content.formattedUserScore, "7.5 / 10")
+        XCTAssertNil(content.userNote)
         XCTAssertEqual(error, .persistence)
+        let record = try await annotations.annotation(for: .movie(278))
+        XCTAssertEqual(record?.score, 7.5)
+        XCTAssertNil(record?.note)
+        await store.setSaveError(nil)
+        let snapshot = try await lists.snapshot()
+        XCTAssertFalse(snapshot.entries.contains { $0.listID == watched.id && $0.itemID == 278 })
+    }
+
+    func test_saveUserAnnotation_whenListSaveFails_withNoPriorScore_removesAnnotation() async throws {
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        let store = InMemoryListsStore()
+        let lists = ListsRepository(store: store, logger: SilentLogger())
+        let viewModel = makeViewModel(
+            stub: .success(TMDBFixtures.movieDetailShawshank),
+            annotations: annotations,
+            lists: lists
+        )
+        await viewModel.load()
+        viewModel.openAnnotationEditor()
+        await store.setSaveError(CocoaError(.fileWriteUnknown))
+
+        let saved = await viewModel.saveUserAnnotation(score: 8, note: "Solid")
+
+        XCTAssertEqual(saved, .failed)
+        XCTAssertNotNil(viewModel.annotationEditor)
+        guard case .loaded(let content, activity: .failed(let error)) = viewModel.state else {
+            return XCTFail("Expected loaded with failed activity, got \(viewModel.state)")
+        }
+        XCTAssertNil(content.formattedUserScore)
+        XCTAssertNil(content.userNote)
+        XCTAssertEqual(error, .persistence)
+        let record = try await annotations.annotation(for: .movie(278))
+        XCTAssertNil(record)
         await store.setSaveError(nil)
         let snapshot = try await lists.snapshot()
         let watched = try XCTUnwrap(snapshot.list(.watched))
-        XCTAssertFalse(snapshot.entries.contains { $0.listID == watched.id })
+        XCTAssertFalse(snapshot.entries.contains { $0.listID == watched.id && $0.itemID == 278 })
     }
 
     func test_load_withSavedScore_addsTheMovieToWatchedOnTheRatedDay() async throws {
@@ -474,8 +585,17 @@ final class MovieDetailViewModelTests: XCTestCase {
     }
 
     func test_load_withNoteOnly_leavesWatchedEmpty() async throws {
-        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
-        _ = try await annotations.saveNote("Remember this", for: .movie(278))
+        let annotations = AnnotationsRepository(
+            store: InMemoryAnnotationsStore(records: [
+                MediaAnnotation(
+                    key: .movie(278),
+                    score: nil,
+                    note: "Remember this",
+                    watchedAt: Date(timeIntervalSince1970: 1_700_000_000)
+                ),
+            ]),
+            logger: SilentLogger()
+        )
         let lists = ListsRepository.empty()
         let viewModel = makeViewModel(
             stub: .success(TMDBFixtures.movieDetailShawshank),
@@ -495,7 +615,67 @@ final class MovieDetailViewModelTests: XCTestCase {
         XCTAssertEqual(content.userNote, "Remember this")
     }
 
+    func test_saveUserAnnotation_whenRestoreFails_appliesDiskAnnotation() async throws {
+        let annotationStore = InMemoryAnnotationsStore()
+        let annotations = AnnotationsRepository(store: annotationStore, logger: SilentLogger())
+        let listStore = InMemoryListsStore()
+        let lists = ListsRepository(store: listStore, logger: SilentLogger())
+        let viewModel = makeViewModel(
+            stub: .success(TMDBFixtures.movieDetailShawshank),
+            annotations: annotations,
+            lists: lists
+        )
+        await viewModel.load()
+        viewModel.openAnnotationEditor()
+        await listStore.setSaveError(CocoaError(.fileWriteUnknown))
+        // First annotation save succeeds; restore (second save) fails.
+        await annotationStore.setFailOnSaveNumber(2)
+
+        let saved = await viewModel.saveUserAnnotation(score: 8, note: "Kept on disk")
+
+        XCTAssertEqual(saved, .failed)
+        XCTAssertNotNil(viewModel.annotationEditor)
+        guard case .loaded(let content, activity: .failed(let error)) = viewModel.state else {
+            return XCTFail("Expected loaded with failed activity, got \(viewModel.state)")
+        }
+        XCTAssertEqual(content.formattedUserScore, "8.0 / 10")
+        XCTAssertEqual(content.userNote, "Kept on disk")
+        XCTAssertEqual(error, .persistence)
+        let record = try await annotations.annotation(for: .movie(278))
+        XCTAssertEqual(record?.score, 8)
+        XCTAssertEqual(record?.note, "Kept on disk")
+    }
+
+    func test_clearUserAnnotation_removesScoreAndNote_leavesWatched() async throws {
+        let lists = ListsRepository.empty()
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        _ = try await annotations.save(score: 8, note: "Solid", for: .movie(278))
+        let viewModel = makeViewModel(
+            stub: .success(TMDBFixtures.movieDetailShawshank),
+            annotations: annotations,
+            lists: lists
+        )
+        await viewModel.load()
+        viewModel.openAnnotationEditor()
+
+        let cleared = await viewModel.clearUserAnnotation()
+
+        XCTAssertEqual(cleared, .succeeded)
+        XCTAssertNil(viewModel.annotationEditor)
+        guard case .loaded(let content, activity: .none) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        XCTAssertNil(content.formattedUserScore)
+        XCTAssertNil(content.userNote)
+        let record = try await annotations.annotation(for: .movie(278))
+        XCTAssertNil(record)
+        let snapshot = try await lists.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        XCTAssertTrue(snapshot.entries.contains { $0.listID == watched.id && $0.itemID == 278 })
+    }
+
     func test_formatCurrency_zero_isNotAvailable() {
+
         let formatted = MovieDetailViewModel.formatCurrency(0)
         XCTAssertEqual(formatted.display, "Not available")
     }

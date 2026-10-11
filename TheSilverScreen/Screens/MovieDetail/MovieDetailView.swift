@@ -14,7 +14,6 @@ struct MovieDetailView: View {
     var showsToolbarFavorite: Bool = true
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    @Environment(ListChangeNotice.self) private var notice
     @Namespace private var heroTransition
     @State private var selectedBackdropID: String?
     @State private var playingTrailer: MediaTrailer?
@@ -33,6 +32,17 @@ struct MovieDetailView: View {
             set: { newValue in
                 if newValue == nil {
                     viewModel.dismissImages()
+                }
+            }
+        )
+    }
+
+    private var annotationEditorBinding: Binding<AnnotationEditorSession?> {
+        Binding(
+            get: { viewModel.annotationEditor },
+            set: { newValue in
+                if newValue == nil {
+                    viewModel.dismissAnnotationEditor()
                 }
             }
         )
@@ -88,6 +98,16 @@ struct MovieDetailView: View {
             }
         }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
+        .sheet(item: annotationEditorBinding) { session in
+            AnnotationEditorSheet(
+                title: session.title,
+                score: session.score,
+                note: session.note,
+                canClear: session.canClear,
+                onSave: { await viewModel.saveUserAnnotation(score: $0, note: $1) },
+                onClear: { await viewModel.clearUserAnnotation() }
+            )
+        }
         .fullScreenCover(item: showsToolbarFavorite ? fullscreenBinding : .constant(nil)) { selection in
             FullscreenImageViewer(
                 images: selection.images,
@@ -173,7 +193,7 @@ struct MovieDetailView: View {
                     }
                 }
 
-                metadataBlock(content)
+                metadataBlock(content, scrollTo: scrollTo)
 
                 if let cast = content.cast {
                     castCarousel(cast)
@@ -213,26 +233,24 @@ struct MovieDetailView: View {
         }
     }
 
-    private func metadataBlock(_ content: MovieDetailContent) -> some View {
+    private func metadataBlock(
+        _ content: MovieDetailContent,
+        scrollTo: @escaping (String) -> Void
+    ) -> some View {
         VStack(alignment: .leading, spacing: DesignSpacing.xl) {
             TMDBRatingCard(
                 formattedRating: content.formattedRating,
                 accessibilityLabel: content.ratingAccessibilityLabel,
                 formattedUserScore: content.formattedUserScore,
-                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel
-            ) { score in
-                Task {
-                    guard let change = await viewModel.saveUserScore(score),
-                          change.action != .unchanged else { return }
-                    notice.show(change, using: lists)
-                }
-            }
+                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+                onEdit: { viewModel.openAnnotationEditor() }
+            )
             MediaDescriptionSection(
                 overview: content.detail.overview,
                 note: content.userNote,
                 notedOn: content.formattedNotedOn,
-                onSave: { await viewModel.saveUserNote($0) },
-                onDelete: { await viewModel.deleteUserNote() }
+                onEdit: { viewModel.openAnnotationEditor() },
+                scrollTo: scrollTo
             )
             factsCard(content)
             if !viewModel.awardRows.isEmpty {

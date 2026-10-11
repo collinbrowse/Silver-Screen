@@ -5,14 +5,13 @@
 
 import SwiftUI
 
-/// Confirm payload for marking a season watched (eye or rating path).
+/// Confirm payload for marking a season watched via the toolbar eye.
 private enum SeasonWatchConfirm: Equatable {
     case markSeason(episodeCount: Int)
-    case rateAndMark(score: Double, episodeCount: Int)
 
     var episodeCount: Int {
         switch self {
-            case .markSeason(let count), .rateAndMark(_, let count):
+            case .markSeason(let count):
                 return count
         }
     }
@@ -38,7 +37,7 @@ struct TVSeasonView: View {
     @State private var didScrollToFocusedEpisode = false
     /// Status-bar band; used to lift the continue-scroll anchor below the nav title.
     @State private var statusBarHeight: CGFloat = 0
-    /// Pending mark-season or rate-and-mark confirm (Story 5).
+    /// Pending mark-season confirm before bulk-completing unmarked episodes.
     @State private var pendingConfirm: SeasonWatchConfirm?
 
     private var fullscreenBinding: Binding<FullscreenImages?> {
@@ -52,6 +51,17 @@ struct TVSeasonView: View {
             set: { newValue in
                 if newValue == nil {
                     viewModel.dismissImages()
+                }
+            }
+        )
+    }
+
+    private var annotationEditorBinding: Binding<AnnotationEditorSession?> {
+        Binding(
+            get: { viewModel.annotationEditor },
+            set: { newValue in
+                if newValue == nil {
+                    viewModel.dismissAnnotationEditor()
                 }
             }
         )
@@ -147,6 +157,16 @@ struct TVSeasonView: View {
             Task { await viewModel.reloadWatchChrome() }
         }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
+        .sheet(item: annotationEditorBinding) { session in
+            AnnotationEditorSheet(
+                title: session.title,
+                score: session.score,
+                note: session.note,
+                canClear: session.canClear,
+                onSave: { await viewModel.saveUserAnnotation(score: $0, note: $1) },
+                onClear: { await viewModel.clearUserAnnotation() }
+            )
+        }
         .fullScreenCover(item: fullscreenBinding) { selection in
             FullscreenImageViewer(
                 images: selection.images,
@@ -173,7 +193,9 @@ struct TVSeasonView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignSpacing.xl) {
                     seasonHero(content)
-                    seasonFacts(content)
+                    seasonFacts(content, scrollTo: { id in
+                        proxy.scrollTo(id, anchor: .top)
+                    })
                     if !viewModel.awardRows.isEmpty {
                         AwardRowsSection(rows: viewModel.awardRows)
                             .padding(.horizontal, DesignSpacing.lg)
@@ -287,7 +309,10 @@ struct TVSeasonView: View {
         }
     }
 
-    private func seasonFacts(_ content: TVSeasonContent) -> some View {
+    private func seasonFacts(
+        _ content: TVSeasonContent,
+        scrollTo: @escaping (String) -> Void
+    ) -> some View {
         VStack(alignment: .leading, spacing: DesignSpacing.md) {
             if let nextUp = viewModel.nextUpSubtitle {
                 TVNextUpLabel(subtitle: nextUp)
@@ -296,16 +321,15 @@ struct TVSeasonView: View {
                 formattedRating: content.formattedRating,
                 accessibilityLabel: content.ratingAccessibilityLabel,
                 formattedUserScore: content.formattedUserScore,
-                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel
-            ) { score in
-                Task { await requestSaveScore(score) }
-            }
+                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+                onEdit: { viewModel.openAnnotationEditor() }
+            )
             MediaDescriptionSection(
                 overview: content.overview,
                 note: content.userNote,
                 notedOn: content.formattedNotedOn,
-                onSave: { await viewModel.saveUserNote($0) },
-                onDelete: { await viewModel.deleteUserNote() }
+                onEdit: { viewModel.openAnnotationEditor() },
+                scrollTo: scrollTo
             )
         }
         .padding(.horizontal, DesignSpacing.lg)
@@ -339,24 +363,10 @@ struct TVSeasonView: View {
         pendingConfirm = .markSeason(episodeCount: unmarked)
     }
 
-    private func requestSaveScore(_ score: Double) async {
-        let unmarked = await viewModel.unmarkedEpisodeCountForSeason()
-        if unmarked > 0 {
-            pendingConfirm = .rateAndMark(score: score, episodeCount: unmarked)
-        } else {
-            await performSaveScore(score)
-        }
-    }
-
     private func confirmPendingSeasonAction() async {
-        guard let pending = pendingConfirm else { return }
+        guard pendingConfirm != nil else { return }
         pendingConfirm = nil
-        switch pending {
-            case .markSeason:
-                await performMarkSeasonWatched()
-            case .rateAndMark(let score, _):
-                await performSaveScore(score)
-        }
+        await performMarkSeasonWatched()
     }
 
     private func performMarkSeasonWatched() async {
@@ -383,28 +393,6 @@ struct TVSeasonView: View {
                 watchUndo: outcome.watchUndo
             )
         }
-    }
-
-    private func performSaveScore(_ score: Double) async {
-        guard let outcome = await viewModel.saveUserScore(score) else { return }
-        if let change = outcome.membershipChange, change.confirmation != nil {
-            notice.show(
-                change,
-                using: lists,
-                ratingKey: ratingKey(for: outcome),
-                tvWatch: tvWatch,
-                watchUndo: outcome.watchUndo
-            )
-        } else if outcome.episodesNewlyMarked > 0 {
-            notice.presentWatch(
-                outcome,
-                ratingKey: ratingKey(for: outcome),
-                fallbackMessage: "Season watched",
-                using: lists,
-                tvWatch: tvWatch
-            )
-        }
-        await viewModel.reloadNextUp()
     }
 
     /// Prefer series rating when the season mark finished the show (Watched move).

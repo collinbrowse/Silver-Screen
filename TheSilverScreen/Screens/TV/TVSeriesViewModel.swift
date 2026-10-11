@@ -36,6 +36,7 @@ struct TVSeriesContent: Sendable, Equatable {
     let heroMetadataAccessibilityLabel: String
     let formattedRating: String
     let ratingAccessibilityLabel: String
+    let userScore: Double?
     let formattedUserScore: String?
     let userScoreAccessibilityLabel: String
     let userNote: String?
@@ -62,6 +63,8 @@ final class TVSeriesViewModel {
     private(set) var seasonScores: [Int: String] = [:]
     /// Personal series scores for the recommendations carousel badge, keyed by series id.
     private(set) var recommendationScores: [Int: String] = [:]
+    /// Combined rating and note editor. Cleared on save, delete, or dismiss.
+    private(set) var annotationEditor: AnnotationEditorSession?
 
     private let seriesID: Int
     private let shows: TVRepository
@@ -198,58 +201,72 @@ final class TVSeriesViewModel {
         }
     }
 
-    /// Saves a half-point score and marks the series watched (completes every episode).
-    /// Callers must confirm when `unmarkedEpisodeCountForSeries()` is greater than zero.
+    /// Opens the combined rating and note editor from the current personal values.
+    /// Does not invent a score; the sheet requires an explicit rating before Save.
+    func openAnnotationEditor() {
+        guard case .loaded(let content, _) = state else { return }
+        annotationEditor = DetailAnnotationWriter.session(
+            title: content.detail.name,
+            score: content.userScore,
+            note: content.userNote
+        )
+    }
+
+    /// Clears the editor after cancel or swipe-to-dismiss.
+    func dismissAnnotationEditor() {
+        annotationEditor = nil
+    }
+
+    /// Saves score and note together. Series ratings do not auto-add Watched.
     @discardableResult
-    func saveUserScore(_ score: Double) async -> TVWatchOutcome? {
-        guard case .loaded(let content, _) = state else { return nil }
-        do {
-            let saved = try await annotations.saveScore(score, for: .series(seriesID))
-            apply(PersonalDetail(annotation: saved))
-            guard let tvWatch else { return nil }
-            let outcome = try await tvWatch.markSeries(
-                seriesID: seriesID,
-                seasons: content.detail.seasons,
-                draft: content.detail.listItem()
-            )
-            await reloadWatchProgress(seasons: content.detail.seasons)
-            return outcome
-        } catch is CancellationError {
-            return nil
-        } catch {
-            markPersistenceFailure()
-            return nil
-        }
+    func saveUserAnnotation(score: Double, note: String) async -> AnnotationEditorWriteResult {
+        guard case .loaded = state else { return .failed }
+        let (result, saved) = await DetailAnnotationWriter.save(
+            score: score,
+            note: note,
+            for: .series(seriesID),
+            annotations: annotations
+        )
+        return finishAnnotationWrite(result, annotation: saved)
     }
 
-    /// Saves a note. Returns false when the write fails so the editor can stay open.
-    func saveUserNote(_ note: String) async -> Bool {
-        guard case .loaded = state else { return false }
-        do {
-            let saved = try await annotations.saveNote(note, for: .series(seriesID))
-            apply(PersonalDetail(annotation: saved))
-            return true
-        } catch is CancellationError {
-            return false
-        } catch {
-            markPersistenceFailure()
-            return false
-        }
+    /// Removes the note and leaves the score.
+    @discardableResult
+    func deleteUserNote() async -> AnnotationEditorWriteResult {
+        guard case .loaded = state else { return .failed }
+        let (result, saved) = await DetailAnnotationWriter.deleteNote(
+            for: .series(seriesID),
+            annotations: annotations
+        )
+        return finishAnnotationWrite(result, annotation: saved)
     }
 
-    /// Removes the note and leaves the score. Returns false when the write fails.
-    func deleteUserNote() async -> Bool {
-        guard case .loaded = state else { return false }
-        do {
-            let saved = try await annotations.deleteNote(for: .series(seriesID))
-            apply(PersonalDetail(annotation: saved))
-            return true
-        } catch is CancellationError {
-            return false
-        } catch {
-            markPersistenceFailure()
-            return false
+    /// Removes the score and note.
+    @discardableResult
+    func clearUserAnnotation() async -> AnnotationEditorWriteResult {
+        guard case .loaded = state else { return .failed }
+        let result = await DetailAnnotationWriter.clear(
+            for: .series(seriesID),
+            annotations: annotations
+        )
+        return finishAnnotationWrite(result, annotation: nil, cleared: true)
+    }
+
+    private func finishAnnotationWrite(
+        _ result: AnnotationEditorWriteResult,
+        annotation: MediaAnnotation?,
+        cleared: Bool = false
+    ) -> AnnotationEditorWriteResult {
+        switch result {
+            case .succeeded:
+                apply(cleared ? .empty : PersonalDetail(annotation: annotation))
+                annotationEditor = nil
+            case .cancelled:
+                break
+            case .failed:
+                markPersistenceFailure()
         }
+        return result
     }
 
     private func personalDetail() async throws -> (detail: PersonalDetail, activity: LoadActivity) {
@@ -473,6 +490,7 @@ final class TVSeriesViewModel {
             heroMetadataAccessibilityLabel: heroMetadata.accessibility,
             formattedRating: TMDBRating.formatted(detail.voteAverage),
             ratingAccessibilityLabel: TMDBRating.accessibilityLabel(detail.voteAverage),
+            userScore: personal.userScore,
             formattedUserScore: personal.formattedUserScore,
             userScoreAccessibilityLabel: personal.userScoreAccessibilityLabel,
             userNote: personal.userNote,
@@ -531,6 +549,7 @@ final class TVSeriesViewModel {
 private extension TVSeriesContent {
     var personal: PersonalDetail {
         PersonalDetail(
+            userScore: userScore,
             formattedUserScore: formattedUserScore,
             userScoreAccessibilityLabel: userScoreAccessibilityLabel,
             userNote: userNote,
@@ -546,6 +565,7 @@ private extension TVSeriesContent {
             heroMetadataAccessibilityLabel: heroMetadataAccessibilityLabel,
             formattedRating: formattedRating,
             ratingAccessibilityLabel: ratingAccessibilityLabel,
+            userScore: personal.userScore,
             formattedUserScore: personal.formattedUserScore,
             userScoreAccessibilityLabel: personal.userScoreAccessibilityLabel,
             userNote: personal.userNote,
@@ -565,6 +585,7 @@ private extension TVSeriesContent {
             heroMetadataAccessibilityLabel: heroMetadataAccessibilityLabel,
             formattedRating: formattedRating,
             ratingAccessibilityLabel: ratingAccessibilityLabel,
+            userScore: userScore,
             formattedUserScore: formattedUserScore,
             userScoreAccessibilityLabel: userScoreAccessibilityLabel,
             userNote: userNote,

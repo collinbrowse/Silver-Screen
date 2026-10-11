@@ -19,8 +19,6 @@ struct TVSeriesView: View {
     @State private var selectedBackdropID: String?
     @State private var playingTrailer: MediaTrailer?
     @State private var loadingTrailerID: String?
-    /// Pending score + unmarked episode count for Story 5 confirm before bulk mark.
-    @State private var pendingScoreConfirm: (score: Double, episodeCount: Int)?
 
     private var fullscreenBinding: Binding<FullscreenImages?> {
         Binding(
@@ -33,6 +31,17 @@ struct TVSeriesView: View {
             set: { newValue in
                 if newValue == nil {
                     viewModel.dismissImages()
+                }
+            }
+        )
+    }
+
+    private var annotationEditorBinding: Binding<AnnotationEditorSession?> {
+        Binding(
+            get: { viewModel.annotationEditor },
+            set: { newValue in
+                if newValue == nil {
+                    viewModel.dismissAnnotationEditor()
                 }
             }
         )
@@ -101,19 +110,17 @@ struct TVSeriesView: View {
         .onChange(of: notice.watchRevision) { _, _ in
             Task { await viewModel.reloadNextUp() }
         }
-        .alert(TVWatchConfirm.seriesTitle, isPresented: scoreConfirmPresented) {
-            Button("Cancel", role: .cancel) {
-                pendingScoreConfirm = nil
-            }
-            Button(TVWatchConfirm.confirmButtonTitle) {
-                Task { await confirmSaveScoreAndMarkSeries() }
-            }
-        } message: {
-            if let pending = pendingScoreConfirm {
-                Text(TVWatchConfirm.message(episodeCount: pending.episodeCount))
-            }
-        }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
+        .sheet(item: annotationEditorBinding) { session in
+            AnnotationEditorSheet(
+                title: session.title,
+                score: session.score,
+                note: session.note,
+                canClear: session.canClear,
+                onSave: { await viewModel.saveUserAnnotation(score: $0, note: $1) },
+                onClear: { await viewModel.clearUserAnnotation() }
+            )
+        }
         .fullScreenCover(item: fullscreenBinding) { selection in
             FullscreenImageViewer(
                 images: selection.images,
@@ -147,7 +154,7 @@ struct TVSeriesView: View {
         return ScrollView {
             VStack(alignment: .leading, spacing: DesignSpacing.xl) {
                 seriesHero(content)
-                seriesFacts(content)
+                seriesFacts(content, scrollTo: scrollTo)
                 if !viewModel.awardRows.isEmpty {
                     AwardRowsSection(rows: viewModel.awardRows)
                         .padding(.horizontal, DesignSpacing.lg)
@@ -233,7 +240,10 @@ struct TVSeriesView: View {
         }
     }
 
-    private func seriesFacts(_ content: TVSeriesContent) -> some View {
+    private func seriesFacts(
+        _ content: TVSeriesContent,
+        scrollTo: @escaping (String) -> Void
+    ) -> some View {
         VStack(alignment: .leading, spacing: DesignSpacing.md) {
             if let nextUp = viewModel.nextUpSubtitle {
                 TVNextUpLabel(subtitle: nextUp)
@@ -242,16 +252,15 @@ struct TVSeriesView: View {
                 formattedRating: content.formattedRating,
                 accessibilityLabel: content.ratingAccessibilityLabel,
                 formattedUserScore: content.formattedUserScore,
-                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel
-            ) { score in
-                Task { await requestSaveScore(score) }
-            }
+                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+                onEdit: { viewModel.openAnnotationEditor() }
+            )
             MediaDescriptionSection(
                 overview: content.detail.overview,
                 note: content.userNote,
                 notedOn: content.formattedNotedOn,
-                onSave: { await viewModel.saveUserNote($0) },
-                onDelete: { await viewModel.deleteUserNote() }
+                onEdit: { viewModel.openAnnotationEditor() },
+                scrollTo: scrollTo
             )
         }
         .padding(.horizontal, DesignSpacing.lg)
@@ -355,51 +364,6 @@ struct TVSeriesView: View {
                 .accessibilityAddTraits(.isButton)
             }
         }
-    }
-
-    private var scoreConfirmPresented: Binding<Bool> {
-        Binding(
-            get: { pendingScoreConfirm != nil },
-            set: { presented in
-                if !presented { pendingScoreConfirm = nil }
-            }
-        )
-    }
-
-    private func requestSaveScore(_ score: Double) async {
-        let unmarked = await viewModel.unmarkedEpisodeCountForSeries()
-        if unmarked > 0 {
-            pendingScoreConfirm = (score, unmarked)
-        } else {
-            await performSaveScore(score)
-        }
-    }
-
-    private func confirmSaveScoreAndMarkSeries() async {
-        guard let pending = pendingScoreConfirm else { return }
-        pendingScoreConfirm = nil
-        await performSaveScore(pending.score)
-    }
-
-    private func performSaveScore(_ score: Double) async {
-        guard let outcome = await viewModel.saveUserScore(score) else { return }
-        if let change = outcome.membershipChange, change.confirmation != nil {
-            notice.show(
-                change,
-                using: lists,
-                ratingKey: .series(viewModelSeriesID),
-                tvWatch: tvWatch,
-                watchUndo: outcome.watchUndo
-            )
-        }
-        await viewModel.reloadNextUp()
-    }
-
-    private var viewModelSeriesID: Int {
-        if case .loaded(let content, _) = viewModel.state {
-            return content.detail.id
-        }
-        return 0
     }
 
     private func recommendationAccessibilityLabel(_ show: TVSeriesContent.RecommendationRow) -> String {
