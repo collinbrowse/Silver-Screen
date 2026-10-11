@@ -59,6 +59,8 @@ final class TVSeriesViewModel {
     private(set) var nextUpSubtitle: String?
     /// Fully watched regular seasons — drives the seasons-carousel eye badge.
     private(set) var watchedSeasonNumbers: Set<Int> = []
+    /// True when every regular catalog episode is completed — drives the series toolbar eye.
+    private(set) var isSeriesFullyWatched: Bool = false
     /// Personal season scores for the carousel rating badge, keyed by season number.
     private(set) var seasonScores: [Int: String] = [:]
     /// Personal series scores for the recommendations carousel badge, keyed by series id.
@@ -128,22 +130,25 @@ final class TVSeriesViewModel {
         await load()
     }
 
-    /// Reloads Next up and seasons-carousel watch/rating badges (e.g. after popping back).
+    /// Reloads Next up and carousel badges after popping back (read-only — no persist heal).
     func reloadNextUp() async {
         guard case .loaded(let content, _) = state else { return }
-        await reloadWatchProgress(seasons: content.detail.seasons)
+        await reloadWatchProgress(seasons: content.detail.seasons, healNextUp: false)
     }
 
-    private func reloadWatchProgress(seasons: [TVSeasonSummary]) async {
-        await reloadNextUpLine(seasons: seasons)
-        await reloadSeasonBadges(seasons: seasons)
+    private func reloadWatchProgress(seasons: [TVSeasonSummary], healNextUp: Bool = true) async {
+        let scores = await annotations.formattedScores()
+        await reloadNextUpLine(seasons: seasons, heal: healNextUp)
+        await reloadSeasonBadges(seasons: seasons, scores: scores)
         if case .loaded(let content, _) = state {
-            await reloadRecommendationScores(content)
+            reloadRecommendationScores(content, scores: scores)
         }
     }
 
-    private func reloadRecommendationScores(_ content: TVSeriesContent) async {
-        let scores = await annotations.formattedScores()
+    private func reloadRecommendationScores(
+        _ content: TVSeriesContent,
+        scores: [AnnotationKey: SavedUserScore]
+    ) {
         var map: [Int: String] = [:]
         for row in content.recommendations {
             if let formatted = scores[.series(row.id)]?.formatted {
@@ -153,21 +158,28 @@ final class TVSeriesViewModel {
         recommendationScores = map
     }
 
-    private func reloadNextUpLine(seasons: [TVSeasonSummary]) async {
+    private func reloadNextUpLine(seasons: [TVSeasonSummary], heal: Bool) async {
         guard let tvWatch else {
             nextUpSubtitle = nil
             return
         }
         do {
-            let watchState = try await tvWatch.syncNextUp(seriesID: seriesID, seasons: seasons)
+            let watchState: TVSeriesWatchState?
+            if heal, TVSeriesWatchState.hasRegularCatalog(seasons) {
+                watchState = try await tvWatch.syncNextUp(seriesID: seriesID, seasons: seasons)
+            } else {
+                watchState = try await tvWatch.state(seriesID: seriesID)
+            }
             nextUpSubtitle = watchState?.progressSubtitle
         } catch {
             nextUpSubtitle = nil
         }
     }
 
-    private func reloadSeasonBadges(seasons: [TVSeasonSummary]) async {
-        let scores = await annotations.formattedScores()
+    private func reloadSeasonBadges(
+        seasons: [TVSeasonSummary],
+        scores: [AnnotationKey: SavedUserScore]
+    ) async {
         var scoreMap: [Int: String] = [:]
         for season in seasons where season.seasonNumber > 0 {
             let key = AnnotationKey.season(seriesID: seriesID, seasonNumber: season.seasonNumber)
@@ -179,6 +191,7 @@ final class TVSeriesViewModel {
 
         guard let tvWatch else {
             watchedSeasonNumbers = []
+            isSeriesFullyWatched = false
             return
         }
         do {
@@ -196,8 +209,11 @@ final class TVSeriesViewModel {
                     return season.seasonNumber
                 }
             )
+            isSeriesFullyWatched = TVSeriesWatchState.hasRegularCatalog(seasons)
+                && watchState.isSeriesComplete(against: seasons)
         } catch {
             watchedSeasonNumbers = []
+            isSeriesFullyWatched = false
         }
     }
 

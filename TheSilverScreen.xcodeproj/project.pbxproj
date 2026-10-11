@@ -120,6 +120,7 @@
 		TW0000102788B823003D8011 /* TVWatchProgressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = TW00000F2788B823003D8011 /* TVWatchProgressTests.swift */; };
 		LC0000022788B823003D8011 /* ListChangeNoticeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = LC0000012788B823003D8011 /* ListChangeNoticeTests.swift */; };
 		WT0000082788B823003D8011 /* TVWatchConfirmTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WT0000072788B823003D8011 /* TVWatchConfirmTests.swift */; };
+		A8C1F0E24B7D9A116E305C42 /* TVWatchConfirmPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7D2E1F35C8E0B227F416D53 /* TVWatchConfirmPresentationTests.swift */; };
 		C3A100022788B823003D8011 /* MediaTrailer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A100012788B823003D8011 /* MediaTrailer.swift */; };
 		C3A100042788B823003D8011 /* MediaMetadataPills.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A100032788B823003D8011 /* MediaMetadataPills.swift */; };
 		C3A100062788B823003D8011 /* TrailerPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A100052788B823003D8011 /* TrailerPlayerView.swift */; };
@@ -351,6 +352,7 @@
 		TW00000F2788B823003D8011 /* TVWatchProgressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchProgressTests.swift; sourceTree = "<group>"; };
 		LC0000012788B823003D8011 /* ListChangeNoticeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListChangeNoticeTests.swift; sourceTree = "<group>"; };
 		WT0000072788B823003D8011 /* TVWatchConfirmTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchConfirmTests.swift; sourceTree = "<group>"; };
+		B7D2E1F35C8E0B227F416D53 /* TVWatchConfirmPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchConfirmPresentationTests.swift; sourceTree = "<group>"; };
 		C3A100012788B823003D8011 /* MediaTrailer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaTrailer.swift; sourceTree = "<group>"; };
 		C3A100032788B823003D8011 /* MediaMetadataPills.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaMetadataPills.swift; sourceTree = "<group>"; };
 		C3A100052788B823003D8011 /* TrailerPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrailerPlayerView.swift; sourceTree = "<group>"; };
@@ -877,6 +879,7 @@
 				B100031B2788B823003D8011 /* CreditsListViewModelTests.swift */,
 				LC0000012788B823003D8011 /* ListChangeNoticeTests.swift */,
 				WT0000072788B823003D8011 /* TVWatchConfirmTests.swift */,
+				B7D2E1F35C8E0B227F416D53 /* TVWatchConfirmPresentationTests.swift */,
 			);
 			path = Screens;
 			sourceTree = "<group>";
@@ -1241,6 +1244,7 @@
 				L1B0001D2788B823003D8011 /* LibraryViewModelTests.swift in Sources */,
 				LC0000022788B823003D8011 /* ListChangeNoticeTests.swift in Sources */,
 				WT0000082788B823003D8011 /* TVWatchConfirmTests.swift in Sources */,
+				A8C1F0E24B7D9A116E305C42 /* TVWatchConfirmPresentationTests.swift in Sources */,
 				L1B0001F2788B823003D8011 /* InMemoryListsStore.swift in Sources */,
 				B10002142788B823003D8011 /* NavigationRouterTests.swift in Sources */,
 				B10003162788B823003D8011 /* PersonRepositoryTests.swift in Sources */,

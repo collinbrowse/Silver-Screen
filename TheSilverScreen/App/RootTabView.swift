@@ -49,7 +49,12 @@ struct RootTabView: View {
         self.imageLoader = imageLoader
         self.libraryHomeViewModel = libraryHomeViewModel
         _browseViewModel = State(
-            initialValue: BrowseListViewModel(movies: movies, shows: shows, annotations: annotations)
+            initialValue: BrowseListViewModel(
+                movies: movies,
+                shows: shows,
+                annotations: annotations,
+                tvWatch: tvWatch
+            )
         )
         _searchViewModel = State(
             initialValue: SearchViewModel(
@@ -57,6 +62,7 @@ struct RootTabView: View {
                 shows: shows,
                 people: people,
                 annotations: annotations,
+                tvWatch: tvWatch,
                 awards: awards
             )
         )

@@ -4,6 +4,7 @@
 //
 //  Eye control that marks a title watched or not. Watched is never chosen from
 //  the + list menu — this toggle (and TV episode progress / rating sync) owns it.
+//  `onFailure` is last so a trailing closure cannot bind to the success path.
 //
 
 import SwiftUI
@@ -20,28 +21,26 @@ struct WatchedToggleButton: View {
     var seasons: [TVSeasonSummary]? = nil
     /// Compact chrome for list rows vs plain toolbar icon.
     var chrome: Bool = true
-    var onFailure: () -> Void = {}
+    /// When set, drives the filled eye (series detail ledger completeness) instead of
+    /// Watched-list membership alone.
+    var isWatchedOverride: Bool? = nil
     /// Called after a successful watch toggle (membership and/or episode ledger).
     var onToggleComplete: () -> Void = {}
+    /// Trailing-closure friendly — keep this parameter last.
+    var onFailure: () -> Void = {}
 
     @Environment(ListChangeNotice.self) private var notice
     @State private var confirmEpisodeCount: Int?
     @State private var pendingSeasons: [TVSeasonSummary]?
+    @State private var clearConfirmCount: Int?
+    /// Kept separate from payload state so alert dismissal cannot wipe seasons
+    /// before the confirm button captures them.
+    @State private var isMarkConfirmPresented = false
+    @State private var isClearConfirmPresented = false
+    @State private var optimisticWatched: Bool?
 
     private var isWatched: Bool {
-        index.isOnWatched(draft.itemKey)
-    }
-
-    private var isConfirmPresented: Binding<Bool> {
-        Binding(
-            get: { confirmEpisodeCount != nil },
-            set: { presented in
-                if !presented {
-                    confirmEpisodeCount = nil
-                    pendingSeasons = nil
-                }
-            }
-        )
+        optimisticWatched ?? isWatchedOverride ?? index.isOnWatched(draft.itemKey)
     }
 
     var body: some View {
@@ -53,14 +52,29 @@ struct WatchedToggleButton: View {
         .buttonStyle(.borderless)
         .accessibilityLabel(isWatched ? "Mark \(draft.title) not watched" : "Mark \(draft.title) watched")
         .accessibilityValue(isWatched ? "Watched" : "Not watched")
-        .alert(TVWatchConfirm.seriesTitle, isPresented: isConfirmPresented) {
-            Button("Cancel", role: .cancel) {}
+        .alert(TVWatchConfirm.seriesTitle, isPresented: $isMarkConfirmPresented) {
+            Button("Cancel", role: .cancel) {
+                confirmEpisodeCount = nil
+                pendingSeasons = nil
+            }
             Button(TVWatchConfirm.confirmButtonTitle) {
-                Task { await confirmMarkSeries() }
+                confirmMarkSeries()
             }
         } message: {
             if let count = confirmEpisodeCount {
                 Text(TVWatchConfirm.message(episodeCount: count))
+            }
+        }
+        .alert(TVWatchConfirm.clearSeriesTitle, isPresented: $isClearConfirmPresented) {
+            Button("Cancel", role: .cancel) {
+                clearConfirmCount = nil
+            }
+            Button(TVWatchConfirm.clearButtonTitle, role: .destructive) {
+                confirmClearSeries()
+            }
+        } message: {
+            if let count = clearConfirmCount {
+                Text(TVWatchConfirm.clearMessage(episodeCount: count))
             }
         }
     }
@@ -90,28 +104,29 @@ struct WatchedToggleButton: View {
         do {
             switch draft.kind {
                 case .movie:
-                    let change = try await lists.toggleWatched(draft)
-                    notice.show(change, using: lists)
-                    onToggleComplete()
+                    optimisticWatched = !isWatched
+                    do {
+                        let change = try await lists.toggleWatched(draft)
+                        notice.show(change, using: lists)
+                        optimisticWatched = nil
+                        onToggleComplete()
+                    } catch {
+                        optimisticWatched = nil
+                        throw error
+                    }
                 case .tv:
                     guard let tvWatch else {
                         onFailure()
                         return
                     }
                     if isWatched {
-                        let outcome = try await tvWatch.clearSeries(
-                            seriesID: draft.id,
-                            draft: draft
-                        )
-                        if let change = outcome.membershipChange, change.confirmation != nil {
-                            notice.show(
-                                change,
-                                using: lists,
-                                tvWatch: tvWatch,
-                                watchUndo: outcome.watchUndo
-                            )
+                        let count = try await tvWatch.completedEpisodeCount(seriesID: draft.id)
+                        if count > 1 {
+                            clearConfirmCount = count
+                            isClearConfirmPresented = true
+                        } else {
+                            await performClearSeries()
                         }
-                        onToggleComplete()
                     } else {
                         let seasons = try await resolveSeasons()
                         let unmarked = try await tvWatch.unmarkedEpisodeCount(
@@ -123,6 +138,7 @@ struct WatchedToggleButton: View {
                         } else {
                             pendingSeasons = seasons
                             confirmEpisodeCount = unmarked
+                            isMarkConfirmPresented = true
                         }
                     }
                 case .person:
@@ -135,11 +151,49 @@ struct WatchedToggleButton: View {
         }
     }
 
-    private func confirmMarkSeries() async {
+    /// Captures seasons synchronously so alert dismissal cannot nil them first.
+    private func confirmMarkSeries() {
         guard let seasons = pendingSeasons else { return }
         pendingSeasons = nil
         confirmEpisodeCount = nil
-        await performMarkSeries(seasons: seasons)
+        isMarkConfirmPresented = false
+        Task { await performMarkSeries(seasons: seasons) }
+    }
+
+    private func confirmClearSeries() {
+        clearConfirmCount = nil
+        isClearConfirmPresented = false
+        Task { await performClearSeries() }
+    }
+
+    private func performClearSeries() async {
+        guard let tvWatch else {
+            onFailure()
+            return
+        }
+        optimisticWatched = false
+        do {
+            let outcome = try await tvWatch.clearSeries(
+                seriesID: draft.id,
+                draft: draft
+            )
+            if let change = outcome.membershipChange, change.confirmation != nil {
+                notice.show(
+                    change,
+                    using: lists,
+                    tvWatch: tvWatch,
+                    watchUndo: outcome.watchUndo
+                )
+            }
+            optimisticWatched = nil
+            onToggleComplete()
+        } catch is CancellationError {
+            optimisticWatched = nil
+            return
+        } catch {
+            optimisticWatched = nil
+            onFailure()
+        }
     }
 
     private func performMarkSeries(seasons: [TVSeasonSummary]) async {
@@ -147,6 +201,7 @@ struct WatchedToggleButton: View {
             onFailure()
             return
         }
+        optimisticWatched = true
         do {
             let outcome = try await tvWatch.markSeries(
                 seriesID: draft.id,
@@ -162,10 +217,13 @@ struct WatchedToggleButton: View {
                     watchUndo: outcome.watchUndo
                 )
             }
+            optimisticWatched = nil
             onToggleComplete()
         } catch is CancellationError {
+            optimisticWatched = nil
             return
         } catch {
+            optimisticWatched = nil
             onFailure()
         }
     }

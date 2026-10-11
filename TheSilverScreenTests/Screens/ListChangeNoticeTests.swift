@@ -126,23 +126,33 @@ final class ListChangeNoticeTests: XCTestCase {
         XCTAssertNil(series?.score)
     }
 
-    func test_presentWatch_withoutMembership_offersEpisodeRating() async throws {
+    func test_presentWatch_withoutMembership_offersEpisodeRatingAndLedgerUndo() async throws {
         let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
         let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
         let notice = ListChangeNotice(annotations: annotations)
         let episodeKey = AnnotationKey.episode(seriesID: 42, seasonNumber: 1, episodeNumber: 2)
+        let prior = TVSeriesWatchState(
+            seriesID: 42,
+            completed: [TVEpisodeRef(seasonNumber: 1, episodeNumber: 1)]
+        )
 
         notice.presentWatch(
             change: nil,
             ratingKey: episodeKey,
             fallbackMessage: "Episode watched",
-            using: lists
+            using: lists,
+            tvWatch: TVWatchRepository(
+                store: InMemoryTVWatchStore(),
+                lists: lists,
+                logger: SilentLogger()
+            ),
+            watchUndo: TVWatchUndo(seriesID: 42, priorState: prior)
         )
         await waitForRatingKey(notice)
 
         XCTAssertEqual(notice.message, "Episode watched")
         XCTAssertEqual(notice.ratingKey, episodeKey)
-        XCTAssertFalse(notice.canUndo)
+        XCTAssertTrue(notice.canUndo)
     }
 
     func test_presentWatch_afterPriorToast_replacesBanner() async throws {

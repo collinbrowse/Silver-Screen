@@ -9,6 +9,7 @@
 import SwiftUI
 
 struct LibraryDetailView: View {
+    
     @Bindable var viewModel: LibraryDetailViewModel
     let imageLoader: ImageLoader
     var router: NavigationRouter?
@@ -33,7 +34,7 @@ struct LibraryDetailView: View {
                     loaded(detail, activity: activity)
                 case .failed(let error):
                     ErrorStateView(error: error) {
-                    await viewModel.load()
+                        await viewModel.load()
                     }
             }
         }
@@ -60,6 +61,9 @@ struct LibraryDetailView: View {
             }
         }
         .onAppear {
+            Task { await viewModel.load() }
+        }
+        .onChange(of: notice.watchRevision) { _, _ in
             Task { await viewModel.load() }
         }
     }
@@ -159,7 +163,8 @@ struct LibraryDetailView: View {
         } label: {
             CatalogRowView(
                 title: entry.title,
-                subtitle: rowSubtitle(for: entry),
+                nextUp: nextUp(for: entry),
+                genre: genre(for: entry),
                 metadata: metadata(for: entry),
                 userScore: viewModel.userScores[entry.itemKey]?.formatted,
                 imagePath: entry.imagePath,
@@ -172,12 +177,17 @@ struct LibraryDetailView: View {
         .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
     }
 
-    private func rowSubtitle(for entry: ListEntry) -> String {
+    private func nextUp(for entry: ListEntry) -> String? {
         if let progress = viewModel.progressCaptions[entry.itemKey], !progress.isEmpty {
             return progress
         }
+        return nil
+    }
+    
+    private func genre(for entry: ListEntry) -> String {
         return entry.genreNames.prefix(2).joined(separator: ", ")
     }
+    
 
     private func metadata(for entry: ListEntry) -> String {
         switch entry.kind {

@@ -37,10 +37,41 @@ actor TVWatchRepository {
         return result
     }
 
+    /// In Progress “Next up” lines for catalog rows. Omits series with no next episode.
+    func progressSubtitles(for seriesIDs: [Int]) async -> [Int: String] {
+        guard !seriesIDs.isEmpty else { return [:] }
+        do {
+            let states = try await states(for: seriesIDs)
+            var captions: [Int: String] = [:]
+            for (id, state) in states {
+                if let subtitle = state.progressSubtitle {
+                    captions[id] = subtitle
+                }
+            }
+            return captions
+        } catch {
+            return [:]
+        }
+    }
+
     /// Finished series that still remember the TMDB shape they finished against —
     /// the only ones cold-launch reconcile needs to re-check.
     func statesWithCatalogSnapshot() async throws -> [TVSeriesWatchState] {
         try await loadCache().values.filter { $0.catalogSnapshot != nil }
+    }
+
+    /// Clears the episode ledger for a series without touching Library lists.
+    /// Used when the user swipe-deletes a Watched / In Progress row so cold-launch
+    /// reconcile cannot resurrect the title from a leftover catalog freeze.
+    func clearProgress(seriesID: Int) async throws {
+        try await serializeWrite { [self] in
+            try await removeState(seriesID: seriesID)
+        }
+    }
+
+    /// How many episodes are completed for confirm / clear dialogs.
+    func completedEpisodeCount(seriesID: Int) async throws -> Int {
+        try await state(seriesID: seriesID)?.completedCount ?? 0
     }
 
     func isEpisodeCompleted(seriesID: Int, seasonNumber: Int, episodeNumber: Int) async throws -> Bool {
@@ -238,18 +269,28 @@ actor TVWatchRepository {
     }
 
     /// Recomputes Next up from the catalog and persists when it changes (heals stale ledgers).
+    /// Empty catalogs are ignored so a failed series fetch cannot wipe Next up.
     @discardableResult
     func syncNextUp(
         seriesID: Int,
         seasons: [TVSeasonSummary],
         episodeTitles: [TVEpisodeRef: String] = [:]
     ) async throws -> TVSeriesWatchState? {
-        try await serializeWrite { [self] in
-            guard var state = try await loadCache()[seriesID] else { return nil }
+        guard TVSeriesWatchState.hasRegularCatalog(seasons) else {
+            return try await loadCache()[seriesID]
+        }
+        return try await serializeWrite { [self] in
+            guard var state = try await loadCache()[seriesID] else {
+                return Optional<TVSeriesWatchState>.none
+            }
             let priorNext = state.nextUp
             let priorTitle = state.nextUpTitle
+            let priorCompleted = state.completed
             state.refreshNextUp(against: seasons, episodeTitles: episodeTitles)
-            if state.nextUp != priorNext || state.nextUpTitle != priorTitle {
+            if state.nextUp != priorNext
+                || state.nextUpTitle != priorTitle
+                || state.completed != priorCompleted
+            {
                 try await persist(state)
             }
             return state
@@ -262,24 +303,20 @@ actor TVWatchRepository {
         try await serializeWrite { [self] in
             let prior = try await loadCache()[seriesID]
             try await removeState(seriesID: seriesID)
-            var lastChange: MembershipChange?
-            for kind in [SystemListKind.watched, .inProgress] {
-                let snapshot = try await lists.snapshot()
-                guard let list = snapshot.list(kind),
-                      snapshot.entries.contains(where: {
-                          $0.listID == list.id && $0.itemKey == draft.itemKey
-                      }) else {
-                    continue
-                }
-                lastChange = try await lists.remove(itemKey: draft.itemKey, listID: list.id)
+            do {
+                let change = try await removeFromSystemLists(itemKey: draft.itemKey)
+                let empty = TVSeriesWatchState(seriesID: seriesID)
+                return Self.makeOutcome(
+                    state: empty,
+                    change: change,
+                    newly: 0,
+                    prior: prior
+                )
+            } catch {
+                // List write failed after clearing the ledger — put progress back.
+                try await restoreLedger(prior, seriesID: seriesID)
+                throw error
             }
-            let empty = TVSeriesWatchState(seriesID: seriesID)
-            return Self.makeOutcome(
-                state: empty,
-                change: lastChange,
-                newly: 0,
-                prior: prior
-            )
         }
     }
 
@@ -296,6 +333,7 @@ actor TVWatchRepository {
 
     /// If `seasons` grew past the frozen catalog snapshot, clear the freeze, refresh
     /// Next up, and soft-move the series from Watched back to In Progress.
+    /// No-ops when the series is not currently on Watched (deleted rows must stay gone).
     @discardableResult
     func reconcileCatalog(
         seriesID: Int,
@@ -304,6 +342,15 @@ actor TVWatchRepository {
     ) async throws -> TVWatchOutcome? {
         try await serializeWrite { [self] in
             guard var state = try await loadCache()[seriesID] else { return nil }
+            guard TVSeriesWatchState.hasRegularCatalog(seasons) else { return nil }
+            let snapshot = try await lists.snapshot()
+            guard let watched = snapshot.list(.watched),
+                  snapshot.entries.contains(where: {
+                      $0.listID == watched.id && $0.itemKey == draft.itemKey
+                  })
+            else {
+                return nil
+            }
             guard state.hasNewCatalogContent(against: seasons) else { return nil }
             let prior = state
             state.clearCatalogSnapshot()
@@ -316,7 +363,14 @@ actor TVWatchRepository {
                     messageOverride: "\(draft.title) moved to In Progress"
                 )
             } catch {
-                try await restoreLedger(prior)
+                do {
+                    try await restoreLedger(prior)
+                } catch {
+                    logger.error(
+                        "TV watch reconcile rollback failed for series \(seriesID)",
+                        category: .persistence
+                    )
+                }
                 throw error
             }
             return Self.makeOutcome(
@@ -336,6 +390,8 @@ actor TVWatchRepository {
         state: inout TVSeriesWatchState,
         seasons: [TVSeasonSummary]
     ) {
+        guard TVSeriesWatchState.hasRegularCatalog(seasons) else { return }
+        state.pruneCompleted(against: seasons)
         if state.completed.isEmpty {
             state.clearCatalogSnapshot()
         } else if state.isSeriesComplete(against: seasons) {
@@ -387,7 +443,14 @@ actor TVWatchRepository {
                 preferSilentComplete: preferSilentComplete
             )
         } catch {
-            try await restoreLedger(prior, seriesID: state.seriesID)
+            do {
+                try await restoreLedger(prior, seriesID: state.seriesID)
+            } catch {
+                logger.error(
+                    "TV watch ledger rollback failed for series \(state.seriesID)",
+                    category: .persistence
+                )
+            }
             throw error
         }
     }
@@ -413,9 +476,8 @@ actor TVWatchRepository {
         newly: Int,
         prior: TVSeriesWatchState?
     ) -> TVWatchOutcome {
-        let undo: TVWatchUndo? = change != nil
-            ? TVWatchUndo(seriesID: state.seriesID, priorState: prior)
-            : nil
+        // Always capture ledger undo — binge marks that stay on In Progress still need it.
+        let undo = TVWatchUndo(seriesID: state.seriesID, priorState: prior)
         return TVWatchOutcome(
             state: state,
             membershipChange: change,
@@ -507,9 +569,7 @@ actor TVWatchRepository {
         if merged.catalogSnapshot == nil {
             merged.catalogSnapshot = rhs.catalogSnapshot
         } else if let right = rhs.catalogSnapshot, let left = merged.catalogSnapshot {
-            var bySeason = Dictionary(
-                uniqueKeysWithValues: left.map { ($0.seasonNumber, $0.episodeCount) }
-            )
+            var bySeason = TVSeriesWatchState.seasonCountMap(left)
             for season in right {
                 bySeason[season.seasonNumber] = max(
                     bySeason[season.seasonNumber] ?? 0,

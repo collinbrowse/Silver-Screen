@@ -155,9 +155,11 @@ final class TVEpisodeViewModel {
     func toggleEpisodeWatched(seriesTitle: String) async -> TVWatchOutcome? {
         guard case .loaded(let content, _) = state, let tvWatch else { return nil }
         let draft = seriesSnapshot.listItem(id: seriesID, title: seriesTitle)
+        let wasCompleted = isEpisodeCompleted
+        isEpisodeCompleted = !wasCompleted
         do {
             let outcome: TVWatchOutcome
-            if isEpisodeCompleted {
+            if wasCompleted {
                 outcome = try await tvWatch.unmarkEpisode(
                     seriesID: seriesID,
                     seasonNumber: seasonNumber,
@@ -178,8 +180,10 @@ final class TVEpisodeViewModel {
             await reloadCompleted()
             return outcome
         } catch is CancellationError {
+            isEpisodeCompleted = wasCompleted
             return nil
         } catch {
+            isEpisodeCompleted = wasCompleted
             markPersistenceFailure()
             return nil
         }

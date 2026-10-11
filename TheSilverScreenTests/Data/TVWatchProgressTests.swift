@@ -230,6 +230,65 @@ final class TVWatchProgressTests: XCTestCase {
         XCTAssertTrue(state.contains(seasonNumber: 2, episodeNumber: 1))
     }
 
+    func test_unmarkSeason_clearsOrphanEpisodesPastCatalogCount() {
+        var state = TVSeriesWatchState(seriesID: 1)
+        state.mark(seasonNumber: 1, episodeNumber: 1)
+        state.mark(seasonNumber: 1, episodeNumber: 99)
+
+        XCTAssertEqual(state.unmarkSeason(seasonNumber: 1, episodeCount: 1), 2)
+        XCTAssertTrue(state.completed.isEmpty)
+    }
+
+    func test_pruneCompleted_dropsRefsOutsideLiveCatalog() {
+        var state = TVSeriesWatchState(seriesID: 1)
+        state.mark(seasonNumber: 1, episodeNumber: 1)
+        state.mark(seasonNumber: 1, episodeNumber: 5)
+        state.mark(seasonNumber: 2, episodeNumber: 1)
+        let seasons = [
+            TVSeasonSummary(
+                id: 1,
+                name: "Season 1",
+                seasonNumber: 1,
+                episodeCount: 2,
+                airDate: nil,
+                posterPath: nil
+            ),
+        ]
+        state.pruneCompleted(against: seasons)
+
+        XCTAssertEqual(state.completed, [TVEpisodeRef(seasonNumber: 1, episodeNumber: 1)])
+    }
+
+    func test_refreshNextUp_emptyCatalog_doesNotWipeExistingNextUp() {
+        var state = TVSeriesWatchState(
+            seriesID: 1,
+            completed: [TVEpisodeRef(seasonNumber: 1, episodeNumber: 1)],
+            nextUp: TVEpisodeRef(seasonNumber: 1, episodeNumber: 2),
+            nextUpTitle: "Two"
+        )
+        state.refreshNextUp(against: [])
+
+        XCTAssertEqual(state.nextUp, TVEpisodeRef(seasonNumber: 1, episodeNumber: 2))
+        XCTAssertEqual(state.nextUpTitle, "Two")
+    }
+
+    func test_markSeries_isLinearInEpisodeCount() {
+        var state = TVSeriesWatchState(seriesID: 1)
+        let seasons = (1...20).map { number in
+            TVSeasonSummary(
+                id: number,
+                name: "Season \(number)",
+                seasonNumber: number,
+                episodeCount: 20,
+                airDate: nil,
+                posterPath: nil
+            )
+        }
+        let newly = state.markSeries(seasons: seasons)
+        XCTAssertEqual(newly, 400)
+        XCTAssertEqual(state.completedCount, 400)
+    }
+
     func test_decode_normalizesSpecialsAndDuplicates() throws {
         let json = """
         {

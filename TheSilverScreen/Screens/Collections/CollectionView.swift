@@ -94,7 +94,7 @@ struct CollectionView: View {
                             } label: {
                                 CatalogRowView(
                                     title: row.title,
-                                    subtitle: row.genreNames.joined(separator: ", "),
+                                    genre: row.genreNames.joined(separator: ", "),
                                     metadata: row.formattedReleaseDate,
                                     userScore: row.formattedUserScore,
                                     imagePath: row.posterPath,

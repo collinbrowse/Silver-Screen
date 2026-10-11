@@ -22,8 +22,8 @@ final class ListChangeNotice {
     /// Bumps after a successful Undo that may have restored TV watch progress — open
     /// season/series screens observe this and reload completed / Next up chrome.
     private(set) var watchRevision = 0
-    /// False for rating-only prompts (no membership change to reverse).
-    var canUndo: Bool { change != nil }
+    /// True when membership Undo and/or a ledger restore is available.
+    var canUndo: Bool { change != nil || watchUndo != nil }
     private var change: MembershipChange?
     private var lists: ListsRepository?
     private var tvWatch: TVWatchRepository?
@@ -54,7 +54,13 @@ final class ListChangeNotice {
                 watchUndo: watchUndo
             )
         } else {
-            offerRating(for: ratingKey, message: fallbackMessage, using: lists)
+            offerRating(
+                for: ratingKey,
+                message: fallbackMessage,
+                using: lists,
+                tvWatch: tvWatch,
+                watchUndo: watchUndo
+            )
         }
     }
 
@@ -113,20 +119,22 @@ final class ListChangeNotice {
         }
     }
 
-    /// Rating prompt with no list Undo — used when an episode is marked watched but
-    /// membership did not change (series already on In Progress).
+    /// Rating prompt when membership did not change (series already on In Progress).
+    /// Keeps `watchUndo` so an accidental episode mark can still restore the ledger.
     func offerRating(
         for ratingKey: AnnotationKey,
         message: String,
-        using lists: ListsRepository
+        using lists: ListsRepository,
+        tvWatch: TVWatchRepository? = nil,
+        watchUndo: TVWatchUndo? = nil
     ) {
         generation += 1
         let token = generation
         presentationID += 1
         self.change = nil
         self.lists = lists
-        self.tvWatch = nil
-        self.watchUndo = nil
+        self.tvWatch = tvWatch
+        self.watchUndo = watchUndo
         self.message = message
         self.ratingKey = nil
 
@@ -149,16 +157,37 @@ final class ListChangeNotice {
     }
 
     func undo() async {
-        guard let change, let lists else { return }
+        guard change != nil || watchUndo != nil else { return }
         let undoToken = watchUndo
         let watch = tvWatch
+        let membership = change
+        let listsRef = lists
         clear()
-        // Restore the episode ledger before list membership so In Progress captions stay valid.
-        if let undoToken, let watch {
-            try? await watch.restore(undoToken)
+        do {
+            // Restore the episode ledger before list membership so In Progress captions stay valid.
+            if let undoToken, let watch {
+                try await watch.restore(undoToken)
+            }
+            if let membership, let listsRef {
+                try await listsRef.undo(membership)
+            }
+            watchRevision += 1
+        } catch is CancellationError {
+            return
+        } catch {
+            // Partial undo — do not bump revision so open screens keep prior chrome.
+            message = "Couldn’t undo. Try again."
+            generation += 1
+            let token = generation
+            presentationID += 1
+            Task {
+                try? await Task.sleep(for: .seconds(3))
+                guard !Task.isCancelled, generation == token else { return }
+                if self.message == "Couldn’t undo. Try again." {
+                    clear()
+                }
+            }
         }
-        try? await lists.undo(change)
-        watchRevision += 1
     }
 
     /// Saves a half-point score from the banner and dismisses the rating CTA.
@@ -201,6 +230,7 @@ final class ListChangeNotice {
     }
 
     private func clear() {
+        generation += 1
         message = nil
         ratingKey = nil
         change = nil
@@ -210,7 +240,7 @@ final class ListChangeNotice {
     }
 
     /// Watched / In Progress adds without a score get a rating prompt. Removals and other lists do not.
-    private static func ratingKeyIfNeeded(
+    static func ratingKeyIfNeeded(
         for change: MembershipChange,
         preferred: AnnotationKey?,
         lists: ListsRepository,

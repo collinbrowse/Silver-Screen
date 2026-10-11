@@ -157,16 +157,22 @@ final class TVSeasonViewModel {
     }
 
     /// Reloads the Next up line after episode / season watch changes.
+    /// Empty catalogs skip persist-heal so a failed series fetch cannot wipe Next up.
     func reloadNextUp() async {
         guard let tvWatch else {
             nextUpSubtitle = nil
             return
         }
         do {
-            let watchState = try await tvWatch.syncNextUp(
-                seriesID: seriesID,
-                seasons: catalogSeasons
-            )
+            let watchState: TVSeriesWatchState?
+            if TVSeriesWatchState.hasRegularCatalog(catalogSeasons) {
+                watchState = try await tvWatch.syncNextUp(
+                    seriesID: seriesID,
+                    seasons: catalogSeasons
+                )
+            } else {
+                watchState = try await tvWatch.state(seriesID: seriesID)
+            }
             nextUpSubtitle = watchState?.progressSubtitle
         } catch {
             nextUpSubtitle = nil
@@ -213,6 +219,13 @@ final class TVSeasonViewModel {
     func toggleEpisodeWatched(_ episode: TVEpisodeSummary) async -> TVWatchOutcome? {
         guard case .loaded = state, let tvWatch else { return nil }
         let draft = seriesSnapshot.listItem(id: seriesID, title: seriesName)
+        let wasCompleted = completedEpisodeNumbers.contains(episode.episodeNumber)
+        // Optimistic eye flip; revert if the ledger write fails.
+        if wasCompleted {
+            completedEpisodeNumbers.remove(episode.episodeNumber)
+        } else {
+            completedEpisodeNumbers.insert(episode.episodeNumber)
+        }
         do {
             let outcome: TVWatchOutcome
             let knownTitles = Dictionary(
@@ -223,7 +236,7 @@ final class TVSeasonViewModel {
                     )
                 }
             )
-            if completedEpisodeNumbers.contains(episode.episodeNumber) {
+            if wasCompleted {
                 outcome = try await tvWatch.unmarkEpisode(
                     seriesID: seriesID,
                     seasonNumber: seasonNumber,
@@ -248,8 +261,18 @@ final class TVSeasonViewModel {
             await reloadNextUp()
             return outcome
         } catch is CancellationError {
+            if wasCompleted {
+                completedEpisodeNumbers.insert(episode.episodeNumber)
+            } else {
+                completedEpisodeNumbers.remove(episode.episodeNumber)
+            }
             return nil
         } catch {
+            if wasCompleted {
+                completedEpisodeNumbers.insert(episode.episodeNumber)
+            } else {
+                completedEpisodeNumbers.remove(episode.episodeNumber)
+            }
             markPersistenceFailure()
             return nil
         }

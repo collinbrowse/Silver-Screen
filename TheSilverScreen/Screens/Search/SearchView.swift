@@ -348,7 +348,8 @@ struct SearchView: View {
     ) -> some View {
         CatalogRowView(
             title: row.title,
-            subtitle: row.genreNames.joined(separator: ", "),
+            nextUp: nil,
+            genre: row.genreNames.joined(separator: ", "),
             metadata: row.formattedReleaseDate,
             userScore: row.formattedUserScore,
             kindLabel: showsKind ? "Movie" : nil,
@@ -367,7 +368,8 @@ struct SearchView: View {
     ) -> some View {
         CatalogRowView(
             title: row.name,
-            subtitle: row.genreNames.joined(separator: ", "),
+            nextUp: row.nextUp,
+            genre: row.genreNames.joined(separator: ", "),
             metadata: row.formattedFirstAirDate,
             userScore: row.formattedUserScore,
             kindLabel: showsKind ? "TV" : nil,
@@ -386,7 +388,8 @@ struct SearchView: View {
     ) -> some View {
         CatalogRowView(
             title: row.name,
-            subtitle: "",
+            nextUp: nil,
+            genre: "",
             metadata: row.knownForDepartment ?? "",
             kindLabel: showsKind ? "Person" : nil,
             density: density,

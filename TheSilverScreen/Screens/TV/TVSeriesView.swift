@@ -83,8 +83,9 @@ struct TVSeriesView: View {
                             shows: shows,
                             seasons: content.detail.seasons,
                             chrome: false,
-                            onFailure: { viewModel.noteListSaveFailed() },
-                            onToggleComplete: { Task { await viewModel.reloadNextUp() } }
+                            isWatchedOverride: viewModel.isSeriesFullyWatched,
+                            onToggleComplete: { Task { await viewModel.reloadNextUp() } },
+                            onFailure: { viewModel.noteListSaveFailed() }
                         )
 
                         ListMembershipButton(
@@ -222,12 +223,17 @@ struct TVSeriesView: View {
             streamingProviders: content.detail.streamingProviders
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.lg) {
-                if !content.heroMetadataLine.isEmpty {
-                    Text(content.heroMetadataLine)
-                        .font(DesignTypography.metadata)
-                        .foregroundStyle(DesignTheme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityLabel(content.heroMetadataAccessibilityLabel)
+                VStack(alignment: .leading, spacing: DesignSpacing.sm) {
+                    if let nextUp = viewModel.nextUpSubtitle {
+                        TVNextUpLabel(subtitle: nextUp)
+                    }
+                    if !content.heroMetadataLine.isEmpty {
+                        Text(content.heroMetadataLine)
+                            .font(DesignTypography.metadata)
+                            .foregroundStyle(DesignTheme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityLabel(content.heroMetadataAccessibilityLabel)
+                    }
                 }
                 if !content.detail.trailers.isEmpty {
                     MediaMetadataPills(
@@ -245,9 +251,6 @@ struct TVSeriesView: View {
         scrollTo: @escaping (String) -> Void
     ) -> some View {
         VStack(alignment: .leading, spacing: DesignSpacing.md) {
-            if let nextUp = viewModel.nextUpSubtitle {
-                TVNextUpLabel(subtitle: nextUp)
-            }
             TMDBRatingCard(
                 formattedRating: content.formattedRating,
                 accessibilityLabel: content.ratingAccessibilityLabel,

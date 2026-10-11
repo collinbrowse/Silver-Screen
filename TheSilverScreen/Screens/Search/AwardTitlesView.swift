@@ -32,7 +32,8 @@ struct AwardTitlesView: View {
                 awards: awards,
                 movies: movies,
                 shows: shows,
-                annotations: annotations
+                annotations: annotations,
+                tvWatch: tvWatch
             )
         )
         self.imageLoader = imageLoader
@@ -87,6 +88,12 @@ struct AwardTitlesView: View {
                 await viewModel.load()
             }
         }
+        .onAppear {
+            Task { await viewModel.reloadDisplayedScores() }
+        }
+        .onChange(of: router?.path.count ?? 0) { _, _ in
+            Task { await viewModel.reloadDisplayedScores() }
+        }
     }
 
     private func list(_ rows: [AwardTitleRow], activity: LoadActivity) -> some View {
@@ -99,7 +106,8 @@ struct AwardTitlesView: View {
                         } label: {
                             CatalogRowView(
                                 title: row.title,
-                                subtitle: row.awardYear,
+                                nextUp: row.nextUp,
+                                genre: row.awardYear,
                                 metadata: row.genreLine,
                                 userScore: row.userScore,
                                 imagePath: row.imagePath,
@@ -116,7 +124,8 @@ struct AwardTitlesView: View {
                                 lists: lists,
                                 index: listsIndex,
                                 tvWatch: tvWatch,
-                                shows: shows
+                                shows: shows,
+                                onFailure: { viewModel.noteListSaveFailed() }
                             )
                         }
                     }

@@ -119,7 +119,7 @@ struct BrowseListView: View {
                 list(rows, activity: activity)
             case .failed(let error):
                 ErrorStateView(error: error) {
-                await viewModel.retry()
+                    await viewModel.retry()
                 }
         }
     }
@@ -134,7 +134,8 @@ struct BrowseListView: View {
                         } label: {
                             CatalogRowView(
                                 title: row.title,
-                                subtitle: row.genreLine,
+                                nextUp: row.nextUp,
+                                genre: row.genreLine,
                                 metadata: row.formattedDate,
                                 userScore: row.formattedUserScore,
                                 imagePath: row.posterPath,

@@ -439,6 +439,43 @@ final class LibraryViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.progressCaptions[entry.itemKey], "2 seasons")
     }
 
+    func test_detail_removeWatchedTV_clearsProgressLedger() async throws {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let tvWatch = TVWatchRepository(
+            store: InMemoryTVWatchStore(),
+            lists: lists,
+            logger: SilentLogger()
+        )
+        let seriesDraft = draft(id: 11, title: "Gone", imagePath: "/g.jpg", kind: .tv)
+        let seasons = [
+            TVSeasonSummary(
+                id: 1,
+                name: "Season 1",
+                seasonNumber: 1,
+                episodeCount: 1,
+                airDate: nil,
+                posterPath: nil
+            ),
+        ]
+        _ = try await tvWatch.markSeries(seriesID: 11, seasons: seasons, draft: seriesDraft)
+        let snapshot = try await lists.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        let viewModel = LibraryDetailViewModel(
+            listID: watched.id,
+            lists: lists,
+            annotations: AnnotationsRepository.empty(),
+            tvWatch: tvWatch
+        )
+        await viewModel.load()
+        let entry = try XCTUnwrap(viewModel.displayedEntries.first)
+
+        _ = await viewModel.remove(entry)
+
+        let progress = try await tvWatch.state(seriesID: 11)
+        XCTAssertNil(progress)
+        XCTAssertTrue(viewModel.displayedEntries.isEmpty)
+    }
+
     private func draft(
         id: Int,
         title: String,

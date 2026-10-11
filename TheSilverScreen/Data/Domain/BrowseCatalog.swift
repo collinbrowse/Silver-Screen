@@ -340,6 +340,8 @@ struct BrowseRow: Sendable, Equatable, Identifiable {
     var formattedUserScore: String?
     /// Day that score was chosen.
     var formattedRatedOn: String?
+    /// In Progress “Next up” line for a TV series with watch progress.
+    var nextUp: String?
 
     var id: String { identity }
 
@@ -366,12 +368,19 @@ struct BrowseRow: Sendable, Equatable, Identifiable {
         popularity = candidate.popularity
         formattedUserScore = nil
         formattedRatedOn = nil
+        nextUp = nil
     }
 
     func withUserScore(_ saved: SavedUserScore?) -> BrowseRow {
         var copy = self
         copy.formattedUserScore = saved?.formatted
         copy.formattedRatedOn = saved?.ratedOn
+        return copy
+    }
+
+    func withNextUp(_ caption: String?) -> BrowseRow {
+        var copy = self
+        copy.nextUp = caption
         return copy
     }
 

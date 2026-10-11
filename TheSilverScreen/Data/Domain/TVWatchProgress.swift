@@ -85,8 +85,16 @@ struct TVSeriesWatchState: Codable, Sendable, Equatable {
         Set(completed)
     }
 
+    /// Count of completed regular episodes (confirm copy / clear dialogs).
+    var completedCount: Int { completed.count }
+
     func contains(seasonNumber: Int, episodeNumber: Int) -> Bool {
         completedSet.contains(TVEpisodeRef(seasonNumber: seasonNumber, episodeNumber: episodeNumber))
+    }
+
+    /// True when `seasons` has at least one regular season with episodes.
+    static func hasRegularCatalog(_ seasons: [TVSeasonSummary]) -> Bool {
+        regularSeasons(seasons).contains { $0.episodeCount > 0 }
     }
 
     /// In Progress subtitle: `Next up: S2 · E3 · Episode name`.
@@ -100,10 +108,13 @@ struct TVSeriesWatchState: Codable, Sendable, Equatable {
     /// Updates `nextUp` / `nextUpTitle` from completed episodes and catalog seasons.
     /// Prefers the episode after the highest completed one; when that would be past
     /// the finale but gaps remain, falls back to the first unwatched episode.
+    /// No-ops when `seasons` has no regular catalog — never wipe Next up on a failed fetch.
     mutating func refreshNextUp(
         against seasons: [TVSeasonSummary],
         episodeTitles: [TVEpisodeRef: String] = [:]
     ) {
+        guard Self.hasRegularCatalog(seasons) else { return }
+        pruneCompleted(against: seasons)
         if let sequential = Self.nextEpisode(after: lastCompleted, seasons: seasons) {
             nextUp = sequential
         } else if !isSeriesComplete(against: seasons),
@@ -117,6 +128,19 @@ struct TVSeriesWatchState: Codable, Sendable, Equatable {
             nextUpTitle = trimmed.isEmpty ? nil : trimmed
         } else {
             nextUpTitle = nil
+        }
+    }
+
+    /// Drops completed refs outside the live regular catalog (TMDB shrink / corrections).
+    mutating func pruneCompleted(against seasons: [TVSeasonSummary]) {
+        guard Self.hasRegularCatalog(seasons) else { return }
+        let limits = Self.episodeLimits(from: seasons)
+        let pruned = completed.filter { ref in
+            guard let count = limits[ref.seasonNumber] else { return false }
+            return ref.episodeNumber >= 1 && ref.episodeNumber <= count
+        }
+        if pruned.count != completed.count {
+            completed = Self.normalized(pruned)
         }
     }
 
@@ -188,10 +212,10 @@ struct TVSeriesWatchState: Codable, Sendable, Equatable {
     ) -> Bool {
         guard seasonNumber > 0, episodeNumber > 0 else { return false }
         let ref = TVEpisodeRef(seasonNumber: seasonNumber, episodeNumber: episodeNumber)
-        let inserted = !completedSet.contains(ref)
+        var set = completedSet
+        let inserted = set.insert(ref).inserted
         if inserted {
-            completed.append(ref)
-            completed = Self.normalized(completed)
+            completed = set.sorted()
         }
         return inserted
     }
@@ -207,15 +231,14 @@ struct TVSeriesWatchState: Codable, Sendable, Equatable {
         }
     }
 
-    /// Clears every completed episode in a regular season. Returns how many were removed.
+    /// Clears every completed episode in a regular season (including orphan numbers
+    /// above a shrunk TMDB count). Returns how many were removed.
     @discardableResult
-    mutating func unmarkSeason(seasonNumber: Int, episodeCount: Int) -> Int {
-        guard seasonNumber > 0, episodeCount > 0 else { return 0 }
+    mutating func unmarkSeason(seasonNumber: Int, episodeCount _: Int) -> Int {
+        guard seasonNumber > 0 else { return 0 }
         let before = completed.count
-        let range = 1...episodeCount
-        completed.removeAll {
-            $0.seasonNumber == seasonNumber && range.contains($0.episodeNumber)
-        }
+        // Clear the whole season number so orphans past a shrunk TMDB count cannot stick.
+        completed.removeAll { $0.seasonNumber == seasonNumber }
         if completed.isEmpty {
             nextUp = nil
             nextUpTitle = nil
@@ -232,15 +255,16 @@ struct TVSeriesWatchState: Codable, Sendable, Equatable {
         episodeTitles: [Int: String] = [:]
     ) -> Int {
         guard seasonNumber > 0, episodeCount > 0 else { return 0 }
+        var set = completedSet
         var newly = 0
         for number in 1...episodeCount {
-            if mark(
-                seasonNumber: seasonNumber,
-                episodeNumber: number,
-                title: episodeTitles[number]
-            ) {
+            let ref = TVEpisodeRef(seasonNumber: seasonNumber, episodeNumber: number)
+            if set.insert(ref).inserted {
                 newly += 1
             }
+        }
+        if newly > 0 {
+            completed = set.sorted()
         }
         return newly
     }
@@ -251,20 +275,21 @@ struct TVSeriesWatchState: Codable, Sendable, Equatable {
         seasons: [TVSeasonSummary],
         episodeTitles: [TVEpisodeRef: String] = [:]
     ) -> Int {
+        var set = completedSet
         var newly = 0
         for season in Self.regularSeasons(seasons) where season.episodeCount > 0 {
-            var titles: [Int: String] = [:]
             for number in 1...season.episodeCount {
-                let ref = TVEpisodeRef(seasonNumber: season.seasonNumber, episodeNumber: number)
-                if let title = episodeTitles[ref] {
-                    titles[number] = title
+                let ref = TVEpisodeRef(
+                    seasonNumber: season.seasonNumber,
+                    episodeNumber: number
+                )
+                if set.insert(ref).inserted {
+                    newly += 1
                 }
             }
-            newly += markSeason(
-                seasonNumber: season.seasonNumber,
-                episodeCount: season.episodeCount,
-                episodeTitles: titles
-            )
+        }
+        if newly > 0 {
+            completed = set.sorted()
         }
         return newly
     }
@@ -318,9 +343,7 @@ struct TVSeriesWatchState: Codable, Sendable, Equatable {
     /// True when live TMDB has more episodes in a regular season than the frozen snapshot.
     func hasNewCatalogContent(against seasons: [TVSeasonSummary]) -> Bool {
         guard let catalogSnapshot else { return false }
-        let prior = Dictionary(
-            uniqueKeysWithValues: catalogSnapshot.map { ($0.seasonNumber, $0.episodeCount) }
-        )
+        let prior = Self.seasonCountMap(catalogSnapshot)
         for season in Self.regularSeasons(seasons) where season.episodeCount > 0 {
             let previous = prior[season.seasonNumber] ?? 0
             if season.episodeCount > previous {
@@ -339,6 +362,20 @@ struct TVSeriesWatchState: Codable, Sendable, Equatable {
 
     static func regularSeasons(_ seasons: [TVSeasonSummary]) -> [TVSeasonSummary] {
         seasons.filter { $0.seasonNumber > 0 }
+    }
+
+    /// Season number → episode count; duplicate keys keep the larger count.
+    static func seasonCountMap(_ counts: [TVCatalogSeasonCount]) -> [Int: Int] {
+        Dictionary(counts.map { ($0.seasonNumber, $0.episodeCount) }, uniquingKeysWith: max)
+    }
+
+    static func episodeLimits(from seasons: [TVSeasonSummary]) -> [Int: Int] {
+        Dictionary(
+            regularSeasons(seasons)
+                .filter { $0.episodeCount > 0 }
+                .map { ($0.seasonNumber, $0.episodeCount) },
+            uniquingKeysWith: max
+        )
     }
 
     private static func normalized(_ completed: [TVEpisodeRef]) -> [TVEpisodeRef] {

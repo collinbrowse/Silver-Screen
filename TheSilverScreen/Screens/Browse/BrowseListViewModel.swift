@@ -25,6 +25,7 @@ final class BrowseListViewModel {
     private let movies: MovieRepository
     private let shows: TVRepository
     private let annotations: AnnotationsRepository
+    private let tvWatch: TVWatchRepository?
     private let locale: Locale
     private let timeZone: TimeZone
     private let today: @Sendable () -> Date
@@ -44,6 +45,7 @@ final class BrowseListViewModel {
         movies: MovieRepository,
         shows: TVRepository,
         annotations: AnnotationsRepository,
+        tvWatch: TVWatchRepository? = nil,
         locale: Locale = .current,
         timeZone: TimeZone = .current,
         today: @escaping @Sendable () -> Date = { Date() }
@@ -51,6 +53,7 @@ final class BrowseListViewModel {
         self.movies = movies
         self.shows = shows
         self.annotations = annotations
+        self.tvWatch = tvWatch
         self.locale = locale
         self.timeZone = timeZone
         self.today = today
@@ -318,7 +321,8 @@ final class BrowseListViewModel {
         }
     }
 
-    /// Reads saved scores onto the rows already on screen. Used when returning from a detail screen.
+    /// Reads saved scores and TV Next up captions onto rows already on screen.
+    /// Used when returning from a detail screen.
     func reloadDisplayedScores() async {
         await stampScores(token: generation)
     }
@@ -326,9 +330,14 @@ final class BrowseListViewModel {
     private func stampScores(token: Int) async {
         let scores = await annotations.formattedScores()
         guard token == generation, case .loaded(let rows, let activity) = state else { return }
-        let stamped = rows.map { row in
+        let seriesIDs = rows.compactMap { $0.media == .tv ? $0.mediaID : nil }
+        let nextUp = await tvWatch?.progressSubtitles(for: seriesIDs) ?? [:]
+        guard token == generation else { return }
+        let stamped = rows.map { row -> BrowseRow in
             let key: AnnotationKey = row.media == .movie ? .movie(row.mediaID) : .series(row.mediaID)
-            return row.withUserScore(scores[key])
+            let scored = row.withUserScore(scores[key])
+            guard row.media == .tv else { return scored }
+            return scored.withNextUp(nextUp[row.mediaID])
         }
         guard stamped != rows else { return }
         state = .loaded(stamped, activity: activity)

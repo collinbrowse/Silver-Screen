@@ -42,6 +42,64 @@ final class SearchViewModelTests: XCTestCase {
         XCTAssertEqual(refreshed.movies.first { $0.id == 278 }?.formattedUserScore, "8.0 / 10")
     }
 
+    func test_reloadDisplayedScores_stampsNextUpForTVRow() async throws {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let tvWatch = TVWatchRepository(
+            store: InMemoryTVWatchStore(),
+            lists: lists,
+            logger: SilentLogger()
+        )
+        let draft = ListItemDraft(
+            id: 1396,
+            kind: .tv,
+            title: "Breaking Bad",
+            imagePath: nil,
+            releaseDate: nil,
+            genreNames: [],
+            voteAverage: 0,
+            popularity: 0
+        )
+        let seasons = [
+            TVSeasonSummary(
+                id: 1,
+                name: "Season 1",
+                seasonNumber: 1,
+                episodeCount: 3,
+                airDate: nil,
+                posterPath: nil
+            ),
+        ]
+        _ = try await tvWatch.markEpisode(
+            seriesID: 1396,
+            seasonNumber: 1,
+            episodeNumber: 1,
+            title: "Pilot",
+            draft: draft,
+            seasons: seasons,
+            knownTitles: [
+                TVEpisodeRef(seasonNumber: 1, episodeNumber: 2): "Cat's in the Bag…",
+            ]
+        )
+        let viewModel = makeViewModel(
+            routes: [
+                "search/movie": .success(emptyPage),
+                "search/tv": .success(TMDBFixtures.popularTVPage),
+                "search/person": .success(emptyPage),
+            ],
+            tvWatch: tvWatch
+        )
+        viewModel.query = "breaking"
+        await viewModel.submit()
+
+        guard case .loaded(.preview(let sections), _) = viewModel.state else {
+            return XCTFail("Expected preview, got \(viewModel.state)")
+        }
+        XCTAssertEqual(
+            sections.tv.first { $0.id == 1396 }?.nextUp,
+            "Next up: S1 · E2 · Cat's in the Bag…"
+        )
+    }
+
     func test_load_emptyQuery_exposesAwardShelves() async {
         let client = RoutingHTTPClient(routes: [
             "movie/popular": .success(TMDBFixtures.topMoviesPage1),
@@ -927,7 +985,8 @@ final class SearchViewModelTests: XCTestCase {
 
     private func makeViewModel(
         routes: [String: FakeHTTPClient.Stub],
-        annotations: AnnotationsRepository = .empty()
+        annotations: AnnotationsRepository = .empty(),
+        tvWatch: TVWatchRepository? = nil
     ) -> SearchViewModel {
         var merged = [
             "search/movie": FakeHTTPClient.Stub.success(emptyPage),
@@ -943,6 +1002,7 @@ final class SearchViewModelTests: XCTestCase {
             shows: TVRepository.test(client: client),
             people: PersonRepository.test(client: client),
             annotations: annotations,
+            tvWatch: tvWatch,
             sleeper: NoopSleeper()
         )
     }

@@ -91,8 +91,21 @@ final class LibraryDetailViewModel {
     }
 
     func remove(_ entry: ListEntry) async -> MembershipChange? {
+        let systemKind: SystemListKind?
+        if case .loaded(let detail, _) = state {
+            systemKind = detail.list.system
+        } else {
+            systemKind = nil
+        }
         do {
             let change = try await lists.remove(itemKey: entry.itemKey, listID: listID)
+            // Drop the episode ledger when pruning Watched / In Progress so cold-launch
+            // reconcile cannot resurrect a title the user just deleted.
+            if entry.kind == .tv,
+               let tvWatch,
+               systemKind == .watched || systemKind == .inProgress {
+                try? await tvWatch.clearProgress(seriesID: entry.itemID)
+            }
             await load()
             return change
         } catch is CancellationError {

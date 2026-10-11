@@ -74,6 +74,8 @@ struct CatalogTVRow: Sendable, Identifiable, Equatable, Hashable {
     var formattedUserScore: String?
     /// Day that score was chosen.
     var formattedRatedOn: String?
+    /// In Progress “Next up” line when this series has watch progress.
+    var nextUp: String?
 
     init(series: TVSeriesSummary) {
         id = series.id
@@ -87,12 +89,19 @@ struct CatalogTVRow: Sendable, Identifiable, Equatable, Hashable {
         formattedFirstAirDate = DisplayDate.year(series.firstAirDate) ?? ""
         formattedUserScore = nil
         formattedRatedOn = nil
+        nextUp = nil
     }
 
     func withUserScore(_ saved: SavedUserScore?) -> CatalogTVRow {
         var copy = self
         copy.formattedUserScore = saved?.formatted
         copy.formattedRatedOn = saved?.ratedOn
+        return copy
+    }
+
+    func withNextUp(_ caption: String?) -> CatalogTVRow {
+        var copy = self
+        copy.nextUp = caption
         return copy
     }
 }

@@ -5,15 +5,21 @@
 
 import SwiftUI
 
-/// Confirm payload for marking a season watched via the toolbar eye.
+/// Confirm payload for marking or clearing a season via the toolbar eye.
 private enum SeasonWatchConfirm: Equatable {
     case markSeason(episodeCount: Int)
+    case clearSeason(episodeCount: Int)
 
     var episodeCount: Int {
         switch self {
-            case .markSeason(let count):
+            case .markSeason(let count), .clearSeason(let count):
                 return count
         }
+    }
+
+    var isClear: Bool {
+        if case .clearSeason = self { return true }
+        return false
     }
 }
 
@@ -39,6 +45,9 @@ struct TVSeasonView: View {
     @State private var statusBarHeight: CGFloat = 0
     /// Pending mark-season confirm before bulk-completing unmarked episodes.
     @State private var pendingConfirm: SeasonWatchConfirm?
+    /// Separate from `pendingConfirm` so dismissing the alert cannot clear the
+    /// payload before the confirm button’s action reads it (SwiftUI race).
+    @State private var isSeasonConfirmPresented = false
 
     private var fullscreenBinding: Binding<FullscreenImages?> {
         Binding(
@@ -135,16 +144,31 @@ struct TVSeasonView: View {
                 await viewModel.load()
             }
         }
-        .alert(TVWatchConfirm.seasonTitle, isPresented: seasonConfirmPresented) {
+        .alert(
+            pendingConfirm?.isClear == true
+                ? TVWatchConfirm.clearSeasonTitle
+                : TVWatchConfirm.seasonTitle,
+            isPresented: $isSeasonConfirmPresented
+        ) {
             Button("Cancel", role: .cancel) {
                 pendingConfirm = nil
             }
-            Button(TVWatchConfirm.confirmButtonTitle) {
-                Task { await confirmPendingSeasonAction() }
+            if pendingConfirm?.isClear == true {
+                Button(TVWatchConfirm.clearButtonTitle, role: .destructive) {
+                    confirmPendingSeasonAction()
+                }
+            } else {
+                Button(TVWatchConfirm.confirmButtonTitle) {
+                    confirmPendingSeasonAction()
+                }
             }
         } message: {
-            if let count = pendingConfirm?.episodeCount {
-                Text(TVWatchConfirm.message(episodeCount: count))
+            if let pending = pendingConfirm {
+                Text(
+                    pending.isClear
+                        ? TVWatchConfirm.clearMessage(episodeCount: pending.episodeCount)
+                        : TVWatchConfirm.message(episodeCount: pending.episodeCount)
+                )
             }
         }
         .onChange(of: notice.ratingKey) { _, key in
@@ -238,6 +262,12 @@ struct TVSeasonView: View {
             .task(id: content.episodes.map(\.episodeNumber)) {
                 await scrollToFocusedEpisodeIfNeeded(proxy: proxy, episodes: content.episodes)
             }
+            .onChange(of: statusBarHeight) { _, height in
+                guard height > 0, !didScrollToFocusedEpisode else { return }
+                Task {
+                    await scrollToFocusedEpisodeIfNeeded(proxy: proxy, episodes: content.episodes)
+                }
+            }
         }
     }
 
@@ -250,6 +280,7 @@ struct TVSeasonView: View {
     }
 
     /// Pins the focused episode (last watched from In Progress) just below the title bar once.
+    /// Latches only after a measured status-bar inset so a later probe update can re-try.
     private func scrollToFocusedEpisodeIfNeeded(
         proxy: ScrollViewProxy,
         episodes: [TVEpisodeSummary]
@@ -262,15 +293,18 @@ struct TVSeasonView: View {
         // Let rows lay out and the status-bar probe report before scrolling.
         try? await Task.sleep(for: .milliseconds(100))
         guard !Task.isCancelled else { return }
-        for _ in 0..<6 where statusBarHeight == 0 {
+        for _ in 0..<8 where statusBarHeight == 0 {
             try? await Task.sleep(for: .milliseconds(50))
             guard !Task.isCancelled else { return }
         }
         withAnimation(.easeInOut(duration: 0.25)) {
             proxy.scrollTo(Self.episodeScrollID(target), anchor: .top)
         }
-        // Only latch after a successful scroll attempt so a cancelled task can retry.
-        didScrollToFocusedEpisode = true
+        // Only latch once we had a measured inset (or timed out waiting). That lets
+        // onChange(statusBarHeight) re-try when the probe reports after the first pass.
+        if statusBarHeight > 0 {
+            didScrollToFocusedEpisode = true
+        }
     }
 
     private static func episodeScrollID(_ episodeNumber: Int) -> String {
@@ -291,12 +325,17 @@ struct TVSeasonView: View {
             streamingProviders: content.streamingProviders
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.lg) {
-                if !content.heroMetadataLine.isEmpty {
-                    Text(content.heroMetadataLine)
-                        .font(DesignTypography.metadata)
-                        .foregroundStyle(DesignTheme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityLabel(content.heroMetadataAccessibilityLabel)
+                VStack(alignment: .leading, spacing: DesignSpacing.sm) {
+                    if let nextUp = viewModel.nextUpSubtitle {
+                        TVNextUpLabel(subtitle: nextUp)
+                    }
+                    if !content.heroMetadataLine.isEmpty {
+                        Text(content.heroMetadataLine)
+                            .font(DesignTypography.metadata)
+                            .foregroundStyle(DesignTheme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityLabel(content.heroMetadataAccessibilityLabel)
+                    }
                 }
                 if !content.trailers.isEmpty {
                     MediaMetadataPills(
@@ -314,9 +353,6 @@ struct TVSeasonView: View {
         scrollTo: @escaping (String) -> Void
     ) -> some View {
         VStack(alignment: .leading, spacing: DesignSpacing.md) {
-            if let nextUp = viewModel.nextUpSubtitle {
-                TVNextUpLabel(subtitle: nextUp)
-            }
             TMDBRatingCard(
                 formattedRating: content.formattedRating,
                 accessibilityLabel: content.ratingAccessibilityLabel,
@@ -340,18 +376,9 @@ struct TVSeasonView: View {
         viewModel.seriesSnapshot.listItem(id: seriesID, title: name, imagePath: seasonPosterPath)
     }
 
-    private var seasonConfirmPresented: Binding<Bool> {
-        Binding(
-            get: { pendingConfirm != nil },
-            set: { presented in
-                if !presented { pendingConfirm = nil }
-            }
-        )
-    }
-
     private func toggleSeasonWatched() async {
         if viewModel.isSeasonFullyWatched {
-            await performUnmarkSeasonWatched()
+            await requestClearSeasonWatched()
         } else {
             await requestMarkSeasonWatched()
         }
@@ -361,12 +388,32 @@ struct TVSeasonView: View {
         let unmarked = await viewModel.unmarkedEpisodeCountForSeason()
         guard unmarked > 0 else { return }
         pendingConfirm = .markSeason(episodeCount: unmarked)
+        isSeasonConfirmPresented = true
     }
 
-    private func confirmPendingSeasonAction() async {
-        guard pendingConfirm != nil else { return }
+    private func requestClearSeasonWatched() async {
+        let count = viewModel.completedEpisodeNumbers.count
+        if count > 1 {
+            pendingConfirm = .clearSeason(episodeCount: count)
+            isSeasonConfirmPresented = true
+        } else {
+            await performUnmarkSeasonWatched()
+        }
+    }
+
+    /// Captures `pendingConfirm` synchronously so alert dismissal cannot nil it first.
+    private func confirmPendingSeasonAction() {
+        guard let pending = pendingConfirm else { return }
         pendingConfirm = nil
-        await performMarkSeasonWatched()
+        isSeasonConfirmPresented = false
+        Task {
+            switch pending {
+                case .markSeason:
+                    await performMarkSeasonWatched()
+                case .clearSeason:
+                    await performUnmarkSeasonWatched()
+            }
+        }
     }
 
     private func performMarkSeasonWatched() async {

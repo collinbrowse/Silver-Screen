@@ -250,6 +250,140 @@ final class TVWatchRepositoryTests: XCTestCase {
         XCTAssertTrue(snapshot.entries.contains { $0.listID == watched.id && $0.itemID == 6 })
     }
 
+    func test_reconcileCatalog_whenRemovedFromWatched_doesNotResurrect() async throws {
+        let lists = makeLists()
+        let tvWatch = makeTVWatch(lists: lists)
+        let draft = tvDraft(id: 15, title: "Pruned")
+        let finished = [season(1, episodes: 1)]
+        _ = try await tvWatch.markSeries(seriesID: 15, seasons: finished, draft: draft)
+
+        let snapshot = try await lists.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        _ = try await lists.remove(itemKey: draft.itemKey, listID: watched.id)
+        try await tvWatch.clearProgress(seriesID: 15)
+
+        // Leftover freeze must not move a deleted title back to In Progress.
+        var orphan = TVSeriesWatchState(seriesID: 15)
+        orphan.mark(seasonNumber: 1, episodeNumber: 1)
+        orphan.freezeCatalogSnapshot(from: finished)
+        let store = InMemoryTVWatchStore(states: [orphan])
+        let revived = TVWatchRepository(store: store, lists: lists, logger: SilentLogger())
+        let grown = [season(1, episodes: 1), season(2, episodes: 4)]
+        let outcome = try await revived.reconcileCatalog(
+            seriesID: 15,
+            seasons: grown,
+            draft: draft
+        )
+
+        XCTAssertNil(outcome)
+        let after = try await lists.snapshot()
+        let inProgress = try XCTUnwrap(after.list(.inProgress))
+        XCTAssertFalse(after.entries.contains { $0.listID == inProgress.id && $0.itemID == 15 })
+    }
+
+    func test_syncNextUp_emptyCatalog_preservesNextUp() async throws {
+        let lists = makeLists()
+        let tvWatch = makeTVWatch(lists: lists)
+        let draft = tvDraft(id: 21, title: "Offline")
+        let seasons = [season(1, episodes: 3)]
+        _ = try await tvWatch.markEpisode(
+            seriesID: 21,
+            seasonNumber: 1,
+            episodeNumber: 1,
+            title: "One",
+            draft: draft,
+            seasons: seasons
+        )
+
+        let beforeState = try await tvWatch.state(seriesID: 21)
+        let before = try XCTUnwrap(beforeState)
+        XCTAssertEqual(before.nextUp, TVEpisodeRef(seasonNumber: 1, episodeNumber: 2))
+
+        let after = try await tvWatch.syncNextUp(seriesID: 21, seasons: [])
+        XCTAssertEqual(after?.nextUp, TVEpisodeRef(seasonNumber: 1, episodeNumber: 2))
+        XCTAssertEqual(after?.nextUpTitle, before.nextUpTitle)
+    }
+
+    func test_markEpisode_listPersistFailure_rollsLedgerBack() async throws {
+        let store = InMemoryListsStore()
+        let lists = ListsRepository(store: store, logger: SilentLogger())
+        let tvWatch = makeTVWatch(lists: lists)
+        let draft = tvDraft(id: 33, title: "Rollback")
+        let seasons = [season(1, episodes: 2)]
+        // Warm lists cache, then fail the next persist (In Progress add).
+        _ = try await lists.snapshot()
+        await store.setSaveError(AppError.persistence)
+
+        do {
+            _ = try await tvWatch.markEpisode(
+                seriesID: 33,
+                seasonNumber: 1,
+                episodeNumber: 1,
+                title: "One",
+                draft: draft,
+                seasons: seasons
+            )
+            XCTFail("Expected persistence failure")
+        } catch {
+            XCTAssertEqual(error as? AppError, .persistence)
+        }
+        await store.setSaveError(nil)
+
+        let state = try await tvWatch.state(seriesID: 33)
+        XCTAssertNil(state)
+        let snapshot = try await lists.snapshot()
+        let inProgress = try XCTUnwrap(snapshot.list(.inProgress))
+        XCTAssertFalse(snapshot.entries.contains { $0.listID == inProgress.id && $0.itemID == 33 })
+    }
+
+    func test_clearSeries_listPersistFailure_restoresLedger() async throws {
+        let store = InMemoryListsStore()
+        let lists = ListsRepository(store: store, logger: SilentLogger())
+        let tvWatch = makeTVWatch(lists: lists)
+        let draft = tvDraft(id: 34, title: "Keep Me")
+        let seasons = [season(1, episodes: 1)]
+        _ = try await tvWatch.markSeries(seriesID: 34, seasons: seasons, draft: draft)
+        await store.setSaveError(AppError.persistence)
+
+        do {
+            _ = try await tvWatch.clearSeries(seriesID: 34, draft: draft)
+            XCTFail("Expected persistence failure")
+        } catch {
+            XCTAssertEqual(error as? AppError, .persistence)
+        }
+        await store.setSaveError(nil)
+
+        let restoredState = try await tvWatch.state(seriesID: 34)
+        let restored = try XCTUnwrap(restoredState)
+        XCTAssertTrue(restored.isSeriesComplete(against: seasons))
+    }
+
+    func test_markEpisode_alwaysProvidesWatchUndo() async throws {
+        let lists = makeLists()
+        let tvWatch = makeTVWatch(lists: lists)
+        let draft = tvDraft(id: 42, title: "Severance")
+        let seasons = [season(1, episodes: 3)]
+        _ = try await tvWatch.markEpisode(
+            seriesID: 42,
+            seasonNumber: 1,
+            episodeNumber: 1,
+            title: "One",
+            draft: draft,
+            seasons: seasons
+        )
+        let second = try await tvWatch.markEpisode(
+            seriesID: 42,
+            seasonNumber: 1,
+            episodeNumber: 2,
+            title: "Two",
+            draft: draft,
+            seasons: seasons
+        )
+
+        XCTAssertNil(second.membershipChange)
+        XCTAssertNotNil(second.watchUndo)
+    }
+
     // MARK: - Helpers
 
     private func makeLists() -> ListsRepository {

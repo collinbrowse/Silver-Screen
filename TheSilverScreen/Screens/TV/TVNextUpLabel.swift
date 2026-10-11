@@ -2,8 +2,8 @@
 //  TVNextUpLabel.swift
 //  TheSilverScreen
 //
-//  In Progress “Next up” line on series and season detail, between streaming
-//  providers (in the hero) and the rating card.
+//  In Progress “Next up” line on series and season detail, under the title and
+//  above the hero metadata line (season · genre · year).
 //
 
 import SwiftUI

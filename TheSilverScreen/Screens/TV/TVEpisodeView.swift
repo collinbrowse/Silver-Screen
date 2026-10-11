@@ -75,49 +75,51 @@ struct TVEpisodeView: View {
         }
         .background(DesignTheme.canvas)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                HStack(spacing: 4) {
-                    EpisodeWatchButton(
-                        isCompleted: viewModel.isEpisodeCompleted,
-                        accessibilityTitle: navigationTitle.isEmpty ? "episode" : navigationTitle
-                    ) {
-                        Task {
-                            let wasCompleted = viewModel.isEpisodeCompleted
-                            let ratingKey = AnnotationKey.episode(
-                                seriesID: seriesID,
-                                seasonNumber: seasonNumber,
-                                episodeNumber: episodeNumber
-                            )
-                            guard let outcome = await viewModel.toggleEpisodeWatched(
-                                seriesTitle: seriesName
-                            ) else { return }
-                            if wasCompleted {
-                                if let change = outcome.membershipChange, change.confirmation != nil {
-                                    notice.show(
-                                        change,
+            if case .loaded = viewModel.state {
+                ToolbarItem(placement: .topBarTrailing) {
+                    HStack(spacing: 4) {
+                        EpisodeWatchButton(
+                            isCompleted: viewModel.isEpisodeCompleted,
+                            accessibilityTitle: navigationTitle.isEmpty ? "episode" : navigationTitle
+                        ) {
+                            Task {
+                                let wasCompleted = viewModel.isEpisodeCompleted
+                                let ratingKey = AnnotationKey.episode(
+                                    seriesID: seriesID,
+                                    seasonNumber: seasonNumber,
+                                    episodeNumber: episodeNumber
+                                )
+                                guard let outcome = await viewModel.toggleEpisodeWatched(
+                                    seriesTitle: seriesName
+                                ) else { return }
+                                if wasCompleted {
+                                    if let change = outcome.membershipChange, change.confirmation != nil {
+                                        notice.show(
+                                            change,
+                                            using: lists,
+                                            tvWatch: tvWatch,
+                                            watchUndo: outcome.watchUndo
+                                        )
+                                    }
+                                } else {
+                                    notice.presentWatch(
+                                        outcome,
+                                        ratingKey: ratingKey,
+                                        fallbackMessage: "Episode watched",
                                         using: lists,
-                                        tvWatch: tvWatch,
-                                        watchUndo: outcome.watchUndo
+                                        tvWatch: tvWatch
                                     )
                                 }
-                            } else {
-                                notice.presentWatch(
-                                    outcome,
-                                    ratingKey: ratingKey,
-                                    fallbackMessage: "Episode watched",
-                                    using: lists,
-                                    tvWatch: tvWatch
-                                )
                             }
                         }
-                    }
 
-                    ListMembershipButton(
-                        draft: viewModel.seriesSnapshot.listItem(id: seriesID, title: seriesName),
-                        lists: lists,
-                        index: listsIndex
-                    ) {
-                        viewModel.noteListSaveFailed()
+                        ListMembershipButton(
+                            draft: viewModel.seriesSnapshot.listItem(id: seriesID, title: seriesName),
+                            lists: lists,
+                            index: listsIndex
+                        ) {
+                            viewModel.noteListSaveFailed()
+                        }
                     }
                 }
             }
