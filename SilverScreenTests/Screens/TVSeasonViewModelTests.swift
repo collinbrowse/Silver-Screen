@@ -1,0 +1,281 @@
+//
+//  TVSeasonViewModelTests.swift
+//  SilverScreenTests
+//
+
+import XCTest
+@testable import SilverScreen
+
+@MainActor
+final class TVSeasonViewModelTests: XCTestCase {
+
+    func test_load_showsTheSeasonName() async {
+        let viewModel = TVSeasonViewModel(
+            seriesID: 1396,
+            seriesName: "Breaking Bad",
+            seasonNumber: 1,
+            shows: TVRepository.test(client: FakeHTTPClient(stub: .success(TMDBFixtures.tvSeasonPilot))),
+            annotations: AnnotationsRepository.empty()
+        )
+
+        await viewModel.load()
+
+        guard case .loaded(let content, _) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        XCTAssertEqual(content.seriesName, "Breaking Bad")
+        XCTAssertEqual(content.displayName, "The Beginning")
+        XCTAssertEqual(content.heroMetadataLine, "1 Episode · 2008")
+        XCTAssertEqual(content.heroMetadataAccessibilityLabel, "1 Episode, 2008")
+        XCTAssertEqual(content.formattedRating, "8.4 / 10")
+        XCTAssertEqual(content.ratingAccessibilityLabel, "Rated 8.4 out of 10")
+        XCTAssertEqual(content.overview, "Walter starts cooking.")
+        XCTAssertEqual(content.episodes[0].directorLine, "Director: Vince Gilligan")
+        XCTAssertEqual(content.cast[0].name, "Bryan Cranston")
+    }
+
+    func test_load_whenSeriesSnapshotEmpty_fetchesSeriesForMembership() async {
+        let client = RoutingHTTPClient(routes: [
+            "/tv/1396/season/1": .success(TMDBFixtures.tvSeasonPilot),
+            "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
+        ])
+        let viewModel = TVSeasonViewModel(
+            seriesID: 1396,
+            seriesName: "Breaking Bad",
+            seasonNumber: 1,
+            seriesSnapshot: .empty,
+            shows: TVRepository.test(client: client),
+            annotations: AnnotationsRepository.empty()
+        )
+
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.seriesSnapshot.posterPath, "/bb.jpg")
+        XCTAssertFalse(viewModel.seriesSnapshot.genreNames.isEmpty)
+        let draft = viewModel.seriesSnapshot.listItem(id: 1396, title: "Breaking Bad")
+        XCTAssertEqual(draft.imagePath, "/bb.jpg")
+    }
+
+    func test_load_whenSeriesSnapshotProvided_skipsSeriesFetch() async {
+        let provided = SeriesListSnapshot(
+            posterPath: "/from-route.jpg",
+            firstAirDate: TestMovies.date("2008-01-20"),
+            genreNames: ["Drama"],
+            voteAverage: 9,
+            popularity: 1
+        )
+        let viewModel = TVSeasonViewModel(
+            seriesID: 1396,
+            seriesName: "Breaking Bad",
+            seasonNumber: 1,
+            seriesSnapshot: provided,
+            shows: TVRepository.test(client: FakeHTTPClient(stub: .success(TMDBFixtures.tvSeasonPilot))),
+            annotations: AnnotationsRepository.empty()
+        )
+
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.seriesSnapshot, provided)
+    }
+
+    func test_seasonTitle_usesTheNameWithoutANumberPrefix() {
+        XCTAssertEqual(SeasonTitle.display(name: "Season 2", number: 2), "Season 2")
+        XCTAssertEqual(SeasonTitle.display(name: "Specials", number: 0), "Specials")
+        XCTAssertEqual(SeasonTitle.display(name: "The Beginning", number: 1), "The Beginning")
+        XCTAssertEqual(SeasonTitle.display(name: "", number: 0), "Specials")
+        XCTAssertEqual(SeasonTitle.display(name: "  ", number: 3), "Season 3")
+    }
+
+    func test_openPoster_setsFullscreenPoster() async {
+        let viewModel = TVSeasonViewModel(
+            seriesID: 1396,
+            seriesName: "Breaking Bad",
+            seasonNumber: 1,
+            shows: TVRepository.test(client: FakeHTTPClient(stub: .success(TMDBFixtures.tvSeasonPilot))),
+            annotations: AnnotationsRepository.empty()
+        )
+        await viewModel.load()
+
+        viewModel.openPoster()
+
+        guard case .loaded(let content, _) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        XCTAssertEqual(content.fullscreenImages?.kind, .poster)
+        XCTAssertEqual(content.fullscreenImages?.images.map(\.filePath), ["/s1.jpg"])
+        XCTAssertEqual(content.fullscreenImages?.images.count, 1)
+    }
+
+    func test_load_withSavedScoreAndNote_showsThem() async throws {
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        _ = try await annotations.save(
+            score: 8.5,
+            note: "Slow start",
+            for: .season(seriesID: 1396, seasonNumber: 1)
+        )
+        let viewModel = TVSeasonViewModel(
+            seriesID: 1396,
+            seriesName: "Breaking Bad",
+            seasonNumber: 1,
+            shows: TVRepository.test(client: FakeHTTPClient(stub: .success(TMDBFixtures.tvSeasonPilot))),
+            annotations: annotations
+        )
+
+        await viewModel.load()
+
+        guard case .loaded(let content, activity: .none) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        XCTAssertEqual(content.formattedUserScore, "8.5 / 10")
+        XCTAssertEqual(content.userNote, "Slow start")
+        XCTAssertTrue(PersonalDetail(
+            formattedUserScore: content.formattedUserScore,
+            userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+            userNote: content.userNote,
+            formattedRatedOn: content.formattedRatedOn,
+            formattedNotedOn: content.formattedNotedOn
+        ).showsNotesFirst)
+    }
+
+    func test_load_withoutNote_andEmptyOverview_staysOnDescription() async {
+        let payload = Data("""
+            {"id": 1, "name": "Season 1", "season_number": 1, "overview": "", "episodes": []}
+            """.utf8)
+            let viewModel = TVSeasonViewModel(
+                seriesID: 1396,
+                seriesName: "Breaking Bad",
+                seasonNumber: 1,
+                shows: TVRepository.test(client: FakeHTTPClient(stub: .success(payload))),
+                annotations: AnnotationsRepository.empty()
+                )
+
+            await viewModel.load()
+
+            guard case .loaded(let content, _) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+            }
+            XCTAssertNil(content.userNote)
+            XCTAssertEqual(content.overview, "")
+            XCTAssertFalse(PersonalDetail(
+                formattedUserScore: nil,
+                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+                userNote: nil,
+                formattedRatedOn: nil,
+                formattedNotedOn: nil
+                ).showsNotesFirst)
+            }
+
+    func test_reloadPersonalFromStore_picksUpToastScore() async throws {
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        let viewModel = TVSeasonViewModel(
+            seriesID: 1396,
+            seriesName: "Breaking Bad",
+            seasonNumber: 1,
+            shows: TVRepository.test(client: FakeHTTPClient(stub: .success(TMDBFixtures.tvSeasonPilot))),
+            annotations: annotations
+        )
+        await viewModel.load()
+        guard case .loaded(let before, _) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        XCTAssertNil(before.formattedUserScore)
+
+        _ = try await annotations.saveScore(9, for: .season(seriesID: 1396, seasonNumber: 1))
+        await viewModel.reloadPersonalFromStore()
+
+        guard case .loaded(let after, _) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        XCTAssertEqual(after.formattedUserScore, "9.0 / 10")
+    }
+
+    func test_saveUserAnnotation_whenPersistenceFails_keepsPreviousScore() async throws {
+        let store = InMemoryAnnotationsStore()
+        let annotations = AnnotationsRepository(store: store, logger: SilentLogger())
+        _ = try await annotations.saveScore(8.5, for: .season(seriesID: 1396, seasonNumber: 1))
+        let viewModel = TVSeasonViewModel(
+            seriesID: 1396,
+            seriesName: "Breaking Bad",
+            seasonNumber: 1,
+            shows: TVRepository.test(client: FakeHTTPClient(stub: .success(TMDBFixtures.tvSeasonPilot))),
+            annotations: annotations
+        )
+        await viewModel.load()
+        viewModel.openAnnotationEditor()
+        await store.setSaveError(CocoaError(.fileWriteUnknown))
+
+        let saved = await viewModel.saveUserAnnotation(score: 10, note: "")
+
+        XCTAssertEqual(saved, .failed)
+        XCTAssertNotNil(viewModel.annotationEditor)
+        guard case .loaded(let content, activity: .failed(.persistence)) = viewModel.state else {
+            return XCTFail("Expected loaded with persistence failure, got \(viewModel.state)")
+        }
+        XCTAssertEqual(content.formattedUserScore, "8.5 / 10")
+    }
+
+    func test_toggleEpisodeWatched_marksCompletedAndSetsNextUp() async throws {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let tvWatch = TVWatchRepository(
+            store: InMemoryTVWatchStore(),
+            lists: lists,
+            logger: SilentLogger()
+        )
+        let client = RoutingHTTPClient(routes: [
+            "/tv/1396/season/1": .success(TMDBFixtures.tvSeasonPilot),
+            "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
+        ])
+        let viewModel = TVSeasonViewModel(
+            seriesID: 1396,
+            seriesName: "Breaking Bad",
+            seasonNumber: 1,
+            shows: TVRepository.test(client: client),
+            annotations: AnnotationsRepository.empty(),
+            tvWatch: tvWatch
+        )
+        await viewModel.load()
+        guard case .loaded(let content, _) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        let episode = try XCTUnwrap(content.episodes.first)
+
+        let toggled = await viewModel.toggleEpisodeWatched(episode)
+        let outcome = try XCTUnwrap(toggled)
+
+        XCTAssertTrue(viewModel.completedEpisodeNumbers.contains(1))
+        XCTAssertEqual(outcome.state.nextUp?.seasonNumber, 1)
+        XCTAssertEqual(outcome.state.nextUp?.episodeNumber, 2)
+        let unmarked = await viewModel.unmarkedEpisodeCountForSeason()
+        XCTAssertEqual(unmarked, 0)
+        XCTAssertTrue(viewModel.isSeasonFullyWatched)
+    }
+
+    func test_markSeasonWatched_completesListedEpisodes() async throws {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let tvWatch = TVWatchRepository(
+            store: InMemoryTVWatchStore(),
+            lists: lists,
+            logger: SilentLogger()
+        )
+        let client = RoutingHTTPClient(routes: [
+            "/tv/1396/season/1": .success(TMDBFixtures.tvSeasonPilot),
+            "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
+        ])
+        let viewModel = TVSeasonViewModel(
+            seriesID: 1396,
+            seriesName: "Breaking Bad",
+            seasonNumber: 1,
+            shows: TVRepository.test(client: client),
+            annotations: AnnotationsRepository.empty(),
+            tvWatch: tvWatch
+        )
+        await viewModel.load()
+
+        let marked = await viewModel.markSeasonWatched()
+        let outcome = try XCTUnwrap(marked)
+
+        XCTAssertEqual(outcome.episodesNewlyMarked, 1)
+        XCTAssertTrue(viewModel.completedEpisodeNumbers.contains(1))
+        XCTAssertTrue(viewModel.isSeasonFullyWatched)
+    }
+}

@@ -1,6 +1,6 @@
 ---
 description: Swift formatting — switch indentation and when to split Swift files.
-globs: TheSilverScreen/**/*.swift,TheSilverScreenTests/**/*.swift
+globs: SilverScreen/**/*.swift,SilverScreenTests/**/*.swift
 alwaysApply: false
 ---
 

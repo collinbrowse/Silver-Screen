@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# stop hook: run TheSilverScreenTests against Xcode's default DerivedData (per-worktree).
+# stop hook: run SilverScreenTests against Xcode's default DerivedData (per-worktree).
 # Skip xcodebuild when the relevant sources match the last passing fingerprint.
 # Fail-open (print {}) if aborted, missing simulator, or unexpected errors.
 
@@ -35,7 +35,7 @@ on_interrupt() {
     XCODEBUILD_PID=""
   fi
   release_lock
-  emit_followup "TheSilverScreenTests stop hook was interrupted (timeout or signal). The suite did not finish — do not treat this as green. Re-run \`xcodebuild test\` for TheSilverScreenTests (no -derivedDataPath), then continue. Log: ${LOG}"
+  emit_followup "SilverScreenTests stop hook was interrupted (timeout or signal). The suite did not finish — do not treat this as green. Re-run \`xcodebuild test\` for SilverScreenTests (no -derivedDataPath), then continue. Log: ${LOG}"
 }
 
 # Cursor sends TERM on hook timeout. Do not trap INT — a child interrupt must not
@@ -70,7 +70,7 @@ if ! mkdir "${LOCK_DIR}" 2>/dev/null; then
     rm -rf "${LOCK_DIR}" 2>/dev/null || true
   fi
   if ! mkdir "${LOCK_DIR}" 2>/dev/null; then
-    emit_followup "TheSilverScreenTests stop hook skipped: another unit-test run already holds ${LOCK_DIR}. Wait for it to finish (or inspect ${LOG}), then continue."
+    emit_followup "SilverScreenTests stop hook skipped: another unit-test run already holds ${LOCK_DIR}. Wait for it to finish (or inspect ${LOG}), then continue."
   fi
 fi
 printf '%s\n' "$$" > "${LOCK_DIR}/pid"
@@ -130,12 +130,12 @@ from pathlib import Path
 root = Path(".").resolve()
 paths = []
 for pattern in (
-    "TheSilverScreen/**/*.swift",
-    "TheSilverScreenTests/**/*.swift",
+    "SilverScreen/**/*.swift",
+    "SilverScreenTests/**/*.swift",
 ):
     paths.extend(sorted(root.glob(pattern)))
 for extra in (
-    "TheSilverScreen.xcodeproj/project.pbxproj",
+    "SilverScreen.xcodeproj/project.pbxproj",
     "Version.xcconfig",
 ):
     path = root / extra
@@ -169,8 +169,8 @@ xcrun simctl boot "${UDID}" >/dev/null 2>&1 || true
 : >"$LOG"
 set +e
 xcodebuild build-for-testing \
-  -project TheSilverScreen.xcodeproj \
-  -scheme TheSilverScreen \
+  -project SilverScreen.xcodeproj \
+  -scheme SilverScreen \
   -destination "platform=iOS Simulator,id=${UDID}" \
   >>"$LOG" 2>&1 &
 XCODEBUILD_PID=$!
@@ -197,16 +197,16 @@ if interesting:
 chunks.append("Log tail (" + sys.argv[1] + "):\n" + "\n".join(lines[-80:]))
 print("\n\n".join(chunks))
 ' "$LOG" 2>/dev/null || true)"
-  emit_followup "TheSilverScreenTests build-for-testing failed. Fix the failures, then continue.
+  emit_followup "SilverScreenTests build-for-testing failed. Fix the failures, then continue.
 
 ${SUMMARY:-see ${LOG}}"
 fi
 
 set +e
 xcodebuild test-without-building \
-  -project TheSilverScreen.xcodeproj \
-  -scheme TheSilverScreen \
-  -only-testing:TheSilverScreenTests \
+  -project SilverScreen.xcodeproj \
+  -scheme SilverScreen \
+  -only-testing:SilverScreenTests \
   -destination "platform=iOS Simulator,id=${UDID}" \
   -parallel-testing-enabled NO \
   >>"$LOG" 2>&1 &
@@ -263,6 +263,6 @@ if [[ -z "${SUMMARY}" ]]; then
   SUMMARY="xcodebuild test failed (exit ${EXIT_CODE}); see ${LOG}"
 fi
 
-emit_followup "TheSilverScreenTests failed. Fix the failures, then continue.
+emit_followup "SilverScreenTests failed. Fix the failures, then continue.
 
 ${SUMMARY}"

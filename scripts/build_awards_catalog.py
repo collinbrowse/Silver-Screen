@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild TheSilverScreen/Data/Resources/AwardsCatalog.json from Wikidata.
+"""Rebuild SilverScreen/Data/Resources/AwardsCatalog.json from Wikidata.
 
 Queries one award family at a time. A failed query exits before the file is
 replaced, so a timeout cannot wipe the catalog. Already-resolved TMDB ids are
@@ -26,8 +26,8 @@ WIKIDATA_ENTITIES = "https://www.wikidata.org/w/api.php"
 TMDB_FIND = "https://api.themoviedb.org/3/find/"
 TMDB_TV = "https://api.themoviedb.org/3/tv/"
 USER_AGENT = (
-    "TheSilverScreenAwardsCatalog/1.0 "
-    "(https://github.com/collinbrowse/The-Silver-Screen)"
+    "SilverScreenAwardsCatalog/1.0 "
+    "(https://github.com/collinbrowse/Silver-Screen)"
 )
 IMDB_ID = re.compile(r"^tt\d+$")
 PERSON_IMDB = re.compile(r"^nm\d+$")
@@ -307,7 +307,7 @@ Weekly rebuild of the bundled awards catalog from Wikidata. This pull request ex
 
 ## Decision Tree and Rationale
 
-The Monday workflow rebuilds `TheSilverScreen/Data/Resources/AwardsCatalog.json` and opens a pull request only when credits change. A quiet week leaves main alone. Already-resolved TMDB ids stay in the file so later runs do not call `/find` for the whole history. `GITHUB_TOKEN` does not trigger the CI workflow on this pull request, so the review is the check.
+The Monday workflow rebuilds `SilverScreen/Data/Resources/AwardsCatalog.json` and opens a pull request only when credits change. A quiet week leaves main alone. Already-resolved TMDB ids stay in the file so later runs do not call `/find` for the whole history. `GITHUB_TOKEN` does not trigger the CI workflow on this pull request, so the review is the check.
 
 ## Test Plan
 
@@ -316,7 +316,7 @@ How to verify this PR (commands, screens, edge cases).
 - [ ] `python3 scripts/validate-rules.py`
 - [ ] `python3 scripts/validate-tests.py`
 - [ ] `python3 scripts/validate-pr-body.py --pr <number>` (or pipe the body on stdin)
-- [ ] `xcodebuild test -scheme TheSilverScreen -only-testing:TheSilverScreenTests`
+- [ ] `xcodebuild test -scheme SilverScreen -only-testing:SilverScreenTests`
 - [ ] Screenshot path (if UI changed): None
 
 Catalog diff:
@@ -753,7 +753,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--output",
-        default="TheSilverScreen/Data/Resources/AwardsCatalog.json",
+        default="SilverScreen/Data/Resources/AwardsCatalog.json",
     )
     parser.add_argument("--summary-out")
     parser.add_argument(

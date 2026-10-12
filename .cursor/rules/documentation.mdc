@@ -54,4 +54,4 @@ private var favoriteIDs: Set<Movie.ID> = []
 
 ## Scope
 
-Apply to new and touched app code under `TheSilverScreen/` (and tests when a helper’s role is unclear). Do not mass-comment unrelated files in the same change. File headers that already describe purpose count for the type that owns the file.
+Apply to new and touched app code under `SilverScreen/` (and tests when a helper’s role is unclear). Do not mass-comment unrelated files in the same change. File headers that already describe purpose count for the type that owns the file.

@@ -82,14 +82,14 @@ jobs:
           echo "Using simulator $UDID"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
 
-      # TheSilverScreenUITests is empty boilerplate; running it would add minutes and a
+      # SilverScreenUITests is empty boilerplate; running it would add minutes and a
       # flake surface for no signal. Add it here when it has real tests.
       - name: Test
         run: |
           xcodebuild test \
-            -project TheSilverScreen.xcodeproj \
-            -scheme TheSilverScreen \
-            -only-testing:TheSilverScreenTests \
+            -project SilverScreen.xcodeproj \
+            -scheme SilverScreen \
+            -only-testing:SilverScreenTests \
             -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}" \
             -resultBundlePath TestResults.xcresult
 

@@ -1,13 +1,13 @@
 ---
-description: SwiftUI and Observation conventions for TheSilverScreen screens.
-globs: TheSilverScreen/Screens/**/*.swift,TheSilverScreen/Design/**/*.swift,TheSilverScreen/**/*View.swift
+description: SwiftUI and Observation conventions for SilverScreen screens.
+globs: SilverScreen/Screens/**/*.swift,SilverScreen/Design/**/*.swift,SilverScreen/**/*View.swift
 alwaysApply: false
 ---
 
 # SwiftUI views
 
 - All new screens are SwiftUI with Observation. Do not add new `UIViewController` subclasses.
-- New screens live in `TheSilverScreen/Screens/<Feature>/` — the screen view, its view model, and extracted subviews in separate files when they are named types (not `@ViewBuilder` sections). See [`formatting.mdc`](.cursor/rules/formatting.mdc).
+- New screens live in `SilverScreen/Screens/<Feature>/` — the screen view, its view model, and extracted subviews in separate files when they are named types (not `@ViewBuilder` sections). See [`formatting.mdc`](.cursor/rules/formatting.mdc).
 - Observe with `@State private var viewModel` (injected at construction) or `@Environment`. Do not use `ObservableObject`, `@Published`, `@StateObject`, or `@ObservedObject`.
 - A view is a function of state: `switch viewModel.state` and handle every case, including empty and failed.
 
@@ -25,7 +25,7 @@ switch viewModel.state {
 ```
 
 - `activity` renders **inside** the loaded branch — a refresh indicator or an inline error banner over the list. A refresh failure never replaces content the user can still use.
-- `EmptyStateView` and `ErrorStateView` are built once in `TheSilverScreen/Screens/Shared/` and reused. Every screen switches on state, so hand-rolling these per screen guarantees five slightly different error screens.
+- `EmptyStateView` and `ErrorStateView` are built once in `SilverScreen/Screens/Shared/` and reused. Every screen switches on state, so hand-rolling these per screen guarantees five slightly different error screens.
 
 - No networking, persistence, or business rules in `body`. Put derived display values on the view model.
 - Extract **named** subviews (`struct …: View`) into their own files. Keep `@ViewBuilder` properties like `searchBody` on the screen. Do not grow `@ViewBuilder` chains driven by booleans.

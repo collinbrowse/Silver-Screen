@@ -293,9 +293,9 @@ def collect_problems(root: Path) -> list[str]:
     elif not re.search(r'#include\s+"Version\.xcconfig"', config.read_text(encoding="utf-8")):
         problems.append('Config.xcconfig must #include "Version.xcconfig".')
 
-    pbxproj = root / "TheSilverScreen.xcodeproj" / "project.pbxproj"
+    pbxproj = root / "SilverScreen.xcodeproj" / "project.pbxproj"
     if not pbxproj.is_file():
-        problems.append("TheSilverScreen.xcodeproj/project.pbxproj is missing.")
+        problems.append("SilverScreen.xcodeproj/project.pbxproj is missing.")
         return problems
 
     project = pbxproj.read_text(encoding="utf-8")
@@ -629,7 +629,7 @@ def _upload_command(ipa: Path) -> tuple[list[str], dict[str, str]]:
 
 
 def _verify_archive(archive: Path, version: Version) -> None:
-    info_path = archive / "Products" / "Applications" / "TheSilverScreen.app" / "Info.plist"
+    info_path = archive / "Products" / "Applications" / "SilverScreen.app" / "Info.plist"
     if not info_path.is_file():
         raise ReleaseError(f"Archive is missing {info_path}.")
     with info_path.open("rb") as handle:
@@ -661,7 +661,7 @@ def cmd_archive(root: Path, upload: bool) -> str:
     _, version = load_version(root)
     ensure_testflight_head(root, version)
 
-    archive = root / "build" / "TheSilverScreen.xcarchive"
+    archive = root / "build" / "SilverScreen.xcarchive"
     export_dir = root / "build" / "export"
     if archive.exists():
         shutil.rmtree(archive)
@@ -673,9 +673,9 @@ def cmd_archive(root: Path, upload: bool) -> str:
             "xcodebuild",
             "archive",
             "-project",
-            "TheSilverScreen.xcodeproj",
+            "SilverScreen.xcodeproj",
             "-scheme",
-            "TheSilverScreen",
+            "SilverScreen",
             "-configuration",
             "Release",
             "-destination",
@@ -702,7 +702,7 @@ def cmd_archive(root: Path, upload: bool) -> str:
         root,
     )
 
-    ipa = export_dir / "TheSilverScreen.ipa"
+    ipa = export_dir / "SilverScreen.ipa"
     if not ipa.is_file():
         found = list(export_dir.glob("*.ipa"))
         if len(found) != 1:

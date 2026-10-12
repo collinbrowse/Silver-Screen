@@ -1,6 +1,6 @@
 ---
-description: TheSilverScreen user-facing error system and logging conventions.
-globs: TheSilverScreen/**/*.swift
+description: SilverScreen user-facing error system and logging conventions.
+globs: SilverScreen/**/*.swift
 alwaysApply: false
 ---
 

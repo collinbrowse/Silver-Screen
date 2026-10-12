@@ -1,5 +1,5 @@
 ---
-description: TheSilverScreen architecture — MVVM, repositories, dependency injection, AppRouter, and the target toolchain.
+description: SilverScreen architecture — MVVM, repositories, dependency injection, AppRouter, and the target toolchain.
 alwaysApply: true
 ---
 
@@ -25,7 +25,7 @@ The source tree follows that arrow. A screen may use domain types and an injecte
 - `Data/Resources/` — bundled data, including the awards catalog.
 - `Support/` — `AppError`, `LoadState`, logging, and `ImageLoader`.
 
-Tests use the same split under `TheSilverScreenTests/` (`Screens`, `Data`, `Navigation`, `Support`).
+Tests use the same split under `SilverScreenTests/` (`Screens`, `Data`, `Navigation`, `Support`).
 
 ## MVVM
 

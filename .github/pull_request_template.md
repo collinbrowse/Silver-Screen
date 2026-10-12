@@ -13,7 +13,7 @@ How to verify this PR (commands, screens, edge cases).
 - [ ] `python3 scripts/validate-rules.py`
 - [ ] `python3 scripts/validate-tests.py`
 - [ ] `python3 scripts/validate-pr-body.py --pr <number>` (or pipe the body on stdin)
-- [ ] `xcodebuild test -scheme TheSilverScreen -only-testing:TheSilverScreenTests`
+- [ ] `xcodebuild test -scheme SilverScreen -only-testing:SilverScreenTests`
 - [ ] Screenshot path (if UI changed):
 
 ## AI Harness notes
