@@ -5,6 +5,8 @@ moves them under a `version+build` heading that matches the git tag.
 
 ## [Unreleased]
 
+## [0.1.1+5] - 2026-10-12
+
 - Rename the app module and folders from TheSilverScreen to SilverScreen.
 
 ## [0.1.1+4] - 2026-10-02
