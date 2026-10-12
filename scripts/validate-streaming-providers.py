@@ -12,7 +12,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-LAUNCH_FILE = ROOT / "TheSilverScreen" / "Support" / "StreamingProviderLaunch.swift"
+LAUNCH_FILE = ROOT / "SilverScreen" / "Support" / "StreamingProviderLaunch.swift"
 SECRETS = ROOT / "Secrets.xcconfig"
 
 SKIP_NAME_PARTS = (

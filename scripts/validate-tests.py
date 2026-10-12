@@ -5,10 +5,10 @@ Green CI means nothing if tests assert nothing. This script makes that a
 build failure.
 
 Checks:
-  1. Every `func test...` in TheSilverScreenTests has at least one assertion (or
+  1. Every `func test...` in SilverScreenTests has at least one assertion (or
      XCTFail / throws expectation). Empty bodies and Xcode placeholders fail.
   2. Banned placeholder names (`testExample`, `testPerformanceExample`) never
-     appear in TheSilverScreenTests.
+     appear in SilverScreenTests.
 
 Run from the repo root:
   python3 scripts/validate-tests.py
@@ -20,7 +20,7 @@ import re
 import sys
 from pathlib import Path
 
-TESTS_ROOT = Path("TheSilverScreenTests")
+TESTS_ROOT = Path("SilverScreenTests")
 
 BANNED_NAMES = {"testExample", "testPerformanceExample"}
 

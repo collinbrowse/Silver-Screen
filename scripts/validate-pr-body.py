@@ -30,7 +30,7 @@ REQUIRED_TEST_PLAN_MARKERS = [
     re.compile(r"validate-rules\.py", re.I),
     re.compile(r"validate-tests\.py", re.I),
     re.compile(r"validate-pr-body\.py", re.I),
-    re.compile(r"xcodebuild test.*TheSilverScreenTests|only-testing:TheSilverScreenTests", re.I),
+    re.compile(r"xcodebuild test.*SilverScreenTests|only-testing:SilverScreenTests", re.I),
 ]
 
 HEADING = re.compile(r"^##[ \t]+(.+?)\s*$", re.M)

@@ -19,7 +19,7 @@ Credits that cannot open a detail screen are skipped. That means the catalog row
 
 ## Where the data lives
 
-The file is [`TheSilverScreen/Data/Resources/AwardsCatalog.json`](TheSilverScreen/Data/Resources/AwardsCatalog.json). It is listed in the Xcode project. Leave it pretty-printed and sorted. Do not hand-edit credits. A failed rebuild must not replace this file.
+The file is [`SilverScreen/Data/Resources/AwardsCatalog.json`](SilverScreen/Data/Resources/AwardsCatalog.json). It is listed in the Xcode project. Leave it pretty-printed and sorted. Do not hand-edit credits. A failed rebuild must not replace this file.
 
 ```json
 {
@@ -61,7 +61,7 @@ A prize given to a person also stores `recipients`. Title prizes such as Best Pi
 2. Keep whichever file has the newer `generatedAt`. A missing or unreadable side leaves the other. Both missing means an empty catalog.
 3. At most once every seven days, download the copy on `main`:
 
-   `https://raw.githubusercontent.com/collinbrowse/The-Silver-Screen/main/TheSilverScreen/Data/Resources/AwardsCatalog.json`
+   `https://raw.githubusercontent.com/collinbrowse/Silver-Screen/main/SilverScreen/Data/Resources/AwardsCatalog.json`
 
 4. Replace the in-memory catalog and the cache only when the download decodes and its `generatedAt` is newer. A failed download leaves the current catalog on screen.
 
@@ -81,7 +81,7 @@ To attach recipients onto a catalog that was built before that field existed, wi
 
 ```bash
 python3 scripts/build_awards_catalog.py --link-people \
-  --output TheSilverScreen/Data/Resources/AwardsCatalog.json
+  --output SilverScreen/Data/Resources/AwardsCatalog.json
 ```
 
 That reads Wikidata entity claims for ids that never resolved to a title, and keeps a human’s award only when the statement names a work (`P1686`). It does not call TMDB. A failed request leaves the file in place.
@@ -102,7 +102,7 @@ Rebuild locally from the repo root:
 python3 scripts/test_build_awards_catalog.py
 export TMDB_API_KEY="$(python3 -c 'import re; print(re.search(r"^TMDB_API_KEY\s*=\s*(\S+)", open("Secrets.xcconfig").read(), re.M).group(1))')"
 python3 scripts/build_awards_catalog.py \
-  --output TheSilverScreen/Data/Resources/AwardsCatalog.json \
+  --output SilverScreen/Data/Resources/AwardsCatalog.json \
   --summary-out /tmp/awards-summary.md
 ```
 
@@ -114,7 +114,7 @@ A new category inside Academy, BAFTA Film, or the Primetime Emmys needs no app c
 
 A new prize body needs both of these, together:
 
-- A case on `AwardFamily` in [`TheSilverScreen/Data/Domain/AwardsCatalog.swift`](TheSilverScreen/Data/Domain/AwardsCatalog.swift), with `title` and `subtitle`. Search home cards follow `AwardFamily.allCases`.
+- A case on `AwardFamily` in [`SilverScreen/Data/Domain/AwardsCatalog.swift`](SilverScreen/Data/Domain/AwardsCatalog.swift), with `title` and `subtitle`. Search home cards follow `AwardFamily.allCases`.
 - An entry in `FAMILIES` in [`scripts/build_awards_catalog.py`](scripts/build_awards_catalog.py): the `academy` / `bafta` / `emmy` style id, the Wikidata id of the prize body, and whether `/find` should prefer a movie or a TV result.
 
 Category names in the file drop a leading “Academy Award for ”, “BAFTA Award for ”, “Primetime Emmy Award for ”, and the other prefixes in `CATEGORY_PREFIXES`.
@@ -122,7 +122,7 @@ Category names in the file drop a leading “Academy Award for ”, “BAFTA Awa
 ## What to run
 
 - `python3 scripts/test_build_awards_catalog.py`
-- `xcodebuild test -scheme TheSilverScreen -only-testing:TheSilverScreenTests/AwardsRepositoryTests -only-testing:TheSilverScreenTests/AwardTitlesViewModelTests -only-testing:TheSilverScreenTests/AwardDetailLabelTests -only-testing:TheSilverScreenTests/SearchViewModelTests`
+- `xcodebuild test -scheme SilverScreen -only-testing:SilverScreenTests/AwardsRepositoryTests -only-testing:SilverScreenTests/AwardTitlesViewModelTests -only-testing:SilverScreenTests/AwardDetailLabelTests -only-testing:SilverScreenTests/SearchViewModelTests`
 
 On device, use the iPhone 17e. Empty Search shows the three cards. A family lists categories. A category lists winners with the ceremony year under the title. A known title, such as Oppenheimer, shows the awards card after the facts. A person with a matching IMDb id shows the same card under the biography.
 
@@ -130,13 +130,13 @@ On device, use the iPhone 17e. Empty Search shows the three cards. A family list
 
 | Piece | Path |
 | --- | --- |
-| Catalog JSON | `TheSilverScreen/Data/Resources/AwardsCatalog.json` |
-| Model, shelves, row copy | `TheSilverScreen/Data/Domain/AwardsCatalog.swift` |
-| Load, filter, weekly download | `TheSilverScreen/Data/Repositories/AwardsRepository.swift` |
-| Search home | `TheSilverScreen/Screens/Search/SearchView.swift`, `SearchViewModel.swift` |
-| Category list | `TheSilverScreen/Screens/Search/AwardFamilyView.swift` |
-| Title list | `TheSilverScreen/Screens/Search/AwardTitlesView.swift`, `AwardTitlesViewModel.swift` |
-| Detail rows | `TheSilverScreen/Screens/Shared/AwardRowsSection.swift` |
-| Routes | `TheSilverScreen/Navigation/Route.swift` (`.awardFamily`, `.awardTitles`) |
+| Catalog JSON | `SilverScreen/Data/Resources/AwardsCatalog.json` |
+| Model, shelves, row copy | `SilverScreen/Data/Domain/AwardsCatalog.swift` |
+| Load, filter, weekly download | `SilverScreen/Data/Repositories/AwardsRepository.swift` |
+| Search home | `SilverScreen/Screens/Search/SearchView.swift`, `SearchViewModel.swift` |
+| Category list | `SilverScreen/Screens/Search/AwardFamilyView.swift` |
+| Title list | `SilverScreen/Screens/Search/AwardTitlesView.swift`, `AwardTitlesViewModel.swift` |
+| Detail rows | `SilverScreen/Screens/Shared/AwardRowsSection.swift` |
+| Routes | `SilverScreen/Navigation/Route.swift` (`.awardFamily`, `.awardTitles`) |
 | Builder and tests | `scripts/build_awards_catalog.py`, `scripts/test_build_awards_catalog.py` |
 | Monday job | `.github/workflows/awards-catalog.yml` |

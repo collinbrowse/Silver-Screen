@@ -85,7 +85,7 @@ def make_repo(tmp: Path) -> None:
     (tmp / "Version.xcconfig").write_text(VERSION, encoding="utf-8")
     (tmp / "CHANGELOG.md").write_text(CHANGELOG, encoding="utf-8")
     (tmp / "Config.xcconfig").write_text('#include "Version.xcconfig"\n', encoding="utf-8")
-    project = tmp / "TheSilverScreen.xcodeproj"
+    project = tmp / "SilverScreen.xcodeproj"
     project.mkdir()
     (project / "project.pbxproj").write_text(PBXPROJ, encoding="utf-8")
     dist = tmp / "distribution"

@@ -119,8 +119,8 @@ version and the higher build.
 
 ## Upload credentials
 
-`archive` writes `build/TheSilverScreen.xcarchive` and
-`build/export/TheSilverScreen.ipa`. `build/` is gitignored.
+`archive` writes `build/SilverScreen.xcarchive` and
+`build/export/SilverScreen.ipa`. `build/` is gitignored.
 
 `--upload` needs an App Store Connect API key:
 

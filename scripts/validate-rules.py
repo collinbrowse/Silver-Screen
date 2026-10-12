@@ -86,7 +86,7 @@ def check_links(problems: list[str]) -> None:
 
 
 def check_secrets(problems: list[str]) -> None:
-    # splitlines, not split: `TheSilverScreen/View Models/` has a space in it.
+    # splitlines, not split: `SilverScreen/View Models/` has a space in it.
     tracked = subprocess.run(
         ["git", "ls-files", "*.swift"], capture_output=True, text=True, check=True
     ).stdout.splitlines()

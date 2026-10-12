@@ -17,7 +17,7 @@ CASE_RE = re.compile(r"^(case\b|default\b)")
 CLOSE_BRACE_RE = re.compile(r"^\}")
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PATHS = [ROOT / "TheSilverScreen", ROOT / "TheSilverScreenTests"]
+DEFAULT_PATHS = [ROOT / "SilverScreen", ROOT / "SilverScreenTests"]
 
 
 def strip_strings_and_comments(line: str) -> str:
