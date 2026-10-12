@@ -78,6 +78,31 @@ def git(root: Path, *args: str) -> str:
     return result.stdout.strip()
 
 
+def merge_pr(root: Path, number: int, branch: str, title: str, files: dict[str, str]) -> None:
+    """Land a GitHub-style merge commit so cut can read the PR title."""
+    subprocess.run(["git", "checkout", "-b", branch], cwd=root, check=True, capture_output=True)
+    for relative, contents in files.items():
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(contents, encoding="utf-8")
+        subprocess.run(["git", "add", relative], cwd=root, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", f"wip: {title}"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(["git", "checkout", "main"], cwd=root, check=True, capture_output=True)
+    message = f"Merge pull request #{number} from test/{branch}\n\n{title}"
+    subprocess.run(
+        ["git", "merge", "--no-ff", branch, "-m", message],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+    subprocess.run(["git", "branch", "-d", branch], cwd=root, check=True, capture_output=True)
+
+
 def make_repo(tmp: Path) -> None:
     subprocess.run(["git", "init", "-b", "main"], cwd=tmp, check=True, capture_output=True)
     subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=tmp, check=True)
@@ -124,23 +149,55 @@ class VersionTests(unittest.TestCase):
 
 
 class ChangelogTests(unittest.TestCase):
-    def test_cut_moves_unreleased_notes(self) -> None:
-        updated, notes = release.changelog_after_cut(CHANGELOG, release.Version("0.1.1", 2), "2026-09-27")
+    def test_cut_writes_provided_notes_and_clears_unreleased(self) -> None:
+        updated, notes = release.changelog_after_cut(
+            CHANGELOG, release.Version("0.1.1", 2), "2026-09-27", "- Stars stay in sync."
+        )
         self.assertEqual(notes, "- Stars stay in sync.")
         self.assertIn("## [0.1.1+2] - 2026-09-27\n\n- Stars stay in sync.", updated)
         self.assertIn("## [0.1.1] - 2026-09-27", updated)
         _, body, _ = release.split_unreleased(updated)
         self.assertEqual(release.meaningful_notes(body), "")
 
-    def test_empty_unreleased_still_cuts(self) -> None:
+    def test_empty_notes_get_a_placeholder(self) -> None:
         text = "# Changelog\n\n## [Unreleased]\n\n<!-- placeholder -->\n"
-        updated, notes = release.changelog_after_cut(text, release.Version("0.2.0", 3), "2026-10-01")
+        updated, notes = release.changelog_after_cut(
+            text, release.Version("0.2.0", 3), "2026-10-01", ""
+        )
         self.assertEqual(notes, "- No notes recorded.")
         self.assertIn("## [0.2.0+3] - 2026-10-01", updated)
 
     def test_missing_unreleased_section_fails(self) -> None:
         with self.assertRaises(release.ReleaseError):
             release.split_unreleased("# Changelog\n\n## [0.1.1]\n")
+
+    def test_pr_summary_from_merge_and_squash(self) -> None:
+        self.assertEqual(
+            release.pr_summary_from_commit(
+                "Merge pull request #26 from collinbrowse/rename/silver-screen",
+                "Rename TheSilverScreen to SilverScreen\n\nCo-authored-by: Cursor <cursoragent@cursor.com>\n",
+            ),
+            "Rename TheSilverScreen to SilverScreen.",
+        )
+        self.assertEqual(
+            release.pr_summary_from_commit("Unified Search preview (#22)", ""),
+            "Unified Search preview.",
+        )
+        self.assertIsNone(
+            release.pr_summary_from_commit("Fix stop-hook hangs by splitting builds", "")
+        )
+        self.assertIsNone(
+            release.pr_summary_from_commit("Merge main into feature/tv-in-progress.", "sync")
+        )
+
+    def test_format_pr_notes(self) -> None:
+        self.assertEqual(
+            release.format_pr_notes(
+                ["Collapse long award lists behind Show more", "Rename TheSilverScreen to SilverScreen."]
+            ),
+            "- Collapse long award lists behind Show more.\n"
+            "- Rename TheSilverScreen to SilverScreen.",
+        )
 
 
 class ProjectTests(unittest.TestCase):
@@ -199,6 +256,9 @@ class GitFlowTests(unittest.TestCase):
                 line for line in git(root, "show", "--name-only", "--format=", "HEAD").splitlines() if line
             }
             self.assertEqual(committed, {"CHANGELOG.md", "Version.xcconfig"})
+            # First cut has no prior tag, so it keeps the Unreleased manual notes.
+            changelog = (root / "CHANGELOG.md").read_text(encoding="utf-8")
+            self.assertIn("- Stars stay in sync.", changelog)
 
             with self.assertRaises(release.ReleaseError):
                 release.cmd_cut(root, "main", "2026-09-27")
@@ -209,16 +269,18 @@ class GitFlowTests(unittest.TestCase):
                 git(root, "rev-parse", "testflight/0.1.1+2^{}"),
             )
 
-            (root / "CHANGELOG.md").write_text(
-                (root / "CHANGELOG.md").read_text().replace(
-                    "## [Unreleased]\n", "## [Unreleased]\n\n- Fix playback.\n", 1
-                ),
-                encoding="utf-8",
+            merge_pr(
+                root,
+                10,
+                "fix/playback",
+                "Fix playback on cold start",
+                {"feature.txt": "play\n"},
             )
-            subprocess.run(["git", "add", "CHANGELOG.md"], cwd=root, check=True)
-            subprocess.run(["git", "commit", "-m", "Fix playback."], cwd=root, check=True, capture_output=True)
 
             release.cmd_cut(root, "main", "2026-09-28")
+            changelog = (root / "CHANGELOG.md").read_text(encoding="utf-8")
+            self.assertIn("## [0.1.1+3] - 2026-09-28", changelog)
+            self.assertIn("- Fix playback on cold start.", changelog)
             with self.assertRaises(release.ReleaseError):
                 release.cmd_promote(root, retarget=False)
             moved = release.cmd_promote(root, retarget=True)
@@ -227,6 +289,57 @@ class GitFlowTests(unittest.TestCase):
                 git(root, "rev-parse", "v0.1.1^{}"),
                 git(root, "rev-parse", "testflight/0.1.1+3^{}"),
             )
+
+    def test_cut_notes_come_from_merged_prs_since_last_tag(self) -> None:
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            make_repo(root)
+            release.cmd_cut(root, "main", "2026-09-27")
+
+            merge_pr(
+                root,
+                20,
+                "feature/streaming",
+                "Show streaming logos on detail",
+                {"a.txt": "a\n"},
+            )
+            # Direct-to-main noise must not appear in the changelog.
+            (root / "b.txt").write_text("b\n", encoding="utf-8")
+            subprocess.run(["git", "add", "b.txt"], cwd=root, check=True)
+            subprocess.run(
+                ["git", "commit", "-m", "Update project.pbxproj"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+            )
+            merge_pr(
+                root,
+                21,
+                "feature/genres",
+                "Add genre shelves in Search",
+                {"c.txt": "c\n"},
+            )
+
+            notes, since = release.resolve_cut_notes(
+                root, (root / "CHANGELOG.md").read_text(encoding="utf-8")
+            )
+            self.assertEqual(since, "testflight/0.1.1+2")
+            self.assertEqual(
+                notes,
+                "- Show streaming logos on detail.\n- Add genre shelves in Search.",
+            )
+
+            release.cmd_cut(root, "main", "2026-10-01")
+            changelog = (root / "CHANGELOG.md").read_text(encoding="utf-8")
+            self.assertIn(
+                "## [0.1.1+3] - 2026-10-01\n\n"
+                "- Show streaming logos on detail.\n"
+                "- Add genre shelves in Search.",
+                changelog,
+            )
+            self.assertNotIn("Update project.pbxproj", changelog)
+            _, body, _ = release.split_unreleased(changelog)
+            self.assertEqual(release.meaningful_notes(body), "")
 
     def test_cut_refuses_a_dirty_tree_and_the_wrong_branch(self) -> None:
         with tempfile.TemporaryDirectory() as raw:

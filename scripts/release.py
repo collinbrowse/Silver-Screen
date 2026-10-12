@@ -2,9 +2,10 @@
 """Versions, tags, and archives for dev, TestFlight, and the App Store.
 
 Version.xcconfig is the only shipping version. Dev runs do not advance it.
-`cut` commits the next build and tags testflight/<marketing>+<build>. `promote`
-puts v<marketing> on that same commit so the App Store submission is the
-binary already on TestFlight.
+`cut` commits the next build, fills CHANGELOG.md from merged PR summaries
+since the latest ancestor testflight/* tag, and tags
+testflight/<marketing>+<build>. `promote` puts v<marketing> on that same
+commit so the App Store submission is the binary already on TestFlight.
 
 Run from the repo root: python3 scripts/release.py status
 """
@@ -140,15 +141,62 @@ def meaningful_notes(body: str) -> str:
     return "\n".join(kept).strip()
 
 
-def changelog_after_cut(text: str, version: Version, today: str) -> tuple[str, str]:
-    """Move Unreleased notes under version+build. Returns (changelog, notes)."""
-    before, body, after = split_unreleased(text)
-    notes = meaningful_notes(body) or "- No notes recorded."
-    section = f"## [{version.marketing}+{version.build}] - {today}\n\n{notes}\n\n"
+# GitHub merge commit: "Merge pull request #26 from owner/branch"
+_PR_MERGE_SUBJECT = re.compile(r"^Merge pull request #(\d+) from \S+")
+# Squash merge on main: "Feature title (#26)"
+_PR_SQUASH_SUBJECT = re.compile(r"^(?P<title>.+?)\s*\(#(?P<number>\d+)\)\s*$")
+
+
+def ensure_sentence(text: str) -> str:
+    """Trim and add a trailing period when the summary has none."""
+    line = text.strip()
+    if line and not line.endswith("."):
+        line += "."
+    return line
+
+
+def format_note_bullet(summary: str) -> str:
+    """Turn a feature summary into a changelog bullet."""
+    return f"- {ensure_sentence(summary)}"
+
+
+def pr_summary_from_commit(subject: str, body: str) -> str | None:
+    """PR title for a merge/squash into main, or None for ordinary commits.
+
+    Merge commits use the first body line (GitHub stores the PR title there).
+    Squash merges use the subject with the trailing (#N) removed. Branch-sync
+    merges and small direct commits are ignored so the changelog stays at
+    feature granularity.
+    """
+    merged = _PR_MERGE_SUBJECT.match(subject.strip())
+    if merged:
+        for line in body.splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.lower().startswith("co-authored-by:"):
+                continue
+            return ensure_sentence(stripped)
+        return ensure_sentence(f"Pull request #{merged.group(1)}")
+
+    squashed = _PR_SQUASH_SUBJECT.match(subject.strip())
+    if squashed:
+        return ensure_sentence(squashed.group("title"))
+    return None
+
+
+def format_pr_notes(summaries: list[str]) -> str:
+    """Bullet list from PR summaries, oldest first."""
+    return "\n".join(format_note_bullet(summary) for summary in summaries if summary.strip())
+
+
+def changelog_after_cut(text: str, version: Version, today: str, notes: str) -> tuple[str, str]:
+    """Write notes under version+build and clear Unreleased. Returns (changelog, notes)."""
+    before, _, after = split_unreleased(text)
+    cleaned = notes.strip() or "- No notes recorded."
+    section = f"## [{version.marketing}+{version.build}] - {today}\n\n{cleaned}\n\n"
     updated = before.rstrip("\n") + "\n\n" + section + after.lstrip("\n")
     if not updated.endswith("\n"):
         updated += "\n"
-    return updated, notes
+    return updated, cleaned
 
 
 def _brace_block(text: str, open_index: int) -> str:
@@ -384,6 +432,60 @@ def recent_tags(root: Path, pattern: str) -> list[str]:
     return [line for line in result.stdout.splitlines() if line]
 
 
+def last_release_tag(root: Path) -> str | None:
+    """Newest testflight/* tag that is an ancestor of HEAD, or None."""
+    for tag in recent_tags(root, "testflight/*"):
+        result = git(root, "merge-base", "--is-ancestor", f"{tag}^{{}}", "HEAD", check=False)
+        if result.returncode == 0:
+            return tag
+    return None
+
+
+def pr_summaries_since(root: Path, since: str | None) -> list[str]:
+    """PR titles merged into this branch since the last release, oldest first.
+
+    Walks first-parent history so only landings on main (or the cut branch)
+    count. Ordinary commits inside a PR are skipped. With no prior release
+    tag, returns an empty list so the first cut does not invent history.
+    """
+    if since is None:
+        return []
+    log = git(
+        root,
+        "log",
+        "--reverse",
+        "--first-parent",
+        "--format=%s%x00%b%x00",
+        f"{since}..HEAD",
+    )
+    parts = log.stdout.split("\0")
+    while parts and parts[-1] == "":
+        parts.pop()
+    summaries: list[str] = []
+    for index in range(0, len(parts), 2):
+        subject = parts[index]
+        body = parts[index + 1] if index + 1 < len(parts) else ""
+        summary = pr_summary_from_commit(subject, body)
+        if summary:
+            summaries.append(summary)
+    return summaries
+
+
+def resolve_cut_notes(root: Path, changelog_text: str) -> tuple[str, str | None]:
+    """Notes for the next cut: merged PRs since last release, plus Unreleased.
+
+    Returns (notes, since_tag). Manual Unreleased bullets come first when present
+    so curated wording can sit above the PR-derived list.
+    """
+    _, body, _ = split_unreleased(changelog_text)
+    manual = meaningful_notes(body)
+    since = last_release_tag(root)
+    auto = format_pr_notes(pr_summaries_since(root, since))
+    parts = [part for part in (manual, auto) if part]
+    notes = "\n".join(parts) if parts else "- No notes recorded."
+    return notes, since
+
+
 def load_version(root: Path) -> tuple[str, Version]:
     path = root / "Version.xcconfig"
     text = path.read_text(encoding="utf-8")
@@ -431,18 +533,22 @@ def render_status(root: Path) -> str:
 
 
 def render_notes(root: Path) -> str:
-    _, body, _ = split_unreleased((root / "CHANGELOG.md").read_text(encoding="utf-8"))
-    notes = meaningful_notes(body) or "(empty — the next cut will record that)"
-    tags = recent_tags(root, "testflight/*")
-    if tags:
-        log = git(root, "log", "--oneline", f"{tags[0]}..HEAD").stdout.strip()
-        since = f"Commits since {tags[0]}"
+    changelog = (root / "CHANGELOG.md").read_text(encoding="utf-8")
+    _, body, _ = split_unreleased(changelog)
+    manual = meaningful_notes(body) or "(none)"
+    resolved, since = resolve_cut_notes(root, changelog)
+    if since:
+        summaries = pr_summaries_since(root, since)
+        pr_lines = "\n".join(f"- {summary}" for summary in summaries) or "(none)"
+        since_label = f"Merged PRs since {since}"
     else:
-        log = git(root, "log", "--oneline", "-20").stdout.strip()
-        since = "Recent commits"
-    if not log:
-        log = "(none)"
-    return f"Unreleased\n{notes}\n\n{since}\n{log}\n"
+        pr_lines = "(none — no prior testflight/* tag on this history)"
+        since_label = "Merged PRs since last release"
+    return (
+        f"Next cut notes\n{resolved}\n\n"
+        f"Unreleased (manual)\n{manual}\n\n"
+        f"{since_label}\n{pr_lines}\n"
+    )
 
 
 def require_valid(root: Path) -> None:
@@ -489,9 +595,9 @@ def cmd_cut(root: Path, branch: str, today: str) -> str:
         raise ReleaseError(f"{cut_version.testflight_tag} already exists.")
 
     changelog_path = root / "CHANGELOG.md"
-    changelog, notes = changelog_after_cut(
-        changelog_path.read_text(encoding="utf-8"), cut_version, today
-    )
+    changelog_text = changelog_path.read_text(encoding="utf-8")
+    notes, _ = resolve_cut_notes(root, changelog_text)
+    changelog, notes = changelog_after_cut(changelog_text, cut_version, today, notes)
     (root / "Version.xcconfig").write_text(render_version(text, cut_version), encoding="utf-8")
     changelog_path.write_text(changelog, encoding="utf-8")
 
@@ -725,7 +831,10 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("status", help="Show the version, branch, and release tags.")
-    sub.add_parser("notes", help="Show Unreleased notes and commits since the last TestFlight tag.")
+    sub.add_parser(
+        "notes",
+        help="Show the notes the next cut will record from merged PRs since the last TestFlight tag.",
+    )
     sub.add_parser("check", help="Fail if version files and the Xcode project disagree.")
 
     bump = sub.add_parser("bump", help="Advance the marketing version. Does not commit.")

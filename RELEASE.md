@@ -67,15 +67,20 @@ before export so a contaminated binary cannot upload.
 
 ### TestFlight
 
-1. Write what changed under `## [Unreleased]` in [`CHANGELOG.md`](CHANGELOG.md).
+1. Optionally preview with `python3 scripts/release.py notes`.
 2. `python3 scripts/release.py cut`
 3. Push the branch and the tag it prints.
 4. Check out that tag (or stay on it if you have not committed since) and run
    `python3 scripts/release.py archive --upload`.
 
-`cut` requires a clean tree on `main`. It adds one to the build, commits
-`Version.xcconfig` and `CHANGELOG.md`, and creates the `testflight/` tag.
-For a hotfix branch, pass `--branch hotfix/0.1.2` and be on that branch.
+`cut` requires a clean tree on `main`. It finds the latest `testflight/*` tag
+that is an ancestor of `HEAD`, turns each merged pull request since then into
+one changelog bullet (PR title from the merge commit body, or the squash-merge
+subject), commits `Version.xcconfig` and `CHANGELOG.md`, and creates the
+`testflight/` tag. Small commits inside a PR are omitted. Optional bullets
+under `## [Unreleased]` are prepended when you want curated wording above the
+PR list. For a hotfix branch, pass `--branch hotfix/0.1.2` and be on that
+branch.
 
 Build 1 has never been uploaded. The first cut publishes build 2.
 

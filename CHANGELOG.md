@@ -1,13 +1,21 @@
 # Changelog
 
-Notes under **Unreleased** ship in the next TestFlight cut. `scripts/release.py cut`
-moves them under a `version+build` heading that matches the git tag.
+`scripts/release.py cut` records one bullet per merged pull request since the
+latest ancestor `testflight/*` tag (PR title from the merge). Optional bullets
+under **Unreleased** are prepended when you want curated wording above that
+list.
 
 ## [Unreleased]
 
 ## [0.1.1+5] - 2026-10-12
 
-- Rename the app module and folders from TheSilverScreen to SilverScreen.
+- Collapse long award lists behind Show more.
+- Fix blank Watched/Watchlist posters from sparse list snapshots.
+- Unified Search: Spotify-style preview, View all, and people-first emphasis.
+- Compact hero and catalog metadata for movies and TV.
+- Combine rating and note into one editor.
+- Add episode-level TV watch progress with In Progress.
+- Rename TheSilverScreen to SilverScreen.
 
 ## [0.1.1+4] - 2026-10-02
 

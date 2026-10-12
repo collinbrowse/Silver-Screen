@@ -17,6 +17,7 @@ alwaysApply: true
 
 - Change versions with `python3 scripts/release.py`. Leave `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` out of the app target in `project.pbxproj` — those lines override the xcconfig. Test targets keep their own numbers.
 - A feature commit does not bump the version. `bump` is for the next marketing version. `cut` is the only thing that advances the build.
+- `cut` fills the changelog from merged PR titles since the latest ancestor `testflight/*` tag — one bullet per PR, not every commit (optional `## [Unreleased]` bullets prepend). Preview with `notes`.
 - `cut` and `promote` commit or tag from a clean tree. Do not hand-tag, and do not retarget `v*` without `promote --retarget`.
 - Upload uses an App Store Connect API key from the environment. Never commit a `.p8` file.
 - No Fastlane and no other third-party release tool. Archive with `scripts/release.py archive`.
