@@ -313,6 +313,19 @@ final class TVSeriesViewModel {
         state = .loaded(content.withPersonal(personal), activity: AnnotationActivity.afterSuccess(activity))
     }
 
+    /// Reloads the series score/note after a toast rating (saved outside this screen).
+    func reloadPersonalFromStore() async {
+        guard case .loaded = state else { return }
+        do {
+            let personal = try await personalDetail()
+            apply(personal.detail)
+        } catch is CancellationError {
+            return
+        } catch {
+            return
+        }
+    }
+
     func noteListSaveFailed() {
         markPersistenceFailure()
     }

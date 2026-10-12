@@ -68,6 +68,17 @@ struct RootTabView: View {
         )
     }
 
+    private var toastAnnotationEditorBinding: Binding<AnnotationEditorSession?> {
+        Binding(
+            get: { listChanges.annotationEditor },
+            set: { newValue in
+                if newValue == nil {
+                    listChanges.dismissRatingEditor()
+                }
+            }
+        )
+    }
+
     var body: some View {
         // Read `message` here so RootTabView observes ListChangeNotice. The overlay
         // alone (child @Bindable) can miss updates when only the notice changes.
@@ -79,6 +90,16 @@ struct RootTabView: View {
                     ListChangeBanner(notice: listChanges)
                         .id(listChanges.presentationID)
                 }
+            }
+            .sheet(item: toastAnnotationEditorBinding) { session in
+                AnnotationEditorSheet(
+                    title: session.title,
+                    score: session.score,
+                    note: session.note,
+                    canClear: session.canClear,
+                    onSave: { await listChanges.saveRatingAnnotation(score: $0, note: $1) },
+                    onClear: { await listChanges.clearRatingAnnotation() }
+                )
             }
     }
 

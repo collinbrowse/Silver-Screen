@@ -186,6 +186,19 @@ final class TVSeasonViewModel {
         await reloadNextUp()
     }
 
+    /// Reloads the season score/note after a toast rating (saved outside this screen).
+    func reloadPersonalFromStore() async {
+        guard case .loaded = state else { return }
+        do {
+            let personal = try await personalDetail()
+            apply(personal.detail)
+        } catch is CancellationError {
+            return
+        } catch {
+            return
+        }
+    }
+
     private func reloadEpisodeScores(from episodes: [TVEpisodeSummary]) async {
         let scores = await annotations.formattedScores()
         var mapped: [Int: String] = [:]

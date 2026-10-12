@@ -128,8 +128,8 @@ final class LibraryDetailViewModel {
         }
     }
 
-    /// Destination for a list row. In Progress TV opens the season of the last watched episode
-    /// (Next up sits on the row below once scrolled).
+    /// Destination for a list row. In Progress TV opens the season scrolled one episode
+    /// above the last watched (so last watched sits under a bit of context; Next up below that).
     func route(for entry: ListEntry) -> Route {
         switch entry.kind {
             case .movie:
@@ -145,7 +145,7 @@ final class LibraryDetailViewModel {
                         seriesName: entry.title,
                         seasonNumber: last.seasonNumber,
                         seriesSnapshot: SeriesListSnapshot(entry: entry),
-                        scrollToEpisodeNumber: last.episodeNumber
+                        scrollToEpisodeNumber: max(1, last.episodeNumber - 1)
                     )
                 }
                 return .tvSeries(id: entry.itemID)

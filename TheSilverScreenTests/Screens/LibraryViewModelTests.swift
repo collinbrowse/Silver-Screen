@@ -273,7 +273,7 @@ final class LibraryViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.artwork(for: list), .images(["/face.jpg"]))
     }
 
-    func test_detail_inProgressTVRouteOpensSeasonScrolledToLastWatched() async throws {
+    func test_detail_inProgressTVRouteOpensSeasonScrolledOneAboveLastWatched() async throws {
         let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
         let tvWatch = TVWatchRepository(
             store: InMemoryTVWatchStore(),
@@ -328,7 +328,7 @@ final class LibraryViewModelTests: XCTestCase {
                 seriesName: "Severance",
                 seasonNumber: 1,
                 seriesSnapshot: SeriesListSnapshot(entry: entry),
-                scrollToEpisodeNumber: 2
+                scrollToEpisodeNumber: 1
             )
         )
     }

@@ -165,6 +165,30 @@ final class TVSeasonViewModelTests: XCTestCase {
                 ).showsNotesFirst)
             }
 
+    func test_reloadPersonalFromStore_picksUpToastScore() async throws {
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        let viewModel = TVSeasonViewModel(
+            seriesID: 1396,
+            seriesName: "Breaking Bad",
+            seasonNumber: 1,
+            shows: TVRepository.test(client: FakeHTTPClient(stub: .success(TMDBFixtures.tvSeasonPilot))),
+            annotations: annotations
+        )
+        await viewModel.load()
+        guard case .loaded(let before, _) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        XCTAssertNil(before.formattedUserScore)
+
+        _ = try await annotations.saveScore(9, for: .season(seriesID: 1396, seasonNumber: 1))
+        await viewModel.reloadPersonalFromStore()
+
+        guard case .loaded(let after, _) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        XCTAssertEqual(after.formattedUserScore, "9.0 / 10")
+    }
+
     func test_saveUserAnnotation_whenPersistenceFails_keepsPreviousScore() async throws {
         let store = InMemoryAnnotationsStore()
         let annotations = AnnotationsRepository(store: store, logger: SilentLogger())

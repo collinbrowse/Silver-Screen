@@ -108,6 +108,11 @@ struct TVSeriesView: View {
             // Season page (and series eye) write the watch ledger; refresh badges/Next up on return.
             Task { await viewModel.reloadNextUp() }
         }
+        .onChange(of: notice.ratingKey) { _, key in
+            if key == nil {
+                Task { await viewModel.reloadPersonalFromStore() }
+            }
+        }
         .onChange(of: notice.watchRevision) { _, _ in
             Task { await viewModel.reloadNextUp() }
         }

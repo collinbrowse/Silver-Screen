@@ -6,7 +6,8 @@
 import SwiftUI
 
 /// Confirmation after adding or removing a title. Undo sits above the tab bar.
-/// Watched / In Progress adds without a score also offer Add rating.
+/// Watched / In Progress adds without a score also offer Add rating, which opens
+/// the combined rating and note sheet.
 struct ListChangeBanner: View {
     @Bindable var notice: ListChangeNotice
 
@@ -18,14 +19,9 @@ struct ListChangeBanner: View {
                     .foregroundStyle(DesignTheme.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: DesignSpacing.sm)
-                if notice.ratingKey != nil {
-                    Menu {
-                        ForEach(UserScore.options, id: \.self) { value in
-                            Button(UserScore.formatted(value)) {
-                                Task { await notice.saveRating(value) }
-                            }
-                            .accessibilityLabel(UserScore.accessibilityLabel(value))
-                        }
+                if notice.ratingKey != nil, notice.annotationEditor == nil {
+                    Button {
+                        Task { await notice.openRatingEditor() }
                     } label: {
                         Text("Add rating")
                             .font(DesignTypography.metadata.weight(.semibold))

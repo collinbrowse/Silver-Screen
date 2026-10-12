@@ -68,7 +68,7 @@ final class ListChangeNoticeTests: XCTestCase {
         XCTAssertNil(notice.ratingKey)
     }
 
-    func test_saveRating_persistsScoreAndClearsOffer() async throws {
+    func test_openRatingEditor_thenSave_persistsScoreNoteAndClearsOffer() async throws {
         let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
         let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
         let notice = ListChangeNotice(annotations: annotations)
@@ -90,11 +90,18 @@ final class ListChangeNoticeTests: XCTestCase {
         await waitForRatingKey(notice)
         XCTAssertEqual(notice.ratingKey, .series(7))
 
-        await notice.saveRating(9.0)
+        await notice.openRatingEditor()
+        let session = try XCTUnwrap(notice.annotationEditor)
+        XCTAssertEqual(session.title, "Severance")
 
+        let result = await notice.saveRatingAnnotation(score: 9.0, note: "Cold open")
+
+        XCTAssertEqual(result, .succeeded)
         XCTAssertNil(notice.ratingKey)
+        XCTAssertNil(notice.annotationEditor)
         let saved = try await annotations.annotation(for: .series(7))
         XCTAssertEqual(saved?.score, 9.0)
+        XCTAssertEqual(saved?.note, "Cold open")
     }
 
     func test_show_preferredEpisodeRatingKey_savesOnEpisodeNotSeries() async throws {
@@ -118,12 +125,43 @@ final class ListChangeNoticeTests: XCTestCase {
         await waitForRatingKey(notice)
         XCTAssertEqual(notice.ratingKey, episodeKey)
 
-        await notice.saveRating(8.0)
+        await notice.openRatingEditor()
+        XCTAssertEqual(notice.annotationEditor?.title, "Severance · S1 · E3")
+        let result = await notice.saveRatingAnnotation(score: 8.0, note: "")
 
+        XCTAssertEqual(result, .succeeded)
         let episode = try await annotations.annotation(for: episodeKey)
         XCTAssertEqual(episode?.score, 8.0)
         let series = try await annotations.annotation(for: .series(42))
         XCTAssertNil(series?.score)
+    }
+
+    func test_dismissRatingEditor_keepsAddRatingOffer() async throws {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        let notice = ListChangeNotice(annotations: annotations)
+        let draft = ListItemDraft(
+            id: 7,
+            kind: .tv,
+            title: "Severance",
+            imagePath: nil,
+            releaseDate: nil,
+            genreNames: [],
+            voteAverage: 0,
+            popularity: 0
+        )
+        let change = try await lists.addToInProgress(draft)
+
+        notice.show(change, using: lists)
+        await waitForRatingKey(notice)
+        await notice.openRatingEditor()
+        XCTAssertNotNil(notice.annotationEditor)
+
+        notice.dismissRatingEditor()
+
+        XCTAssertNil(notice.annotationEditor)
+        XCTAssertEqual(notice.ratingKey, .series(7))
+        XCTAssertEqual(notice.message, "Added to In Progress")
     }
 
     func test_presentWatch_withoutMembership_offersEpisodeRatingAndLedgerUndo() async throws {

@@ -53,20 +53,18 @@ struct CatalogRowView: View {
                     .foregroundStyle(DesignTheme.textPrimary)
                     .lineLimit(density == .compact ? 1 : nil)
                     .fixedSize(horizontal: false, vertical: density != .compact)
-                if let kindLabel, !kindLabel.isEmpty {
-                    Text(kindLabel)
-                        .font(DesignTypography.chip.weight(.semibold))
-                        .foregroundStyle(DesignTheme.accentOnFill)
-                        .padding(.horizontal, DesignSpacing.sm)
-                        .padding(.vertical, 2)
-                        .background(DesignTheme.accent, in: Capsule())
-                        .accessibilityAddTraits(.isStaticText)
-                }
+                // Standard: Title → Next up → Genre → year → rating (kind chip last when present).
                 if density == .standard, let nextUp {
                     Text(nextUp)
-                        .font(DesignTypography.metadata)
+                        .font(DesignTypography.body)
                         .foregroundStyle(DesignTheme.accent)
                         .accessibilityLabel("Next episode, \(nextUp)")
+                }
+                if let userScore {
+                    Text(userScore)
+                        .font(density == .standard ? DesignTypography.body : DesignTypography.metadata)
+                        .foregroundStyle(DesignTheme.accent)
+                        .accessibilityLabel("Your rating, \(userScore)")
                 }
                 if density == .standard, !genre.isEmpty {
                     Text(genre)
@@ -76,16 +74,19 @@ struct CatalogRowView: View {
                 }
                 if !metadata.isEmpty {
                     Text(metadata)
-                        .font(DesignTypography.chip)
+                        .font(density == .standard ? DesignTypography.metadata : DesignTypography.chip)
                         .foregroundStyle(DesignTheme.textSecondary)
                         .lineLimit(density == .compact ? 1 : nil)
                         .fixedSize(horizontal: false, vertical: density != .compact)
                 }
-                if let userScore {
-                    Text(userScore)
-                        .font(DesignTypography.metadata)
-                        .foregroundStyle(DesignTheme.accent)
-                        .accessibilityLabel("Your rating, \(userScore)")
+                if let kindLabel, !kindLabel.isEmpty {
+                    Text(kindLabel)
+                        .font(DesignTypography.chip.weight(.semibold))
+                        .foregroundStyle(DesignTheme.accentOnFill)
+                        .padding(.horizontal, DesignSpacing.sm)
+                        .padding(.vertical, 2)
+                        .background(DesignTheme.accent, in: Capsule())
+                        .accessibilityAddTraits(.isStaticText)
                 }
             }
             Spacer(minLength: 0)
@@ -98,11 +99,11 @@ struct CatalogRowView: View {
     private var accessibilityLabel: String {
         [
             title,
-            kindLabel ?? "",
             density == .standard ? (nextUp ?? "") : "",
             density == .standard ? genre : "",
             metadata,
             userScore ?? "",
+            kindLabel ?? "",
         ]
             .filter { !$0.isEmpty }
             .joined(separator: ", ")

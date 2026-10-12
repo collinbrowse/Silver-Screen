@@ -36,6 +36,7 @@ struct TVSeasonView: View {
     let seriesID: Int
     let seasonNumber: Int
     /// When set (In Progress continue), scroll so this episode sits at the top after load.
+    /// Library passes one episode above last watched when possible.
     var scrollToEpisodeNumber: Int? = nil
 
     @Namespace private var heroTransition
@@ -172,9 +173,12 @@ struct TVSeasonView: View {
             }
         }
         .onChange(of: notice.ratingKey) { _, key in
-            // Toast rating just saved (key cleared) — refresh episode score badges.
+            // Toast rating just saved (key cleared) — refresh TMDB card + episode badges.
             if key == nil {
-                Task { await viewModel.reloadEpisodeScores() }
+                Task {
+                    await viewModel.reloadPersonalFromStore()
+                    await viewModel.reloadEpisodeScores()
+                }
             }
         }
         .onChange(of: notice.watchRevision) { _, _ in
@@ -279,7 +283,7 @@ struct TVSeasonView: View {
         return status + 44 + DesignSpacing.sm
     }
 
-    /// Pins the focused episode (last watched from In Progress) just below the title bar once.
+    /// Pins the focused episode (continue anchor from In Progress) just below the title bar once.
     /// Latches only after a measured status-bar inset so a later probe update can re-try.
     private func scrollToFocusedEpisodeIfNeeded(
         proxy: ScrollViewProxy,
