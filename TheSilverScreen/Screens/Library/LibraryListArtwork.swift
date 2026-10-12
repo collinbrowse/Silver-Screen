@@ -11,16 +11,19 @@ import Foundation
 /// Row artwork for one library list.
 enum LibraryListArtwork: Sendable, Equatable {
     case watched
+    case inProgress
     case watchlist
     /// Distinct image paths in the order the list shows its members. Empty when none have art.
     case images([String])
 
-    /// Watched and Watchlist stay icons even when they contain titles.
+    /// System lists stay icons even when they contain titles.
     /// A custom list takes the first four distinct, non-blank paths in display order.
     static func cover(for list: LibraryList, entries: [ListEntry]) -> LibraryListArtwork {
         switch list.system {
             case .watched:
                 return .watched
+            case .inProgress:
+                return .inProgress
             case .watchlist:
                 return .watchlist
             case nil:

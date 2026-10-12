@@ -30,15 +30,21 @@ struct LibraryListCoverView: View {
         switch artwork {
             case .watched:
                 iconTile(
-                systemImage: "eye.fill",
-                foreground: DesignTheme.accent,
-                background: DesignTheme.surface
+                    systemImage: "eye.fill",
+                    foreground: DesignTheme.accent,
+                    background: DesignTheme.surface
+                )
+            case .inProgress:
+                iconTile(
+                    systemImage: "play.circle.fill",
+                    foreground: DesignTheme.accent,
+                    background: DesignTheme.surface
                 )
             case .watchlist:
                 iconTile(
-                systemImage: "bookmark.fill",
-                foreground: DesignTheme.accent,
-                background: DesignTheme.surface
+                    systemImage: "bookmark.fill",
+                    foreground: DesignTheme.accent,
+                    background: DesignTheme.surface
                 )
             case .images(let paths):
                 collage(paths)

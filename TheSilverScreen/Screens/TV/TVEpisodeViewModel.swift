@@ -47,6 +47,8 @@ final class TVEpisodeViewModel {
     private(set) var awardRows: [AwardRow] = []
     /// Series fields for list membership. Filled from the route, or from a series fetch when empty.
     private(set) var seriesSnapshot: SeriesListSnapshot
+    private(set) var catalogSeasons: [TVSeasonSummary] = []
+    private(set) var isEpisodeCompleted = false
     /// Combined rating and note editor. Cleared on save, delete, or dismiss.
     private(set) var annotationEditor: AnnotationEditorSession?
 
@@ -55,6 +57,7 @@ final class TVEpisodeViewModel {
     private let episodeNumber: Int
     private let shows: TVRepository
     private let annotations: AnnotationsRepository
+    private let tvWatch: TVWatchRepository?
     private let awards: AwardsRepository
 
     init(
@@ -64,6 +67,7 @@ final class TVEpisodeViewModel {
         seriesSnapshot: SeriesListSnapshot = .empty,
         shows: TVRepository,
         annotations: AnnotationsRepository,
+        tvWatch: TVWatchRepository? = nil,
         awards: AwardsRepository = AwardsRepository(catalog: .empty)
     ) {
         self.seriesID = seriesID
@@ -72,6 +76,7 @@ final class TVEpisodeViewModel {
         self.seriesSnapshot = seriesSnapshot
         self.shows = shows
         self.annotations = annotations
+        self.tvWatch = tvWatch
         self.awards = awards
     }
 
@@ -85,11 +90,14 @@ final class TVEpisodeViewModel {
             )
             async let othersCall = otherEpisodes()
             async let providersCall = shows.streamingProviders(seriesID: seriesID)
-            async let snapshotCall = resolveSeriesSnapshot()
+            async let catalogCall = resolveCatalog()
             let episode = try await episodeCall
             let others = try await othersCall
             let streamingProviders = await providersCall
-            seriesSnapshot = await snapshotCall
+            let catalog = await catalogCall
+            seriesSnapshot = catalog.snapshot
+            catalogSeasons = catalog.seasons
+            await reloadCompleted()
             let personal = try await personalDetail()
             awardRows = await awards.episodeAwards(
                 seriesID: seriesID,
@@ -115,15 +123,69 @@ final class TVEpisodeViewModel {
     }
 
     /// Awards deep links arrive without series art; load it once for the membership draft.
-    private func resolveSeriesSnapshot() async -> SeriesListSnapshot {
-        guard seriesSnapshot.isEmpty else { return seriesSnapshot }
+    private func resolveCatalog() async -> (snapshot: SeriesListSnapshot, seasons: [TVSeasonSummary]) {
         do {
             let detail = try await shows.series(id: seriesID)
-            return SeriesListSnapshot(detail: detail)
+            let snapshot = seriesSnapshot.isEmpty ? SeriesListSnapshot(detail: detail) : seriesSnapshot
+            return (snapshot, detail.seasons)
         } catch is CancellationError {
-            return seriesSnapshot
+            return (seriesSnapshot, catalogSeasons)
         } catch {
-            return seriesSnapshot
+            return (seriesSnapshot, catalogSeasons)
+        }
+    }
+
+    private func reloadCompleted() async {
+        guard let tvWatch else {
+            isEpisodeCompleted = false
+            return
+        }
+        do {
+            isEpisodeCompleted = try await tvWatch.isEpisodeCompleted(
+                seriesID: seriesID,
+                seasonNumber: seasonNumber,
+                episodeNumber: episodeNumber
+            )
+        } catch {
+            isEpisodeCompleted = false
+        }
+    }
+
+    @discardableResult
+    func toggleEpisodeWatched(seriesTitle: String) async -> TVWatchOutcome? {
+        guard case .loaded(let content, _) = state, let tvWatch else { return nil }
+        let draft = seriesSnapshot.listItem(id: seriesID, title: seriesTitle)
+        let wasCompleted = isEpisodeCompleted
+        isEpisodeCompleted = !wasCompleted
+        do {
+            let outcome: TVWatchOutcome
+            if wasCompleted {
+                outcome = try await tvWatch.unmarkEpisode(
+                    seriesID: seriesID,
+                    seasonNumber: seasonNumber,
+                    episodeNumber: episodeNumber,
+                    draft: draft,
+                    seasons: catalogSeasons
+                )
+            } else {
+                outcome = try await tvWatch.markEpisode(
+                    seriesID: seriesID,
+                    seasonNumber: seasonNumber,
+                    episodeNumber: episodeNumber,
+                    title: content.title,
+                    draft: draft,
+                    seasons: catalogSeasons
+                )
+            }
+            await reloadCompleted()
+            return outcome
+        } catch is CancellationError {
+            isEpisodeCompleted = wasCompleted
+            return nil
+        } catch {
+            isEpisodeCompleted = wasCompleted
+            markPersistenceFailure()
+            return nil
         }
     }
 
@@ -230,6 +292,24 @@ final class TVEpisodeViewModel {
     private func apply(_ personal: PersonalDetail) {
         guard case .loaded(let content, let activity) = state else { return }
         state = .loaded(content.withPersonal(personal), activity: AnnotationActivity.afterSuccess(activity))
+    }
+
+    /// Reloads the personal score after a toast rating (saved outside this screen).
+    /// Reloads the episode eye after toast Undo restores the ledger.
+    func reloadEpisodeCompleted() async {
+        await reloadCompleted()
+    }
+
+    func reloadPersonalFromStore() async {
+        guard case .loaded = state else { return }
+        do {
+            let personal = try await personalDetail()
+            apply(personal.detail)
+        } catch is CancellationError {
+            return
+        } catch {
+            return
+        }
     }
 
     func noteListSaveFailed() {

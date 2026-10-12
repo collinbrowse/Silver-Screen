@@ -15,6 +15,7 @@ struct BrowseTabRoot: View {
     let lists: ListsRepository
     let listsIndex: ListsIndex
     let annotations: AnnotationsRepository
+    let tvWatch: TVWatchRepository
     let awards: AwardsRepository
 
     var body: some View {
@@ -24,6 +25,8 @@ struct BrowseTabRoot: View {
                 imageLoader: imageLoader,
                 lists: lists,
                 listsIndex: listsIndex,
+                shows: shows,
+                tvWatch: tvWatch,
                 router: router
             )
             .navigationDestination(for: Route.self) { route in
@@ -35,6 +38,7 @@ struct BrowseTabRoot: View {
                     lists: lists,
                     listsIndex: listsIndex,
                     annotations: annotations,
+                    tvWatch: tvWatch,
                     awards: awards,
                     imageLoader: imageLoader,
                     router: router

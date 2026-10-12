@@ -15,6 +15,8 @@ struct SearchView: View {
     let imageLoader: ImageLoader
     let lists: ListsRepository
     let listsIndex: ListsIndex
+    let shows: TVRepository
+    let tvWatch: TVWatchRepository
     var router: NavigationRouter?
 
     @State private var scrollID: String?
@@ -346,7 +348,8 @@ struct SearchView: View {
     ) -> some View {
         CatalogRowView(
             title: row.title,
-            subtitle: row.genreNames.joined(separator: ", "),
+            nextUp: nil,
+            genre: row.genreNames.joined(separator: ", "),
             metadata: row.formattedReleaseDate,
             userScore: row.formattedUserScore,
             kindLabel: showsKind ? "Movie" : nil,
@@ -365,7 +368,8 @@ struct SearchView: View {
     ) -> some View {
         CatalogRowView(
             title: row.name,
-            subtitle: row.genreNames.joined(separator: ", "),
+            nextUp: row.nextUp,
+            genre: row.genreNames.joined(separator: ", "),
             metadata: row.formattedFirstAirDate,
             userScore: row.formattedUserScore,
             kindLabel: showsKind ? "TV" : nil,
@@ -384,7 +388,8 @@ struct SearchView: View {
     ) -> some View {
         CatalogRowView(
             title: row.name,
-            subtitle: "",
+            nextUp: nil,
+            genre: "",
             metadata: row.knownForDepartment ?? "",
             kindLabel: showsKind ? "Person" : nil,
             density: density,
@@ -456,9 +461,23 @@ struct SearchView: View {
         }
     }
 
+    @ViewBuilder
     private func listControl(_ draft: ListItemDraft) -> some View {
-        ListMembershipButton(draft: draft, lists: lists, index: listsIndex) {
-            viewModel.noteListSaveFailed()
+        switch draft.kind {
+            case .movie, .tv:
+                WatchedToggleButton(
+                    draft: draft,
+                    lists: lists,
+                    index: listsIndex,
+                    tvWatch: tvWatch,
+                    shows: shows
+                ) {
+                    viewModel.noteListSaveFailed()
+                }
+            case .person:
+                ListMembershipButton(draft: draft, lists: lists, index: listsIndex) {
+                    viewModel.noteListSaveFailed()
+                }
         }
     }
 }

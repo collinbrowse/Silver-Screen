@@ -41,18 +41,23 @@ struct PersonDetailContent: Sendable, Equatable {
 @MainActor
 final class PersonDetailViewModel {
     private(set) var state: LoadState<PersonDetailContent> = .idle
+    /// Personal scores for credit posters (carousel badges), keyed by credit id.
+    private(set) var creditUserScores: [String: String] = [:]
 
     private let personID: Int
     private let people: PersonRepository
+    private let annotations: AnnotationsRepository?
     private let awards: AwardsRepository
 
     init(
         personID: Int,
         people: PersonRepository,
+        annotations: AnnotationsRepository? = nil,
         awards: AwardsRepository = AwardsRepository(catalog: .empty)
     ) {
         self.personID = personID
         self.people = people
+        self.annotations = annotations
         self.awards = awards
     }
 
@@ -64,6 +69,7 @@ final class PersonDetailViewModel {
             let personAwards = await awards.personAwards(imdbID: detail.imdbID)
             let content = Self.makeContent(detail: detail, awards: personAwards)
             state = .loaded(content)
+            await reloadCreditUserScores(content)
         } catch is CancellationError {
             return
         } catch let error as AppError {
@@ -71,6 +77,31 @@ final class PersonDetailViewModel {
         } catch {
             state = .failed(.unknown)
         }
+    }
+
+    func userScore(for credit: PersonCredit) -> String? {
+        creditUserScores[credit.id]
+    }
+
+    private func reloadCreditUserScores(_ content: PersonDetailContent) async {
+        guard let annotations else {
+            creditUserScores = [:]
+            return
+        }
+        let scores = await annotations.formattedScores()
+        var mapped: [String: String] = [:]
+        for section in content.creditSections {
+            for credit in section.preview {
+                let key: AnnotationKey = switch credit.mediaType {
+                    case .movie: .movie(credit.mediaID)
+                    case .tv: .series(credit.mediaID)
+                }
+                if let formatted = scores[key]?.formatted {
+                    mapped[credit.id] = formatted
+                }
+            }
+        }
+        creditUserScores = mapped
     }
 
     func retry() async {

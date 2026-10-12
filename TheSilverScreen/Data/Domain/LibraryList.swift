@@ -22,17 +22,26 @@ enum LibrarySegment: String, Codable, Sendable, Equatable, CaseIterable {
     }
 }
 
-/// The two lists every library has. They cannot be renamed, deleted, or reordered.
+/// Fixed Movies & TV lists. They cannot be renamed, deleted, or reordered.
 enum SystemListKind: String, Codable, Sendable, Equatable {
     case watched
+    case inProgress
     case watchlist
 
     var name: String {
         switch self {
             case .watched: "Watched"
+            case .inProgress: "In Progress"
             case .watchlist: "Watchlist"
         }
     }
+
+    /// Hidden from every + list menu. Watched / In Progress come from the eye
+    /// toggle and TV episode progress — never from manual membership picks.
+    static let membershipMenuHidden: Set<SystemListKind> = [.watched, .inProgress]
+
+    /// Same as `membershipMenuHidden` (kept for older TV call sites).
+    static let tvMembershipHidden: Set<SystemListKind> = membershipMenuHidden
 }
 
 /// Sort for Watched and Watchlist. Custom and people lists ignore this and keep manual order.
@@ -72,7 +81,7 @@ struct LibraryList: Codable, Sendable, Equatable, Identifiable, Hashable {
     let id: UUID
     var name: String
     let segment: LibrarySegment
-    /// Nil for a custom list. Watched and Watchlist are the only system lists.
+    /// Nil for a custom list. Watched, In Progress, and Watchlist are system lists.
     let system: SystemListKind?
     /// Remembered sort for a system list. Custom and people lists keep `position` order instead.
     var sort: LibrarySort
@@ -220,7 +229,7 @@ struct LibrarySnapshot: Codable, Sendable, Equatable {
 
     static let empty = LibrarySnapshot(lists: [], entries: [])
 
-    /// System lists first (Watched, then Watchlist), then custom lists by position.
+    /// System lists first (Watched, In Progress, Watchlist), then custom lists by position.
     func lists(in segment: LibrarySegment) -> [LibraryList] {
         let matching = lists.filter { $0.segment == segment }
         let system = matching
@@ -242,8 +251,9 @@ struct LibrarySnapshot: Codable, Sendable, Equatable {
     private static func systemRank(_ list: LibraryList) -> Int {
         switch list.system {
             case .watched: 0
-            case .watchlist: 1
-            case nil: 2
+            case .inProgress: 1
+            case .watchlist: 2
+            case nil: 3
         }
     }
 }
@@ -271,7 +281,7 @@ enum ListEditError: Error, Equatable, Sendable {
             case .duplicateName:
                 "A list with that name already exists."
             case .systemListLocked:
-                "Watched and Watchlist can't be changed."
+                "System lists can't be changed."
             case .wrongSegment:
                 "That title doesn't belong on this list."
             case .missingList:
@@ -280,7 +290,7 @@ enum ListEditError: Error, Equatable, Sendable {
     }
 }
 
-/// Result of adding or removing one title, including a Watchlist entry displaced by Watched.
+/// Result of adding or removing one title, including rows displaced from other lists.
 struct MembershipChange: Sendable, Equatable {
     enum Action: Sendable, Equatable {
         case added
@@ -292,18 +302,66 @@ struct MembershipChange: Sendable, Equatable {
     let listID: UUID
     let listName: String
     let itemKey: String
-    /// The Watchlist row removed because the title was added to Watched. Undo puts it back.
-    let restore: ListEntry?
+    /// Rows removed from other lists because of this add (Watchlist / In Progress). Undo puts them back.
+    let restores: [ListEntry]
     /// The row taken off the target list. Undo of a removal puts this back in place.
     let removed: ListEntry?
+    /// Soft-move copy such as “Moved to Watched.” Wins over the default added/removed string.
+    let messageOverride: String?
+
+    /// Watchlist (or first) displaced row. Kept for older call sites and tests.
+    var restore: ListEntry? { restores.first }
 
     /// Banner copy for an add or removal. An unchanged membership has nothing to confirm.
     var confirmation: String? {
+        if let messageOverride { return messageOverride }
         switch action {
-            case .added: "Added to \(listName)"
-            case .removed: "Removed from \(listName)"
-            case .unchanged: nil
+            case .added:
+                return "Added to \(listName)"
+            case .removed:
+                return "Removed from \(listName)"
+            case .unchanged:
+                return nil
         }
+    }
+
+    init(
+        action: Action,
+        listID: UUID,
+        listName: String,
+        itemKey: String,
+        restores: [ListEntry] = [],
+        removed: ListEntry? = nil,
+        messageOverride: String? = nil
+    ) {
+        self.action = action
+        self.listID = listID
+        self.listName = listName
+        self.itemKey = itemKey
+        self.restores = restores
+        self.removed = removed
+        self.messageOverride = messageOverride
+    }
+
+    /// Compatibility with the former single-`restore` call sites.
+    init(
+        action: Action,
+        listID: UUID,
+        listName: String,
+        itemKey: String,
+        restore: ListEntry?,
+        removed: ListEntry?,
+        messageOverride: String? = nil
+    ) {
+        self.init(
+            action: action,
+            listID: listID,
+            listName: listName,
+            itemKey: itemKey,
+            restores: restore.map { [$0] } ?? [],
+            removed: removed,
+            messageOverride: messageOverride
+        )
     }
 }
 

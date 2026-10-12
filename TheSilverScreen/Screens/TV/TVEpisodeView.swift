@@ -10,10 +10,13 @@ struct TVEpisodeView: View {
     let imageLoader: ImageLoader
     let lists: ListsRepository
     let listsIndex: ListsIndex
+    let tvWatch: TVWatchRepository
     let seriesID: Int
     let seriesName: String
     let seasonNumber: Int
+    let episodeNumber: Int
     var router: NavigationRouter?
+    @Environment(ListChangeNotice.self) private var notice
     @State private var playingTrailer: MediaTrailer?
     @State private var loadingTrailerID: String?
 
@@ -72,13 +75,52 @@ struct TVEpisodeView: View {
         }
         .background(DesignTheme.canvas)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                ListMembershipButton(
-                    draft: viewModel.seriesSnapshot.listItem(id: seriesID, title: seriesName),
-                    lists: lists,
-                    index: listsIndex
-                ) {
-                    viewModel.noteListSaveFailed()
+            if case .loaded = viewModel.state {
+                ToolbarItem(placement: .topBarTrailing) {
+                    HStack(spacing: 4) {
+                        EpisodeWatchButton(
+                            isCompleted: viewModel.isEpisodeCompleted,
+                            accessibilityTitle: navigationTitle.isEmpty ? "episode" : navigationTitle
+                        ) {
+                            Task {
+                                let wasCompleted = viewModel.isEpisodeCompleted
+                                let ratingKey = AnnotationKey.episode(
+                                    seriesID: seriesID,
+                                    seasonNumber: seasonNumber,
+                                    episodeNumber: episodeNumber
+                                )
+                                guard let outcome = await viewModel.toggleEpisodeWatched(
+                                    seriesTitle: seriesName
+                                ) else { return }
+                                if wasCompleted {
+                                    if let change = outcome.membershipChange, change.confirmation != nil {
+                                        notice.show(
+                                            change,
+                                            using: lists,
+                                            tvWatch: tvWatch,
+                                            watchUndo: outcome.watchUndo
+                                        )
+                                    }
+                                } else {
+                                    notice.presentWatch(
+                                        outcome,
+                                        ratingKey: ratingKey,
+                                        fallbackMessage: "Episode watched",
+                                        using: lists,
+                                        tvWatch: tvWatch
+                                    )
+                                }
+                            }
+                        }
+
+                        ListMembershipButton(
+                            draft: viewModel.seriesSnapshot.listItem(id: seriesID, title: seriesName),
+                            lists: lists,
+                            index: listsIndex
+                        ) {
+                            viewModel.noteListSaveFailed()
+                        }
+                    }
                 }
             }
         }
@@ -86,6 +128,14 @@ struct TVEpisodeView: View {
             if case .idle = viewModel.state {
                 await viewModel.load()
             }
+        }
+        .onChange(of: notice.ratingKey) { _, key in
+            if key == nil {
+                Task { await viewModel.reloadPersonalFromStore() }
+            }
+        }
+        .onChange(of: notice.watchRevision) { _, _ in
+            Task { await viewModel.reloadEpisodeCompleted() }
         }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
         .sheet(item: annotationEditorBinding) { session in

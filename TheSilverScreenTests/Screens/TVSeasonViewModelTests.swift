@@ -165,28 +165,117 @@ final class TVSeasonViewModelTests: XCTestCase {
                 ).showsNotesFirst)
             }
 
-            func test_saveUserAnnotation_whenPersistenceFails_keepsPreviousScore() async throws {
-            let store = InMemoryAnnotationsStore()
-            let annotations = AnnotationsRepository(store: store, logger: SilentLogger())
-            _ = try await annotations.saveScore(8.5, for: .season(seriesID: 1396, seasonNumber: 1))
-            let viewModel = TVSeasonViewModel(
-                seriesID: 1396,
-                seriesName: "Breaking Bad",
-                seasonNumber: 1,
-                shows: TVRepository.test(client: FakeHTTPClient(stub: .success(TMDBFixtures.tvSeasonPilot))),
-                annotations: annotations
-                )
-            await viewModel.load()
-            viewModel.openAnnotationEditor()
-            await store.setSaveError(CocoaError(.fileWriteUnknown))
+    func test_reloadPersonalFromStore_picksUpToastScore() async throws {
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        let viewModel = TVSeasonViewModel(
+            seriesID: 1396,
+            seriesName: "Breaking Bad",
+            seasonNumber: 1,
+            shows: TVRepository.test(client: FakeHTTPClient(stub: .success(TMDBFixtures.tvSeasonPilot))),
+            annotations: annotations
+        )
+        await viewModel.load()
+        guard case .loaded(let before, _) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        XCTAssertNil(before.formattedUserScore)
 
-            let saved = await viewModel.saveUserAnnotation(score: 10, note: "")
+        _ = try await annotations.saveScore(9, for: .season(seriesID: 1396, seasonNumber: 1))
+        await viewModel.reloadPersonalFromStore()
 
-            XCTAssertEqual(saved, .failed)
-            XCTAssertNotNil(viewModel.annotationEditor)
-            guard case .loaded(let content, activity: .failed(.persistence)) = viewModel.state else {
+        guard case .loaded(let after, _) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        XCTAssertEqual(after.formattedUserScore, "9.0 / 10")
+    }
+
+    func test_saveUserAnnotation_whenPersistenceFails_keepsPreviousScore() async throws {
+        let store = InMemoryAnnotationsStore()
+        let annotations = AnnotationsRepository(store: store, logger: SilentLogger())
+        _ = try await annotations.saveScore(8.5, for: .season(seriesID: 1396, seasonNumber: 1))
+        let viewModel = TVSeasonViewModel(
+            seriesID: 1396,
+            seriesName: "Breaking Bad",
+            seasonNumber: 1,
+            shows: TVRepository.test(client: FakeHTTPClient(stub: .success(TMDBFixtures.tvSeasonPilot))),
+            annotations: annotations
+        )
+        await viewModel.load()
+        viewModel.openAnnotationEditor()
+        await store.setSaveError(CocoaError(.fileWriteUnknown))
+
+        let saved = await viewModel.saveUserAnnotation(score: 10, note: "")
+
+        XCTAssertEqual(saved, .failed)
+        XCTAssertNotNil(viewModel.annotationEditor)
+        guard case .loaded(let content, activity: .failed(.persistence)) = viewModel.state else {
             return XCTFail("Expected loaded with persistence failure, got \(viewModel.state)")
-            }
-            XCTAssertEqual(content.formattedUserScore, "8.5 / 10")
-            }
-            }
+        }
+        XCTAssertEqual(content.formattedUserScore, "8.5 / 10")
+    }
+
+    func test_toggleEpisodeWatched_marksCompletedAndSetsNextUp() async throws {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let tvWatch = TVWatchRepository(
+            store: InMemoryTVWatchStore(),
+            lists: lists,
+            logger: SilentLogger()
+        )
+        let client = RoutingHTTPClient(routes: [
+            "/tv/1396/season/1": .success(TMDBFixtures.tvSeasonPilot),
+            "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
+        ])
+        let viewModel = TVSeasonViewModel(
+            seriesID: 1396,
+            seriesName: "Breaking Bad",
+            seasonNumber: 1,
+            shows: TVRepository.test(client: client),
+            annotations: AnnotationsRepository.empty(),
+            tvWatch: tvWatch
+        )
+        await viewModel.load()
+        guard case .loaded(let content, _) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        let episode = try XCTUnwrap(content.episodes.first)
+
+        let toggled = await viewModel.toggleEpisodeWatched(episode)
+        let outcome = try XCTUnwrap(toggled)
+
+        XCTAssertTrue(viewModel.completedEpisodeNumbers.contains(1))
+        XCTAssertEqual(outcome.state.nextUp?.seasonNumber, 1)
+        XCTAssertEqual(outcome.state.nextUp?.episodeNumber, 2)
+        let unmarked = await viewModel.unmarkedEpisodeCountForSeason()
+        XCTAssertEqual(unmarked, 0)
+        XCTAssertTrue(viewModel.isSeasonFullyWatched)
+    }
+
+    func test_markSeasonWatched_completesListedEpisodes() async throws {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let tvWatch = TVWatchRepository(
+            store: InMemoryTVWatchStore(),
+            lists: lists,
+            logger: SilentLogger()
+        )
+        let client = RoutingHTTPClient(routes: [
+            "/tv/1396/season/1": .success(TMDBFixtures.tvSeasonPilot),
+            "/tv/1396": .success(TMDBFixtures.tvSeriesBreakingBad),
+        ])
+        let viewModel = TVSeasonViewModel(
+            seriesID: 1396,
+            seriesName: "Breaking Bad",
+            seasonNumber: 1,
+            shows: TVRepository.test(client: client),
+            annotations: AnnotationsRepository.empty(),
+            tvWatch: tvWatch
+        )
+        await viewModel.load()
+
+        let marked = await viewModel.markSeasonWatched()
+        let outcome = try XCTUnwrap(marked)
+
+        XCTAssertEqual(outcome.episodesNewlyMarked, 1)
+        XCTAssertTrue(viewModel.completedEpisodeNumbers.contains(1))
+        XCTAssertTrue(viewModel.isSeasonFullyWatched)
+    }
+}

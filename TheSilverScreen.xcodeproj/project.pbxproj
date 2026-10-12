@@ -41,6 +41,7 @@
 		A23F7D8D8F184AF8A1113C88 /* CollectionRouteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A72C02CB76543B6BF84100A /* CollectionRouteView.swift */; };
 		A441ADD1E1B54C059582498C /* SearchTabRoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9985AE39EA424A02A44758E1 /* SearchTabRoot.swift */; };
 		A4FEC6FC4B73434EA8963693 /* AwardShelfCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2634D24760DD46BF8A6A53D6 /* AwardShelfCard.swift */; };
+		A8C1F0E24B7D9A116E305C42 /* TVWatchConfirmPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7D2E1F35C8E0B227F416D53 /* TVWatchConfirmPresentationTests.swift */; };
 		A96046B216C64FA592FE31FA /* BrowseTabRoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01FFF924CF8B4156A2A7D52C /* BrowseTabRoot.swift */; };
 		AE0100022788B823003D8011 /* AnnotationEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE0100012788B823003D8011 /* AnnotationEditorSheet.swift */; };
 		AE0100042788B823003D8011 /* DetailAnnotationWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE0100032788B823003D8011 /* DetailAnnotationWriter.swift */; };
@@ -196,8 +197,23 @@
 		L1B0001F2788B823003D8011 /* InMemoryListsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B000202788B823003D8011 /* InMemoryListsStore.swift */; };
 		L1B000212788B823003D8011 /* LibraryListArtwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B000222788B823003D8011 /* LibraryListArtwork.swift */; };
 		L1B000232788B823003D8011 /* LibraryListCoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B000242788B823003D8011 /* LibraryListCoverView.swift */; };
+		LC0000022788B823003D8011 /* ListChangeNoticeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = LC0000012788B823003D8011 /* ListChangeNoticeTests.swift */; };
 		M1C5E4A12F6D4A0E9B7C1D01 /* MacSearchField.swift in Sources */ = {isa = PBXBuildFile; fileRef = M1C5E4A12F6D4A0E9B7C1D02 /* MacSearchField.swift */; };
+		NU0000022788B823003D8011 /* TVNextUpLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = NU0000012788B823003D8011 /* TVNextUpLabel.swift */; };
+		TW0000022788B823003D8011 /* TVWatchProgress.swift in Sources */ = {isa = PBXBuildFile; fileRef = TW0000012788B823003D8011 /* TVWatchProgress.swift */; };
+		TW0000042788B823003D8011 /* TVWatchStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = TW0000032788B823003D8011 /* TVWatchStore.swift */; };
+		TW0000062788B823003D8011 /* FileTVWatchStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = TW0000052788B823003D8011 /* FileTVWatchStore.swift */; };
+		TW0000082788B823003D8011 /* TVWatchRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = TW0000072788B823003D8011 /* TVWatchRepository.swift */; };
+		TW00000A2788B823003D8011 /* TVWatchReconcile.swift in Sources */ = {isa = PBXBuildFile; fileRef = TW0000092788B823003D8011 /* TVWatchReconcile.swift */; };
+		TW00000C2788B823003D8011 /* EpisodeWatchButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = TW00000B2788B823003D8011 /* EpisodeWatchButton.swift */; };
+		TW00000E2788B823003D8011 /* InMemoryTVWatchStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = TW00000D2788B823003D8011 /* InMemoryTVWatchStore.swift */; };
+		TW0000102788B823003D8011 /* TVWatchProgressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = TW00000F2788B823003D8011 /* TVWatchProgressTests.swift */; };
+		TW0000122788B823003D8011 /* TVWatchRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = TW0000112788B823003D8011 /* TVWatchRepositoryTests.swift */; };
 		W1R000022788B823003D8011 /* WatchedRatings.swift in Sources */ = {isa = PBXBuildFile; fileRef = W1R000012788B823003D8011 /* WatchedRatings.swift */; };
+		WT0000022788B823003D8011 /* WatchedToggleButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = WT0000012788B823003D8011 /* WatchedToggleButton.swift */; };
+		WT0000042788B823003D8011 /* CarouselRatingBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = WT0000032788B823003D8011 /* CarouselRatingBadge.swift */; };
+		WT0000062788B823003D8011 /* TVWatchConfirm.swift in Sources */ = {isa = PBXBuildFile; fileRef = WT0000052788B823003D8011 /* TVWatchConfirm.swift */; };
+		WT0000082788B823003D8011 /* TVWatchConfirmTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WT0000072788B823003D8011 /* TVWatchConfirmTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -317,7 +333,7 @@
 		B10003192788B823003D8011 /* PersonDetailViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonDetailViewModelTests.swift; sourceTree = "<group>"; };
 		B100031B2788B823003D8011 /* CreditsListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditsListViewModelTests.swift; sourceTree = "<group>"; };
 		B10004012788B823003D8011 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Version.xcconfig; sourceTree = "<group>"; };
-		BBB576C749CF40B88C23B3DF /* SearchGenreMatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchGenreMatch.swift; sourceTree = "<group>"; };
+		B7D2E1F35C8E0B227F416D53 /* TVWatchConfirmPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchConfirmPresentationTests.swift; sourceTree = "<group>"; };
 		BE714FA9307044B100F6F593 /* MediaTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaTypes.swift; sourceTree = "<group>"; };
 		BE714FAB3070461B00F6F593 /* SearchScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchScope.swift; sourceTree = "<group>"; };
 		BE83E71B3079455B0032C03E /* ExpandableTextToggle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExpandableTextToggle.swift; sourceTree = "<group>"; };
@@ -414,8 +430,23 @@
 		L1B000202788B823003D8011 /* InMemoryListsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InMemoryListsStore.swift; sourceTree = "<group>"; };
 		L1B000222788B823003D8011 /* LibraryListArtwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryListArtwork.swift; sourceTree = "<group>"; };
 		L1B000242788B823003D8011 /* LibraryListCoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryListCoverView.swift; sourceTree = "<group>"; };
+		LC0000012788B823003D8011 /* ListChangeNoticeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListChangeNoticeTests.swift; sourceTree = "<group>"; };
 		M1C5E4A12F6D4A0E9B7C1D02 /* MacSearchField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacSearchField.swift; sourceTree = "<group>"; };
+		NU0000012788B823003D8011 /* TVNextUpLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVNextUpLabel.swift; sourceTree = "<group>"; };
+		TW0000012788B823003D8011 /* TVWatchProgress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchProgress.swift; sourceTree = "<group>"; };
+		TW0000032788B823003D8011 /* TVWatchStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchStore.swift; sourceTree = "<group>"; };
+		TW0000052788B823003D8011 /* FileTVWatchStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileTVWatchStore.swift; sourceTree = "<group>"; };
+		TW0000072788B823003D8011 /* TVWatchRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchRepository.swift; sourceTree = "<group>"; };
+		TW0000092788B823003D8011 /* TVWatchReconcile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchReconcile.swift; sourceTree = "<group>"; };
+		TW00000B2788B823003D8011 /* EpisodeWatchButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EpisodeWatchButton.swift; sourceTree = "<group>"; };
+		TW00000D2788B823003D8011 /* InMemoryTVWatchStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InMemoryTVWatchStore.swift; sourceTree = "<group>"; };
+		TW00000F2788B823003D8011 /* TVWatchProgressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchProgressTests.swift; sourceTree = "<group>"; };
+		TW0000112788B823003D8011 /* TVWatchRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchRepositoryTests.swift; sourceTree = "<group>"; };
 		W1R000012788B823003D8011 /* WatchedRatings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchedRatings.swift; sourceTree = "<group>"; };
+		WT0000012788B823003D8011 /* WatchedToggleButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchedToggleButton.swift; sourceTree = "<group>"; };
+		WT0000032788B823003D8011 /* CarouselRatingBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarouselRatingBadge.swift; sourceTree = "<group>"; };
+		WT0000052788B823003D8011 /* TVWatchConfirm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchConfirm.swift; sourceTree = "<group>"; };
+		WT0000072788B823003D8011 /* TVWatchConfirmTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchConfirmTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -452,6 +483,7 @@
 				B10000292788B823003D8011 /* TestSupport.swift */,
 				B10000272788B823003D8011 /* ImageLoaderTests.swift */,
 				C200000B2788B823003D8011 /* InMemoryAnnotationsStore.swift */,
+				TW00000D2788B823003D8011 /* InMemoryTVWatchStore.swift */,
 				L1B000202788B823003D8011 /* InMemoryListsStore.swift */,
 				D1A000142788B823003D8011 /* StreamingProviderLaunchTests.swift */,
 			);
@@ -474,8 +506,10 @@
 				A1A000042788B823003D8011 /* AwardsRepository.swift */,
 				B10003072788B823003D8011 /* PersonRepository.swift */,
 				C20000072788B823003D8011 /* AnnotationsRepository.swift */,
+				TW0000072788B823003D8011 /* TVWatchRepository.swift */,
 				L1B0000C2788B823003D8011 /* ListsRepository.swift */,
 				W1R000012788B823003D8011 /* WatchedRatings.swift */,
+				TW0000092788B823003D8011 /* TVWatchReconcile.swift */,
 				L1B0000E2788B823003D8011 /* ListsIndex.swift */,
 			);
 			path = Repositories;
@@ -485,7 +519,9 @@
 			isa = PBXGroup;
 			children = (
 				C20000032788B823003D8011 /* AnnotationsStore.swift */,
+				TW0000032788B823003D8011 /* TVWatchStore.swift */,
 				C20000052788B823003D8011 /* FileAnnotationsStore.swift */,
+				TW0000052788B823003D8011 /* FileTVWatchStore.swift */,
 				L1B000062788B823003D8011 /* ListsStore.swift */,
 				L1B000082788B823003D8011 /* FileListsStore.swift */,
 				L1B0000A2788B823003D8011 /* AppSupportDirectory.swift */,
@@ -521,6 +557,10 @@
 				M1C5E4A12F6D4A0E9B7C1D02 /* MacSearchField.swift */,
 				A1B000012788B823003D8011 /* AwardRowsSection.swift */,
 				L1B000102788B823003D8011 /* ListMembershipButton.swift */,
+				WT0000012788B823003D8011 /* WatchedToggleButton.swift */,
+				WT0000032788B823003D8011 /* CarouselRatingBadge.swift */,
+				WT0000052788B823003D8011 /* TVWatchConfirm.swift */,
+				TW00000B2788B823003D8011 /* EpisodeWatchButton.swift */,
 				L1B000122788B823003D8011 /* ListChangeNotice.swift */,
 				B100012F2788B823003D8011 /* ErrorStateView.swift */,
 				AE0100012788B823003D8011 /* AnnotationEditorSheet.swift */,
@@ -713,6 +753,7 @@
 			children = (
 				BE714FA9307044B100F6F593 /* MediaTypes.swift */,
 				C20000012788B823003D8011 /* MediaAnnotation.swift */,
+				TW0000012788B823003D8011 /* TVWatchProgress.swift */,
 				F10000042788B823003D8011 /* BrowseCatalog.swift */,
 				E2A000042788B823003D8011 /* CatalogMedia.swift */,
 				E2A000062788B823003D8011 /* TVSeries.swift */,
@@ -802,6 +843,7 @@
 				E2A000222788B823003D8011 /* TVEpisodeViewModel.swift */,
 				E2A000242788B823003D8011 /* TVEpisodeView.swift */,
 				E2A000262788B823003D8011 /* TVDetailComponents.swift */,
+				NU0000012788B823003D8011 /* TVNextUpLabel.swift */,
 			);
 			path = TV;
 			sourceTree = "<group>";
@@ -834,6 +876,9 @@
 				B10002132788B823003D8011 /* MovieDetailViewModelTests.swift */,
 				B10003192788B823003D8011 /* PersonDetailViewModelTests.swift */,
 				B100031B2788B823003D8011 /* CreditsListViewModelTests.swift */,
+				LC0000012788B823003D8011 /* ListChangeNoticeTests.swift */,
+				WT0000072788B823003D8011 /* TVWatchConfirmTests.swift */,
+				B7D2E1F35C8E0B227F416D53 /* TVWatchConfirmPresentationTests.swift */,
 			);
 			path = Screens;
 			sourceTree = "<group>";
@@ -846,7 +891,9 @@
 				E2A000322788B823003D8011 /* TVRepositoryTests.swift */,
 				B10000232788B823003D8011 /* MovieRepositoryTests.swift */,
 				C200000D2788B823003D8011 /* AnnotationsRepositoryTests.swift */,
+				TW00000F2788B823003D8011 /* TVWatchProgressTests.swift */,
 				L1B0001C2788B823003D8011 /* ListsRepositoryTests.swift */,
+				TW0000112788B823003D8011 /* TVWatchRepositoryTests.swift */,
 				B10003172788B823003D8011 /* PersonRepositoryTests.swift */,
 				C3A100072788B823003D8011 /* OfficialYouTubeTrailersTests.swift */,
 				D1A000102788B823003D8011 /* TMDBWatchProvidersDecodingTests.swift */,
@@ -996,9 +1043,13 @@
 				E2A000012788B823003D8011 /* DisplayDate.swift in Sources */,
 				F20000012788B823003D8011 /* TMDBRating.swift in Sources */,
 				C20000022788B823003D8011 /* MediaAnnotation.swift in Sources */,
+				TW0000022788B823003D8011 /* TVWatchProgress.swift in Sources */,
 				C20000042788B823003D8011 /* AnnotationsStore.swift in Sources */,
+				TW0000042788B823003D8011 /* TVWatchStore.swift in Sources */,
 				C20000062788B823003D8011 /* FileAnnotationsStore.swift in Sources */,
+				TW0000062788B823003D8011 /* FileTVWatchStore.swift in Sources */,
 				C20000082788B823003D8011 /* AnnotationsRepository.swift in Sources */,
+				TW0000082788B823003D8011 /* TVWatchRepository.swift in Sources */,
 				C200000A2788B823003D8011 /* MediaDescriptionSection.swift in Sources */,
 				C200000C2788B823003D8011 /* InMemoryAnnotationsStore.swift in Sources */,
 				F20000032788B823003D8011 /* TMDBRatingCard.swift in Sources */,
@@ -1032,6 +1083,7 @@
 				E2A000212788B823003D8011 /* TVEpisodeViewModel.swift in Sources */,
 				E2A000232788B823003D8011 /* TVEpisodeView.swift in Sources */,
 				E2A000252788B823003D8011 /* TVDetailComponents.swift in Sources */,
+				NU0000022788B823003D8011 /* TVNextUpLabel.swift in Sources */,
 				E2A000272788B823003D8011 /* CatalogRowView.swift in Sources */,
 				E2A000292788B823003D8011 /* ReviewCard.swift in Sources */,
 				A10000022788B823003D8011 /* HTTPClient.swift in Sources */,
@@ -1136,8 +1188,13 @@
 				L1B000092788B823003D8011 /* AppSupportDirectory.swift in Sources */,
 				L1B0000B2788B823003D8011 /* ListsRepository.swift in Sources */,
 				W1R000022788B823003D8011 /* WatchedRatings.swift in Sources */,
+				TW00000A2788B823003D8011 /* TVWatchReconcile.swift in Sources */,
 				L1B0000D2788B823003D8011 /* ListsIndex.swift in Sources */,
 				L1B0000F2788B823003D8011 /* ListMembershipButton.swift in Sources */,
+				WT0000022788B823003D8011 /* WatchedToggleButton.swift in Sources */,
+				WT0000042788B823003D8011 /* CarouselRatingBadge.swift in Sources */,
+				WT0000062788B823003D8011 /* TVWatchConfirm.swift in Sources */,
+				TW00000C2788B823003D8011 /* EpisodeWatchButton.swift in Sources */,
 				L1B000112788B823003D8011 /* ListChangeNotice.swift in Sources */,
 				L1B000132788B823003D8011 /* LibraryHomeView.swift in Sources */,
 				L1B000212788B823003D8011 /* LibraryListArtwork.swift in Sources */,
@@ -1177,10 +1234,16 @@
 				D1A000132788B823003D8011 /* StreamingProviderLaunchTests.swift in Sources */,
 				B10000282788B823003D8011 /* TestSupport.swift in Sources */,
 				BE83E71A307944040032C03E /* InMemoryAnnotationsStore.swift in Sources */,
+				TW00000E2788B823003D8011 /* InMemoryTVWatchStore.swift in Sources */,
 				C200000E2788B823003D8011 /* AnnotationsRepositoryTests.swift in Sources */,
+				TW0000102788B823003D8011 /* TVWatchProgressTests.swift in Sources */,
 				B10002122788B823003D8011 /* MovieDetailViewModelTests.swift in Sources */,
 				L1B0001B2788B823003D8011 /* ListsRepositoryTests.swift in Sources */,
+				TW0000122788B823003D8011 /* TVWatchRepositoryTests.swift in Sources */,
 				L1B0001D2788B823003D8011 /* LibraryViewModelTests.swift in Sources */,
+				LC0000022788B823003D8011 /* ListChangeNoticeTests.swift in Sources */,
+				WT0000082788B823003D8011 /* TVWatchConfirmTests.swift in Sources */,
+				A8C1F0E24B7D9A116E305C42 /* TVWatchConfirmPresentationTests.swift in Sources */,
 				L1B0001F2788B823003D8011 /* InMemoryListsStore.swift in Sources */,
 				B10002142788B823003D8011 /* NavigationRouterTests.swift in Sources */,
 				B10003162788B823003D8011 /* PersonRepositoryTests.swift in Sources */,
@@ -1379,7 +1442,7 @@
 				DEVELOPMENT_TEAM = 84XX2W7G34;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TheSilverScreen/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Silver Screen";
+				INFOPLIST_KEY_CFBundleDisplayName = "Silver Dev";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;

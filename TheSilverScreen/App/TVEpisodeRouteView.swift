@@ -10,9 +10,11 @@ struct TVEpisodeRouteView: View {
     let imageLoader: ImageLoader
     let lists: ListsRepository
     let listsIndex: ListsIndex
+    let tvWatch: TVWatchRepository
     let seriesID: Int
     let seriesName: String
     let seasonNumber: Int
+    let episodeNumber: Int
     let router: NavigationRouter
 
     init(
@@ -25,6 +27,7 @@ struct TVEpisodeRouteView: View {
         lists: ListsRepository,
         listsIndex: ListsIndex,
         annotations: AnnotationsRepository,
+        tvWatch: TVWatchRepository,
         awards: AwardsRepository,
         imageLoader: ImageLoader,
         router: NavigationRouter
@@ -37,15 +40,18 @@ struct TVEpisodeRouteView: View {
                 seriesSnapshot: seriesSnapshot,
                 shows: shows,
                 annotations: annotations,
+                tvWatch: tvWatch,
                 awards: awards
             )
         )
         self.imageLoader = imageLoader
         self.lists = lists
         self.listsIndex = listsIndex
+        self.tvWatch = tvWatch
         self.seriesID = seriesID
         self.seriesName = seriesName
         self.seasonNumber = seasonNumber
+        self.episodeNumber = episodeNumber
         self.router = router
     }
 
@@ -55,9 +61,11 @@ struct TVEpisodeRouteView: View {
             imageLoader: imageLoader,
             lists: lists,
             listsIndex: listsIndex,
+            tvWatch: tvWatch,
             seriesID: seriesID,
             seriesName: seriesName,
             seasonNumber: seasonNumber,
+            episodeNumber: episodeNumber,
             router: router
         )
     }

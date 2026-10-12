@@ -23,11 +23,28 @@ struct AwardTitleRow: Identifiable, Equatable, Sendable {
     let genreLine: String
     /// Personal score, when this title has one.
     let userScore: String?
+    /// In Progress “Next up” line for a TV series with watch progress.
+    let nextUp: String?
     let imagePath: String?
     let artwork: Artwork
     let route: Route
     /// Snapshot for the list button. Nil until TMDB hydration succeeds — never a blank draft.
     let listDraft: ListItemDraft?
+
+    func withNextUp(_ caption: String?) -> AwardTitleRow {
+        AwardTitleRow(
+            id: id,
+            title: title,
+            awardYear: awardYear,
+            genreLine: genreLine,
+            userScore: userScore,
+            nextUp: caption,
+            imagePath: imagePath,
+            artwork: artwork,
+            route: route,
+            listDraft: listDraft
+        )
+    }
 }
 
 @Observable
@@ -42,6 +59,7 @@ final class AwardTitlesViewModel {
     private let movies: MovieRepository
     private let shows: TVRepository
     private let annotations: AnnotationsRepository
+    private let tvWatch: TVWatchRepository?
     private var nextPage = 1
     private var isPaging = false
 
@@ -50,13 +68,15 @@ final class AwardTitlesViewModel {
         awards: AwardsRepository,
         movies: MovieRepository,
         shows: TVRepository,
-        annotations: AnnotationsRepository
+        annotations: AnnotationsRepository,
+        tvWatch: TVWatchRepository? = nil
     ) {
         self.request = request
         self.awards = awards
         self.movies = movies
         self.shows = shows
         self.annotations = annotations
+        self.tvWatch = tvWatch
     }
 
     var navigationTitle: String { request.navigationTitle }
@@ -114,6 +134,19 @@ final class AwardTitlesViewModel {
         }
     }
 
+    func noteListSaveFailed() {
+        guard case .loaded(let rows, _) = state else { return }
+        state = .loaded(rows, activity: .failed(.persistence))
+    }
+
+    /// Refreshes Next up captions after returning from a detail screen.
+    func reloadDisplayedScores() async {
+        guard case .loaded(let rows, let activity) = state else { return }
+        let stamped = await stampNextUp(rows)
+        guard stamped != rows else { return }
+        state = .loaded(stamped, activity: activity)
+    }
+
     private func hydrate(_ credits: [AwardCredit]) async -> [AwardTitleRow] {
         let scores = await annotations.formattedScores()
         var indexed: [(Int, AwardTitleRow)] = []
@@ -131,7 +164,22 @@ final class AwardTitlesViewModel {
                 indexed.append(pair)
             }
         }
-        return indexed.sorted { $0.0 < $1.0 }.map(\.1)
+        let rows = indexed.sorted { $0.0 < $1.0 }.map(\.1)
+        return await stampNextUp(rows)
+    }
+
+    private func stampNextUp(_ rows: [AwardTitleRow]) async -> [AwardTitleRow] {
+        guard let tvWatch else { return rows }
+        let seriesIDs = rows.compactMap { row -> Int? in
+            guard let draft = row.listDraft, draft.kind == .tv else { return nil }
+            return draft.id
+        }
+        let captions = await tvWatch.progressSubtitles(for: seriesIDs)
+        guard !captions.isEmpty else { return rows }
+        return rows.map { row in
+            guard let draft = row.listDraft, draft.kind == .tv else { return row }
+            return row.withNextUp(captions[draft.id])
+        }
     }
 
     private nonisolated static func row(
@@ -151,58 +199,58 @@ final class AwardTitlesViewModel {
             switch work.kind {
                 case .movie:
                     if let movieID = work.movieID {
-                    scoreKey = .movie(movieID)
-                    if let detail = try? await movies.movieDetail(id: movieID) {
-                        title = detail.title
-                        imagePath = detail.posterPath
-                        genreNames = detail.genres.map(\.name)
-                        listDraft = detail.listItem()
-                    }
+                        scoreKey = .movie(movieID)
+                        if let detail = try? await movies.movieDetail(id: movieID) {
+                            title = detail.title
+                            imagePath = detail.posterPath
+                            genreNames = detail.genres.map(\.name)
+                            listDraft = detail.listItem()
+                        }
                     }
                 case .series:
                     if let seriesID = work.seriesID {
-                    scoreKey = .series(seriesID)
-                    if let detail = try? await shows.series(id: seriesID) {
-                        title = detail.name
-                        imagePath = detail.posterPath
-                        genreNames = detail.genres.map(\.name)
-                        listDraft = detail.listItem()
-                    }
+                        scoreKey = .series(seriesID)
+                        if let detail = try? await shows.series(id: seriesID) {
+                            title = detail.name
+                            imagePath = detail.posterPath
+                            genreNames = detail.genres.map(\.name)
+                            listDraft = detail.listItem()
+                        }
                     }
                 case .season:
                     if let seriesID = work.seriesID, let seasonNumber = work.seasonNumber {
-                    scoreKey = .season(seriesID: seriesID, seasonNumber: seasonNumber)
-                    if let detail = try? await shows.season(seriesID: seriesID, seasonNumber: seasonNumber) {
-                        title = detail.name
-                        imagePath = detail.posterPath
-                    }
-                    if let series = try? await shows.series(id: seriesID) {
-                        genreNames = series.genres.map(\.name)
-                        listDraft = series.listItem()
-                    }
+                        scoreKey = .season(seriesID: seriesID, seasonNumber: seasonNumber)
+                        if let detail = try? await shows.season(seriesID: seriesID, seasonNumber: seasonNumber) {
+                            title = detail.name
+                            imagePath = detail.posterPath
+                        }
+                        if let series = try? await shows.series(id: seriesID) {
+                            genreNames = series.genres.map(\.name)
+                            listDraft = series.listItem()
+                        }
                     }
                 case .episode:
                     artwork = .still
                     if let seriesID = work.seriesID,
-                    let seasonNumber = work.seasonNumber,
-                    let episodeNumber = work.episodeNumber {
-                    scoreKey = .episode(
-                        seriesID: seriesID,
-                        seasonNumber: seasonNumber,
-                        episodeNumber: episodeNumber
-                    )
-                    if let detail = try? await shows.episode(
-                        seriesID: seriesID,
-                        seasonNumber: seasonNumber,
-                        episodeNumber: episodeNumber
-                    ) {
-                        title = detail.title
-                        imagePath = detail.stillPath
-                    }
-                    if let series = try? await shows.series(id: seriesID) {
-                        genreNames = series.genres.map(\.name)
-                        listDraft = series.listItem()
-                    }
+                       let seasonNumber = work.seasonNumber,
+                       let episodeNumber = work.episodeNumber {
+                        scoreKey = .episode(
+                            seriesID: seriesID,
+                            seasonNumber: seasonNumber,
+                            episodeNumber: episodeNumber
+                        )
+                        if let detail = try? await shows.episode(
+                            seriesID: seriesID,
+                            seasonNumber: seasonNumber,
+                            episodeNumber: episodeNumber
+                        ) {
+                            title = detail.title
+                            imagePath = detail.stillPath
+                        }
+                        if let series = try? await shows.series(id: seriesID) {
+                            genreNames = series.genres.map(\.name)
+                            listDraft = series.listItem()
+                        }
                     }
             }
         }
@@ -212,6 +260,7 @@ final class AwardTitlesViewModel {
             awardYear: String(credit.year),
             genreLine: genreNames.prefix(2).joined(separator: ", "),
             userScore: scoreKey.flatMap { scores[$0]?.formatted },
+            nextUp: nil,
             imagePath: imagePath,
             artwork: artwork,
             route: route,
@@ -219,4 +268,3 @@ final class AwardTitlesViewModel {
         )
     }
 }
-

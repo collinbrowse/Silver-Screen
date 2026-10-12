@@ -33,6 +33,7 @@ final class SearchViewModel {
     private let shows: TVRepository
     private let people: PersonRepository
     private let annotations: AnnotationsRepository
+    private let tvWatch: TVWatchRepository?
     private let awards: AwardsRepository
     private let sleeper: any Sleeper
     private let locale: Locale
@@ -55,6 +56,7 @@ final class SearchViewModel {
         shows: TVRepository,
         people: PersonRepository,
         annotations: AnnotationsRepository,
+        tvWatch: TVWatchRepository? = nil,
         awards: AwardsRepository = AwardsRepository(catalog: .empty),
         sleeper: any Sleeper = TaskSleeper(),
         locale: Locale = .current
@@ -63,6 +65,7 @@ final class SearchViewModel {
         self.shows = shows
         self.people = people
         self.annotations = annotations
+        self.tvWatch = tvWatch
         self.awards = awards
         self.sleeper = sleeper
         self.locale = locale
@@ -246,11 +249,13 @@ final class SearchViewModel {
         )
     }
 
-    /// Writes saved scores onto the rows already on screen, including after returning from detail.
+    /// Writes saved scores and TV Next up captions onto rows already on screen,
+    /// including after returning from detail.
     func reloadDisplayedScores() async {
         guard case .loaded(let content, let activity) = state else { return }
         let scores = await annotations.formattedScores()
-        let stamped = content.applying(scores)
+        let nextUp = await tvWatch?.progressSubtitles(for: content.tvSeriesIDs) ?? [:]
+        let stamped = content.applying(scores: scores, nextUp: nextUp)
         guard stamped != content else { return }
         state = .loaded(stamped, activity: activity)
     }

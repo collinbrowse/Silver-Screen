@@ -2,9 +2,9 @@
 //  ListsRepository.swift
 //  TheSilverScreen
 //
-//  Personal library. Watched and Watchlist are created the first time the
-//  library is read. favorites.json is not imported. Writes run one at a time
-//  so two adds cannot clobber each other.
+//  Personal library. Watched, In Progress, and Watchlist are created the first
+//  time the library is read. favorites.json is not imported. Writes run one at
+//  a time so two adds cannot clobber each other.
 //
 
 import Foundation
@@ -57,15 +57,62 @@ actor ListsRepository {
         }
     }
 
-    /// Puts a movie on Watched. A title already there keeps its row and date.
-    /// Watchlist membership for that title is removed, as with a manual add.
-    func addToWatched(_ draft: ListItemDraft, at date: Date = Date()) async throws -> MembershipChange {
+    /// Puts a title on Watched. A title already there keeps its row and date.
+    /// Watchlist and In Progress membership for that title are removed.
+    func addToWatched(
+        _ draft: ListItemDraft,
+        at date: Date = Date(),
+        messageOverride: String? = nil
+    ) async throws -> MembershipChange {
         try await serializeWrite { [self] in
             let snapshot = try await loadCache()
             guard let watched = snapshot.list(.watched) else {
                 throw ListEditError.missingList
             }
+            return try await performAdd(
+                draft: draft,
+                listID: watched.id,
+                at: date,
+                messageOverride: messageOverride
+            )
+        }
+    }
+
+    /// Eye-toggle for movies (and any direct Watched membership flip). Adds or removes Watched.
+    func toggleWatched(_ draft: ListItemDraft, at date: Date = Date()) async throws -> MembershipChange {
+        try await serializeWrite { [self] in
+            let snapshot = try await loadCache()
+            guard let watched = snapshot.list(.watched) else {
+                throw ListEditError.missingList
+            }
+            if snapshot.entries.contains(where: { $0.listID == watched.id && $0.itemKey == draft.itemKey }) {
+                return try await performRemove(itemKey: draft.itemKey, listID: watched.id)
+            }
             return try await performAdd(draft: draft, listID: watched.id, at: date)
+        }
+    }
+
+    /// Puts a TV series on In Progress. Removes it from Watched and Watchlist.
+    /// Movies and people are rejected — In Progress is TV-only.
+    func addToInProgress(
+        _ draft: ListItemDraft,
+        at date: Date = Date(),
+        messageOverride: String? = nil
+    ) async throws -> MembershipChange {
+        guard draft.kind == .tv else {
+            throw ListEditError.wrongSegment
+        }
+        return try await serializeWrite { [self] in
+            let snapshot = try await loadCache()
+            guard let inProgress = snapshot.list(.inProgress) else {
+                throw ListEditError.missingList
+            }
+            return try await performAdd(
+                draft: draft,
+                listID: inProgress.id,
+                at: date,
+                messageOverride: messageOverride
+            )
         }
     }
 
@@ -162,7 +209,12 @@ actor ListsRepository {
         return try await performAdd(draft: draft, listID: listID, at: date)
     }
 
-    private func performAdd(draft: ListItemDraft, listID: UUID, at date: Date) async throws -> MembershipChange {
+    private func performAdd(
+        draft: ListItemDraft,
+        listID: UUID,
+        at date: Date,
+        messageOverride: String? = nil
+    ) async throws -> MembershipChange {
         var snapshot = try await loadCache()
         guard let list = snapshot.lists.first(where: { $0.id == listID }) else {
             throw ListEditError.missingList
@@ -177,16 +229,54 @@ actor ListsRepository {
                 listID: list.id,
                 listName: list.name,
                 itemKey: draft.itemKey,
-                restore: nil,
-                removed: nil
+                restores: [],
+                removed: nil,
+                messageOverride: messageOverride
             )
         }
 
-        var restore: ListEntry?
-        if list.system == .watched, let watchlist = snapshot.list(.watchlist) {
-            let removal = Self.removing(itemKey: draft.itemKey, listID: watchlist.id, from: snapshot.entries)
-            snapshot.entries = removal.entries
-            restore = removal.removed
+        var restores: [ListEntry] = []
+        switch list.system {
+            case .watched:
+                if let watchlist = snapshot.list(.watchlist) {
+                    let removal = Self.removing(
+                        itemKey: draft.itemKey,
+                        listID: watchlist.id,
+                        from: snapshot.entries
+                    )
+                    snapshot.entries = removal.entries
+                    if let removed = removal.removed { restores.append(removed) }
+                }
+                if let inProgress = snapshot.list(.inProgress) {
+                    let removal = Self.removing(
+                        itemKey: draft.itemKey,
+                        listID: inProgress.id,
+                        from: snapshot.entries
+                    )
+                    snapshot.entries = removal.entries
+                    if let removed = removal.removed { restores.append(removed) }
+                }
+            case .inProgress:
+                if let watched = snapshot.list(.watched) {
+                    let removal = Self.removing(
+                        itemKey: draft.itemKey,
+                        listID: watched.id,
+                        from: snapshot.entries
+                    )
+                    snapshot.entries = removal.entries
+                    if let removed = removal.removed { restores.append(removed) }
+                }
+                if let watchlist = snapshot.list(.watchlist) {
+                    let removal = Self.removing(
+                        itemKey: draft.itemKey,
+                        listID: watchlist.id,
+                        from: snapshot.entries
+                    )
+                    snapshot.entries = removal.entries
+                    if let removed = removal.removed { restores.append(removed) }
+                }
+            case .watchlist, nil:
+                break
         }
 
         snapshot.entries = Self.prepending(draft, listID: list.id, at: date, to: snapshot.entries)
@@ -196,8 +286,9 @@ actor ListsRepository {
             listID: list.id,
             listName: list.name,
             itemKey: draft.itemKey,
-            restore: restore,
-            removed: nil
+            restores: restores,
+            removed: nil,
+            messageOverride: messageOverride
         )
     }
 
@@ -228,7 +319,7 @@ actor ListsRepository {
                 listID: list.id,
                 listName: list.name,
                 itemKey: itemKey,
-                restore: nil,
+                restores: [],
                 removed: nil
             )
         }
@@ -239,7 +330,7 @@ actor ListsRepository {
             listID: list.id,
             listName: list.name,
             itemKey: itemKey,
-            restore: nil,
+            restores: [],
             removed: removed
         )
     }
@@ -254,12 +345,12 @@ actor ListsRepository {
                     listID: change.listID,
                     from: snapshot.entries
                 ).entries
-                if let restore = change.restore {
-                snapshot.entries = Self.inserting(restore, into: snapshot.entries)
+                for restore in change.restores {
+                    snapshot.entries = Self.inserting(restore, into: snapshot.entries)
                 }
             case .removed:
                 if let removed = change.removed {
-                snapshot.entries = Self.inserting(removed, into: snapshot.entries)
+                    snapshot.entries = Self.inserting(removed, into: snapshot.entries)
                 }
             case .unchanged:
                 return
@@ -299,7 +390,7 @@ actor ListsRepository {
                 listID: list.id,
                 listName: list.name,
                 itemKey: draft.itemKey,
-                restore: nil,
+                restores: [],
                 removed: nil
             )
         }
@@ -442,14 +533,17 @@ actor ListsRepository {
         }
     }
 
-    /// Watched and Watchlist exist on Movies & TV. People starts with no lists.
+    /// Watched, In Progress, and Watchlist exist on Movies & TV. People starts with no lists.
     private static func ensuringSystemLists(_ snapshot: LibrarySnapshot) -> LibrarySnapshot {
         var lists = snapshot.lists
         if !lists.contains(where: { $0.system == .watched }) {
             lists.append(.system(.watched, position: 0))
         }
+        if !lists.contains(where: { $0.system == .inProgress }) {
+            lists.append(.system(.inProgress, position: 1))
+        }
         if !lists.contains(where: { $0.system == .watchlist }) {
-            lists.append(.system(.watchlist, position: 1))
+            lists.append(.system(.watchlist, position: 2))
         }
         return LibrarySnapshot(lists: lists, entries: snapshot.entries)
     }
@@ -478,9 +572,10 @@ actor ListsRepository {
     }
 
     private static func isReservedMovieTVName(_ name: String) -> Bool {
-        let folded = name.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
-        return folded.compare("Watched", options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
-            || folded.compare("Watchlist", options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
+        let reserved = ["Watched", "In Progress", "Watchlist"]
+        return reserved.contains { candidate in
+            name.compare(candidate, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
+        }
     }
 
     private static func prepending(

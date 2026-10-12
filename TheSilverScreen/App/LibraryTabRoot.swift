@@ -12,6 +12,7 @@ struct LibraryTabRoot: View {
     let lists: ListsRepository
     let listsIndex: ListsIndex
     let annotations: AnnotationsRepository
+    let tvWatch: TVWatchRepository
     let awards: AwardsRepository
     let movies: MovieRepository
     let shows: TVRepository
@@ -29,6 +30,7 @@ struct LibraryTabRoot: View {
                         lists: lists,
                         listsIndex: listsIndex,
                         annotations: annotations,
+                        tvWatch: tvWatch,
                         awards: awards,
                         imageLoader: imageLoader,
                         router: router

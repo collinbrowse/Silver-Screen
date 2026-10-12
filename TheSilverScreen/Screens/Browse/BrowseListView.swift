@@ -13,6 +13,8 @@ struct BrowseListView: View {
     let imageLoader: ImageLoader
     let lists: ListsRepository
     let listsIndex: ListsIndex
+    let shows: TVRepository
+    let tvWatch: TVWatchRepository
     var router: NavigationRouter?
 
     @State private var scrolledID: String?
@@ -117,7 +119,7 @@ struct BrowseListView: View {
                 list(rows, activity: activity)
             case .failed(let error):
                 ErrorStateView(error: error) {
-                await viewModel.retry()
+                    await viewModel.retry()
                 }
         }
     }
@@ -132,7 +134,8 @@ struct BrowseListView: View {
                         } label: {
                             CatalogRowView(
                                 title: row.title,
-                                subtitle: row.genreLine,
+                                nextUp: row.nextUp,
+                                genre: row.genreLine,
                                 metadata: row.formattedDate,
                                 userScore: row.formattedUserScore,
                                 imagePath: row.posterPath,
@@ -143,10 +146,12 @@ struct BrowseListView: View {
                         }
                         .buttonStyle(.plain)
 
-                        ListMembershipButton(
+                        WatchedToggleButton(
                             draft: row.listItem(),
                             lists: lists,
-                            index: listsIndex
+                            index: listsIndex,
+                            tvWatch: tvWatch,
+                            shows: shows
                         ) {
                             viewModel.noteListSaveFailed()
                         }

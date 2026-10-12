@@ -349,6 +349,63 @@ final class BrowseListViewModelTests: XCTestCase {
         XCTAssertEqual(refreshed.first { $0.mediaID == 278 }?.formattedUserScore, "7.5 / 10")
     }
 
+    func test_reloadDisplayedScores_stampsNextUpForTVRow() async throws {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let tvWatch = TVWatchRepository(
+            store: InMemoryTVWatchStore(),
+            lists: lists,
+            logger: SilentLogger()
+        )
+        let draft = ListItemDraft(
+            id: 11,
+            kind: .tv,
+            title: "Middlemarch",
+            imagePath: nil,
+            releaseDate: nil,
+            genreNames: [],
+            voteAverage: 0,
+            popularity: 0
+        )
+        let seasons = [
+            TVSeasonSummary(
+                id: 1,
+                name: "Season 1",
+                seasonNumber: 1,
+                episodeCount: 3,
+                airDate: nil,
+                posterPath: nil
+            ),
+        ]
+        _ = try await tvWatch.markEpisode(
+            seriesID: 11,
+            seasonNumber: 1,
+            episodeNumber: 1,
+            title: "One",
+            draft: draft,
+            seasons: seasons,
+            knownTitles: [
+                TVEpisodeRef(seasonNumber: 1, episodeNumber: 2): "Two",
+            ]
+        )
+        let client = RoutingHTTPClient(routes: [
+            "tv/popular": .success(Self.tvPage),
+        ])
+        let viewModel = makeViewModel(
+            movies: MovieRepository.test(client: client),
+            shows: TVRepository.test(client: client),
+            tvWatch: tvWatch
+        )
+        await viewModel.setMedia(.tv)
+
+        guard case .loaded(let rows, _) = viewModel.state else {
+            return XCTFail("Expected TV rows, got \(viewModel.state)")
+        }
+        XCTAssertEqual(
+            rows.first { $0.mediaID == 11 }?.nextUp,
+            "Next up: S1 · E2 · Two"
+        )
+    }
+
     private func makeViewModel(
         movieStub: FakeHTTPClient.Stub = .success(TMDBFixtures.topMoviesPage1)
     ) -> BrowseListViewModel {
@@ -362,13 +419,15 @@ final class BrowseListViewModelTests: XCTestCase {
     private func makeViewModel(
         movies: MovieRepository,
         shows: TVRepository,
-        annotations: AnnotationsRepository = .empty()
+        annotations: AnnotationsRepository = .empty(),
+        tvWatch: TVWatchRepository? = nil
     ) -> BrowseListViewModel {
         let day = today
         return BrowseListViewModel(
             movies: movies,
             shows: shows,
             annotations: annotations,
+            tvWatch: tvWatch,
             locale: locale,
             timeZone: TimeZone(secondsFromGMT: 0)!,
             today: { day }

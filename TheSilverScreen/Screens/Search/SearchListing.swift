@@ -48,6 +48,15 @@ enum SearchResultItem: Sendable, Equatable, Identifiable {
                 self
         }
     }
+
+    func withNextUp(_ captions: [Int: String]) -> SearchResultItem {
+        switch self {
+            case .tv(let row):
+                .tv(row.withNextUp(captions[row.id]))
+            case .movie, .person:
+                self
+        }
+    }
 }
 
 /// Whether People float above Movies/TV for one committed query's results.
@@ -95,10 +104,15 @@ struct SearchPreviewSections: Sendable, Equatable {
         movies.isEmpty && tv.isEmpty && people.isEmpty
     }
 
-    func applying(_ scores: [AnnotationKey: SavedUserScore]) -> SearchPreviewSections {
+    func applying(
+        scores: [AnnotationKey: SavedUserScore],
+        nextUp: [Int: String] = [:]
+    ) -> SearchPreviewSections {
         SearchPreviewSections(
             movies: movies.map { $0.withUserScore(scores[.movie($0.id)]) },
-            tv: tv.map { $0.withUserScore(scores[.series($0.id)]) },
+            tv: tv.map {
+                $0.withUserScore(scores[.series($0.id)]).withNextUp(nextUp[$0.id])
+            },
             people: people,
             emphasis: emphasis
         )
@@ -117,12 +131,30 @@ enum SearchContent: Sendable, Equatable {
         }
     }
 
-    func applying(_ scores: [AnnotationKey: SavedUserScore]) -> SearchContent {
+    func applying(
+        scores: [AnnotationKey: SavedUserScore],
+        nextUp: [Int: String] = [:]
+    ) -> SearchContent {
         switch self {
             case .preview(let sections):
-                .preview(sections.applying(scores))
+                .preview(sections.applying(scores: scores, nextUp: nextUp))
             case .allResults(let items):
-                .allResults(items.map { $0.withUserScore(scores) })
+                .allResults(
+                    items.map { $0.withUserScore(scores).withNextUp(nextUp) }
+                )
+        }
+    }
+
+    /// Series ids in the current payload that may carry an In Progress caption.
+    var tvSeriesIDs: [Int] {
+        switch self {
+            case .preview(let sections):
+                sections.tv.map(\.id)
+            case .allResults(let items):
+                items.compactMap { item in
+                    if case .tv(let row) = item { return row.id }
+                    return nil
+                }
         }
     }
 }

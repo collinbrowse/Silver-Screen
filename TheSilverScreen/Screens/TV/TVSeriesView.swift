@@ -10,8 +10,11 @@ struct TVSeriesView: View {
     let imageLoader: ImageLoader
     let lists: ListsRepository
     let listsIndex: ListsIndex
+    let shows: TVRepository
+    let tvWatch: TVWatchRepository
     var router: NavigationRouter?
 
+    @Environment(ListChangeNotice.self) private var notice
     @Namespace private var heroTransition
     @State private var selectedBackdropID: String?
     @State private var playingTrailer: MediaTrailer?
@@ -71,12 +74,27 @@ struct TVSeriesView: View {
         .toolbar {
             if case .loaded(let content, _) = viewModel.state {
                 ToolbarItem(placement: .topBarTrailing) {
-                    ListMembershipButton(
-                        draft: content.detail.listItem(),
-                        lists: lists,
-                        index: listsIndex
-                    ) {
-                        viewModel.noteListSaveFailed()
+                    HStack(spacing: 4) {
+                        WatchedToggleButton(
+                            draft: content.detail.listItem(),
+                            lists: lists,
+                            index: listsIndex,
+                            tvWatch: tvWatch,
+                            shows: shows,
+                            seasons: content.detail.seasons,
+                            chrome: false,
+                            isWatchedOverride: viewModel.isSeriesFullyWatched,
+                            onToggleComplete: { Task { await viewModel.reloadNextUp() } },
+                            onFailure: { viewModel.noteListSaveFailed() }
+                        )
+
+                        ListMembershipButton(
+                            draft: content.detail.listItem(),
+                            lists: lists,
+                            index: listsIndex
+                        ) {
+                            viewModel.noteListSaveFailed()
+                        }
                     }
                 }
             }
@@ -85,6 +103,18 @@ struct TVSeriesView: View {
             if case .idle = viewModel.state {
                 await viewModel.load()
             }
+        }
+        .onAppear {
+            // Season page (and series eye) write the watch ledger; refresh badges/Next up on return.
+            Task { await viewModel.reloadNextUp() }
+        }
+        .onChange(of: notice.ratingKey) { _, key in
+            if key == nil {
+                Task { await viewModel.reloadPersonalFromStore() }
+            }
+        }
+        .onChange(of: notice.watchRevision) { _, _ in
+            Task { await viewModel.reloadNextUp() }
         }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
         .sheet(item: annotationEditorBinding) { session in
@@ -198,12 +228,17 @@ struct TVSeriesView: View {
             streamingProviders: content.detail.streamingProviders
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.lg) {
-                if !content.heroMetadataLine.isEmpty {
-                    Text(content.heroMetadataLine)
-                        .font(DesignTypography.metadata)
-                        .foregroundStyle(DesignTheme.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .accessibilityLabel(content.heroMetadataAccessibilityLabel)
+                VStack(alignment: .leading, spacing: DesignSpacing.sm) {
+                    if let nextUp = viewModel.nextUpSubtitle {
+                        TVNextUpLabel(subtitle: nextUp)
+                    }
+                    if !content.heroMetadataLine.isEmpty {
+                        Text(content.heroMetadataLine)
+                            .font(DesignTypography.metadata)
+                            .foregroundStyle(DesignTheme.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityLabel(content.heroMetadataAccessibilityLabel)
+                    }
                 }
                 if !content.detail.trailers.isEmpty {
                     MediaMetadataPills(
@@ -248,7 +283,8 @@ struct TVSeriesView: View {
                             seriesID: content.detail.id,
                             seriesName: content.detail.name,
                             seasonNumber: season.seasonNumber,
-                            seriesSnapshot: SeriesListSnapshot(detail: content.detail)
+                            seriesSnapshot: SeriesListSnapshot(detail: content.detail),
+                            scrollToEpisodeNumber: nil
                         )
                     )
                 } label: {
@@ -262,6 +298,13 @@ struct TVSeriesView: View {
                             placeholderSystemImage: "tv"
                         )
                         .carouselCard(width: 140, aspectRatio: 2 / 3)
+                        .overlay(alignment: .topTrailing) {
+                            CarouselRatingBadge(
+                                formattedScore: viewModel.seasonScores[season.seasonNumber],
+                                isWatched: viewModel.watchedSeasonNumbers.contains(season.seasonNumber)
+                            )
+                            .padding(DesignSpacing.xs)
+                        }
                         VStack(alignment: .leading, spacing: DesignSpacing.xs) {
                             Text(season.name)
                                 .font(DesignTypography.section.weight(.semibold))
@@ -279,10 +322,20 @@ struct TVSeriesView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(season.name), \(season.formattedAirDate), \(season.episodeCountText)")
+                .accessibilityLabel(seasonAccessibilityLabel(season))
                 .accessibilityAddTraits(.isButton)
             }
         }
+    }
+
+    private func seasonAccessibilityLabel(_ season: TVSeriesContent.SeasonRow) -> String {
+        var parts = [season.name, season.formattedAirDate, season.episodeCountText]
+        if let score = viewModel.seasonScores[season.seasonNumber] {
+            parts.append("Your rating \(score)")
+        } else if viewModel.watchedSeasonNumbers.contains(season.seasonNumber) {
+            parts.append("Watched")
+        }
+        return parts.joined(separator: ", ")
     }
 
     private func recommendationsCarousel(_ content: TVSeriesContent) -> some View {
@@ -297,6 +350,15 @@ struct TVSeriesView: View {
                             imageLoader: imageLoader,
                             width: 140
                         )
+                        .overlay(alignment: .topTrailing) {
+                            CarouselRatingBadge(
+                                formattedScore: viewModel.recommendationScores[show.id],
+                                isWatched: listsIndex.isOnWatched(
+                                    ListEntry.itemKey(id: show.id, kind: .tv)
+                                )
+                            )
+                            .padding(DesignSpacing.xs)
+                        }
                         Text(show.name)
                             .font(DesignTypography.metadata.weight(.semibold))
                             .foregroundStyle(DesignTheme.textPrimary)
@@ -306,9 +368,19 @@ struct TVSeriesView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel(show.name)
+                .accessibilityLabel(recommendationAccessibilityLabel(show))
                 .accessibilityAddTraits(.isButton)
             }
         }
+    }
+
+    private func recommendationAccessibilityLabel(_ show: TVSeriesContent.RecommendationRow) -> String {
+        var parts = [show.name]
+        if let score = viewModel.recommendationScores[show.id] {
+            parts.append("Your rating \(score)")
+        } else if listsIndex.isOnWatched(ListEntry.itemKey(id: show.id, kind: .tv)) {
+            parts.append("Watched")
+        }
+        return parts.joined(separator: ", ")
     }
 }

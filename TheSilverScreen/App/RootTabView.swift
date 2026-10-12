@@ -12,8 +12,9 @@ struct RootTabView: View {
     let people: PersonRepository
     let lists: ListsRepository
     let listsIndex: ListsIndex
-    let listChanges: ListChangeNotice
+    @Bindable var listChanges: ListChangeNotice
     let annotations: AnnotationsRepository
+    let tvWatch: TVWatchRepository
     let awards: AwardsRepository
     let imageLoader: ImageLoader
     let libraryHomeViewModel: LibraryHomeViewModel
@@ -30,6 +31,7 @@ struct RootTabView: View {
         listsIndex: ListsIndex,
         listChanges: ListChangeNotice,
         annotations: AnnotationsRepository,
+        tvWatch: TVWatchRepository,
         awards: AwardsRepository,
         imageLoader: ImageLoader,
         libraryHomeViewModel: LibraryHomeViewModel
@@ -42,11 +44,17 @@ struct RootTabView: View {
         self.listsIndex = listsIndex
         self.listChanges = listChanges
         self.annotations = annotations
+        self.tvWatch = tvWatch
         self.awards = awards
         self.imageLoader = imageLoader
         self.libraryHomeViewModel = libraryHomeViewModel
         _browseViewModel = State(
-            initialValue: BrowseListViewModel(movies: movies, shows: shows, annotations: annotations)
+            initialValue: BrowseListViewModel(
+                movies: movies,
+                shows: shows,
+                annotations: annotations,
+                tvWatch: tvWatch
+            )
         )
         _searchViewModel = State(
             initialValue: SearchViewModel(
@@ -54,16 +62,44 @@ struct RootTabView: View {
                 shows: shows,
                 people: people,
                 annotations: annotations,
+                tvWatch: tvWatch,
                 awards: awards
             )
         )
     }
 
+    private var toastAnnotationEditorBinding: Binding<AnnotationEditorSession?> {
+        Binding(
+            get: { listChanges.annotationEditor },
+            set: { newValue in
+                if newValue == nil {
+                    listChanges.dismissRatingEditor()
+                }
+            }
+        )
+    }
+
     var body: some View {
+        // Read `message` here so RootTabView observes ListChangeNotice. The overlay
+        // alone (child @Bindable) can miss updates when only the notice changes.
+        let bannerMessage = listChanges.message
         tabs
             .environment(listChanges)
             .overlay(alignment: .bottom) {
-                ListChangeBanner(notice: listChanges)
+                if bannerMessage != nil {
+                    ListChangeBanner(notice: listChanges)
+                        .id(listChanges.presentationID)
+                }
+            }
+            .sheet(item: toastAnnotationEditorBinding) { session in
+                AnnotationEditorSheet(
+                    title: session.title,
+                    score: session.score,
+                    note: session.note,
+                    canClear: session.canClear,
+                    onSave: { await listChanges.saveRatingAnnotation(score: $0, note: $1) },
+                    onClear: { await listChanges.clearRatingAnnotation() }
+                )
             }
     }
 
@@ -95,6 +131,7 @@ struct RootTabView: View {
                     lists: lists,
                     listsIndex: listsIndex,
                     annotations: annotations,
+                    tvWatch: tvWatch,
                     awards: awards
                 )
             }
@@ -110,6 +147,7 @@ struct RootTabView: View {
                     lists: lists,
                     listsIndex: listsIndex,
                     annotations: annotations,
+                    tvWatch: tvWatch,
                     awards: awards
                 )
             }
@@ -122,6 +160,7 @@ struct RootTabView: View {
                     lists: lists,
                     listsIndex: listsIndex,
                     annotations: annotations,
+                    tvWatch: tvWatch,
                     awards: awards,
                     movies: movies,
                     shows: shows,

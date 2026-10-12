@@ -17,6 +17,7 @@ struct PersonDetailRouteView: View {
         people: PersonRepository,
         lists: ListsRepository,
         listsIndex: ListsIndex,
+        annotations: AnnotationsRepository,
         awards: AwardsRepository,
         imageLoader: ImageLoader,
         router: NavigationRouter
@@ -25,6 +26,7 @@ struct PersonDetailRouteView: View {
             initialValue: PersonDetailViewModel(
                 personID: personID,
                 people: people,
+                annotations: annotations,
                 awards: awards
             )
         )

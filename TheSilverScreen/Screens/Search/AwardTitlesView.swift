@@ -10,6 +10,8 @@ struct AwardTitlesView: View {
     let imageLoader: ImageLoader
     let lists: ListsRepository
     let listsIndex: ListsIndex
+    let shows: TVRepository
+    let tvWatch: TVWatchRepository
     var router: NavigationRouter?
 
     init(
@@ -20,6 +22,7 @@ struct AwardTitlesView: View {
         annotations: AnnotationsRepository,
         lists: ListsRepository,
         listsIndex: ListsIndex,
+        tvWatch: TVWatchRepository,
         imageLoader: ImageLoader,
         router: NavigationRouter?
     ) {
@@ -29,12 +32,15 @@ struct AwardTitlesView: View {
                 awards: awards,
                 movies: movies,
                 shows: shows,
-                annotations: annotations
+                annotations: annotations,
+                tvWatch: tvWatch
             )
         )
         self.imageLoader = imageLoader
         self.lists = lists
         self.listsIndex = listsIndex
+        self.shows = shows
+        self.tvWatch = tvWatch
         self.router = router
     }
 
@@ -82,6 +88,12 @@ struct AwardTitlesView: View {
                 await viewModel.load()
             }
         }
+        .onAppear {
+            Task { await viewModel.reloadDisplayedScores() }
+        }
+        .onChange(of: router?.path.count ?? 0) { _, _ in
+            Task { await viewModel.reloadDisplayedScores() }
+        }
     }
 
     private func list(_ rows: [AwardTitleRow], activity: LoadActivity) -> some View {
@@ -94,7 +106,8 @@ struct AwardTitlesView: View {
                         } label: {
                             CatalogRowView(
                                 title: row.title,
-                                subtitle: row.awardYear,
+                                nextUp: row.nextUp,
+                                genre: row.awardYear,
                                 metadata: row.genreLine,
                                 userScore: row.userScore,
                                 imagePath: row.imagePath,
@@ -106,10 +119,13 @@ struct AwardTitlesView: View {
                         .buttonStyle(.plain)
 
                         if let draft = row.listDraft {
-                            ListMembershipButton(
+                            WatchedToggleButton(
                                 draft: draft,
                                 lists: lists,
-                                index: listsIndex
+                                index: listsIndex,
+                                tvWatch: tvWatch,
+                                shows: shows,
+                                onFailure: { viewModel.noteListSaveFailed() }
                             )
                         }
                     }

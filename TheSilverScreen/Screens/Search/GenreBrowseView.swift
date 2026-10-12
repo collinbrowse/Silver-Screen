@@ -13,6 +13,8 @@ struct GenreBrowseView: View {
     let imageLoader: ImageLoader
     let lists: ListsRepository
     let listsIndex: ListsIndex
+    let shows: TVRepository
+    let tvWatch: TVWatchRepository
     var router: NavigationRouter?
 
     @State private var scrolledID: String?
@@ -24,6 +26,7 @@ struct GenreBrowseView: View {
         annotations: AnnotationsRepository,
         lists: ListsRepository,
         listsIndex: ListsIndex,
+        tvWatch: TVWatchRepository,
         imageLoader: ImageLoader,
         router: NavigationRouter?
     ) {
@@ -32,12 +35,15 @@ struct GenreBrowseView: View {
                 genre: genre,
                 movies: movies,
                 shows: shows,
-                annotations: annotations
+                annotations: annotations,
+                tvWatch: tvWatch
             )
         )
         self.imageLoader = imageLoader
         self.lists = lists
         self.listsIndex = listsIndex
+        self.shows = shows
+        self.tvWatch = tvWatch
         self.router = router
     }
 
@@ -121,7 +127,8 @@ struct GenreBrowseView: View {
                         } label: {
                             CatalogRowView(
                                 title: row.title,
-                                subtitle: row.genreLine,
+                                nextUp: row.nextUp,
+                                genre: row.genreLine,
                                 metadata: row.formattedDate,
                                 userScore: row.formattedUserScore,
                                 imagePath: row.posterPath,
@@ -132,10 +139,12 @@ struct GenreBrowseView: View {
                         }
                         .buttonStyle(.plain)
 
-                        ListMembershipButton(
+                        WatchedToggleButton(
                             draft: row.listItem(),
                             lists: lists,
-                            index: listsIndex
+                            index: listsIndex,
+                            tvWatch: tvWatch,
+                            shows: shows
                         ) {
                             viewModel.noteListSaveFailed()
                         }

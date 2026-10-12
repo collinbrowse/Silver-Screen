@@ -16,15 +16,26 @@ final class LibraryDetailViewModel {
     /// All / Movies / TV. People lists ignore this.
     var mediaFilter: TitleMediaFilter = .all
     private(set) var userScores: [String: SavedUserScore] = [:]
+    /// TV progress line under a row title (In Progress episode line or Watched season count).
+    private(set) var progressCaptions: [String: String] = [:]
+    /// Last completed episode per In Progress TV row — used to open that season scrolled to it.
+    private(set) var progressAnchors: [String: TVEpisodeRef] = [:]
 
     let listID: UUID
     private let lists: ListsRepository
     private let annotations: AnnotationsRepository
+    private let tvWatch: TVWatchRepository?
 
-    init(listID: UUID, lists: ListsRepository, annotations: AnnotationsRepository) {
+    init(
+        listID: UUID,
+        lists: ListsRepository,
+        annotations: AnnotationsRepository,
+        tvWatch: TVWatchRepository? = nil
+    ) {
         self.listID = listID
         self.lists = lists
         self.annotations = annotations
+        self.tvWatch = tvWatch
     }
 
     var displayedEntries: [ListEntry] {
@@ -51,11 +62,14 @@ final class LibraryDetailViewModel {
             guard let list = snapshot.lists.first(where: { $0.id == listID }) else {
                 state = .empty
                 userScores = [:]
+                progressCaptions = [:]
+                progressAnchors = [:]
                 return
             }
             let entries = LibraryOrdering.displayed(snapshot.entries, list: list)
             state = .loaded(LibraryListDetail(list: list, entries: entries))
             await reloadScores(entries)
+            await reloadProgressCaptions(list: list, entries: entries)
         } catch is CancellationError {
             return
         } catch let error as AppError {
@@ -77,8 +91,21 @@ final class LibraryDetailViewModel {
     }
 
     func remove(_ entry: ListEntry) async -> MembershipChange? {
+        let systemKind: SystemListKind?
+        if case .loaded(let detail, _) = state {
+            systemKind = detail.list.system
+        } else {
+            systemKind = nil
+        }
         do {
             let change = try await lists.remove(itemKey: entry.itemKey, listID: listID)
+            // Drop the episode ledger when pruning Watched / In Progress so cold-launch
+            // reconcile cannot resurrect a title the user just deleted.
+            if entry.kind == .tv,
+               let tvWatch,
+               systemKind == .watched || systemKind == .inProgress {
+                try? await tvWatch.clearProgress(seriesID: entry.itemID)
+            }
             await load()
             return change
         } catch is CancellationError {
@@ -101,6 +128,30 @@ final class LibraryDetailViewModel {
         }
     }
 
+    /// Destination for a list row. In Progress TV opens the season scrolled one episode
+    /// above the last watched (so last watched sits under a bit of context; Next up below that).
+    func route(for entry: ListEntry) -> Route {
+        switch entry.kind {
+            case .movie:
+                return .movieDetail(id: entry.itemID)
+            case .person:
+                return .person(id: entry.itemID)
+            case .tv:
+                if case .loaded(let detail, _) = state,
+                   detail.list.system == .inProgress,
+                   let last = progressAnchors[entry.itemKey] {
+                    return .tvSeason(
+                        seriesID: entry.itemID,
+                        seriesName: entry.title,
+                        seasonNumber: last.seasonNumber,
+                        seriesSnapshot: SeriesListSnapshot(entry: entry),
+                        scrollToEpisodeNumber: max(1, last.episodeNumber - 1)
+                    )
+                }
+                return .tvSeries(id: entry.itemID)
+        }
+    }
+
     private func reloadScores(_ entries: [ListEntry]) async {
         let scores = await annotations.formattedScores()
         var mapped: [String: SavedUserScore] = [:]
@@ -115,6 +166,50 @@ final class LibraryDetailViewModel {
             }
         }
         userScores = mapped
+    }
+
+    private func reloadProgressCaptions(list: LibraryList, entries: [ListEntry]) async {
+        guard let tvWatch else {
+            progressCaptions = [:]
+            progressAnchors = [:]
+            return
+        }
+        let tvEntries = entries.filter { $0.kind == .tv }
+        guard !tvEntries.isEmpty else {
+            progressCaptions = [:]
+            progressAnchors = [:]
+            return
+        }
+        do {
+            let states = try await tvWatch.states(for: tvEntries.map(\.itemID))
+            var captions: [String: String] = [:]
+            var anchors: [String: TVEpisodeRef] = [:]
+            for entry in tvEntries {
+                guard let state = states[entry.itemID] else { continue }
+                switch list.system {
+                    case .inProgress:
+                        if let subtitle = state.progressSubtitle {
+                            captions[entry.itemKey] = subtitle
+                        }
+                        if let last = state.lastCompleted {
+                            anchors[entry.itemKey] = last
+                        }
+                    case .watched:
+                        if let caption = state.watchedSeasonCaption {
+                            captions[entry.itemKey] = caption
+                        } else {
+                            captions[entry.itemKey] = "Complete"
+                        }
+                    case .watchlist, nil:
+                        break
+                }
+            }
+            progressCaptions = captions
+            progressAnchors = anchors
+        } catch {
+            progressCaptions = [:]
+            progressAnchors = [:]
+        }
     }
 
     private func fail(with error: AppError) {
