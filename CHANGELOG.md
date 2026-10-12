@@ -5,6 +5,8 @@ moves them under a `version+build` heading that matches the git tag.
 
 ## [Unreleased]
 
+- Rename the app module and folders from TheSilverScreen to SilverScreen.
+
 ## [0.1.1+4] - 2026-10-02
 
 - Movie and TV detail show where a title streams (flatrate providers), with logos you can tap to open the service app or App Store.
