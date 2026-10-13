@@ -4,7 +4,8 @@
 //
 //  Eye control that marks a title watched or not. Watched is never chosen from
 //  the + list menu — this toggle (and TV episode progress / rating sync) owns it.
-//  `onFailure` is last so a trailing closure cannot bind to the success path.
+//  `onFailure` is last and has no default. A trailing closure binds to the first
+//  defaulted closure parameter, so a default here would route it to `onToggleComplete`.
 //
 
 import SwiftUI
@@ -26,8 +27,8 @@ struct WatchedToggleButton: View {
     var isWatchedOverride: Bool? = nil
     /// Called after a successful watch toggle (membership and/or episode ledger).
     var onToggleComplete: () -> Void = {}
-    /// Trailing-closure friendly — keep this parameter last.
-    var onFailure: () -> Void = {}
+    /// Trailing-closure target. Keep it last and required.
+    var onFailure: () -> Void
 
     @Environment(ListChangeNotice.self) private var notice
     @State private var confirmEpisodeCount: Int?
