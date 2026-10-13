@@ -23,21 +23,21 @@ struct AppDependencies {
 
     static func live() throws -> AppDependencies {
         let logger = OSAppLogger()
-        let apiKey = try TMDBAPIKey.fromBundle()
+        let accessToken = try TMDBAccessToken.fromBundle()
         let httpClient = URLSessionHTTPClient()
         let movies = MovieRepository(
             client: httpClient,
-            apiKey: apiKey,
+            accessToken: accessToken,
             logger: logger
         )
         let people = PersonRepository(
             client: httpClient,
-            apiKey: apiKey,
+            accessToken: accessToken,
             logger: logger
         )
         let shows = TVRepository(
             client: httpClient,
-            apiKey: apiKey,
+            accessToken: accessToken,
             logger: logger
         )
         let libraryStore = try SQLiteLibraryStore.live()

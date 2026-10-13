@@ -68,21 +68,27 @@ FIRST_PARTY_NAME_MARKERS = (
 )
 
 
-def read_api_key() -> str:
+def read_access_token() -> str:
     if not SECRETS.is_file():
         print("Secrets.xcconfig missing; skip TMDB fetch.", file=sys.stderr)
         sys.exit(0)
     for line in SECRETS.read_text().splitlines():
-        if line.strip().startswith("TMDB_API_KEY"):
+        if line.strip().startswith("TMDB_ACCESS_TOKEN"):
             return line.split("=", 1)[1].strip()
-    print("TMDB_API_KEY not found in Secrets.xcconfig", file=sys.stderr)
+    print("TMDB_ACCESS_TOKEN not found in Secrets.xcconfig", file=sys.stderr)
     sys.exit(1)
 
 
-def fetch_providers(path: str, api_key: str) -> dict[int, str]:
-    query = urllib.parse.urlencode({"watch_region": "US", "api_key": api_key})
-    url = f"https://api.themoviedb.org/3/{path}?{query}"
-    with urllib.request.urlopen(url, timeout=30) as response:
+def fetch_providers(path: str, access_token: str) -> dict[int, str]:
+    query = urllib.parse.urlencode({"watch_region": "US"})
+    request = urllib.request.Request(
+        f"https://api.themoviedb.org/3/{path}?{query}",
+        headers={
+            "Accept": "application/json",
+            "Authorization": f"Bearer {access_token}",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=30) as response:
         payload = json.load(response)
     return {entry["provider_id"]: entry["provider_name"] for entry in payload["results"]}
 
@@ -104,9 +110,9 @@ def is_first_party(name: str) -> bool:
 
 
 def main() -> None:
-    api_key = read_api_key()
-    movie = fetch_providers("watch/providers/movie", api_key)
-    tv = fetch_providers("watch/providers/tv", api_key)
+    access_token = read_access_token()
+    movie = fetch_providers("watch/providers/movie", access_token)
+    tv = fetch_providers("watch/providers/tv", access_token)
     catalog = movie | tv
     mapped = mapped_ids()
 

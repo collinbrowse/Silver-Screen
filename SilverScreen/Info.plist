@@ -45,8 +45,8 @@
 		<string>youtube</string>
 		<string>youtubetv</string>
 	</array>
-	<key>TMDBAPIKey</key>
-	<string>$(TMDB_API_KEY)</string>
+	<key>TMDBAccessToken</key>
+	<string>$(TMDB_ACCESS_TOKEN)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
