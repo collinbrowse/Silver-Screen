@@ -171,6 +171,19 @@ class ChangelogTests(unittest.TestCase):
         with self.assertRaises(release.ReleaseError):
             release.split_unreleased("# Changelog\n\n## [0.1.1]\n")
 
+    def test_notes_for_version_reads_cut_section(self) -> None:
+        text = (
+            "# Changelog\n\n## [Unreleased]\n\n"
+            "## [0.1.1+5] - 2026-10-12\n\n- One.\n- Two.\n\n"
+            "## [0.1.1+4] - 2026-10-02\n\n- Older.\n"
+        )
+        self.assertEqual(
+            release.notes_for_version(text, release.Version("0.1.1", 5)),
+            "- One.\n- Two.",
+        )
+        with self.assertRaises(release.ReleaseError):
+            release.notes_for_version(text, release.Version("0.1.1", 9))
+
     def test_pr_summary_from_merge_and_squash(self) -> None:
         self.assertEqual(
             release.pr_summary_from_commit(

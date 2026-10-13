@@ -5,7 +5,7 @@ Architecture conventions live in [`.cursor/rules/architecture.mdc`](.cursor/rule
 ## Ground rules
 
 - All UI work is SwiftUI. Do not add UIKit screens.
-- No 3rd-party dependencies.
+- No 3rd-party dependencies **except Sentry** (Cocoa via SPM in the Xcode project). See [`.cursor/rules/observability.mdc`](.cursor/rules/observability.mdc).
 - Add unit tests for completed work.
 - Ship work through pull requests. `main` is the branch that ships.
 - **PR bodies must follow** [`.github/pull_request_template.md`](.github/pull_request_template.md) in full — see [`.cursor/rules/pull-requests.mdc`](.cursor/rules/pull-requests.mdc). CI runs [`scripts/validate-pr-body.py`](scripts/validate-pr-body.py).
@@ -15,10 +15,10 @@ Architecture conventions live in [`.cursor/rules/architecture.mdc`](.cursor/rule
 
 ## Pointers
 
-- Architecture: [`.cursor/rules/architecture.mdc`](.cursor/rules/architecture.mdc) (always on), plus scoped rules for concurrency, SwiftUI, data layer, image loading, secrets, errors and logging, accessibility, documentation comments, formatting, tests, commits, pull requests, and shell progress
-- Persistence roadmap (SQLite → accounts → sync → social): [`ROADMAP.md`](ROADMAP.md), design: [`PERSISTENCE.md`](PERSISTENCE.md)
+- Architecture: [`.cursor/rules/architecture.mdc`](.cursor/rules/architecture.mdc) (always on), plus scoped rules for concurrency, SwiftUI, data layer, image loading, secrets, errors and logging, observability, accessibility, documentation comments, formatting, tests, commits, pull requests, and shell progress
 - Awards shelves and the weekly catalog: [`AWARDS.md`](AWARDS.md)
-- Hooks: [`.cursor/hooks.json`](.cursor/hooks.json) — stop hook runs `SilverScreenTests` via [`.cursor/hooks/run-unit-tests.sh`](.cursor/hooks/run-unit-tests.sh) (warm default DerivedData; skips when the source fingerprint matches the last pass)
-- Harness gates: [`scripts/validate-rules.py`](scripts/validate-rules.py), [`scripts/validate-tests.py`](scripts/validate-tests.py) (empty tests banned), [`scripts/validate-pr-body.py`](scripts/validate-pr-body.py) (PR template sections required)
-- Releases: [`RELEASE.md`](RELEASE.md) and [`scripts/release.py`](scripts/release.py) — dev, TestFlight, and App Store share [`Version.xcconfig`](Version.xcconfig)
+- Hooks: [`.cursor/hooks.json`](.cursor/hooks.json) — stop hook runs `SilverScreenTests` via [`.cursor/hooks/run-unit-tests.sh`](.cursor/hooks/run-unit-tests.sh) (warm default DerivedData; skips when the source fingerprint matches the last pass); shell hook blocks non-Sentry third-party deps
+- Harness gates: [`scripts/validate-rules.py`](scripts/validate-rules.py) (also enforces Sentry-only SPM), [`scripts/validate-tests.py`](scripts/validate-tests.py) (empty tests banned), [`scripts/validate-pr-body.py`](scripts/validate-pr-body.py) (PR template sections required)
+- Releases: [`RELEASE.md`](RELEASE.md) and [`scripts/release.py`](scripts/release.py) — dev, TestFlight, and App Store share [`Version.xcconfig`](Version.xcconfig); `testflight/*` tags ship via [`.github/workflows/release.yml`](.github/workflows/release.yml)
+- Observability: [`.cursor/rules/observability.mdc`](.cursor/rules/observability.mdc) and [`OBSERVABILITY.md`](OBSERVABILITY.md)
 - PR template: [`.github/pull_request_template.md`](.github/pull_request_template.md)

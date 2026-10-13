@@ -14,6 +14,11 @@
 		SQL000092788B823003D8011 /* LibraryStoreAdapters.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL0000A2788B823003D8011 /* LibraryStoreAdapters.swift */; };
 		SQL0000B2788B823003D8011 /* InMemoryLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL0000C2788B823003D8011 /* InMemoryLibraryStore.swift */; };
 		SQL0000D2788B823003D8011 /* SQLiteLibraryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL0000E2788B823003D8011 /* SQLiteLibraryStoreTests.swift */; };
+
+		FE0000022788B823003D8011 /* SentryBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000012788B823003D8011 /* SentryBootstrap.swift */; };
+		FE0000042788B823003D8011 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = FE0000032788B823003D8011 /* PrivacyInfo.xcprivacy */; };
+		FE0000052788B823003D8011 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = FE0000072788B823003D8011 /* Sentry */; };
+		FE0000092788B823003D8011 /* SentryBootstrapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE0000082788B823003D8011 /* SentryBootstrapTests.swift */; };
 		03E398084C83473897647EA3 /* FittingSegmentedControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0297CAE4343649148152A5AA /* FittingSegmentedControl.swift */; };
 		0C0B35E8A55E455C83F34C40 /* ListChangeBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40E232642C3849EDA1C21FB7 /* ListChangeBanner.swift */; };
 		27947E37F891460DBF889492 /* SearchFocusObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5939FD58B12C4CEC80243B31 /* SearchFocusObserver.swift */; };
@@ -248,6 +253,9 @@
 		SQL0000A2788B823003D8011 /* LibraryStoreAdapters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryStoreAdapters.swift; sourceTree = "<group>"; };
 		SQL0000C2788B823003D8011 /* InMemoryLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InMemoryLibraryStore.swift; sourceTree = "<group>"; };
 		SQL0000E2788B823003D8011 /* SQLiteLibraryStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteLibraryStoreTests.swift; sourceTree = "<group>"; };
+		FE0000012788B823003D8011 /* SentryBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentryBootstrap.swift; sourceTree = "<group>"; };
+		FE0000032788B823003D8011 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		FE0000082788B823003D8011 /* SentryBootstrapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentryBootstrapTests.swift; sourceTree = "<group>"; };
 		01FFF924CF8B4156A2A7D52C /* BrowseTabRoot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseTabRoot.swift; sourceTree = "<group>"; };
 		0297CAE4343649148152A5AA /* FittingSegmentedControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FittingSegmentedControl.swift; sourceTree = "<group>"; };
 		1D8BDC41D4CE4FD397D60DBC /* FullscreenImagePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullscreenImagePage.swift; sourceTree = "<group>"; };
@@ -468,6 +476,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FE0000052788B823003D8011 /* Sentry in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -496,6 +505,7 @@
 				A10000052788B823003D8011 /* TMDBFixtures.swift */,
 				B10000292788B823003D8011 /* TestSupport.swift */,
 				B10000272788B823003D8011 /* ImageLoaderTests.swift */,
+				FE0000082788B823003D8011 /* SentryBootstrapTests.swift */,
 				C200000B2788B823003D8011 /* InMemoryAnnotationsStore.swift */,
 				TW00000D2788B823003D8011 /* InMemoryTVWatchStore.swift */,
 				L1B000202788B823003D8011 /* InMemoryListsStore.swift */,
@@ -714,6 +724,7 @@
 		C77D45302788B821003D8011 /* SilverScreen */ = {
 			isa = PBXGroup;
 			children = (
+				FE0000032788B823003D8011 /* PrivacyInfo.xcprivacy */,
 				B10001412788B823003D8011 /* App */,
 				B10001142788B823003D8011 /* Screens */,
 				B10002172788B823003D8011 /* Design */,
@@ -816,6 +827,7 @@
 				B10000132788B823003D8011 /* AppLogging.swift */,
 				B10000152788B823003D8011 /* LoadState.swift */,
 				B10000212788B823003D8011 /* ImageLoader.swift */,
+				FE0000012788B823003D8011 /* SentryBootstrap.swift */,
 				D1A000122788B823003D8011 /* StreamingProviderLaunch.swift */,
 			);
 			path = Support;
@@ -946,6 +958,9 @@
 			dependencies = (
 			);
 			name = SilverScreen;
+			packageProductDependencies = (
+				FE0000072788B823003D8011 /* Sentry */,
+			);
 			productName = SilverScreen;
 			productReference = C77D452E2788B821003D8011 /* SilverScreen.app */;
 			productType = "com.apple.product-type.application";
@@ -1018,6 +1033,9 @@
 				Base,
 			);
 			mainGroup = C77D45252788B821003D8011;
+			packageReferences = (
+				FE0000062788B823003D8011 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
+			);
 			productRefGroup = C77D452F2788B821003D8011 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -1037,6 +1055,7 @@
 				C77D453E2788B822003D8011 /* LaunchScreen.storyboard in Resources */,
 				C77D453B2788B822003D8011 /* Assets.xcassets in Resources */,
 				A1A000052788B823003D8011 /* AwardsCatalog.json in Resources */,
+				FE0000042788B823003D8011 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1118,6 +1137,7 @@
 				D1A000112788B823003D8011 /* StreamingProviderLaunch.swift in Sources */,
 				BE83E71C3079455B0032C03E /* ExpandableTextToggle.swift in Sources */,
 				B10000122788B823003D8011 /* AppLogging.swift in Sources */,
+				FE0000022788B823003D8011 /* SentryBootstrap.swift in Sources */,
 				B10000142788B823003D8011 /* LoadState.swift in Sources */,
 				B10000162788B823003D8011 /* Movie.swift in Sources */,
 				B10000182788B823003D8011 /* MovieSummaryDTO.swift in Sources */,
@@ -1257,6 +1277,7 @@
 				C3A100082788B823003D8011 /* OfficialYouTubeTrailersTests.swift in Sources */,
 				D1A0000F2788B823003D8011 /* TMDBWatchProvidersDecodingTests.swift in Sources */,
 				B10000262788B823003D8011 /* ImageLoaderTests.swift in Sources */,
+				FE0000092788B823003D8011 /* SentryBootstrapTests.swift in Sources */,
 				D1A000132788B823003D8011 /* StreamingProviderLaunchTests.swift in Sources */,
 				B10000282788B823003D8011 /* TestSupport.swift in Sources */,
 				BE83E71A307944040032C03E /* InMemoryAnnotationsStore.swift in Sources */,
@@ -1602,6 +1623,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		FE0000062788B823003D8011 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.46.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		FE0000072788B823003D8011 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FE0000062788B823003D8011 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C77D45262788B821003D8011 /* Project object */;
 }

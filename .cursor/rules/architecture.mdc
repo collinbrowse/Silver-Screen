@@ -23,9 +23,11 @@ The source tree follows that arrow. A screen may use domain types and an injecte
 - `Data/Networking/` — the HTTP client, TMDB requests, and DTOs.
 - `Data/Persistence/` — disk stores.
 - `Data/Resources/` — bundled data, including the awards catalog.
-- `Support/` — `AppError`, `LoadState`, logging, and `ImageLoader`.
+- `Support/` — `AppError`, `LoadState`, logging, `ImageLoader`, and Sentry bootstrap (see [`observability.mdc`](.cursor/rules/observability.mdc)).
 
 Tests use the same split under `SilverScreenTests/` (`Screens`, `Data`, `Navigation`, `Support`).
+
+**Dependencies:** no third-party libraries except the approved Sentry Cocoa package via SPM. Do not add other SPM products, CocoaPods, or Carthage.
 
 ## MVVM
 

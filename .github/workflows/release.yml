@@ -1,0 +1,132 @@
+name: Release
+
+# Push a testflight/* tag after `release.py cut`. This job archives, uploads to
+# TestFlight, syncs What to Test, and ships dSYMs to Sentry.
+
+on:
+  push:
+    tags:
+      - "testflight/*"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to archive (testflight tag or SHA)"
+        required: true
+        type: string
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ship:
+    name: Archive and upload
+    runs-on: macos-latest
+    timeout-minutes: 90
+    env:
+      NSUnbufferedIO: YES
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
+          fetch-depth: 0
+
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          xcrun simctl list runtimes | grep iOS || true
+
+      - name: Select a simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          data = json.load(sys.stdin)
+          candidates = [
+              device
+              for runtime, devices in (data.get("devices") or {}).items()
+              if "iOS" in runtime
+              for device in devices or []
+              if device.get("isAvailable") is not False and "iPhone" in (device.get("name") or "")
+          ]
+          print(candidates[0]["udid"] if candidates else "")
+          ')
+          if [ -z "$UDID" ]; then
+            echo "::error::No iOS iPhone simulator available on this runner"
+            exit 1
+          fi
+          echo "Using simulator $UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Write secrets
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+        run: |
+          if [ -z "$TMDB_API_KEY" ] || [ -z "$SENTRY_DSN" ] || [ -z "$ASC_API_KEY_P8" ]; then
+            echo "::error::Need repository secrets TMDB_API_KEY, SENTRY_DSN, ASC_API_KEY_P8, ASC_KEY_ID, ASC_ISSUER_ID"
+            exit 1
+          fi
+          cat > Secrets.xcconfig <<EOF
+          TMDB_API_KEY = ${TMDB_API_KEY}
+          SENTRY_DSN = ${SENTRY_DSN}
+          EOF
+          printf '%s\n' "$ASC_API_KEY_P8" > "$ASC_KEY_PATH"
+          chmod 600 "$ASC_KEY_PATH"
+
+      - name: Validate release files
+        run: python3 scripts/release.py check
+
+      - name: Unit tests
+        run: |
+          xcodebuild test \
+            -project SilverScreen.xcodeproj \
+            -scheme SilverScreen \
+            -only-testing:SilverScreenTests \
+            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}"
+
+      - name: Archive and upload
+        run: python3 scripts/release.py archive --upload
+
+      - name: TestFlight notes
+        run: python3 scripts/release.py tf-notes
+        continue-on-error: true
+
+      - name: Upload dSYMs to Sentry
+        if: env.SENTRY_AUTH_TOKEN != ''
+        run: |
+          curl -sL https://sentry.io/get-cli/ | bash
+          export PATH="$HOME/.local/bin:$PATH"
+          VERSION=$(python3 <<'PY'
+          from pathlib import Path
+          import re
+          text = Path("Version.xcconfig").read_text()
+          values = dict(re.findall(r"^(MARKETING_VERSION|CURRENT_PROJECT_VERSION)\s*=\s*(.+)$", text, re.M))
+          print(f"{values['MARKETING_VERSION'].strip()}+{values['CURRENT_PROJECT_VERSION'].strip()}")
+          PY
+          )
+          sentry-cli debug-files upload \
+            --org "$SENTRY_ORG" \
+            --project "$SENTRY_PROJECT" \
+            --release "$VERSION" \
+            build/SilverScreen.xcarchive/dSYMs
+
+      - name: Upload archive artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: silverscreen-xcarchive
+          path: build/SilverScreen.xcarchive
+          retention-days: 14
+          if-no-files-found: ignore
