@@ -199,6 +199,20 @@ def changelog_after_cut(text: str, version: Version, today: str, notes: str) -> 
     return updated, cleaned
 
 
+def notes_for_version(text: str, version: Version) -> str:
+    """Body under `## [marketing+build]` for TestFlight / App Store copy."""
+    header = f"## [{version.marketing}+{version.build}]"
+    lines = text.splitlines()
+    start = next((i for i, line in enumerate(lines) if line.startswith(header)), None)
+    if start is None:
+        raise ReleaseError(f"CHANGELOG.md has no section {header}.")
+    end = next((j for j in range(start + 1, len(lines)) if lines[j].startswith("## ")), len(lines))
+    body = "\n".join(lines[start + 1 : end]).strip()
+    if not body:
+        raise ReleaseError(f"CHANGELOG.md section {header} is empty.")
+    return body
+
+
 def _brace_block(text: str, open_index: int) -> str:
     depth = 0
     for index in range(open_index, len(text)):
@@ -686,6 +700,29 @@ def _run_visible(cmd: list[str], root: Path, env: dict[str, str] | None = None) 
         raise ReleaseError(f"Command failed ({result.returncode}).")
 
 
+def _xcode_auth_args() -> list[str]:
+    """Pass ASC API key auth into xcodebuild when credentials are in the environment.
+
+    Enables non-interactive signing on CI (`-allowProvisioningUpdates`).
+    """
+    key_id = os.environ.get("ASC_KEY_ID", "").strip()
+    issuer = os.environ.get("ASC_ISSUER_ID", "").strip()
+    key_path = os.environ.get("ASC_KEY_PATH", "").strip()
+    if not (key_id and issuer and key_path):
+        return []
+    path = Path(key_path).expanduser().resolve()
+    if not path.is_file():
+        raise ReleaseError(f"ASC_KEY_PATH is not a file: {path}")
+    return [
+        "-authenticationKeyPath",
+        str(path),
+        "-authenticationKeyID",
+        key_id,
+        "-authenticationKeyIssuerID",
+        issuer,
+    ]
+
+
 def _upload_command(ipa: Path) -> tuple[list[str], dict[str, str]]:
     key_id = os.environ.get("ASC_KEY_ID", "").strip()
     issuer = os.environ.get("ASC_ISSUER_ID", "").strip()
@@ -774,6 +811,7 @@ def cmd_archive(root: Path, upload: bool) -> str:
     if export_dir.exists():
         shutil.rmtree(export_dir)
 
+    auth = _xcode_auth_args()
     _run_visible(
         [
             "xcodebuild",
@@ -789,6 +827,7 @@ def cmd_archive(root: Path, upload: bool) -> str:
             "-archivePath",
             str(archive),
             "-allowProvisioningUpdates",
+            *auth,
         ],
         root,
     )
@@ -804,6 +843,7 @@ def cmd_archive(root: Path, upload: bool) -> str:
             "-exportOptionsPlist",
             "distribution/ExportOptions.plist",
             "-allowProvisioningUpdates",
+            *auth,
         ],
         root,
     )
@@ -856,13 +896,78 @@ def build_parser() -> argparse.ArgumentParser:
 
     archive = sub.add_parser("archive", help="Archive the current TestFlight tag.")
     archive.add_argument("--upload", action="store_true", help="Upload the IPA to App Store Connect.")
+
+    tf_notes = sub.add_parser(
+        "tf-notes",
+        help="Push CHANGELOG notes for the current build to TestFlight What to Test.",
+    )
+    tf_notes.add_argument(
+        "--locale",
+        default="en-US",
+        help="Beta localization locale (default en-US).",
+    )
+
+    rollout = sub.add_parser(
+        "rollout",
+        help="Start or halt App Store phased release for the current marketing version.",
+    )
+    rollout_group = rollout.add_mutually_exclusive_group(required=True)
+    rollout_group.add_argument(
+        "--start",
+        action="store_true",
+        help="Start or resume phased release (ACTIVE).",
+    )
+    rollout_group.add_argument(
+        "--halt",
+        action="store_true",
+        help="Pause phased release (PAUSED).",
+    )
     return parser
+
+
+def cmd_tf_notes(root: Path, locale: str) -> str:
+    """Upload changelog bullets for this build to TestFlight."""
+    from asc_api import ASCClient, ASCError, load_credentials
+
+    require_valid(root)
+    _, version = load_version(root)
+    notes = notes_for_version((root / "CHANGELOG.md").read_text(encoding="utf-8"), version)
+    try:
+        client = ASCClient(load_credentials())
+        app_id = client.app_id()
+        build_id = client.build_id(app_id, version.marketing, str(version.build))
+        client.set_testflight_notes(build_id, notes, locale=locale)
+    except ASCError as error:
+        raise ReleaseError(str(error)) from error
+    return f"Updated TestFlight What to Test for {version.label()} ({locale}).\n"
+
+
+def cmd_rollout(root: Path, start: bool) -> str:
+    """Start or pause App Store phased release for the marketing version on HEAD."""
+    from asc_api import ASCClient, ASCError, load_credentials
+
+    require_valid(root)
+    _, version = load_version(root)
+    state = "ACTIVE" if start else "PAUSED"
+    try:
+        client = ASCClient(load_credentials())
+        app_id = client.app_id()
+        version_id = client.app_store_version_id(app_id, version.marketing)
+        client.set_phased_release(version_id, state)
+    except ASCError as error:
+        raise ReleaseError(str(error)) from error
+    verb = "Started" if start else "Paused"
+    return f"{verb} phased release for {version.marketing} ({state}).\n"
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     root = Path.cwd()
+    # Allow `import asc_api` when invoked as `python3 scripts/release.py`.
+    scripts_dir = Path(__file__).resolve().parent
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
     try:
         if args.command == "check":
             require_valid(root)
@@ -883,6 +988,10 @@ def main(argv: list[str] | None = None) -> int:
             print(cmd_promote(root, args.retarget), end="")
         elif args.command == "archive":
             print(cmd_archive(root, args.upload), end="")
+        elif args.command == "tf-notes":
+            print(cmd_tf_notes(root, args.locale), end="")
+        elif args.command == "rollout":
+            print(cmd_rollout(root, start=args.start), end="")
         else:
             parser.error(f"unknown command {args.command}")
     except ReleaseError as error:

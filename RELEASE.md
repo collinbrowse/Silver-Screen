@@ -55,7 +55,10 @@ python3 scripts/release.py bump patch|minor|major
 python3 scripts/release.py cut
 python3 scripts/release.py archive
 python3 scripts/release.py archive --upload
+python3 scripts/release.py tf-notes
 python3 scripts/release.py promote
+python3 scripts/release.py rollout --start
+python3 scripts/release.py rollout --halt
 ```
 
 `check` runs in CI. It fails if the app target hardcodes a version, if
@@ -68,10 +71,15 @@ before export so a contaminated binary cannot upload.
 ### TestFlight
 
 1. Optionally preview with `python3 scripts/release.py notes`.
-2. `python3 scripts/release.py cut`
-3. Push the branch and the tag it prints.
-4. Check out that tag (or stay on it if you have not committed since) and run
-   `python3 scripts/release.py archive --upload`.
+2. `python3 scripts/release.py cut` on clean `main`.
+3. Push `main` and the `testflight/<marketing>+<build>` tag it prints.
+4. GitHub Actions (`.github/workflows/release.yml`) archives, uploads, syncs
+   TestFlight “What to Test” from the changelog, and uploads dSYMs to Sentry.
+5. Install the build from TestFlight and QA it.
+
+To archive from a Mac instead of Actions: check out the tag and run
+`python3 scripts/release.py archive --upload`, then
+`python3 scripts/release.py tf-notes`.
 
 `cut` requires a clean tree on `main`. It finds the latest `testflight/*` tag
 that is an ancestor of `HEAD`, turns each merged pull request since then into
@@ -91,6 +99,10 @@ Build 1 has never been uploaded. The first cut publishes build 2.
 3. `python3 scripts/release.py promote`
 4. Push the `v` tag it prints.
 5. In App Store Connect, select **that build** and submit it for review.
+6. After approval, start phased release with
+   `python3 scripts/release.py rollout --start`. Halt with
+   `python3 scripts/release.py rollout --halt` if Sentry release health looks bad
+   (see [`OBSERVABILITY.md`](OBSERVABILITY.md)).
 
 `promote` does not change version numbers and does not archive. If App Review
 rejects the binary, fix it, `cut` again, upload the new build, and run
@@ -127,14 +139,24 @@ version and the higher build.
 `archive` writes `build/SilverScreen.xcarchive` and
 `build/export/SilverScreen.ipa`. `build/` is gitignored.
 
-`--upload` needs an App Store Connect API key:
+`--upload`, `tf-notes`, and `rollout` need an App Store Connect API key:
 
 - `ASC_KEY_ID`
 - `ASC_ISSUER_ID`
 - The `.p8` file named `AuthKey_<ASC_KEY_ID>.p8` in `~/private_keys`,
   `~/.private_keys`, `~/.appstoreconnect/private_keys`, or the directory in
   `API_PRIVATE_KEYS_DIR`. `ASC_KEY_PATH` pointing at the `.p8` file sets that
-  directory for you.
+  directory for you. On CI, set `ASC_KEY_PATH` to the written key file so
+  `xcodebuild` can use `-authenticationKeyPath` for non-interactive signing.
+
+GitHub Actions repository secrets for [`.github/workflows/release.yml`](.github/workflows/release.yml):
+
+| Secret | Purpose |
+| --- | --- |
+| `ASC_KEY_ID` / `ASC_ISSUER_ID` / `ASC_API_KEY_P8` | App Store Connect API key (`.p8` body) |
+| `TMDB_API_KEY` | Release binary networking |
+| `SENTRY_DSN` | Crash reporting in the uploaded build |
+| `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` | dSYM upload |
 
 `*.p8` files are gitignored. Create the key in App Store Connect → Users and
 Access → Integrations.
