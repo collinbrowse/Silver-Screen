@@ -24,12 +24,19 @@ enum SentryBootstrap {
     }
 
     /// Reads `SentryDSN` from an Info.plist dictionary. Missing, empty, or unsubstituted `$(…)` means “do not start.”
+    ///
+    /// xcconfig treats `//` as a comment, so Secrets use `https:/$()/…`. If `$()` survives into Info.plist,
+    /// strip it so the SDK gets a real `https://…` DSN.
     static func resolvedDSN(infoDictionary: [String: Any]) -> String? {
         guard let raw = infoDictionary["SentryDSN"] as? String else {
             return nil
         }
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "$()", with: "")
         guard !trimmed.isEmpty, !trimmed.hasPrefix("$(") else {
+            return nil
+        }
+        guard trimmed.hasPrefix("https://"), trimmed.contains("@") else {
             return nil
         }
         return trimmed

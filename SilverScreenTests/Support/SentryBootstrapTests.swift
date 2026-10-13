@@ -20,9 +20,26 @@ final class SentryBootstrapTests: XCTestCase {
     func testResolvedDSNAcceptsTrimmedValue() {
         XCTAssertEqual(
             SentryBootstrap.resolvedDSN(
-                infoDictionary: ["SentryDSN": "  https://example.ingest.sentry.io/1  "]
+                infoDictionary: ["SentryDSN": "  https://abc123@example.ingest.sentry.io/1  "]
             ),
-            "https://example.ingest.sentry.io/1"
+            "https://abc123@example.ingest.sentry.io/1"
+        )
+    }
+
+    func testResolvedDSNStripsXcconfigEmptySubstitution() {
+        XCTAssertEqual(
+            SentryBootstrap.resolvedDSN(
+                infoDictionary: [
+                    "SentryDSN": "https:/$()/abc123@o1.ingest.us.sentry.io/2"
+                ]
+            ),
+            "https://abc123@o1.ingest.us.sentry.io/2"
+        )
+    }
+
+    func testResolvedDSNRejectsNonHTTPS() {
+        XCTAssertNil(
+            SentryBootstrap.resolvedDSN(infoDictionary: ["SentryDSN": "http://abc@host/1"])
         )
     }
 

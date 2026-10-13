@@ -32,8 +32,9 @@ Same bar as [`errors-logging.mdc`](.cursor/rules/errors-logging.mdc) and [`secre
 ## Secrets and init
 
 - DSN lives in gitignored `Secrets.xcconfig` as `SENTRY_DSN`, surfaced through Info.plist. Template: [`Secrets.example.xcconfig`](Secrets.example.xcconfig).
+- xcconfig treats `//` as a comment — write `SENTRY_DSN = https:/$()/…@….ingest…/…` (see the example file). `SentryBootstrap` also strips a leftover `$()` if it reaches Info.plist.
 - Missing or empty DSN: do **not** start Sentry (local Debug without a project stays quiet). Release/TestFlight CI must supply the DSN.
-- Start Sentry as early as practical in `AppDelegate` via `SentryBootstrap`, before other app work.
+- Start Sentry as early as practical in `AppDelegate` via `SentryBootstrap`, before other app work. No smoke-test `capture` / `flush` / DSN `print`s in committed app code.
 
 ## CI and symbols
 
