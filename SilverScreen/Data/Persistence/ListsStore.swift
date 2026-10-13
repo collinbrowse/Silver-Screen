@@ -2,8 +2,8 @@
 //  ListsStore.swift
 //  SilverScreen
 //
-//  Disk boundary for the personal library. Tests substitute an in-memory store.
-//  The file is lists.json. favorites.json is not read or imported.
+//  Disk boundary for the personal library. Production uses a LibraryStore
+//  adapter over library.sqlite; tests substitute an in-memory store.
 //
 
 import Foundation

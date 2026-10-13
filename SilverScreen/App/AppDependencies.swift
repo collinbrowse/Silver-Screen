@@ -17,6 +17,7 @@ struct AppDependencies {
     let tvWatch: TVWatchRepository
     let awards: AwardsRepository
     let imageLoader: ImageLoader
+    let libraryStore: SQLiteLibraryStore
     let router: AppRouter
     let logger: any AppLogging
 
@@ -39,22 +40,20 @@ struct AppDependencies {
             apiKey: apiKey,
             logger: logger
         )
-        let listsStoreURL = try FileListsStore.applicationSupportURL()
+        let libraryStore = try SQLiteLibraryStore.live()
         let listsIndex = ListsIndex()
         let lists = ListsRepository(
-            store: FileListsStore(fileURL: listsStoreURL),
+            store: LibraryListsStoreAdapter(library: libraryStore),
             logger: logger,
             index: listsIndex
         )
-        let annotationsStoreURL = try FileAnnotationsStore.applicationSupportURL()
         let annotations = AnnotationsRepository(
-            store: FileAnnotationsStore(fileURL: annotationsStoreURL),
+            store: LibraryAnnotationsStoreAdapter(library: libraryStore),
             logger: logger
         )
         let listChanges = ListChangeNotice(annotations: annotations)
-        let tvWatchStoreURL = try FileTVWatchStore.applicationSupportURL()
         let tvWatch = TVWatchRepository(
-            store: FileTVWatchStore(fileURL: tvWatchStoreURL),
+            store: LibraryTVWatchStoreAdapter(library: libraryStore),
             lists: lists,
             logger: logger
         )
@@ -77,6 +76,7 @@ struct AppDependencies {
             tvWatch: tvWatch,
             awards: awards,
             imageLoader: imageLoader,
+            libraryStore: libraryStore,
             router: router,
             logger: logger
         )

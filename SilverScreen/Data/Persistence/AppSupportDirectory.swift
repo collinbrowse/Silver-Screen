@@ -2,8 +2,8 @@
 //  AppSupportDirectory.swift
 //  SilverScreen
 //
-//  On-device JSON lives in Application Support. Each store names its own file.
-//  favorites.json is never opened; lists.json is a separate library.
+//  On-device library data lives under Application Support/SilverScreen.
+//  library.sqlite is the source of truth; legacy *.json files are imported once.
 //
 
 import Foundation
