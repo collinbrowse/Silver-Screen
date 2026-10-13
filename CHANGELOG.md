@@ -7,6 +7,10 @@ list.
 
 ## [Unreleased]
 
+## [0.1.1+6] - 2026-10-13
+
+- Fix Watched toggle flashing Couldn't Save on every successful tap.
+
 ## [0.1.1+5] - 2026-10-12
 
 - Collapse long award lists behind Show more.
