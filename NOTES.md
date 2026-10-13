@@ -25,11 +25,18 @@ TMDB has no awards endpoint. The catalog is a Wikidata snapshot joined to TMDB b
 
 The key lives in a gitignored `Secrets.xcconfig`, is copied into `Info.plist`, and is read at launch. Requests still send it as TMDB’s v3 `api_key` query item. A v4 bearer token would keep the key out of the URL. Logs already omit request URLs. I have not minted a v4 token yet.
 
+## Persistence
+
+User library data (lists, annotations, TV progress) lives in SQLite under Application
+Support. The multi-phase path to accounts and social is in [`ROADMAP.md`](ROADMAP.md);
+storage design is in [`PERSISTENCE.md`](PERSISTENCE.md).
+
 ## Still open
 
 - Switch TMDB auth to a v4 bearer token.
 - Snapshot tests for the components in `Design/`.
 - A reachability check, so the interface can respond when the network drops instead of only after a request fails.
+- Roadmap Phase 2+: sync outbox, auth/accounts, sync API (see [`ROADMAP.md`](ROADMAP.md)).
 
 ## How it was built
 

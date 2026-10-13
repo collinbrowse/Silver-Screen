@@ -16,6 +16,7 @@ Architecture conventions live in [`.cursor/rules/architecture.mdc`](.cursor/rule
 ## Pointers
 
 - Architecture: [`.cursor/rules/architecture.mdc`](.cursor/rules/architecture.mdc) (always on), plus scoped rules for concurrency, SwiftUI, data layer, image loading, secrets, errors and logging, accessibility, documentation comments, formatting, tests, commits, pull requests, and shell progress
+- Persistence roadmap (SQLite → accounts → sync → social): [`ROADMAP.md`](ROADMAP.md), design: [`PERSISTENCE.md`](PERSISTENCE.md)
 - Awards shelves and the weekly catalog: [`AWARDS.md`](AWARDS.md)
 - Hooks: [`.cursor/hooks.json`](.cursor/hooks.json) — stop hook runs `SilverScreenTests` via [`.cursor/hooks/run-unit-tests.sh`](.cursor/hooks/run-unit-tests.sh) (warm default DerivedData; skips when the source fingerprint matches the last pass)
 - Harness gates: [`scripts/validate-rules.py`](scripts/validate-rules.py), [`scripts/validate-tests.py`](scripts/validate-tests.py) (empty tests banned), [`scripts/validate-pr-body.py`](scripts/validate-pr-body.py) (PR template sections required)
