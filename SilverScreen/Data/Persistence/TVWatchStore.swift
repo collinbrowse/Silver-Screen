@@ -2,7 +2,8 @@
 //  TVWatchStore.swift
 //  SilverScreen
 //
-//  Persistence seam for episode watch progress. Tests use an in-memory store.
+//  Persistence seam for episode watch progress. Production uses a LibraryStore
+//  adapter over library.sqlite; tests use an in-memory store.
 //
 
 import Foundation

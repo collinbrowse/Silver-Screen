@@ -31,6 +31,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             }
             appRouter = dependencies.router
             let libraryHomeViewModel = LibraryHomeViewModel(lists: dependencies.lists)
+            Task { try? await dependencies.libraryStore.bootstrap() }
             Task { try? await dependencies.lists.loadIndex() }
             Task { await dependencies.awards.prepare() }
             Task {

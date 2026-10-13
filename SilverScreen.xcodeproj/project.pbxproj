@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		SQL000012788B823003D8011 /* SQLiteDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL000022788B823003D8011 /* SQLiteDatabase.swift */; };
+		SQL000032788B823003D8011 /* LibrarySchema.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL000042788B823003D8011 /* LibrarySchema.swift */; };
+		SQL000052788B823003D8011 /* LibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL000062788B823003D8011 /* LibraryStore.swift */; };
+		SQL000072788B823003D8011 /* SQLiteLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL000082788B823003D8011 /* SQLiteLibraryStore.swift */; };
+		SQL000092788B823003D8011 /* LibraryStoreAdapters.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL0000A2788B823003D8011 /* LibraryStoreAdapters.swift */; };
+		SQL0000B2788B823003D8011 /* InMemoryLibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL0000C2788B823003D8011 /* InMemoryLibraryStore.swift */; };
+		SQL0000D2788B823003D8011 /* SQLiteLibraryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL0000E2788B823003D8011 /* SQLiteLibraryStoreTests.swift */; };
 		03E398084C83473897647EA3 /* FittingSegmentedControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0297CAE4343649148152A5AA /* FittingSegmentedControl.swift */; };
 		0C0B35E8A55E455C83F34C40 /* ListChangeBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40E232642C3849EDA1C21FB7 /* ListChangeBanner.swift */; };
 		27947E37F891460DBF889492 /* SearchFocusObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5939FD58B12C4CEC80243B31 /* SearchFocusObserver.swift */; };
@@ -214,7 +221,6 @@
 		WT0000042788B823003D8011 /* CarouselRatingBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = WT0000032788B823003D8011 /* CarouselRatingBadge.swift */; };
 		WT0000062788B823003D8011 /* TVWatchConfirm.swift in Sources */ = {isa = PBXBuildFile; fileRef = WT0000052788B823003D8011 /* TVWatchConfirm.swift */; };
 		WT0000082788B823003D8011 /* TVWatchConfirmTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WT0000072788B823003D8011 /* TVWatchConfirmTests.swift */; };
-		WB0000022788B823003D8011 /* WatchedToggleButtonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WB0000012788B823003D8011 /* WatchedToggleButtonTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -235,6 +241,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		SQL000022788B823003D8011 /* SQLiteDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteDatabase.swift; sourceTree = "<group>"; };
+		SQL000042788B823003D8011 /* LibrarySchema.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySchema.swift; sourceTree = "<group>"; };
+		SQL000062788B823003D8011 /* LibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryStore.swift; sourceTree = "<group>"; };
+		SQL000082788B823003D8011 /* SQLiteLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteLibraryStore.swift; sourceTree = "<group>"; };
+		SQL0000A2788B823003D8011 /* LibraryStoreAdapters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryStoreAdapters.swift; sourceTree = "<group>"; };
+		SQL0000C2788B823003D8011 /* InMemoryLibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InMemoryLibraryStore.swift; sourceTree = "<group>"; };
+		SQL0000E2788B823003D8011 /* SQLiteLibraryStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteLibraryStoreTests.swift; sourceTree = "<group>"; };
 		01FFF924CF8B4156A2A7D52C /* BrowseTabRoot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseTabRoot.swift; sourceTree = "<group>"; };
 		0297CAE4343649148152A5AA /* FittingSegmentedControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FittingSegmentedControl.swift; sourceTree = "<group>"; };
 		1D8BDC41D4CE4FD397D60DBC /* FullscreenImagePage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullscreenImagePage.swift; sourceTree = "<group>"; };
@@ -448,7 +461,6 @@
 		WT0000032788B823003D8011 /* CarouselRatingBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarouselRatingBadge.swift; sourceTree = "<group>"; };
 		WT0000052788B823003D8011 /* TVWatchConfirm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchConfirm.swift; sourceTree = "<group>"; };
 		WT0000072788B823003D8011 /* TVWatchConfirmTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchConfirmTests.swift; sourceTree = "<group>"; };
-		WB0000012788B823003D8011 /* WatchedToggleButtonTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchedToggleButtonTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -487,6 +499,7 @@
 				C200000B2788B823003D8011 /* InMemoryAnnotationsStore.swift */,
 				TW00000D2788B823003D8011 /* InMemoryTVWatchStore.swift */,
 				L1B000202788B823003D8011 /* InMemoryListsStore.swift */,
+				SQL0000C2788B823003D8011 /* InMemoryLibraryStore.swift */,
 				D1A000142788B823003D8011 /* StreamingProviderLaunchTests.swift */,
 			);
 			path = Support;
@@ -527,6 +540,11 @@
 				L1B000062788B823003D8011 /* ListsStore.swift */,
 				L1B000082788B823003D8011 /* FileListsStore.swift */,
 				L1B0000A2788B823003D8011 /* AppSupportDirectory.swift */,
+				SQL000022788B823003D8011 /* SQLiteDatabase.swift */,
+				SQL000042788B823003D8011 /* LibrarySchema.swift */,
+				SQL000062788B823003D8011 /* LibraryStore.swift */,
+				SQL000082788B823003D8011 /* SQLiteLibraryStore.swift */,
+				SQL0000A2788B823003D8011 /* LibraryStoreAdapters.swift */,
 			);
 			path = Persistence;
 			sourceTree = "<group>";
@@ -880,7 +898,6 @@
 				B100031B2788B823003D8011 /* CreditsListViewModelTests.swift */,
 				LC0000012788B823003D8011 /* ListChangeNoticeTests.swift */,
 				WT0000072788B823003D8011 /* TVWatchConfirmTests.swift */,
-				WB0000012788B823003D8011 /* WatchedToggleButtonTests.swift */,
 				B7D2E1F35C8E0B227F416D53 /* TVWatchConfirmPresentationTests.swift */,
 			);
 			path = Screens;
@@ -896,6 +913,7 @@
 				C200000D2788B823003D8011 /* AnnotationsRepositoryTests.swift */,
 				TW00000F2788B823003D8011 /* TVWatchProgressTests.swift */,
 				L1B0001C2788B823003D8011 /* ListsRepositoryTests.swift */,
+				SQL0000E2788B823003D8011 /* SQLiteLibraryStoreTests.swift */,
 				TW0000112788B823003D8011 /* TVWatchRepositoryTests.swift */,
 				B10003172788B823003D8011 /* PersonRepositoryTests.swift */,
 				C3A100072788B823003D8011 /* OfficialYouTubeTrailersTests.swift */,
@@ -1189,6 +1207,11 @@
 				L1B000052788B823003D8011 /* ListsStore.swift in Sources */,
 				L1B000072788B823003D8011 /* FileListsStore.swift in Sources */,
 				L1B000092788B823003D8011 /* AppSupportDirectory.swift in Sources */,
+				SQL000012788B823003D8011 /* SQLiteDatabase.swift in Sources */,
+				SQL000032788B823003D8011 /* LibrarySchema.swift in Sources */,
+				SQL000052788B823003D8011 /* LibraryStore.swift in Sources */,
+				SQL000072788B823003D8011 /* SQLiteLibraryStore.swift in Sources */,
+				SQL000092788B823003D8011 /* LibraryStoreAdapters.swift in Sources */,
 				L1B0000B2788B823003D8011 /* ListsRepository.swift in Sources */,
 				W1R000022788B823003D8011 /* WatchedRatings.swift in Sources */,
 				TW00000A2788B823003D8011 /* TVWatchReconcile.swift in Sources */,
@@ -1246,9 +1269,10 @@
 				L1B0001D2788B823003D8011 /* LibraryViewModelTests.swift in Sources */,
 				LC0000022788B823003D8011 /* ListChangeNoticeTests.swift in Sources */,
 				WT0000082788B823003D8011 /* TVWatchConfirmTests.swift in Sources */,
-				WB0000022788B823003D8011 /* WatchedToggleButtonTests.swift in Sources */,
 				A8C1F0E24B7D9A116E305C42 /* TVWatchConfirmPresentationTests.swift in Sources */,
 				L1B0001F2788B823003D8011 /* InMemoryListsStore.swift in Sources */,
+				SQL0000B2788B823003D8011 /* InMemoryLibraryStore.swift in Sources */,
+				SQL0000D2788B823003D8011 /* SQLiteLibraryStoreTests.swift in Sources */,
 				B10002142788B823003D8011 /* NavigationRouterTests.swift in Sources */,
 				B10003162788B823003D8011 /* PersonRepositoryTests.swift in Sources */,
 				B10003182788B823003D8011 /* PersonDetailViewModelTests.swift in Sources */,
