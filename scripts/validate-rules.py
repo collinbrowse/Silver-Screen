@@ -12,6 +12,8 @@ Checks:
   3. Every relative markdown link resolves from the repo root.
   4. No hardcoded TMDB credential in tracked Swift source (see secrets.mdc):
      a 32-hex v3 key, or a JWT-shaped read access token.
+  5. Remote Swift packages in the Xcode project are only the approved Sentry repo
+     (see observability.mdc).
 
 Run from the repo root: python3 scripts/validate-rules.py
 """
@@ -25,6 +27,7 @@ import subprocess
 import sys
 
 RULES_DIR = ".cursor/rules"
+PBXPROJ = "SilverScreen.xcodeproj/project.pbxproj"
 
 # Tracked Swift must not contain a TMDB credential. The allowlist stays empty;
 # a hit is a new leak.
@@ -38,6 +41,15 @@ SECRET_PATTERNS = (
 )
 
 LINK_PATTERN = re.compile(r"\[`?[^\]`]+`?\]\(([^)]+)\)")
+SPM_URL_PATTERN = re.compile(r'repositoryURL\s*=\s*"([^"]+)"')
+
+# Only remote package allowed in project.pbxproj (with or without .git suffix).
+ALLOWED_SPM_REPOS = frozenset(
+    {
+        "https://github.com/getsentry/sentry-cocoa",
+        "https://github.com/getsentry/sentry-cocoa.git",
+    }
+)
 
 
 def fail(problems: list[str], message: str) -> None:
@@ -109,6 +121,33 @@ def check_secrets(problems: list[str]) -> None:
             fail(problems, f"{path}:{lineno}: hardcoded credential in source (see .cursor/rules/secrets.mdc)")
 
 
+def _normalize_spm_url(url: str) -> str:
+    return url.rstrip("/").removesuffix(".git")
+
+
+def check_spm_packages(problems: list[str]) -> None:
+    """Fail if project.pbxproj pulls any remote package other than Sentry."""
+    if not os.path.isfile(PBXPROJ):
+        fail(problems, f"{PBXPROJ}: missing")
+        return
+
+    urls = SPM_URL_PATTERN.findall(open(PBXPROJ, encoding="utf-8").read())
+    allowed_normalized = {_normalize_spm_url(url) for url in ALLOWED_SPM_REPOS}
+    if not urls:
+        print("  ok  no remote Swift packages (Sentry not wired yet)")
+        return
+
+    for url in urls:
+        if _normalize_spm_url(url) not in allowed_normalized:
+            fail(
+                problems,
+                f"{PBXPROJ}: unapproved Swift package {url!r} "
+                "(only https://github.com/getsentry/sentry-cocoa is allowed; see observability.mdc)",
+            )
+        else:
+            print(f"  ok  approved package {url}")
+
+
 def main() -> int:
     if not os.path.isdir(RULES_DIR):
         print(f"error: run from the repo root ({RULES_DIR} not found)", file=sys.stderr)
@@ -121,6 +160,8 @@ def main() -> int:
     print("Links and credentials:")
     check_links(problems)
     check_secrets(problems)
+    print("Swift packages:")
+    check_spm_packages(problems)
 
     if problems:
         print(f"\n{len(problems)} problem(s):")

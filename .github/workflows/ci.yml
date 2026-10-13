@@ -37,7 +37,9 @@ jobs:
       - name: Validate release versions
         run: python3 scripts/release.py check
       - name: Release script tests
-        run: python3 scripts/test_release.py
+        run: |
+          python3 scripts/test_release.py
+          python3 scripts/test_asc_api.py
 
   unit-tests:
     name: Unit tests

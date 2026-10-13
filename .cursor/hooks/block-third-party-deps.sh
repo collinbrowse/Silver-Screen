@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# beforeShellExecution: deny SPM / CocoaPods / Carthage additions. Allow xcodebuild.
+# beforeShellExecution: deny SPM / CocoaPods / Carthage additions.
+# Allow xcodebuild (including package resolve for the approved Sentry package).
 
 set -u
 
@@ -33,9 +34,9 @@ if re.search(r"\bxcodebuild\b", normalized):
     allow()
 
 denials = [
-    (r"\bpod\s+(install|init|update|add)\b", "CocoaPods is not allowed (no 3rd-party dependencies)."),
-    (r"\bswift\s+package\b", "Swift Package Manager is not allowed (no 3rd-party dependencies)."),
-    (r"\bcarthage\b", "Carthage is not allowed (no 3rd-party dependencies)."),
+    (r"\bpod\s+(install|init|update|add)\b", "CocoaPods is not allowed (no 3rd-party dependencies except Sentry via SPM)."),
+    (r"\bswift\s+package\b", "Use Xcode / xcodebuild for the approved Sentry package only — do not run swift package or add other packages."),
+    (r"\bcarthage\b", "Carthage is not allowed (no 3rd-party dependencies except Sentry via SPM)."),
 ]
 
 for pattern, message in denials:
@@ -45,7 +46,7 @@ for pattern, message in denials:
 mentions_manifest = re.search(r"(?:^|[\s/])(Podfile|Package\.swift)\b", normalized, re.IGNORECASE)
 write_like = re.search(r"(?:\btouch\b|\btee\b|\bcp\b|\bmv\b|\bcat\b|[>]{1,2})", normalized)
 if mentions_manifest and write_like:
-    deny("Do not add Podfile or Package.swift (no 3rd-party dependencies).")
+    deny("Do not add Podfile or Package.swift (Sentry is wired through the Xcode project only).")
 
 allow()
 PY

@@ -27,6 +27,8 @@ struct OSAppLogger: AppLogging {
 
     func error(_ message: String, category: LogCategory) {
         logger(for: category).error("\(message, privacy: .public)")
+        // Technical breadcrumb only — message is developer-authored (see observability.mdc).
+        SentryBootstrap.captureError(message, category: category)
     }
 
     private func logger(for category: LogCategory) -> Logger {

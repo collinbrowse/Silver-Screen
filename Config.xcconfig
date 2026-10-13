@@ -5,3 +5,4 @@
 #include "Version.xcconfig"
 
 TMDBAccessToken = $(TMDB_ACCESS_TOKEN)
+SentryDSN = $(SENTRY_DSN)

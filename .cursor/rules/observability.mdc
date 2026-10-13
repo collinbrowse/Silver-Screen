@@ -1,0 +1,42 @@
+---
+description: Production observability — Sentry is the only approved third-party SDK; privacy and release-health rules.
+globs: SilverScreen/**/*.swift,SilverScreen/PrivacyInfo.xcprivacy,.github/workflows/**,scripts/release.py
+alwaysApply: false
+---
+
+# Observability
+
+## Approved dependency
+
+The app has **one** third-party SDK: **Sentry** (Cocoa, via SPM only). No Crashlytics, Firebase, Amplitude, or other analytics/crash SDKs.
+
+- Add or upgrade Sentry only through the Xcode project’s package reference (`sentry-cocoa`). Do not add CocoaPods or Carthage.
+- [`scripts/validate-rules.py`](scripts/validate-rules.py) fails if `project.pbxproj` references any other remote Swift package.
+- The beforeShellExecution hook still blocks CocoaPods, Carthage, and ad-hoc `Package.swift` / `Podfile` manifests.
+
+## What we capture
+
+- Crashes, hangs, and release health (crash-free sessions) for TestFlight and App Store builds.
+- Selective non-fatal technical events that already go through `AppLogging` at `.error` — category and a developer-authored message only.
+- Release name must match shipping identity: `MARKETING_VERSION` + `CURRENT_PROJECT_VERSION` from Info.plist (same numbers as `testflight/<marketing>+<build>`).
+
+## What we never capture
+
+Same bar as [`errors-logging.mdc`](.cursor/rules/errors-logging.mdc) and [`secrets.mdc`](.cursor/rules/secrets.mdc):
+
+- No user content (search queries, list titles, favorites, notes, PII).
+- No API keys, tokens, Authorization headers, or full request URLs (query strings can hold credentials).
+- No Session Replay, screenshots, or view hierarchy dumps unless product explicitly opts in later.
+- Do not set a Sentry user id to email, name, or any account identifier this app does not have.
+
+## Secrets and init
+
+- DSN lives in gitignored `Secrets.xcconfig` as `SENTRY_DSN`, surfaced through Info.plist. Template: [`Secrets.example.xcconfig`](Secrets.example.xcconfig).
+- xcconfig treats `//` as a comment — write `SENTRY_DSN = https:/$()/…@….ingest…/…` (see the example file). `SentryBootstrap` also strips a leftover `$()` if it reaches Info.plist.
+- Missing or empty DSN: do **not** start Sentry (local Debug without a project stays quiet). Release/TestFlight CI must supply the DSN.
+- Start Sentry as early as practical in `AppDelegate` via `SentryBootstrap`, before other app work. No smoke-test `capture` / `flush` / DSN `print`s in committed app code.
+
+## CI and symbols
+
+- Upload dSYMs for every TestFlight archive (release workflow or `release.py`), or stack traces stay useless.
+- Tie Sentry releases to the same marketing+build the archive verified.
