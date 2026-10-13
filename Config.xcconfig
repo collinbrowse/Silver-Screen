@@ -4,5 +4,5 @@
 #include? "Secrets.xcconfig"
 #include "Version.xcconfig"
 
-TMDBAPIKey = $(TMDB_API_KEY)
+TMDBAccessToken = $(TMDB_ACCESS_TOKEN)
 SentryDSN = $(SENTRY_DSN)

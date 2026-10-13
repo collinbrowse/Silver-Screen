@@ -10,7 +10,8 @@ Checks:
   2. Scoped rules declare globs. A glob matching nothing is reported but not fatal —
      several rules deliberately point at directories that arrive with later stories.
   3. Every relative markdown link resolves from the repo root.
-  4. No hardcoded TMDB credential in tracked Swift source (see secrets.mdc).
+  4. No hardcoded TMDB credential in tracked Swift source (see secrets.mdc):
+     a 32-hex v3 key, or a JWT-shaped read access token.
   5. Remote Swift packages in the Xcode project are only the approved Sentry repo
      (see observability.mdc).
 
@@ -28,12 +29,16 @@ import sys
 RULES_DIR = ".cursor/rules"
 PBXPROJ = "SilverScreen.xcodeproj/project.pbxproj"
 
-# Tracked Swift must not contain a TMDB v3 key (32 hex chars). The allowlist
-# stays empty; a hit is a new leak.
+# Tracked Swift must not contain a TMDB credential. The allowlist stays empty;
+# a hit is a new leak.
 SECRET_DEBT_ALLOWLIST: set[str] = set()
 
 # 32 hex characters: the shape of a TMDB v3 key.
-SECRET_PATTERN = re.compile(r"""["'][0-9a-f]{32}["']""")
+# eyJ… . … . … : the shape of an API Read Access Token (a JWT).
+SECRET_PATTERNS = (
+    re.compile(r"""["'][0-9a-f]{32}["']"""),
+    re.compile(r"""["']eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}["']"""),
+)
 
 LINK_PATTERN = re.compile(r"\[`?[^\]`]+`?\]\(([^)]+)\)")
 SPM_URL_PATTERN = re.compile(r'repositoryURL\s*=\s*"([^"]+)"')
@@ -108,7 +113,7 @@ def check_secrets(problems: list[str]) -> None:
             # Deleted locally but not yet staged — skip; HEAD still has the real scan.
             continue
         for lineno, line in enumerate(open(path, encoding="utf-8"), start=1):
-            if not SECRET_PATTERN.search(line):
+            if not any(pattern.search(line) for pattern in SECRET_PATTERNS):
                 continue
             if path in SECRET_DEBT_ALLOWLIST:
                 print(f"  WARN {path}:{lineno} known committed credential, pending rotation")

@@ -2,21 +2,21 @@
 //  TMDBRequestBuilder.swift
 //  SilverScreen
 //
-//  Builds authenticated TMDB v3 requests. Appends api_key as a query item.
-//  Callers must not log the full URL — see .cursor/rules/secrets.mdc.
+//  Builds authenticated TMDB v3 requests. The read-access token goes in the
+//  Authorization header, never the query string — see .cursor/rules/secrets.mdc.
 //
 
 import Foundation
 
 struct TMDBRequestBuilder: Sendable {
     private let baseURL: URL
-    private let apiKey: String
+    private let accessToken: String
 
     init(
-        apiKey: String,
+        accessToken: String,
         baseURL: URL = URL(string: "https://api.themoviedb.org/3")!
     ) {
-        self.apiKey = apiKey
+        self.accessToken = accessToken
         self.baseURL = baseURL
     }
 
@@ -26,9 +26,9 @@ struct TMDBRequestBuilder: Sendable {
             url: baseURL.appendingPathComponent(trimmed),
             resolvingAgainstBaseURL: false
         )!
-        var items = queryItems
-        items.append(URLQueryItem(name: "api_key", value: apiKey))
-        components.queryItems = items
+        if !queryItems.isEmpty {
+            components.queryItems = queryItems
+        }
 
         guard let url = components.url else {
             throw AppError.unknown
@@ -37,6 +37,7 @@ struct TMDBRequestBuilder: Sendable {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         return request
     }
 }

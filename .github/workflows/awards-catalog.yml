@@ -23,7 +23,7 @@ jobs:
 
       - name: Rebuild catalog
         env:
-          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          TMDB_ACCESS_TOKEN: ${{ secrets.TMDB_ACCESS_TOKEN }}
         run: |
           python3 scripts/build_awards_catalog.py \
             --output SilverScreen/Data/Resources/AwardsCatalog.json \

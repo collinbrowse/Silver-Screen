@@ -154,7 +154,7 @@ GitHub Actions repository secrets for [`.github/workflows/release.yml`](.github/
 | Secret | Purpose |
 | --- | --- |
 | `ASC_KEY_ID` / `ASC_ISSUER_ID` / `ASC_API_KEY_P8` | App Store Connect API key (`.p8` body) |
-| `TMDB_API_KEY` | Release binary networking |
+| `TMDB_ACCESS_TOKEN` | Release binary networking |
 | `SENTRY_DSN` | Crash reporting in the uploaded build |
 | `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` | dSYM upload |
 

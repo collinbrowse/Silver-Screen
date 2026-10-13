@@ -14,12 +14,12 @@ final class PersonRepository: Sendable {
 
     init(
         client: any HTTPClient,
-        apiKey: String,
+        accessToken: String,
         logger: any AppLogging,
         sleeper: any Sleeper = TaskSleeper()
     ) {
         self.client = client
-        self.requests = TMDBRequestBuilder(apiKey: apiKey)
+        self.requests = TMDBRequestBuilder(accessToken: accessToken)
         self.logger = logger
         self.sleeper = sleeper
     }

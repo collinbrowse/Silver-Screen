@@ -70,16 +70,16 @@ jobs:
 
       - name: Write secrets
         env:
-          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          TMDB_ACCESS_TOKEN: ${{ secrets.TMDB_ACCESS_TOKEN }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
         run: |
-          if [ -z "$TMDB_API_KEY" ] || [ -z "$SENTRY_DSN" ] || [ -z "$ASC_API_KEY_P8" ]; then
-            echo "::error::Need repository secrets TMDB_API_KEY, SENTRY_DSN, ASC_API_KEY_P8, ASC_KEY_ID, ASC_ISSUER_ID"
+          if [ -z "$TMDB_ACCESS_TOKEN" ] || [ -z "$SENTRY_DSN" ] || [ -z "$ASC_API_KEY_P8" ]; then
+            echo "::error::Need repository secrets TMDB_ACCESS_TOKEN, SENTRY_DSN, ASC_API_KEY_P8, ASC_KEY_ID, ASC_ISSUER_ID"
             exit 1
           fi
           cat > Secrets.xcconfig <<EOF
-          TMDB_API_KEY = ${TMDB_API_KEY}
+          TMDB_ACCESS_TOKEN = ${TMDB_ACCESS_TOKEN}
           SENTRY_DSN = ${SENTRY_DSN}
           EOF
           printf '%s\n' "$ASC_API_KEY_P8" > "$ASC_KEY_PATH"

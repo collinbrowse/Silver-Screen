@@ -19,11 +19,11 @@ Strict layering, one direction only:
 - `AppRouter` owns the selected tab and one `NavigationRouter` per tab. Views push routes. They do not construct the destination.
 - Protocols exist only where a test has to substitute a boundary: `HTTPClient`, the library store, and `AppLogging`.
 
-## Awards and the API key
+## Awards and TMDB
 
 TMDB has no awards endpoint. The catalog is a Wikidata snapshot joined to TMDB by IMDb id, compiled by [`scripts/build_awards_catalog.py`](scripts/build_awards_catalog.py) and refreshed from `main` at most weekly. The phone never queries Wikidata. See [`AWARDS.md`](AWARDS.md).
 
-The key lives in a gitignored `Secrets.xcconfig`, is copied into `Info.plist`, and is read at launch. Requests still send it as TMDB’s v3 `api_key` query item. A v4 bearer token would keep the key out of the URL. Logs already omit request URLs. I have not minted a v4 token yet.
+The read access token lives in a gitignored `Secrets.xcconfig` as `TMDB_ACCESS_TOKEN`, is copied into `Info.plist`, and is read at launch. Requests send it as `Authorization: Bearer …`. Logs omit request URLs and that header.
 
 ## Persistence
 
@@ -33,7 +33,6 @@ storage design is in [`PERSISTENCE.md`](PERSISTENCE.md).
 
 ## Still open
 
-- Switch TMDB auth to a v4 bearer token.
 - Snapshot tests for the components in `Design/`.
 - A reachability check, so the interface can respond when the network drops instead of only after a request fails.
 - Roadmap Phase 2+: sync outbox, auth/accounts, sync API (see [`ROADMAP.md`](ROADMAP.md)).

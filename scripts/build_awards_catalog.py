@@ -402,7 +402,7 @@ def load_catalog(path: str) -> dict:
         return json.load(handle)
 
 
-def make_tmdb_resolver(api_key: str, opener=None):
+def make_tmdb_resolver(access_token: str, opener=None):
     found: dict[str, dict | None] = {}
     series_names: dict[int, str] = {}
 
@@ -414,12 +414,12 @@ def make_tmdb_resolver(api_key: str, opener=None):
             cached = found[imdb]
             return None if cached is None else json.loads(json.dumps(cached))
         time.sleep(0.05)
-        payload = _tmdb_json(tmdb_find_path(imdb), api_key, opener)
+        payload = _tmdb_json(tmdb_find_path(imdb), access_token, opener)
         work = _pick_work(payload, credit.get("family"))
         if work and work.get("kind") in {"series", "season", "episode"} and work.get("seriesID"):
             series_id = int(work["seriesID"])
             if series_id not in series_names:
-                series_names[series_id] = _series_name(series_id, api_key, opener)
+                series_names[series_id] = _series_name(series_id, access_token, opener)
             if series_names[series_id]:
                 work["seriesName"] = series_names[series_id]
         found[imdb] = work
@@ -779,11 +779,11 @@ def main(argv: list[str] | None = None) -> int:
     credits = collapse(credits)
     merged = apply_previous_resolutions(credits, previous)
     if needs_network_resolution(merged):
-        api_key = os.environ.get("TMDB_API_KEY", "").strip()
-        if not api_key:
-            print("TMDB_API_KEY is required to resolve new IMDb ids", file=sys.stderr)
+        access_token = os.environ.get("TMDB_ACCESS_TOKEN", "").strip()
+        if not access_token:
+            print("TMDB_ACCESS_TOKEN is required to resolve new IMDb ids", file=sys.stderr)
             return 1
-        resolve = make_tmdb_resolver(api_key)
+        resolve = make_tmdb_resolver(access_token)
     else:
         resolve = lambda credit: None  # noqa: E731
 
@@ -896,9 +896,9 @@ def _first_season(seasons: list[dict]) -> dict | None:
     return None
 
 
-def _series_name(series_id: int, api_key: str, opener) -> str:
+def _series_name(series_id: int, access_token: str, opener) -> str:
     try:
-        payload = _tmdb_json(f"{TMDB_TV}{series_id}", api_key, opener)
+        payload = _tmdb_json(f"{TMDB_TV}{series_id}", access_token, opener)
     except ResolveFailure:
         return ""
     name = payload.get("name")
@@ -910,12 +910,14 @@ def tmdb_find_path(imdb: str) -> str:
     return f"{TMDB_FIND}{urllib.parse.quote(imdb, safe='')}?external_source=imdb_id"
 
 
-def _tmdb_json(url: str, api_key: str, opener) -> dict:
-    query = urllib.parse.urlencode({"api_key": api_key})
-    separator = "&" if "?" in url else "?"
+def _tmdb_json(url: str, access_token: str, opener) -> dict:
     request = urllib.request.Request(
-        url + separator + query,
-        headers={"Accept": "application/json", "User-Agent": USER_AGENT},
+        url,
+        headers={
+            "Accept": "application/json",
+            "Authorization": f"Bearer {access_token}",
+            "User-Agent": USER_AGENT,
+        },
     )
     delay = 1.0
     last_status = 0

@@ -183,9 +183,9 @@ final class MovieRepositoryTests: XCTestCase {
         XCTAssertEqual(page.movies[0].title, "Good")
     }
 
-    func test_movieDetail_requestsApiKeyAndMapsFields() async throws {
+    func test_movieDetail_sendsBearerTokenAndMapsFields() async throws {
         let client = RecordingHTTPClient(stub: .success(TMDBFixtures.movieDetailShawshank))
-        let repository = MovieRepository.test(client: client, apiKey: "test-key")
+        let repository = MovieRepository.test(client: client, accessToken: "test-key")
 
         let detail = try await repository.movieDetail(id: 278)
 
@@ -204,13 +204,14 @@ final class MovieRepositoryTests: XCTestCase {
         XCTAssertEqual(path, "/3/movie/278")
         let url = await client.lastURL
         let items = URLComponents(url: url!, resolvingAgainstBaseURL: false)?.queryItems ?? []
-        XCTAssertTrue(items.contains(URLQueryItem(name: "api_key", value: "test-key")))
+        XCTAssertFalse(items.contains { $0.name == "api_key" })
+        XCTAssertFalse(url?.absoluteString.contains("test-key") ?? true)
         XCTAssertTrue(items.contains(URLQueryItem(name: "language", value: "en-US")))
         XCTAssertTrue(items.contains(URLQueryItem(name: "append_to_response", value: "credits,images,similar,videos,watch/providers")))
         XCTAssertTrue(detail.trailers.isEmpty)
         XCTAssertTrue(items.contains(URLQueryItem(name: "include_image_language", value: "en,null")))
         let authorization = await client.lastAuthorizationHeader
-        XCTAssertNil(authorization)
+        XCTAssertEqual(authorization, "Bearer test-key")
 
         XCTAssertEqual(detail.images.map(\.filePath), ["/backdrop-a.jpg", "/backdrop-b.jpg"])
         XCTAssertEqual(detail.cast.map(\.name), ["Tim Robbins", "Morgan Freeman"])

@@ -94,13 +94,13 @@ That reads Wikidata entity claims for ids that never resolved to a title, and ke
 
 `/find/{imdb}` returns 404 unless the query includes `external_source=imdb_id`. The builder treats 404 as “no work” and would otherwise store a blank id. `tmdb_find_path` sets that parameter. Keep it.
 
-The script needs `TMDB_API_KEY` in the environment. Locally that value is in `Secrets.xcconfig`, which is gitignored. The Monday job reads the `TMDB_API_KEY` repository secret. Do not print the key, and do not log a URL that still has `api_key` in the query.
+The script needs `TMDB_ACCESS_TOKEN` in the environment (the API Read Access Token, sent as a bearer header). Locally that value is in `Secrets.xcconfig`, which is gitignored. The Monday job reads the `TMDB_ACCESS_TOKEN` repository secret. Do not print the token, and do not log a URL that contains it.
 
 Rebuild locally from the repo root:
 
 ```bash
 python3 scripts/test_build_awards_catalog.py
-export TMDB_API_KEY="$(python3 -c 'import re; print(re.search(r"^TMDB_API_KEY\s*=\s*(\S+)", open("Secrets.xcconfig").read(), re.M).group(1))')"
+export TMDB_ACCESS_TOKEN="$(python3 -c 'import re; print(re.search(r"^TMDB_ACCESS_TOKEN\s*=\s*(\S+)", open("Secrets.xcconfig").read(), re.M).group(1))')"
 python3 scripts/build_awards_catalog.py \
   --output SilverScreen/Data/Resources/AwardsCatalog.json \
   --summary-out /tmp/awards-summary.md

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 import os
 import subprocess
@@ -346,6 +347,34 @@ class BuilderTests(unittest.TestCase):
             }
         }
         self.assertEqual(builder.links_from_entity_payload(film), [])
+
+    def test_tmdb_request_sends_bearer_and_keeps_the_token_out_of_the_url(self):
+        seen = {}
+
+        class Response(io.BytesIO):
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        def opener(request, timeout):
+            seen["url"] = request.full_url
+            seen["authorization"] = request.get_header("Authorization")
+            return Response(b'{"movie_results": []}')
+
+        payload = builder._tmdb_json(
+            "https://api.themoviedb.org/3/find/tt15398776?external_source=imdb_id",
+            "test-token",
+            opener,
+        )
+        self.assertEqual(payload, {"movie_results": []})
+        self.assertNotIn("api_key", seen["url"])
+        self.assertNotIn("test-token", seen["url"])
+        self.assertEqual(seen["authorization"], "Bearer test-token")
+        self.assertIn("external_source=imdb_id", seen["url"])
 
 
 if __name__ == "__main__":

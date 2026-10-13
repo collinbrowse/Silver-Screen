@@ -78,7 +78,7 @@ enum HTTPTransport {
                 return true
             case .server(let status):
                 return (500..<600).contains(status)
-            case .offline, .unauthorized, .decoding, .persistence, .missingAPIKey:
+            case .offline, .unauthorized, .decoding, .persistence, .missingAccessToken:
                 return false
         }
     }
