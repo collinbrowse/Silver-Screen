@@ -78,6 +78,36 @@ actor ListsRepository {
         }
     }
 
+    /// Adds many titles to Watched in one serialized write / one disk transaction.
+    /// Used by launch-time `WatchedRatings.sync` so N scores are not N full saves.
+    func addToWatched(
+        _ items: [(draft: ListItemDraft, date: Date)]
+    ) async throws {
+        guard !items.isEmpty else { return }
+        try await serializeWrite { [self] in
+            var snapshot = try await loadCache()
+            guard let watched = snapshot.list(.watched) else {
+                throw ListEditError.missingList
+            }
+            var didChange = false
+            for item in items {
+                let before = snapshot
+                snapshot = try Self.addingToWatched(
+                    draft: item.draft,
+                    at: item.date,
+                    watchedID: watched.id,
+                    snapshot: snapshot
+                )
+                if snapshot != before {
+                    didChange = true
+                }
+            }
+            if didChange {
+                try await persist(snapshot)
+            }
+        }
+    }
+
     /// Eye-toggle for movies (and any direct Watched membership flip). Adds or removes Watched.
     func toggleWatched(_ draft: ListItemDraft, at date: Date = Date()) async throws -> MembershipChange {
         try await serializeWrite { [self] in
@@ -527,8 +557,13 @@ actor ListsRepository {
             try await store.save(snapshot)
             cached = snapshot
             await index.replace(with: snapshot)
+        } catch is CancellationError {
+            throw CancellationError()
         } catch {
-            logger.error("Lists save failed", category: .persistence)
+            logger.error(
+                "Lists save failed: \(String(describing: error))",
+                category: .persistence
+            )
             throw AppError.persistence
         }
     }
@@ -546,6 +581,41 @@ actor ListsRepository {
             lists.append(.system(.watchlist, position: 2))
         }
         return LibrarySnapshot(lists: lists, entries: snapshot.entries)
+    }
+
+    /// In-memory Watched add used by the batched launch path. Already-on-Watched is a no-op.
+    private static func addingToWatched(
+        draft: ListItemDraft,
+        at date: Date,
+        watchedID: UUID,
+        snapshot: LibrarySnapshot
+    ) throws -> LibrarySnapshot {
+        var snapshot = snapshot
+        guard let watched = snapshot.lists.first(where: { $0.id == watchedID }) else {
+            throw ListEditError.missingList
+        }
+        guard draft.kind.segment == watched.segment else {
+            throw ListEditError.wrongSegment
+        }
+        if snapshot.entries.contains(where: { $0.listID == watchedID && $0.itemKey == draft.itemKey }) {
+            return snapshot
+        }
+        if let watchlist = snapshot.list(.watchlist) {
+            snapshot.entries = Self.removing(
+                itemKey: draft.itemKey,
+                listID: watchlist.id,
+                from: snapshot.entries
+            ).entries
+        }
+        if let inProgress = snapshot.list(.inProgress) {
+            snapshot.entries = Self.removing(
+                itemKey: draft.itemKey,
+                listID: inProgress.id,
+                from: snapshot.entries
+            ).entries
+        }
+        snapshot.entries = Self.prepending(draft, listID: watchedID, at: date, to: snapshot.entries)
+        return snapshot
     }
 
     /// Trimmed name, or a rejection. System names are reserved on Movies & TV.

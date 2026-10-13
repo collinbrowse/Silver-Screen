@@ -12,6 +12,7 @@ enum WatchedRatings {
     /// Adds each scored movie that is not already on Watched.
     /// A title already on another list reuses that saved snapshot.
     /// Otherwise the movie is loaded so the row has a title and poster.
+    /// Disk write is one batched `addToWatched` after drafts are collected.
     static func sync(
         annotations: AnnotationsRepository,
         lists: ListsRepository,
@@ -37,6 +38,7 @@ enum WatchedRatings {
             snapshot.entries.filter { $0.listID == watchedID }.map(\.itemKey)
         )
 
+        var pending: [(draft: ListItemDraft, date: Date)] = []
         for record in scored {
             if Task.isCancelled { return }
             let itemKey = ListEntry.itemKey(id: record.key.subjectID, kind: .movie)
@@ -45,7 +47,7 @@ enum WatchedRatings {
             let draft: ListItemDraft
             if let stored = snapshot.entries.first(where: {
                 $0.kind == .movie && $0.itemID == record.key.subjectID
-                }) {
+            }) {
                 draft = stored.listItem()
             } else {
                 do {
@@ -61,17 +63,16 @@ enum WatchedRatings {
                     continue
                 }
             }
+            pending.append((draft, record.watchedAt ?? Date()))
+        }
 
-            do {
-                _ = try await lists.addToWatched(draft, at: record.watchedAt ?? Date())
-            } catch is CancellationError {
-                return
-            } catch {
-                logger.error(
-                    "Rated movie \(record.key.subjectID) was not added to Watched",
-                    category: .persistence
-                )
-            }
+        guard !pending.isEmpty else { return }
+        do {
+            try await lists.addToWatched(pending)
+        } catch is CancellationError {
+            return
+        } catch {
+            logger.error("Watched ratings sync could not save lists", category: .persistence)
         }
     }
 }
