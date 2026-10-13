@@ -214,6 +214,7 @@
 		WT0000042788B823003D8011 /* CarouselRatingBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = WT0000032788B823003D8011 /* CarouselRatingBadge.swift */; };
 		WT0000062788B823003D8011 /* TVWatchConfirm.swift in Sources */ = {isa = PBXBuildFile; fileRef = WT0000052788B823003D8011 /* TVWatchConfirm.swift */; };
 		WT0000082788B823003D8011 /* TVWatchConfirmTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WT0000072788B823003D8011 /* TVWatchConfirmTests.swift */; };
+		WB0000022788B823003D8011 /* WatchedToggleButtonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WB0000012788B823003D8011 /* WatchedToggleButtonTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -447,6 +448,7 @@
 		WT0000032788B823003D8011 /* CarouselRatingBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarouselRatingBadge.swift; sourceTree = "<group>"; };
 		WT0000052788B823003D8011 /* TVWatchConfirm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchConfirm.swift; sourceTree = "<group>"; };
 		WT0000072788B823003D8011 /* TVWatchConfirmTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchConfirmTests.swift; sourceTree = "<group>"; };
+		WB0000012788B823003D8011 /* WatchedToggleButtonTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchedToggleButtonTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -878,6 +880,7 @@
 				B100031B2788B823003D8011 /* CreditsListViewModelTests.swift */,
 				LC0000012788B823003D8011 /* ListChangeNoticeTests.swift */,
 				WT0000072788B823003D8011 /* TVWatchConfirmTests.swift */,
+				WB0000012788B823003D8011 /* WatchedToggleButtonTests.swift */,
 				B7D2E1F35C8E0B227F416D53 /* TVWatchConfirmPresentationTests.swift */,
 			);
 			path = Screens;
@@ -1243,6 +1246,7 @@
 				L1B0001D2788B823003D8011 /* LibraryViewModelTests.swift in Sources */,
 				LC0000022788B823003D8011 /* ListChangeNoticeTests.swift in Sources */,
 				WT0000082788B823003D8011 /* TVWatchConfirmTests.swift in Sources */,
+				WB0000022788B823003D8011 /* WatchedToggleButtonTests.swift in Sources */,
 				A8C1F0E24B7D9A116E305C42 /* TVWatchConfirmPresentationTests.swift in Sources */,
 				L1B0001F2788B823003D8011 /* InMemoryListsStore.swift in Sources */,
 				B10002142788B823003D8011 /* NavigationRouterTests.swift in Sources */,
