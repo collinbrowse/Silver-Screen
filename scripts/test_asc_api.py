@@ -16,7 +16,13 @@ class ASCClientTests(unittest.TestCase):
         def http(method: str, url: str, headers: dict[str, str], body: bytes | None):
             calls.append((method, url))
             if method == "GET" and "betaBuildLocalizations" in url:
-                return 200, {"data": [{"id": "loc-1", "type": "betaBuildLocalizations"}]}
+                self.assertNotIn("filter", url)
+                return 200, {
+                    "data": [
+                        {"id": "loc-fr", "type": "betaBuildLocalizations", "attributes": {"locale": "fr-FR"}},
+                        {"id": "loc-1", "type": "betaBuildLocalizations", "attributes": {"locale": "en-US"}},
+                    ]
+                }
             if method == "PATCH":
                 return 200, {"data": {"id": "loc-1"}}
             self.fail(f"unexpected {method} {url}")
@@ -30,6 +36,30 @@ class ASCClientTests(unittest.TestCase):
         self.assertEqual(calls[0][0], "GET")
         self.assertEqual(calls[1][0], "PATCH")
         self.assertIn("/v1/betaBuildLocalizations/loc-1", calls[1][1])
+
+    def test_set_testflight_notes_creates_missing_locale(self) -> None:
+        calls: list[tuple[str, str]] = []
+
+        def http(method: str, url: str, headers: dict[str, str], body: bytes | None):
+            calls.append((method, url))
+            if method == "GET":
+                return 200, {
+                    "data": [
+                        {"id": "loc-fr", "type": "betaBuildLocalizations", "attributes": {"locale": "fr-FR"}}
+                    ]
+                }
+            if method == "POST":
+                return 201, {"data": {"id": "loc-2"}}
+            self.fail(f"unexpected {method} {url}")
+
+        client = asc_api.ASCClient(
+            asc_api.ASCCredentials("KEY", "ISSUER", Path("/tmp/missing.p8")),
+            http=http,
+            token="test-token",
+        )
+        client.set_testflight_notes("build-1", "- Fixed stars.")
+        self.assertEqual(calls[1][0], "POST")
+        self.assertTrue(calls[1][1].endswith("/v1/betaBuildLocalizations"))
 
     def test_set_phased_release_posts_when_missing(self) -> None:
         calls: list[tuple[str, str]] = []
