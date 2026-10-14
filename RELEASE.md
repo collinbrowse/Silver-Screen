@@ -168,9 +168,24 @@ GitHub Actions repository secrets for [`.github/workflows/release.yml`](.github/
 | Secret | Purpose |
 | --- | --- |
 | `ASC_KEY_ID` / `ASC_ISSUER_ID` / `ASC_API_KEY_P8` | App Store Connect API key (`.p8` body). Use the Admin role: signing on a fresh runner needs cloud-managed certificates. |
+| `DEV_CERT_P12_BASE64` / `DEV_CERT_PASSWORD` | One Apple Development certificate and its private key (`.p12`, base64) so archives reuse it instead of creating a certificate per run |
 | `TMDB_ACCESS_TOKEN` | Release binary networking |
 | `SENTRY_DSN` | Crash reporting in the uploaded build |
 | `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` | dSYM upload |
+
+To make the development certificate secret, open Keychain Access → My
+Certificates, export an unexpired “Apple Development” certificate with its
+private key as a `.p12`, then:
+
+```bash
+base64 -i development.p12 | gh secret set DEV_CERT_P12_BASE64
+gh secret set DEV_CERT_PASSWORD
+rm development.p12
+```
+
+Without it the job still runs, but each archive creates a new “Created via
+API” development certificate, and Apple caps how many a team can hold.
+Replace the secret when that certificate expires.
 
 `*.p8` files are gitignored. Create the key in App Store Connect → Users and
 Access → Integrations.
