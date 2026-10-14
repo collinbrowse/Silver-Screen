@@ -77,7 +77,9 @@ jobs:
           EOF
           # runner.temp is not available in a job-level env block, so the path
           # is set here and exported for archive, TestFlight notes, and dSYM upload.
-          key_path="$RUNNER_TEMP/AuthKey.p8"
+          # altool finds the key by name, so it must be AuthKey_<key id>.p8.
+          mkdir -p "$RUNNER_TEMP/private_keys"
+          key_path="$RUNNER_TEMP/private_keys/AuthKey_${ASC_KEY_ID}.p8"
           printf '%s\n' "$ASC_API_KEY_P8" > "$key_path"
           chmod 600 "$key_path"
           echo "ASC_KEY_PATH=$key_path" >> "$GITHUB_ENV"

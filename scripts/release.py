@@ -724,6 +724,17 @@ def _xcode_auth_args() -> list[str]:
     ]
 
 
+def key_path_problem(key_id: str, key_path: str) -> str | None:
+    """altool only loads AuthKey_<key id>.p8 from API_PRIVATE_KEYS_DIR. Any other name fails after the archive."""
+    if not key_path:
+        return None
+    expected = f"AuthKey_{key_id}.p8"
+    name = Path(key_path).name
+    if name != expected:
+        return f"ASC_KEY_PATH is {name}. altool needs the key file named {expected}."
+    return None
+
+
 def _upload_command(ipa: Path) -> tuple[list[str], dict[str, str]]:
     key_id = os.environ.get("ASC_KEY_ID", "").strip()
     issuer = os.environ.get("ASC_ISSUER_ID", "").strip()
@@ -833,6 +844,14 @@ def cmd_archive(root: Path, upload: bool) -> str:
         shutil.rmtree(archive)
     if export_dir.exists():
         shutil.rmtree(export_dir)
+
+    if upload:
+        # Fail before the archive, not minutes later at upload.
+        problem = key_path_problem(
+            os.environ.get("ASC_KEY_ID", "").strip(), os.environ.get("ASC_KEY_PATH", "").strip()
+        )
+        if problem:
+            raise ReleaseError(problem)
 
     auth = _xcode_auth_args()
     _run_visible(

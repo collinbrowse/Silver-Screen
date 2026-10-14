@@ -270,6 +270,13 @@ class ArchiveTests(unittest.TestCase):
         self.assertIn("TMDBAccessToken", problems[0])
         self.assertIn("SentryDSN", problems[1])
 
+    def test_key_path_must_be_named_for_altool(self) -> None:
+        self.assertIsNone(release.key_path_problem("ABC123", "/tmp/keys/AuthKey_ABC123.p8"))
+        self.assertIsNone(release.key_path_problem("ABC123", ""))
+        problem = release.key_path_problem("ABC123", "/tmp/AuthKey.p8")
+        self.assertIsNotNone(problem)
+        self.assertIn("AuthKey_ABC123.p8", problem)
+
 
 class WaitTests(unittest.TestCase):
     def test_wait_for_polls_until_found(self) -> None:
