@@ -132,23 +132,16 @@ jobs:
         run: python3 scripts/release.py tf-notes --wait 900
         continue-on-error: true
 
+      # Sentry matches dSYMs to crashes by debug UUID, so no release name is
+      # needed (and current sentry-cli rejects --release here).
       - name: Upload dSYMs to Sentry
         if: env.UPLOAD == 'true' && env.SENTRY_AUTH_TOKEN != ''
         run: |
           curl -sL https://sentry.io/get-cli/ | bash
           export PATH="$HOME/.local/bin:$PATH"
-          VERSION=$(python3 <<'PY'
-          from pathlib import Path
-          import re
-          text = Path("Version.xcconfig").read_text()
-          values = dict(re.findall(r"^(MARKETING_VERSION|CURRENT_PROJECT_VERSION)\s*=\s*(.+)$", text, re.M))
-          print(f"{values['MARKETING_VERSION'].strip()}+{values['CURRENT_PROJECT_VERSION'].strip()}")
-          PY
-          )
           sentry-cli debug-files upload \
             --org "$SENTRY_ORG" \
             --project "$SENTRY_PROJECT" \
-            --release "$VERSION" \
             build/SilverScreen.xcarchive/dSYMs
 
       - name: Remove signing keychain

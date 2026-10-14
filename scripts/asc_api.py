@@ -209,12 +209,18 @@ class ASCClient:
         return found
 
     def set_testflight_notes(self, build_id, notes, locale="en-US"):
+        # This relationship endpoint rejects filter[locale] (400 PARAMETER_ERROR.ILLEGAL),
+        # so list them all and match the locale here.
         listed = self.request(
             "GET",
             f"/v1/builds/{build_id}/betaBuildLocalizations",
-            query={"filter[locale]": locale},
+            query={"limit": "50"},
         )
-        rows = listed.get("data") or []
+        rows = [
+            row
+            for row in listed.get("data") or []
+            if (row.get("attributes") or {}).get("locale") == locale
+        ]
         attributes = {"whatsNew": notes}
         if rows:
             localization_id = rows[0]["id"]

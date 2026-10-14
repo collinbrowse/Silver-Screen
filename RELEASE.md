@@ -174,7 +174,9 @@ GitHub Actions repository secrets for [`.github/workflows/release.yml`](.github/
 | `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` | dSYM upload |
 
 To make the development certificate secret, open Keychain Access → My
-Certificates, export an unexpired “Apple Development” certificate with its
+Certificates and pick a certificate whose team (Get Info → Organizational
+Unit) is the app's `DEVELOPMENT_TEAM`, `84XX2W7G34`. Certificates for other
+teams share the same “Apple Development: <name>” label. Export an unexpired “Apple Development” certificate with its
 private key as a `.p12`, then:
 
 ```bash
