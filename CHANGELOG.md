@@ -7,6 +7,11 @@ list.
 
 ## [Unreleased]
 
+## [0.1.1+8] - 2026-10-14
+
+- Reuse one development certificate and fix the TestFlight upload key.
+- Fix TestFlight notes sync and Sentry dSYM upload.
+
 ## [0.1.1+7] - 2026-10-14
 
 - Replace JSON library files with SQLite Phase 1.
