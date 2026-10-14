@@ -27,6 +27,8 @@ jobs:
         run: python3 scripts/validate-rules.py
       - name: Test awards catalog builder
         run: python3 scripts/test_build_awards_catalog.py
+      - name: Test marketing tooling
+        run: python3 scripts/test_marketing.py
       - name: Validate test suite gates
         run: python3 scripts/validate-tests.py
       - name: Validate PR body template

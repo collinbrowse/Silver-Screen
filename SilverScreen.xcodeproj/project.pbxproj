@@ -230,6 +230,7 @@
 		3E4FAB553ADF24A88407C372 /* DemoMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DBC1ED7F2FAA3C47A3253AD /* DemoMode.swift */; };
 		E2ADEF2E4BC8FB898FAF1581 /* DemoLibrarySeed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C5D5902EACA642A9A69BC4B /* DemoLibrarySeed.swift */; };
 		BDE0862D4994D9B477EB63AF /* DemoModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E19281196038680DB89C0C3 /* DemoModeTests.swift */; };
+		4427B59233EFD7711EA002B2 /* MarketingCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8487D67F17BB8C18DBEFD4A0 /* MarketingCaptureTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -477,6 +478,7 @@
 		3DBC1ED7F2FAA3C47A3253AD /* DemoMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoMode.swift; sourceTree = "<group>"; };
 		1C5D5902EACA642A9A69BC4B /* DemoLibrarySeed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoLibrarySeed.swift; sourceTree = "<group>"; };
 		0E19281196038680DB89C0C3 /* DemoModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoModeTests.swift; sourceTree = "<group>"; };
+		8487D67F17BB8C18DBEFD4A0 /* MarketingCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MarketingCaptureTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -763,6 +765,7 @@
 			isa = PBXGroup;
 			children = (
 				C77D45522788B823003D8011 /* SilverScreenUITests.swift */,
+				8487D67F17BB8C18DBEFD4A0 /* MarketingCaptureTests.swift */,
 				C77D45542788B823003D8011 /* SilverScreenUITestsLaunchTests.swift */,
 			);
 			path = SilverScreenUITests;
@@ -1321,6 +1324,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4427B59233EFD7711EA002B2 /* MarketingCaptureTests.swift in Sources */,
 				C77D45532788B823003D8011 /* SilverScreenUITests.swift in Sources */,
 				C77D45552788B823003D8011 /* SilverScreenUITestsLaunchTests.swift in Sources */,
 			);
