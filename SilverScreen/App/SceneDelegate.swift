@@ -24,15 +24,28 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let window = UIWindow(windowScene: windowScene)
 
         do {
-            let dependencies = try AppDependencies.live()
+            let demo = DemoMode.current()
+            let dependencies = try AppDependencies.live(demo: demo)
             // Restore the selected tab and pushed screens before the view tree is built.
-            if let snapshot = routerStateStore.load() {
-                dependencies.router.restore(snapshot)
+            // A demo launch opens where the capture asks and never saves its navigation.
+            if let demo {
+                if let snapshot = demo.routerSnapshot {
+                    dependencies.router.restore(snapshot)
+                }
+            } else {
+                if let snapshot = routerStateStore.load() {
+                    dependencies.router.restore(snapshot)
+                }
+                appRouter = dependencies.router
             }
-            appRouter = dependencies.router
             let libraryHomeViewModel = LibraryHomeViewModel(lists: dependencies.lists)
             Task { try? await dependencies.libraryStore.bootstrap() }
-            Task { try? await dependencies.lists.loadIndex() }
+            Task {
+                if let seedURL = demo?.seedURL {
+                    await Self.seedDemoLibrary(from: seedURL, dependencies: dependencies)
+                }
+                try? await dependencies.lists.loadIndex()
+            }
             Task { await dependencies.awards.prepare() }
             Task {
                 await WatchedRatings.sync(
@@ -81,6 +94,18 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         self.window = window
         window.makeKeyAndVisible()
+    }
+
+    /// Fills a demo launch's empty library before the lists index loads, so the
+    /// first frames already show ratings and list membership.
+    @MainActor
+    private static func seedDemoLibrary(from url: URL, dependencies: AppDependencies) async {
+        do {
+            let seed = try DemoLibrarySeed.load(from: url)
+            try await seed.apply(lists: dependencies.lists, annotations: dependencies.annotations)
+        } catch {
+            dependencies.logger.error("Demo library seed failed", category: .persistence)
+        }
     }
 
     func sceneDidEnterBackground(_ scene: UIScene) {

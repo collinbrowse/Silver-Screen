@@ -21,7 +21,8 @@ struct AppDependencies {
     let router: AppRouter
     let logger: any AppLogging
 
-    static func live() throws -> AppDependencies {
+    /// Builds the app's dependency graph. A demo launch swaps in a throwaway library.
+    static func live(demo: DemoMode? = nil) throws -> AppDependencies {
         let logger = OSAppLogger()
         let accessToken = try TMDBAccessToken.fromBundle()
         let httpClient = URLSessionHTTPClient()
@@ -40,7 +41,7 @@ struct AppDependencies {
             accessToken: accessToken,
             logger: logger
         )
-        let libraryStore = try SQLiteLibraryStore.live()
+        let libraryStore = try demo?.libraryStore() ?? SQLiteLibraryStore.live()
         let listsIndex = ListsIndex()
         let lists = ListsRepository(
             store: LibraryListsStoreAdapter(library: libraryStore),
