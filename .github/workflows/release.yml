@@ -30,13 +30,12 @@ jobs:
       NSUnbufferedIO: YES
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-      ASC_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
       SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
           fetch-depth: 0
@@ -82,8 +81,12 @@ jobs:
           TMDB_ACCESS_TOKEN = ${TMDB_ACCESS_TOKEN}
           SENTRY_DSN = ${SENTRY_DSN}
           EOF
-          printf '%s\n' "$ASC_API_KEY_P8" > "$ASC_KEY_PATH"
-          chmod 600 "$ASC_KEY_PATH"
+          # runner.temp is not available in a job-level env block, so the path
+          # is set here and exported for archive, TestFlight notes, and dSYM upload.
+          key_path="$RUNNER_TEMP/AuthKey.p8"
+          printf '%s\n' "$ASC_API_KEY_P8" > "$key_path"
+          chmod 600 "$key_path"
+          echo "ASC_KEY_PATH=$key_path" >> "$GITHUB_ENV"
 
       - name: Validate release files
         run: python3 scripts/release.py check
@@ -124,7 +127,7 @@ jobs:
 
       - name: Upload archive artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: silverscreen-xcarchive
           path: build/SilverScreen.xcarchive

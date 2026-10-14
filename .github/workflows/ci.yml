@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Validate rules
         run: python3 scripts/validate-rules.py
       - name: Test awards catalog builder
@@ -49,7 +49,7 @@ jobs:
       # Unbuffered output, otherwise xcodebuild logs arrive in useless chunks.
       NSUnbufferedIO: YES
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Recorded in the log so a failure that only reproduces on CI can be traced to
       # a toolchain difference. The app needs the iOS 26 SDK. Pin the runner and
@@ -99,7 +99,7 @@ jobs:
       # far more useful than scrolling a truncated xcodebuild log.
       - name: Upload results
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: test-results
           path: TestResults.xcresult
