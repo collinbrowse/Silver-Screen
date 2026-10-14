@@ -2,6 +2,12 @@ name: Release
 
 # Push a testflight/* tag after `release.py cut`. This job archives, uploads to
 # TestFlight, syncs What to Test, and ships dSYMs to Sentry.
+#
+# A tag push runs the workflow file at the tagged commit, so a tag cut before a
+# workflow fix keeps the old file. Re-run such a tag from Actions → Release →
+# Run workflow on main, which uses main's workflow and checks out the tag.
+# Leave "upload" off to archive and export only, which proves signing without
+# shipping a build.
 
 on:
   push:
@@ -13,6 +19,11 @@ on:
         description: "Git ref to archive (testflight tag or SHA)"
         required: true
         type: string
+      upload:
+        description: "Upload to TestFlight (off archives and exports only)"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: release-${{ github.ref }}
@@ -25,9 +36,10 @@ jobs:
   ship:
     name: Archive and upload
     runs-on: macos-latest
-    timeout-minutes: 90
+    timeout-minutes: 60
     env:
       NSUnbufferedIO: YES
+      UPLOAD: ${{ github.event_name == 'push' || inputs.upload }}
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
@@ -45,28 +57,6 @@ jobs:
           xcodebuild -version
           xcrun simctl list runtimes | grep iOS || true
 
-      - name: Select a simulator
-        id: sim
-        run: |
-          UDID=$(xcrun simctl list devices available -j | python3 -c '
-          import json, sys
-          data = json.load(sys.stdin)
-          candidates = [
-              device
-              for runtime, devices in (data.get("devices") or {}).items()
-              if "iOS" in runtime
-              for device in devices or []
-              if device.get("isAvailable") is not False and "iPhone" in (device.get("name") or "")
-          ]
-          print(candidates[0]["udid"] if candidates else "")
-          ')
-          if [ -z "$UDID" ]; then
-            echo "::error::No iOS iPhone simulator available on this runner"
-            exit 1
-          fi
-          echo "Using simulator $UDID"
-          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
-
       - name: Write secrets
         env:
           TMDB_ACCESS_TOKEN: ${{ secrets.TMDB_ACCESS_TOKEN }}
@@ -77,9 +67,13 @@ jobs:
             echo "::error::Need repository secrets TMDB_ACCESS_TOKEN, SENTRY_DSN, ASC_API_KEY_P8, ASC_KEY_ID, ASC_ISSUER_ID"
             exit 1
           fi
+          # xcconfig treats // as a comment, so https:// would be cut to https:.
+          # Write it as https:/$()/ like Secrets.example.xcconfig. Already-escaped
+          # values have no // and pass through unchanged.
+          dsn=$(printf '%s' "$SENTRY_DSN" | sed 's#//#/$()/#g')
           cat > Secrets.xcconfig <<EOF
           TMDB_ACCESS_TOKEN = ${TMDB_ACCESS_TOKEN}
-          SENTRY_DSN = ${SENTRY_DSN}
+          SENTRY_DSN = ${dsn}
           EOF
           # runner.temp is not available in a job-level env block, so the path
           # is set here and exported for archive, TestFlight notes, and dSYM upload.
@@ -91,23 +85,25 @@ jobs:
       - name: Validate release files
         run: python3 scripts/release.py check
 
-      - name: Unit tests
-        run: |
-          xcodebuild test \
-            -project SilverScreen.xcodeproj \
-            -scheme SilverScreen \
-            -only-testing:SilverScreenTests \
-            -destination "platform=iOS Simulator,id=${{ steps.sim.outputs.udid }}"
+      # No unit tests here. `cut` commits to main, and CI already tested that
+      # exact commit; repeating them added a simulator boot and several minutes.
 
       - name: Archive and upload
-        run: python3 scripts/release.py archive --upload
+        run: |
+          if [ "$UPLOAD" = "true" ]; then
+            python3 scripts/release.py archive --upload
+          else
+            python3 scripts/release.py archive
+          fi
 
+      # Upload returns before App Store Connect registers the build, so poll.
       - name: TestFlight notes
-        run: python3 scripts/release.py tf-notes
+        if: env.UPLOAD == 'true'
+        run: python3 scripts/release.py tf-notes --wait 900
         continue-on-error: true
 
       - name: Upload dSYMs to Sentry
-        if: env.SENTRY_AUTH_TOKEN != ''
+        if: env.UPLOAD == 'true' && env.SENTRY_AUTH_TOKEN != ''
         run: |
           curl -sL https://sentry.io/get-cli/ | bash
           export PATH="$HOME/.local/bin:$PATH"
@@ -125,8 +121,10 @@ jobs:
             --release "$VERSION" \
             build/SilverScreen.xcarchive/dSYMs
 
+      # Only on failure: on success the dSYMs are in Sentry and the build is in
+      # App Store Connect, and uploading the archive costs a minute or more.
       - name: Upload archive artifact
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v6
         with:
           name: silverscreen-xcarchive

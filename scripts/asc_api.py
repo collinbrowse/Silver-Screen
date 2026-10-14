@@ -138,11 +138,16 @@ class ASCClient:
         self.credentials = credentials
         self.http = http
         self._token = token
+        # None for an injected token, which never expires in tests.
+        self._token_issued = None
         self.bundle_id = bundle_id
 
     @property
     def token(self):
-        if self._token is None:
+        # Tokens live 20 minutes. Waiting on build processing can outlast one.
+        stale = self._token_issued is not None and time.time() - self._token_issued > 15 * 60
+        if self._token is None or stale:
+            self._token_issued = time.time()
             self._token = make_token(self.credentials)
         return self._token
 
@@ -171,7 +176,8 @@ class ASCClient:
             raise ASCError(f"No App Store Connect app for bundle id {self.bundle_id}.")
         return str(rows[0]["id"])
 
-    def build_id(self, app_id, version, build):
+    def find_build_id(self, app_id, version, build):
+        """Build id, or None while App Store Connect has not registered the upload yet."""
         data = self.request(
             "GET",
             "/v1/builds",
@@ -191,12 +197,16 @@ class ASCClient:
                 query={"filter[app]": app_id, "filter[version]": build, "limit": "5"},
             )
             rows = data.get("data") or []
-        if not rows:
+        return str(rows[0]["id"]) if rows else None
+
+    def build_id(self, app_id, version, build):
+        found = self.find_build_id(app_id, version, build)
+        if found is None:
             raise ASCError(
                 f"No ASC build for {version} ({build}). "
                 "Wait for processing after upload, then retry."
             )
-        return str(rows[0]["id"])
+        return found
 
     def set_testflight_notes(self, build_id, notes, locale="en-US"):
         listed = self.request(

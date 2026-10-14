@@ -255,6 +255,55 @@ class ProjectTests(unittest.TestCase):
         self.assertEqual(release.collect_problems(root), [])
 
 
+class ArchiveTests(unittest.TestCase):
+    def test_embedded_config_accepts_escaped_and_plain_dsn(self) -> None:
+        for dsn in ("https:/$()/abc@o1.ingest.us.sentry.io/2", "https://abc@o1.ingest.us.sentry.io/2"):
+            info = {"TMDBAccessToken": "eyJtoken", "SentryDSN": dsn}
+            self.assertEqual(release.embedded_config_problems(info), [])
+
+    def test_embedded_config_rejects_truncated_dsn_and_missing_token(self) -> None:
+        # What xcconfig leaves of an unescaped https:// DSN.
+        problems = release.embedded_config_problems(
+            {"TMDBAccessToken": "$(TMDB_ACCESS_TOKEN)", "SentryDSN": "https:"}
+        )
+        self.assertEqual(len(problems), 2)
+        self.assertIn("TMDBAccessToken", problems[0])
+        self.assertIn("SentryDSN", problems[1])
+
+
+class WaitTests(unittest.TestCase):
+    def test_wait_for_polls_until_found(self) -> None:
+        results = iter([None, None, "build-1"])
+        sleeps: list[float] = []
+        found = release.wait_for(
+            lambda: next(results), timeout=600, interval=30, sleep=sleeps.append, clock=lambda: 0
+        )
+        self.assertEqual(found, "build-1")
+        self.assertEqual(sleeps, [30, 30])
+
+    def test_wait_for_gives_up_after_timeout(self) -> None:
+        ticks = iter([0, 0, 40, 80])
+        calls: list[int] = []
+
+        def lookup():
+            calls.append(1)
+            return None
+
+        found = release.wait_for(lookup, timeout=60, interval=30, sleep=lambda _: None, clock=lambda: next(ticks))
+        self.assertIsNone(found)
+        self.assertEqual(len(calls), 3)
+
+    def test_zero_wait_looks_once(self) -> None:
+        calls: list[int] = []
+
+        def lookup():
+            calls.append(1)
+            return None
+
+        self.assertIsNone(release.wait_for(lookup, timeout=0, sleep=lambda _: self.fail("slept")))
+        self.assertEqual(len(calls), 1)
+
+
 class GitFlowTests(unittest.TestCase):
     def test_cut_promote_and_retarget(self) -> None:
         with tempfile.TemporaryDirectory() as raw:
