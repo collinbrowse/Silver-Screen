@@ -41,6 +41,26 @@ final class DemoModeTests: XCTestCase {
         XCTAssertNil(demo?.seedURL)
     }
 
+    func test_startingRoute_withSeededListName_opensThatListOnLibrary() {
+        let list = LibraryList(id: UUID(), name: "Best of 2026", segment: .moviesAndTV, system: nil, sort: .dateAdded, position: 0)
+        let demo = DemoMode(
+            seedURL: nil,
+            routerSnapshot: RouterSnapshot(selectedTab: .browse),
+            openListName: "Best of 2026"
+        )
+
+        let route = demo.startingRoute(in: LibrarySnapshot(lists: [list], entries: []))
+
+        XCTAssertEqual(route, RouterSnapshot(selectedTab: .library, favoritesPath: [.libraryList(id: list.id)]))
+    }
+
+    func test_startingRoute_withUnknownListName_keepsRequestedRoute() {
+        let requested = RouterSnapshot(selectedTab: .search)
+        let demo = DemoMode(seedURL: nil, routerSnapshot: requested, openListName: "Missing")
+
+        XCTAssertEqual(demo.startingRoute(in: LibrarySnapshot(lists: [], entries: [])), requested)
+    }
+
     /// The capture scripts write routes by hand, so the JSON shape is a contract.
     func test_routerSnapshot_encodesRoutesInTheShapeCaptureScriptsWrite() throws {
         let snapshot = RouterSnapshot(

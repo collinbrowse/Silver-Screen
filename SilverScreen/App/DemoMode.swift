@@ -18,9 +18,13 @@ struct DemoMode: Sendable, Equatable {
     static let seedKey = "SS_DEMO_SEED"
     /// A `RouterSnapshot` as JSON, used in place of the saved navigation state.
     static let routeKey = "SS_DEMO_ROUTE"
+    /// A seeded list to open on the Library tab. Lists get new ids every launch, so a
+    /// capture names the list instead of routing to an id.
+    static let openListKey = "SS_DEMO_OPEN_LIST"
 
     let seedURL: URL?
     let routerSnapshot: RouterSnapshot?
+    var openListName: String? = nil
 
     /// Returns nil unless `SS_DEMO_MODE=1`. A route that does not decode is ignored
     /// so the capture still launches on Browse instead of failing to start.
@@ -31,7 +35,20 @@ struct DemoMode: Sendable, Equatable {
         let routerSnapshot = environment[routeKey]
             .flatMap { $0.data(using: .utf8) }
             .flatMap { try? JSONDecoder().decode(RouterSnapshot.self, from: $0) }
-        return DemoMode(seedURL: seedURL, routerSnapshot: routerSnapshot)
+        let openListName = environment[openListKey].flatMap { $0.isEmpty ? nil : $0 }
+        return DemoMode(seedURL: seedURL, routerSnapshot: routerSnapshot, openListName: openListName)
+    }
+
+    /// Where the app opens once the library is seeded: the requested route, or the
+    /// named list on the Library tab when that list exists.
+    func startingRoute(in library: LibrarySnapshot) -> RouterSnapshot? {
+        guard
+            let openListName,
+            let list = library.lists.first(where: { $0.name == openListName })
+        else {
+            return routerSnapshot
+        }
+        return RouterSnapshot(selectedTab: .library, favoritesPath: [.libraryList(id: list.id)])
     }
 
     /// The environment of this process in Debug builds; always nil in Release.

@@ -40,12 +40,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             }
             let libraryHomeViewModel = LibraryHomeViewModel(lists: dependencies.lists)
             Task { try? await dependencies.libraryStore.bootstrap() }
-            Task {
-                if let seedURL = demo?.seedURL {
-                    await Self.seedDemoLibrary(from: seedURL, dependencies: dependencies)
-                }
-                try? await dependencies.lists.loadIndex()
-            }
+            Task { try? await dependencies.lists.loadIndex() }
             Task { await dependencies.awards.prepare() }
             Task {
                 await WatchedRatings.sync(
@@ -79,7 +74,24 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 imageLoader: dependencies.imageLoader,
                 libraryHomeViewModel: libraryHomeViewModel
             )
-            window.rootViewController = UIHostingController(rootView: root)
+            if let seedURL = demo?.seedURL {
+                // A demo launch holds the first frame until the seed is written, so
+                // screens never read an empty library and miss the seeded rows.
+                let placeholder = UIViewController()
+                placeholder.view.backgroundColor = .systemBackground
+                window.rootViewController = placeholder
+                Task { @MainActor in
+                    await Self.seedDemoLibrary(from: seedURL, dependencies: dependencies)
+                    try? await dependencies.lists.loadIndex()
+                    if let library = try? await dependencies.lists.snapshot(),
+                       let route = demo?.startingRoute(in: library) {
+                        dependencies.router.restore(route)
+                    }
+                    window.rootViewController = UIHostingController(rootView: root)
+                }
+            } else {
+                window.rootViewController = UIHostingController(rootView: root)
+            }
         } catch {
             let message: String
             if let appError = error as? AppError {
@@ -96,15 +108,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.makeKeyAndVisible()
     }
 
-    /// Fills a demo launch's empty library before the lists index loads, so the
-    /// first frames already show ratings and list membership.
+    /// Fills a demo launch's empty library through the real repositories.
     @MainActor
     private static func seedDemoLibrary(from url: URL, dependencies: AppDependencies) async {
         do {
             let seed = try DemoLibrarySeed.load(from: url)
             try await seed.apply(lists: dependencies.lists, annotations: dependencies.annotations)
         } catch {
-            dependencies.logger.error("Demo library seed failed", category: .persistence)
+            dependencies.logger.error("Demo library seed failed: \(error)", category: .persistence)
         }
     }
 
