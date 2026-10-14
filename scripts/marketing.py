@@ -24,6 +24,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import threading
 import time
 import urllib.parse
 import urllib.request
@@ -55,6 +56,7 @@ DEVICES = {
     },
 }
 APPEARANCES = ("light", "dark")
+APP_NAME = "Silver Screen"
 
 
 # MARK: - TMDB
@@ -253,6 +255,12 @@ def simulator_udid(device: str) -> str:
     return udid
 
 
+def shutdown_simulator(udid: str) -> None:
+    """Frees the simulator's memory. On a 16 GB Mac, two booted marketing simulators
+    plus Xcode push launches into paging stalls that look like hangs."""
+    simctl("shutdown", udid, check=False, attempts=1, timeout=120)
+
+
 def prepare_simulator(udid: str, appearance: str) -> None:
     """Apple's marketing status bar (9:41, full signal and battery) and the requested theme."""
     subprocess.run(
@@ -272,33 +280,38 @@ def destination(udid: str) -> str:
 
 def build_for_testing(udid: str) -> None:
     run(
-        ["xcodebuild", "build-for-testing", "-scheme", "SilverScreenMarketing", "-destination", destination(udid)],
+        ["xcodebuild", "build-for-testing", "-scheme", "SilverScreenMarketing", "-destination", destination(udid),
+         f"INFOPLIST_KEY_CFBundleDisplayName={APP_NAME}"],
         os.path.join(OUTPUT, "logs", "build.log"),
     )
 
 
-def ui_test(udid: str, test: str, out_dir: str, log_name: str) -> None:
+def ui_test(udid: str, test: str, out_dir: str, log_name: str, clear_stage: bool = True) -> None:
     """Runs one MarketingCaptureTests method. TEST_RUNNER_ variables reach the test process."""
     os.makedirs(STAGE, exist_ok=True)
     staged_titles = os.path.join(STAGE, "titles.json")
     shutil.copyfile(TITLES, staged_titles)
     staged_out = os.path.join(STAGE, "out")
-    shutil.rmtree(staged_out, ignore_errors=True)
+    if clear_stage:
+        shutil.rmtree(staged_out, ignore_errors=True)
     env = dict(os.environ)
     env["TEST_RUNNER_SS_MARKETING_TITLES"] = staged_titles
     env["TEST_RUNNER_SS_MARKETING_OUT"] = staged_out
-    run(
-        [
-            "xcodebuild", "test-without-building", "-scheme", "SilverScreenMarketing",
-            "-destination", destination(udid),
-            f"-only-testing:SilverScreenUITests/MarketingCaptureTests/{test}",
-        ],
-        os.path.join(OUTPUT, "logs", log_name),
-        env=env,
-    )
-    os.makedirs(out_dir, exist_ok=True)
-    for name in os.listdir(staged_out) if os.path.isdir(staged_out) else []:
-        shutil.copyfile(os.path.join(staged_out, name), os.path.join(out_dir, name))
+    try:
+        run(
+            [
+                "xcodebuild", "test-without-building", "-scheme", "SilverScreenMarketing",
+                "-destination", destination(udid),
+                f"-only-testing:SilverScreenUITests/MarketingCaptureTests/{test}",
+            ],
+            os.path.join(OUTPUT, "logs", log_name),
+            env=env,
+        )
+    finally:
+        os.makedirs(out_dir, exist_ok=True)
+        for name in os.listdir(staged_out) if os.path.isdir(staged_out) else []:
+            if name.endswith((".png", ".json")):
+                shutil.copyfile(os.path.join(staged_out, name), os.path.join(out_dir, name))
 
 
 # MARK: - screenshots and frames
@@ -311,7 +324,9 @@ def raw_dir(device: str, appearance: str) -> str:
 def install_app(udid: str) -> str:
     """Builds the Debug app for this simulator, installs it, and returns its bundle id."""
     run(
-        ["xcodebuild", "build", "-scheme", "SilverScreen", "-destination", destination(udid)],
+        # iPadOS shows the app's name in the status bar; use the App Store name, not "Silver Dev".
+        ["xcodebuild", "build", "-scheme", "SilverScreen", "-destination", destination(udid),
+         f"INFOPLIST_KEY_CFBundleDisplayName={APP_NAME}"],
         os.path.join(OUTPUT, "logs", "build-app.log"),
     )
     settings = subprocess.check_output(
@@ -322,6 +337,22 @@ def install_app(udid: str) -> str:
     bundle_id = re.search(r"^\s*PRODUCT_BUNDLE_IDENTIFIER = (.+)$", settings, re.M).group(1)
     subprocess.run(["xcrun", "simctl", "install", udid, os.path.join(products, "SilverScreen.app")], check=True)
     return bundle_id
+
+
+def simctl(*args: str, env: dict | None = None, check: bool = True, attempts: int = 3, timeout: int = 90) -> None:
+    """One simctl call with a timeout. A busy CoreSimulator sometimes never answers a
+    launch or terminate; a retry usually goes through where waiting does not."""
+    for attempt in range(1, attempts + 1):
+        try:
+            result = subprocess.run(["xcrun", "simctl", *args], capture_output=True, text=True, env=env, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            print(f"  simctl {args[0]} timed out (attempt {attempt}/{attempts})", flush=True)
+            continue
+        if result.returncode == 0 or not check:
+            return
+        print(f"  simctl {args[0]} failed: {result.stderr.strip()[:200]}", flush=True)
+    if check:
+        sys.exit(f"simctl {args[0]} did not succeed after {attempts} attempts.")
 
 
 def demo_environment(step: dict) -> dict:
@@ -355,16 +386,15 @@ def capture_screenshots(devices: list[str], appearances: list[str], only: str | 
             out_dir = raw_dir(device, appearance)
             os.makedirs(out_dir, exist_ok=True)
             for shot in shots_for(config, device, wanted):
-                subprocess.run(
-                    ["xcrun", "simctl", "launch", "--terminate-running-process", udid, bundle_id],
-                    check=True, capture_output=True, env=demo_environment(shot),
-                )
+                simctl("terminate", udid, bundle_id, check=False)
+                simctl("launch", udid, bundle_id, env=demo_environment(shot))
                 # Posters and backdrops load from TMDB; give them time to land.
                 time.sleep(shot.get("settle", 7))
                 path = os.path.join(out_dir, f"{shot['id']}.png")
-                subprocess.run(["xcrun", "simctl", "io", udid, "screenshot", "--type=png", path], check=True, capture_output=True)
+                simctl("io", udid, "screenshot", "--type=png", path)
                 print(f"  {device} {appearance} {shot['id']}", flush=True)
-            subprocess.run(["xcrun", "simctl", "terminate", udid, bundle_id], capture_output=True)
+            simctl("terminate", udid, bundle_id, check=False)
+        shutdown_simulator(udid)
 
 
 def frame_jobs(config: dict, devices: list[str], appearances: list[str]) -> list[dict]:
@@ -404,27 +434,59 @@ def frame(config: dict, devices: list[str], appearances: list[str]) -> None:
 # MARK: - videos
 
 
-def clip_ranges(markers: list[dict], recording_start: float, lead: float = 0.4) -> list[dict]:
-    """Seconds into the recording for each tour clip, with a short lead-in, never before 0."""
-    ranges = []
-    for marker in markers:
-        start = max(0.0, marker["start"] - recording_start - lead)
-        end = max(start, marker["end"] - recording_start)
-        ranges.append({"id": marker["id"], "start": round(start, 3), "end": round(end, 3)})
-    return ranges
+def keep_ranges(duration: float, freezes: list[tuple[float, float]], hold: float = 0.8) -> list[tuple[float, float]]:
+    """Spans of a clip to keep when every still stretch is cut down to `hold` seconds.
+
+    XCUITest can stall for many seconds reading the app's accessibility tree between
+    steps. On screen that is a frozen frame, so trimming freezes removes the stall and
+    keeps a short beat where the tour meant to pause.
+    """
+    keep, cursor = [], 0.0
+    for start, end in sorted(freezes):
+        cut_from = start + hold
+        if end - cut_from <= 0.05 or cut_from <= cursor:
+            continue
+        keep.append((cursor, cut_from))
+        cursor = end
+    keep.append((cursor, duration))
+    return [(round(a, 3), round(b, 3)) for a, b in keep if b - a > 0.05]
+
+
+def parse_freezes(ffmpeg_log: str, duration: float) -> list[tuple[float, float]]:
+    """freezedetect's start/end pairs; a freeze still running at the end runs to `duration`."""
+    starts = [float(v) for v in re.findall(r"freeze_start: ([\d.]+)", ffmpeg_log)]
+    ends = [float(v) for v in re.findall(r"freeze_end: ([\d.]+)", ffmpeg_log)]
+    ends += [duration] * (len(starts) - len(ends))
+    return list(zip(starts, ends))
+
+
+def media_duration(path: str) -> float:
+    return float(subprocess.check_output(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path], text=True
+    ).strip())
 
 
 def ffmpeg(*args: str) -> None:
     run(["ffmpeg", "-loglevel", "error", "-y", *args])
 
 
-def encode_clip(source: str, clip: dict, out_dir: str, width: int) -> str:
+def encode_clip(source: str, clip_id: str, out_dir: str, width: int) -> str:
     """MP4 (H.264) and WebM (VP9) at constant 30 fps, plus a poster frame, all muted."""
-    base = os.path.join(out_dir, clip["id"])
-    window = ["-ss", str(clip["start"]), "-to", str(clip["end"]), "-i", source]
-    scale = f"fps=30,scale={width}:-2:flags=lanczos"
-    ffmpeg(*window, "-vf", scale, "-an", "-c:v", "libx264", "-preset", "slow", "-crf", "20",
-           "-pix_fmt", "yuv420p", "-movflags", "+faststart", f"{base}.mp4")
+    base = os.path.join(out_dir, clip_id)
+    cut = f"{base}.cut.mp4"
+    ffmpeg("-i", source, "-vf", f"fps=30,scale={width}:-2:flags=lanczos", "-an", "-c:v", "libx264",
+           "-preset", "veryfast", "-crf", "14", "-pix_fmt", "yuv420p", cut)
+
+    duration = media_duration(cut)
+    detect = subprocess.run(
+        ["ffmpeg", "-hide_banner", "-i", cut, "-vf", "freezedetect=n=0.002:d=1", "-f", "null", "-"],
+        capture_output=True, text=True,
+    )
+    spans = keep_ranges(duration, parse_freezes(detect.stderr, duration))
+    keep = "+".join(f"between(t,{a},{b})" for a, b in spans)
+    ffmpeg("-i", cut, "-vf", f"select='{keep}',setpts=N/30/TB", "-an", "-c:v", "libx264", "-preset", "slow",
+           "-crf", "20", "-pix_fmt", "yuv420p", "-movflags", "+faststart", f"{base}.mp4")
+    os.remove(cut)
     ffmpeg("-i", f"{base}.mp4", "-c:v", "libvpx-vp9", "-b:v", "0", "-crf", "34", "-row-mt", "1", "-an", f"{base}.webm")
     ffmpeg("-ss", "0.6", "-i", f"{base}.mp4", "-frames:v", "1", "-q:v", "3", f"{base}.jpg")
     return f"{base}.mp4"
@@ -446,35 +508,108 @@ def app_preview(clips: list[str], out_path: str) -> None:
     os.remove(listing)
 
 
-def record_tour(device: str, appearance: str, width: int) -> None:
-    udid = simulator_udid(device)
-    build_for_testing(udid)
-    prepare_simulator(udid, appearance)
-    out_dir = os.path.join(OUTPUT, "video", device, appearance)
-    os.makedirs(out_dir, exist_ok=True)
-    recording = os.path.join(out_dir, "recording.mov")
+def tour_clips(config: dict, device: str) -> list[dict]:
+    return [clip for clip in config.get("tour", []) if device in clip.get("devices", [device])]
 
-    recorder = subprocess.Popen(
-        ["xcrun", "simctl", "io", udid, "recordVideo", "--codec=h264", "--force", recording],
-        stderr=subprocess.PIPE, text=True,
-    )
-    # simctl prints this once frames are flowing; clip times are measured from here.
-    for line in recorder.stderr:
-        if "Recording started" in line:
-            break
-    recording_start = time.time()
-    try:
-        ui_test(udid, "test_playTour", out_dir, f"tour-{device}-{appearance}.log")
-    finally:
-        recorder.send_signal(signal.SIGINT)
-        recorder.wait(timeout=60)
 
-    with open(os.path.join(out_dir, "tour-markers.json"), encoding="utf-8") as handle:
-        markers = json.load(handle)
-    clips = [encode_clip(recording, clip, out_dir, width) for clip in clip_ranges(markers, recording_start)]
+def encode_tour(out_dir: str, device: str, width: int) -> None:
+    """Encodes each recorded clip, in tour order, plus the App Store preview."""
+    recorded = [
+        clip for clip in tour_clips(load_config(), device)
+        if os.path.exists(os.path.join(out_dir, f"{clip['id']}.mov"))
+    ]
+    if not recorded:
+        sys.exit("No recorded clips. Run `marketing.py videos` first.")
+    clips = [encode_clip(os.path.join(out_dir, f"{clip['id']}.mov"), clip["id"], out_dir, width) for clip in recorded]
     if device == "iphone":
         app_preview(clips, os.path.join(out_dir, "appstore-preview.mp4"))
     print(f"Clips in {os.path.relpath(out_dir, ROOT)}")
+
+
+class ClipRecorder:
+    """Answers the tour test's file handshake: records `<id>.mov` from `<id>.begin`
+    to `<id>.end`, so each clip is its own file and needs no timestamp math."""
+
+    def __init__(self, udid: str, signals: str, out_dir: str):
+        self.udid, self.signals, self.out_dir = udid, signals, out_dir
+        self.recorder: subprocess.Popen | None = None
+        self.current: str | None = None
+        self.handled: set[str] = set()
+
+    def poll(self) -> None:
+        if not os.path.isdir(self.signals):
+            return
+        for name in sorted(os.listdir(self.signals)):
+            if name in self.handled:
+                continue
+            clip, _, step = name.rpartition(".")
+            if step == "begin":
+                self.handled.add(name)
+                self.start(clip)
+            elif step == "end" and clip == self.current:
+                self.handled.add(name)
+                self.stop()
+
+    def start(self, clip: str) -> None:
+        self.current = clip
+        self.recorder = subprocess.Popen(
+            ["xcrun", "simctl", "io", self.udid, "recordVideo", "--codec=h264", "--force",
+             os.path.join(self.out_dir, f"{clip}.mov")],
+            stderr=subprocess.PIPE, text=True,
+        )
+        for line in self.recorder.stderr:
+            if "Recording started" in line:
+                break
+        open(os.path.join(self.signals, f"{clip}.go"), "w").close()
+        print(f"  recording {clip}", flush=True)
+
+    def stop(self) -> None:
+        if self.recorder:
+            self.recorder.send_signal(signal.SIGINT)
+            self.recorder.wait(timeout=60)
+        open(os.path.join(self.signals, f"{self.current}.done"), "w").close()
+        self.recorder, self.current = None, None
+
+
+def record_tour(device: str, appearance: str, width: int, reuse: bool = False) -> None:
+    out_dir = os.path.join(OUTPUT, "video", device, appearance)
+    if reuse:
+        encode_tour(out_dir, device, width)
+        return
+
+    udid = simulator_udid(device)
+    build_for_testing(udid)
+    prepare_simulator(udid, appearance)
+    os.makedirs(out_dir, exist_ok=True)
+    for stale in os.listdir(out_dir):
+        if stale.endswith((".mov", ".json")):
+            os.remove(os.path.join(out_dir, stale))
+
+    staged_out = os.path.join(STAGE, "out")
+    shutil.rmtree(staged_out, ignore_errors=True)
+    os.makedirs(staged_out)
+    recorder = ClipRecorder(udid, staged_out, out_dir)
+    outcome: dict = {}
+
+    def play() -> None:
+        try:
+            ui_test(udid, "test_playTour", out_dir, f"tour-{device}-{appearance}.log", clear_stage=False)
+        except SystemExit as error:
+            outcome["failure"] = error
+
+    test = threading.Thread(target=play)
+    test.start()
+    while test.is_alive():
+        recorder.poll()
+        time.sleep(0.1)
+    if recorder.current:
+        recorder.stop()
+    shutdown_simulator(udid)
+
+    encode_tour(out_dir, device, width)
+    if "failure" in outcome:
+        print("The tour stopped early; only the clips above were recorded.")
+        raise outcome["failure"]
 
 
 # MARK: - config
@@ -529,6 +664,7 @@ def main(argv: list[str] | None = None) -> int:
     p_videos.add_argument("--device", choices=list(DEVICES), default="iphone")
     p_videos.add_argument("--appearance", choices=list(APPEARANCES), default="dark")
     p_videos.add_argument("--width", type=int, default=720, help="website clip width in pixels")
+    p_videos.add_argument("--reuse", action="store_true", help="re-cut the last recording without recording again")
 
     args = parser.parse_args(argv)
     if args.command == "suggest":
@@ -550,7 +686,7 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "videos":
         if not shutil.which("ffmpeg"):
             sys.exit("videos needs ffmpeg: brew install ffmpeg")
-        record_tour(args.device, args.appearance, args.width)
+        record_tour(args.device, args.appearance, args.width, args.reuse)
     return 0
 
 

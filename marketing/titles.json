@@ -83,7 +83,8 @@
       "route": {
         "selectedTab": "library"
       },
-      "openList": "Best of 2026"
+      "openList": "Best of 2026",
+      "settle": 12
     }
   ],
   "tour": [
@@ -97,16 +98,13 @@
           "waitFor": "Spider-Man"
         },
         {
-          "swipeUp": 2
+          "wait": 1
         },
         {
-          "tap": "TV Series"
+          "swipeUp": 3
         },
         {
-          "wait": 1.5
-        },
-        {
-          "swipeUp": 1
+          "swipeDown": 1
         }
       ]
     },
@@ -136,6 +134,9 @@
           "slide": 0.88
         },
         {
+          "waitFor": "Your rating, 9.0"
+        },
+        {
           "type": "Funnier than it had any right to be.",
           "into": "Note"
         },
@@ -143,7 +144,7 @@
           "tap": "Save"
         },
         {
-          "wait": 1.5
+          "wait": 2
         }
       ]
     },
@@ -154,7 +155,16 @@
       },
       "actions": [
         {
+          "wait": 1
+        },
+        {
           "tapContaining": "Oscar"
+        },
+        {
+          "wait": 1
+        },
+        {
+          "scrollTo": "Best Picture"
         },
         {
           "tap": "Best Picture"
@@ -254,13 +264,16 @@
           "wait": 1
         },
         {
-          "swipeUp": 2
+          "scrollTo": "Season 1"
         },
         {
-          "scrollTo": "Seasons"
+          "tapContaining": "Season 1"
         },
         {
-          "wait": 1
+          "wait": 1.5
+        },
+        {
+          "swipeUp": 1
         }
       ]
     }

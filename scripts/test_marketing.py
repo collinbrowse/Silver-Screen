@@ -182,11 +182,39 @@ class CaptureTests(unittest.TestCase):
         self.assertEqual((jobs[0]["width"], jobs[0]["height"]), (1320, 2868))
         self.assertEqual(jobs[1]["caption"], "Lists")
 
-    def test_clip_ranges_offset_from_recording_start_with_lead_in(self):
-        markers = [{"id": "a", "start": 100.2, "end": 105.0}, {"id": "b", "start": 110.0, "end": 112.5}]
-        ranges = marketing.clip_ranges(markers, recording_start=100.0)
-        self.assertEqual(ranges[0], {"id": "a", "start": 0.0, "end": 5.0})
-        self.assertEqual(ranges[1], {"id": "b", "start": 9.6, "end": 12.5})
+
+class FreezeTests(unittest.TestCase):
+    def test_keep_ranges_trims_each_freeze_to_the_hold(self):
+        spans = marketing.keep_ranges(20.0, [(2.0, 10.0), (12.0, 12.5), (15.0, 20.0)], hold=0.8)
+        self.assertEqual(spans, [(0.0, 2.8), (10.0, 15.8)])
+
+    def test_keep_ranges_without_freezes_keeps_whole_clip(self):
+        self.assertEqual(marketing.keep_ranges(6.0, []), [(0.0, 6.0)])
+
+    def test_parse_freezes_closes_a_freeze_that_runs_to_the_end(self):
+        log = (
+            "[freezedetect @ 0x1] lavfi.freezedetect.freeze_start: 1.5\n"
+            "[freezedetect @ 0x1] lavfi.freezedetect.freeze_end: 4.25\n"
+            "[freezedetect @ 0x1] lavfi.freezedetect.freeze_start: 9\n"
+        )
+        self.assertEqual(marketing.parse_freezes(log, 11.0), [(1.5, 4.25), (9.0, 11.0)])
+
+
+class ClipRecorderTests(unittest.TestCase):
+    def test_poll_starts_on_begin_and_stops_on_end_for_the_current_clip(self):
+        with tempfile.TemporaryDirectory() as signals:
+            events = []
+            recorder = marketing.ClipRecorder("udid", signals, signals)
+            recorder.start = lambda clip: (events.append(("start", clip)), setattr(recorder, "current", clip))
+            recorder.stop = lambda: (events.append(("stop", recorder.current)), setattr(recorder, "current", None))
+
+            open(os.path.join(signals, "rate.begin"), "w").close()
+            recorder.poll()
+            recorder.poll()
+            open(os.path.join(signals, "rate.end"), "w").close()
+            recorder.poll()
+
+        self.assertEqual(events, [("start", "rate"), ("stop", "rate")])
 
 
 if __name__ == "__main__":

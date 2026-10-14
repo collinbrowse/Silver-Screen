@@ -7,6 +7,7 @@ real app on the simulator. One file drives them: [`titles.json`](titles.json).
 python3 scripts/marketing.py screenshots   # raw PNGs, iPhone + iPad, light + dark
 python3 scripts/marketing.py frame         # captioned App Store images
 python3 scripts/marketing.py videos        # website clips + App Store app preview
+python3 scripts/marketing.py videos --reuse  # re-cut the last recording (no simulator)
 ```
 
 Everything lands in `marketing/output/` (gitignored):
@@ -38,6 +39,11 @@ Needs Xcode, the gitignored `Secrets.xcconfig` (the app loads live TMDB data), a
   switches light or dark mode before each pass.
 - Simulator apps cannot read `~/Documents`, so the script copies `titles.json` to
   `/tmp/ss-marketing` and copies the captures back.
+- XCUITest can stall for seconds between steps while it reads the app's
+  accessibility tree. Those stalls are frozen frames, so each clip has every still
+  stretch trimmed to 0.8 s (`ffmpeg freezedetect`).
+- Each simulator is shut down when its pass ends. On a 16 GB Mac, two booted
+  simulators plus Xcode can stall app launches in paging.
 
 ## titles.json
 

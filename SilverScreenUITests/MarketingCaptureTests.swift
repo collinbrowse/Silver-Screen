@@ -3,7 +3,7 @@
 //  SilverScreenUITests
 //
 //  Plays the website tour from marketing/titles.json while scripts/marketing.py
-//  records the screen. App Store screenshots need no taps, so the script takes
+//  records each clip. App Store screenshots need no taps, so the script takes
 //  those itself. The script passes the titles file and an output folder through
 //  TEST_RUNNER_ environment variables; without them the test skips, so a plain UI
 //  test run never records anything.
@@ -74,21 +74,39 @@ final class MarketingCaptureTests: XCTestCase {
         Quiescence.disable()
     }
 
-    /// Plays each tour clip at a human pace and writes when it started and ended,
-    /// so the script can cut the screen recording into one file per clip.
+    /// Plays each tour clip at a human pace while the script records it to its own
+    /// file. The two sides hand off through files in the output folder:
+    /// `<id>.begin` → script starts recording → `<id>.go` → clip plays →
+    /// `<id>.end` → script stops recording → `<id>.done`.
     func test_playTour() throws {
-        var markers: [[String: Any]] = []
         for clip in config.tour where clip.devices?.contains(device) ?? true {
             let app = launch(clip)
             settle()
-            let start = Date().timeIntervalSince1970
+            try signal("\(clip.id).begin")
+            try awaitSignal("\(clip.id).go")
+            Thread.sleep(forTimeInterval: 0.6)
             try run(clip.actions ?? [], in: app, slow: true)
             Thread.sleep(forTimeInterval: clip.hold ?? 1.5)
-            markers.append(["id": clip.id, "start": start, "end": Date().timeIntervalSince1970])
+            try signal("\(clip.id).end")
+            try awaitSignal("\(clip.id).done")
             app.terminate()
         }
-        let data = try JSONSerialization.data(withJSONObject: markers, options: [.prettyPrinted])
-        try data.write(to: outputURL.appendingPathComponent("tour-markers.json"))
+    }
+
+    private func signal(_ name: String) throws {
+        try Data().write(to: outputURL.appendingPathComponent(name))
+    }
+
+    private func awaitSignal(_ name: String, timeout: TimeInterval = 60) throws {
+        let path = outputURL.appendingPathComponent(name).path
+        let deadline = Date().addingTimeInterval(timeout)
+        while !FileManager.default.fileExists(atPath: path) {
+            guard Date() < deadline else {
+                XCTFail("The capture script never wrote \(name)")
+                return
+            }
+            Thread.sleep(forTimeInterval: 0.1)
+        }
     }
 
     // MARK: - Launch and actions
@@ -141,6 +159,9 @@ final class MarketingCaptureTests: XCTestCase {
                 let start = slider.coordinate(withNormalizedOffset: CGVector(dx: 0.03, dy: 0.5))
                 let end = slider.coordinate(withNormalizedOffset: CGVector(dx: position, dy: 0.5))
                 start.press(forDuration: 0.15, thenDragTo: end, withVelocity: pace ? 250 : .fast, thenHoldForDuration: 0.2)
+                // A synthesized drag moves the thumb but may not reach SwiftUI's binding;
+                // adjust sets the value through accessibility so the score is real.
+                slider.adjust(toNormalizedSliderPosition: CGFloat(position))
             }
             if let text = action.type {
                 let field = try element(app, label: action.into ?? "", containing: true)
