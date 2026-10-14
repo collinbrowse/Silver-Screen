@@ -82,6 +82,34 @@ jobs:
           chmod 600 "$key_path"
           echo "ASC_KEY_PATH=$key_path" >> "$GITHUB_ENV"
 
+      # Without a certificate in the keychain, `-allowProvisioningUpdates` makes a
+      # new "Apple Development: Created via API" certificate on every run, and the
+      # team hits Apple's certificate limit. Import one reusable certificate into a
+      # throwaway keychain instead. Export uses cloud-managed distribution signing.
+      - name: Install development certificate
+        env:
+          DEV_CERT_P12_BASE64: ${{ secrets.DEV_CERT_P12_BASE64 }}
+          DEV_CERT_PASSWORD: ${{ secrets.DEV_CERT_PASSWORD }}
+        run: |
+          if [ -z "$DEV_CERT_P12_BASE64" ]; then
+            echo "::warning::DEV_CERT_P12_BASE64 is not set. Xcode will create a new development certificate for this run."
+            exit 0
+          fi
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password=$(uuidgen)
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          p12="$RUNNER_TEMP/development.p12"
+          printf '%s' "$DEV_CERT_P12_BASE64" | base64 --decode > "$p12"
+          security import "$p12" -k "$keychain" -P "$DEV_CERT_PASSWORD" -f pkcs12 -A
+          rm -f "$p12"
+          # Lets codesign use the key without a UI prompt.
+          security set-key-partition-list -S apple-tool:,apple: -k "$keychain_password" "$keychain" > /dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          security find-identity -v -p codesigning "$keychain"
+          echo "SIGNING_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
+
       - name: Validate release files
         run: python3 scripts/release.py check
 
@@ -120,6 +148,10 @@ jobs:
             --project "$SENTRY_PROJECT" \
             --release "$VERSION" \
             build/SilverScreen.xcarchive/dSYMs
+
+      - name: Remove signing keychain
+        if: always() && env.SIGNING_KEYCHAIN != ''
+        run: security delete-keychain "$SIGNING_KEYCHAIN"
 
       # Only on failure: on success the dSYMs are in Sentry and the build is in
       # App Store Connect, and uploading the archive costs a minute or more.
