@@ -22,7 +22,7 @@ struct CatalogRowView: View {
     let metadata: String
     /// Personal score shown under the date. Not a control.
     var userScore: String? = nil
-    /// Optional media kind chip above genres and date (Search View all).
+    /// Optional media kind chip shown last (full-screen Movie/TV lists and Search View all).
     var kindLabel: String? = nil
     var density: Density = .standard
     let imagePath: String?

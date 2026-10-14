@@ -131,6 +131,7 @@ struct GenreBrowseView: View {
                                 genre: row.genreLine,
                                 metadata: row.formattedDate,
                                 userScore: row.formattedUserScore,
+                                kindLabel: row.media == .movie ? "Movie" : "TV",
                                 imagePath: row.posterPath,
                                 imageKind: .poster,
                                 placeholderSystemImage: row.media == .movie ? "film" : "tv",

@@ -31,6 +31,15 @@ struct AwardTitleRow: Identifiable, Equatable, Sendable {
     /// Snapshot for the list button. Nil until TMDB hydration succeeds — never a blank draft.
     let listDraft: ListItemDraft?
 
+    /// Media kind chip for the row (Movie or TV).
+    var kindLabel: String? {
+        switch route {
+            case .movieDetail: "Movie"
+            case .tvSeries, .tvSeason, .tvEpisode: "TV"
+            default: nil
+        }
+    }
+
     func withNextUp(_ caption: String?) -> AwardTitleRow {
         AwardTitleRow(
             id: id,

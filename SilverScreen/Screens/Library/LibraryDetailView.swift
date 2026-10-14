@@ -167,6 +167,7 @@ struct LibraryDetailView: View {
                 genre: genre(for: entry),
                 metadata: metadata(for: entry),
                 userScore: viewModel.userScores[entry.itemKey]?.formatted,
+                kindLabel: kindLabel(for: entry.kind),
                 imagePath: entry.imagePath,
                 imageKind: entry.kind == .person ? .profile : .poster,
                 placeholderSystemImage: placeholder(for: entry.kind),
@@ -193,6 +194,14 @@ struct LibraryDetailView: View {
         switch entry.kind {
             case .person: "Person"
             case .movie, .tv: DisplayDate.year(entry.releaseDate) ?? ""
+        }
+    }
+
+    private func kindLabel(for kind: ListItemKind) -> String? {
+        switch kind {
+            case .movie: "Movie"
+            case .tv: "TV"
+            case .person: nil
         }
     }
 

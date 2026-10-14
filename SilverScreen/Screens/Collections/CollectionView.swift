@@ -97,6 +97,7 @@ struct CollectionView: View {
                                     genre: row.genreNames.joined(separator: ", "),
                                     metadata: row.formattedReleaseDate,
                                     userScore: row.formattedUserScore,
+                                    kindLabel: "Movie",
                                     imagePath: row.posterPath,
                                     imageKind: .poster,
                                     placeholderSystemImage: "film",

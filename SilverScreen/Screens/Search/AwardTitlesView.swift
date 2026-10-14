@@ -110,6 +110,7 @@ struct AwardTitlesView: View {
                                 genre: row.awardYear,
                                 metadata: row.genreLine,
                                 userScore: row.userScore,
+                                kindLabel: row.kindLabel,
                                 imagePath: row.imagePath,
                                 imageKind: row.artwork == .still ? .backdrop : .poster,
                                 placeholderSystemImage: row.artwork == .still ? "tv" : "film",
