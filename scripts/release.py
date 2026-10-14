@@ -19,6 +19,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -771,6 +772,25 @@ def _upload_command(ipa: Path) -> tuple[list[str], dict[str, str]]:
     return command, env
 
 
+def embedded_config_problems(info: dict) -> list[str]:
+    """Secrets the Release binary reads at launch. Empty or truncated values ship a broken app.
+
+    xcconfig treats `//` as a comment, so an unescaped `https://` DSN is cut to
+    `https:` and Sentry silently stays off. The app strips `$()` at runtime.
+    """
+    problems: list[str] = []
+    token = str(info.get("TMDBAccessToken", "")).strip()
+    if not token or token.startswith("$("):
+        problems.append("The archive has no TMDBAccessToken. Set TMDB_ACCESS_TOKEN in Secrets.xcconfig.")
+    dsn = str(info.get("SentryDSN", "")).replace("$()", "").strip()
+    if not (dsn.startswith("https://") and "@" in dsn):
+        problems.append(
+            "The archive has no usable SentryDSN. In Secrets.xcconfig write "
+            "SENTRY_DSN = https:/$()/KEY@HOST/PROJECT, because xcconfig treats // as a comment."
+        )
+    return problems
+
+
 def _verify_archive(archive: Path, version: Version) -> None:
     info_path = archive / "Products" / "Applications" / "SilverScreen.app" / "Info.plist"
     if not info_path.is_file():
@@ -795,6 +815,9 @@ def _verify_archive(archive: Path, version: Version) -> None:
             f"The archive display name is {display!r}. "
             f"TestFlight and App Store must be {PROD_DISPLAY_NAME!r}."
         )
+    problems = embedded_config_problems(info)
+    if problems:
+        raise ReleaseError("\n".join(problems))
 
 
 def cmd_archive(root: Path, upload: bool) -> str:
@@ -906,6 +929,13 @@ def build_parser() -> argparse.ArgumentParser:
         default="en-US",
         help="Beta localization locale (default en-US).",
     )
+    tf_notes.add_argument(
+        "--wait",
+        type=int,
+        default=0,
+        metavar="SECONDS",
+        help="Poll this long for the uploaded build to appear in App Store Connect.",
+    )
 
     rollout = sub.add_parser(
         "rollout",
@@ -925,8 +955,22 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def cmd_tf_notes(root: Path, locale: str) -> str:
-    """Upload changelog bullets for this build to TestFlight."""
+def wait_for(lookup, timeout: float, interval: float = 30, sleep=time.sleep, clock=time.monotonic):
+    """Call lookup until it returns a value or timeout seconds pass. Returns None on timeout."""
+    deadline = clock() + timeout
+    while True:
+        found = lookup()
+        if found is not None or clock() >= deadline:
+            return found
+        sleep(interval)
+
+
+def cmd_tf_notes(root: Path, locale: str, wait: float = 0) -> str:
+    """Upload changelog bullets for this build to TestFlight.
+
+    An upload returns before App Store Connect registers the build, so CI
+    passes --wait to poll for it instead of failing straight away.
+    """
     from asc_api import ASCClient, ASCError, load_credentials
 
     require_valid(root)
@@ -935,7 +979,17 @@ def cmd_tf_notes(root: Path, locale: str) -> str:
     try:
         client = ASCClient(load_credentials())
         app_id = client.app_id()
-        build_id = client.build_id(app_id, version.marketing, str(version.build))
+        if wait > 0:
+            print(f"Waiting up to {int(wait)}s for App Store Connect to register {version.label()}.", flush=True)
+        build_id = wait_for(
+            lambda: client.find_build_id(app_id, version.marketing, str(version.build)),
+            timeout=wait,
+        )
+        if build_id is None:
+            raise ReleaseError(
+                f"App Store Connect has not registered {version.label()} yet. "
+                "Retry tf-notes once it shows in TestFlight."
+            )
         client.set_testflight_notes(build_id, notes, locale=locale)
     except ASCError as error:
         raise ReleaseError(str(error)) from error
@@ -989,7 +1043,7 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "archive":
             print(cmd_archive(root, args.upload), end="")
         elif args.command == "tf-notes":
-            print(cmd_tf_notes(root, args.locale), end="")
+            print(cmd_tf_notes(root, args.locale, args.wait), end="")
         elif args.command == "rollout":
             print(cmd_rollout(root, start=args.start), end="")
         else:

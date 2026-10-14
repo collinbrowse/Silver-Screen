@@ -63,6 +63,31 @@ class ASCClientTests(unittest.TestCase):
         with self.assertRaises(asc_api.ASCError):
             client.set_phased_release("version-1", "PAUSED")
 
+    def test_find_build_id_is_none_until_registered(self) -> None:
+        def http(method: str, url: str, headers: dict[str, str], body: bytes | None):
+            return 200, {"data": []}
+
+        client = asc_api.ASCClient(
+            asc_api.ASCCredentials("KEY", "ISSUER", Path("/tmp/missing.p8")),
+            http=http,
+            token="test-token",
+        )
+        self.assertIsNone(client.find_build_id("app-1", "0.1.1", "8"))
+        with self.assertRaises(asc_api.ASCError):
+            client.build_id("app-1", "0.1.1", "8")
+
+    def test_find_build_id_still_raises_on_auth_failure(self) -> None:
+        def http(method: str, url: str, headers: dict[str, str], body: bytes | None):
+            return 401, {"errors": [{"status": "401"}]}
+
+        client = asc_api.ASCClient(
+            asc_api.ASCCredentials("KEY", "ISSUER", Path("/tmp/missing.p8")),
+            http=http,
+            token="test-token",
+        )
+        with self.assertRaises(asc_api.ASCError):
+            client.find_build_id("app-1", "0.1.1", "8")
+
 
 if __name__ == "__main__":
     unittest.main()
