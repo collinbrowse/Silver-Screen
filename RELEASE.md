@@ -77,9 +77,23 @@ before export so a contaminated binary cannot upload.
    TestFlight “What to Test” from the changelog, and uploads dSYMs to Sentry.
 5. Install the build from TestFlight and QA it.
 
+The release job does not rerun unit tests. CI already tested the cut commit
+when it landed on `main`. It also waits up to 15 minutes for App Store Connect
+to register the upload before it sets “What to Test”.
+
+A tag push runs the workflow file at the tagged commit. If the workflow was
+fixed after the cut, rerun the tag from Actions → Release → Run workflow on
+`main` with `ref` set to the tag. Leave **upload** off to archive and export
+only. That checks signing on the runner without shipping a build.
+
 To archive from a Mac instead of Actions: check out the tag and run
 `python3 scripts/release.py archive --upload`, then
-`python3 scripts/release.py tf-notes`.
+`python3 scripts/release.py tf-notes --wait 900`.
+
+`archive` also refuses a binary without a TMDB token or a usable Sentry DSN.
+In `Secrets.xcconfig`, write the DSN as `https:/$()/…` because xcconfig treats
+`//` as a comment. The release job escapes the `SENTRY_DSN` secret for you, so
+the secret can hold the plain `https://` DSN.
 
 `cut` requires a clean tree on `main`. It finds the latest `testflight/*` tag
 that is an ancestor of `HEAD`, turns each merged pull request since then into
@@ -153,7 +167,7 @@ GitHub Actions repository secrets for [`.github/workflows/release.yml`](.github/
 
 | Secret | Purpose |
 | --- | --- |
-| `ASC_KEY_ID` / `ASC_ISSUER_ID` / `ASC_API_KEY_P8` | App Store Connect API key (`.p8` body) |
+| `ASC_KEY_ID` / `ASC_ISSUER_ID` / `ASC_API_KEY_P8` | App Store Connect API key (`.p8` body). Use the Admin role: signing on a fresh runner needs cloud-managed certificates. |
 | `TMDB_ACCESS_TOKEN` | Release binary networking |
 | `SENTRY_DSN` | Crash reporting in the uploaded build |
 | `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` | dSYM upload |
