@@ -7,6 +7,12 @@ list.
 
 ## [Unreleased]
 
+## [0.1.1+7] - 2026-10-14
+
+- Replace JSON library files with SQLite Phase 1.
+- Stage 3–4: Sentry observability and release automation.
+- Authenticate TMDB with a bearer token.
+
 ## [0.1.1+6] - 2026-10-13
 
 - Fix Watched toggle flashing Couldn't Save on every successful tap.
