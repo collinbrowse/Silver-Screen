@@ -15,8 +15,8 @@ Full-snapshot JSON (`lists.json`, `annotations.json`, `tv-progress.json`) is wro
 the foundation for large libraries, multi-device accounts, and a future social backend.
 
 **Replace it with one local SQLite database (WAL), a domain-scoped `LibraryStore`
-(replace-all per lists / annotations / TV, not per row), a one-shot JSON importer,
-and sync-ready row metadata.** Keep repositories as the only API screens see. No
+(one snapshot per lists / annotations / TV, diffed against stored rows), a one-shot
+JSON importer, and sync-ready row metadata.** Keep repositories as the only API screens see. No
 CloudKit, Core Data, SwiftData, or third-party ORM.
 
 ---
@@ -51,9 +51,29 @@ transaction later. Navigation stays in `UserDefaults`. Awards stay a separate ca
 
 Production DI builds `SQLiteLibraryStore`, runs `bootstrap()`, and exposes narrow
 `ListsStore` / `AnnotationsStore` / `TVWatchStore` adapters so repositories and tests
-keep familiar seams. Each adapter save is a **domain-scoped replace**: it rewrites
-that domain’s tables and leaves the others alone. Row-level mutations are a later
-phase; repositories still persist a snapshot through the adapter.
+keep familiar seams. Each adapter save is a **domain-scoped diff**: repositories still
+hand over a whole-domain snapshot, and the store compares it with that domain’s rows
+in one transaction, leaving the other domains alone. Row-level mutations are a later
+phase.
+
+### Diffed writes
+
+`writeLists`, `writeAnnotations`, and `writeTVWatch` match each snapshot row to its
+stored row by primary key (deterministic ids from `LibraryStableID` for memberships
+and annotations) and upsert it with `INSERT … ON CONFLICT … DO UPDATE … WHERE`:
+
+| Snapshot vs stored row | Effect |
+|------------------------|--------|
+| New key | Insert with `revision = 1`, `updated_at` = `created_at` = now |
+| Same content | Untouched: `revision` and `updated_at` keep their values |
+| Changed content | Update, `revision + 1`, `updated_at` = now; `created_at` kept |
+| Key matches a tombstone | Revive: clear `deleted_at`, `revision + 1`, fresh `created_at` |
+| Stored live row missing from snapshot | Tombstone: `deleted_at` = `updated_at` = now, `revision + 1` |
+
+Rows are never hard-deleted, so `UNIQUE` keys never collide on re-add and a removal
+can sync later. Every read filters `deleted_at IS NULL`. `media_item` rows no longer
+referenced by any entry are tombstoned with the lists domain. The JSON encoder sorts
+keys so an unchanged `catalog_snapshot_json` or `genre_names_json` compares equal.
 
 ---
 
@@ -164,6 +184,21 @@ from day one so Phase 4 sync does not require another on-disk format break.
 Schema v2 adds `media_item(kind, popularity)` so N→N+1 is an explicit, tested
 migration. Later versions keep that loop in `SQLiteLibraryStore.migrateSchema()`.
 
+Schema v3 makes history survive the diffed writes:
+
+| Table | Added | Backfill |
+|-------|-------|----------|
+| `library_list` | `created_at` | Earliest `added_at` among its memberships, else `updated_at` |
+| `annotation` | `created_at` | `watched_at`, else the title’s earliest list `added_at`, else `updated_at` |
+| `tv_episode_completed` | `completed_at`, `updated_at`, `revision`, `deleted_at` | The episode annotation’s `watched_at`, else the series’ `updated_at` |
+
+Each backfill falls back to the migration time if nothing is stored. Under v2 every
+save reset `updated_at`, so it is only an upper bound on the real date; v3 keeps the
+best evidence available at upgrade and every later write preserves it.
+Unmarking an episode now tombstones its `tv_episode_completed` row instead of
+deleting it. The new columns are nullable because `ALTER TABLE ADD COLUMN` cannot add
+`NOT NULL` without a constant default; the store always writes them.
+
 ---
 
 ## JSON migration
@@ -186,9 +221,10 @@ On `bootstrap()`:
 | Field | Role |
 |-------|------|
 | Stable UUID / deterministic id | Device and server agree on identity |
-| `revision` | Monotonic per row on local write |
-| `updated_at` | Display + coarse conflict hints |
-| `deleted_at` | Tombstone |
+| `revision` | Bumped only when a row’s content changes, is tombstoned, or is revived |
+| `updated_at` | Time of the row’s last real change; display + coarse conflict hints |
+| `created_at` / `completed_at` | When the rating, list, or episode first existed (v3) |
+| `deleted_at` | Tombstone; set instead of deleting the row |
 
 Anonymous installs: no `account_id`, data stays local. Sign-in (Phase 3–4) attaches an
 account and drains the outbox.
