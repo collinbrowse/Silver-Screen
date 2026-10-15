@@ -17,10 +17,11 @@ struct LibraryTabRoot: View {
     let movies: MovieRepository
     let shows: TVRepository
     let people: PersonRepository
+    let settings: SettingsContext
 
     var body: some View {
         NavigationStack(path: $router.path) {
-            LibraryHomeView(viewModel: viewModel, imageLoader: imageLoader)
+            LibraryHomeView(viewModel: viewModel, imageLoader: imageLoader, settings: settings)
                 .navigationDestination(for: Route.self) { route in
                     AppRouteDestination(
                         route: route,

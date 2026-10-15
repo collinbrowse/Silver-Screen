@@ -7,6 +7,11 @@ import XCTest
 @testable import SilverScreen
 
 final class SentryBootstrapTests: XCTestCase {
+    func test_sendFeedback_whenNotStarted_returnsFalse() throws {
+        try XCTSkipIf(SentryBootstrap.isStarted, "This host started Sentry with a real DSN.")
+        XCTAssertFalse(SentryBootstrap.sendFeedback(message: "Hi", email: nil))
+    }
+
     func testReleaseNameMatchesTestFlightShape() {
         XCTAssertEqual(SentryBootstrap.releaseName(marketing: "0.1.1", build: "5"), "0.1.1+5")
     }
