@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 """Minimal App Store Connect API client (stdlib + openssl).
 
-Used by release.py for TestFlight notes and phased release. No pip packages.
+Used by release.py for TestFlight notes and phased release, and by
+weekly_digest.py for sales, downloads, and customer reviews. No pip packages.
 """
 
 from __future__ import annotations
 
 import base64
+import csv
+import gzip
+import io
 import json
 import os
 import subprocess
@@ -125,6 +129,40 @@ def default_http(method, url, headers, body):
         raise ASCError(f"ASC returned non-JSON ({status}): {raw[:200]!r}") from error
 
 
+def default_download(method, url, headers, body):
+    """Like default_http, but returns raw bytes. Reports come back gzipped, not JSON."""
+    request = urllib.request.Request(url, data=body, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(request, timeout=120) as response:
+            return response.status, response.read()
+    except urllib.error.HTTPError as error:
+        return error.code, error.read()
+
+
+# Product Type Identifiers for a first-time app download (not an update or
+# redownload): iPhone, universal, and iPad.
+DOWNLOAD_PRODUCT_TYPES = frozenset({"1", "1F", "1T"})
+
+
+def sum_units(report_text, apple_id=None, product_types=DOWNLOAD_PRODUCT_TYPES):
+    """Total Units in a tab-separated Sales report for the given product types.
+
+    apple_id limits the total to one app, since a vendor's report covers all of its apps.
+    """
+    total = 0
+    reader = csv.DictReader(io.StringIO(report_text), delimiter="\t")
+    for row in reader:
+        if (row.get("Product Type Identifier") or "").strip() not in product_types:
+            continue
+        if apple_id is not None and (row.get("Apple Identifier") or "").strip() != str(apple_id):
+            continue
+        try:
+            total += int(float(row.get("Units") or 0))
+        except ValueError:
+            continue
+    return total
+
+
 class ASCClient:
     """Thin App Store Connect API wrapper for release automation."""
 
@@ -134,9 +172,11 @@ class ASCClient:
         http=default_http,
         token=None,
         bundle_id="com.collinbrowse.thesilverscreen",
+        download=default_download,
     ):
         self.credentials = credentials
         self.http = http
+        self.download = download
         self._token = token
         # None for an injected token, which never expires in tests.
         self._token_issued = None
@@ -306,3 +346,43 @@ class ASCClient:
                 }
             },
         )
+
+    def sales_report(self, vendor_number, report_date, frequency="WEEKLY"):
+        """Sales summary as tab-separated text, or None when Apple has no report.
+
+        Apple answers 404 for a period with no sales, which is every period before
+        launch, and for a period whose report is not published yet. WEEKLY dates
+        are the Sunday that ends the week.
+        """
+        query = {
+            "filter[frequency]": frequency,
+            "filter[reportType]": "SALES",
+            "filter[reportSubType]": "SUMMARY",
+            "filter[vendorNumber]": str(vendor_number),
+            "filter[reportDate]": report_date,
+            "filter[version]": "1_0",
+        }
+        url = "https://api.appstoreconnect.apple.com/v1/salesReports?" + urllib.parse.urlencode(query)
+        headers = {"Authorization": f"Bearer {self.token}", "Accept": "application/a-gzip"}
+        status, raw = self.download("GET", url, headers, None)
+        if status == 404:
+            return None
+        if status >= 400:
+            raise ASCError(f"ASC sales report {report_date} failed ({status}): {raw[:300]!r}")
+        try:
+            raw = gzip.decompress(raw)
+        except OSError:
+            pass  # Already plain text.
+        return raw.decode("utf-8")
+
+    def customer_reviews(self, app_id, limit=50):
+        """Newest customer reviews first, as attribute dicts with an added id."""
+        data = self.request(
+            "GET",
+            f"/v1/apps/{app_id}/customerReviews",
+            query={"sort": "-createdDate", "limit": str(limit)},
+        )
+        return [
+            {"id": row.get("id"), **(row.get("attributes") or {})}
+            for row in data.get("data") or []
+        ]
