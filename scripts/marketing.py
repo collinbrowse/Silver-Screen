@@ -9,6 +9,10 @@ the library a capture launch starts with. See marketing/README.md.
   screenshots  Run the MarketingCapture UI test per device and appearance; save raw PNGs.
   frame        Put each raw PNG on a captioned background at App Store size.
   header       Product page header (21:9) and search results art (3:2) from raw PNGs.
+  metadata     Store copy (subtitle, promotional text, description, keywords), checked
+               against Apple's limits and rules. `frame` runs it too.
+  refresh      Everything for a new App Store version: screenshots, frame, header,
+               metadata (and the tour with --videos).
   videos       Record the website tour and encode MP4, WebM, and a poster frame.
 
 No third-party packages. Tests import this module and never hit the network.
@@ -481,6 +485,111 @@ def render_jobs(jobs: list[dict]) -> None:
     run(["swift", os.path.join(ROOT, "scripts", "marketing_frame.swift"), path])
 
 
+# MARK: - store copy
+
+METADATA_LIMITS = {"name": 30, "subtitle": 30, "promotionalText": 170, "description": 4000, "keywords": 100}
+METADATA_FILES = {
+    "name": "name.txt",
+    "subtitle": "subtitle.txt",
+    "promotionalText": "promotional-text.txt",
+    "description": "description.txt",
+    "keywords": "keywords.txt",
+}
+# Other apps and services. Apple rejects store copy that names them.
+OTHER_SERVICES = ("letterboxd", "trakt", "tv time", "justwatch", "imdb", "netflix", "hulu", "disney+", "prime video")
+# Trademarks and platform words Apple does not allow as keywords. Award names are
+# fine in the description, where they describe what the app shows.
+KEYWORD_BANNED = {"oscar", "oscars", "academy", "emmy", "emmys", "bafta", "baftas", "tmdb", "app", "apple", "iphone", "ipad", "free"}
+TMDB_ATTRIBUTION = "This product uses the TMDB API but is not endorsed or certified by TMDB."
+
+
+def featured_titles(config: dict) -> list[str]:
+    """Titles the `fresh` shots open, in shot order, named from the seeded library."""
+    names = {(item.get("kind"), item.get("id")): item.get("title") for item in library_items(config.get("library", {}))}
+    featured = []
+    for shot in config.get("shots", []):
+        if not shot.get("fresh"):
+            continue
+        for path in (shot.get("route") or {}).values():
+            for route in path if isinstance(path, list) else []:
+                key = ("movie", route["movieDetail"]["id"]) if "movieDetail" in route else (
+                    ("tv", route["tvSeries"]["id"]) if "tvSeries" in route else None
+                )
+                name = names.get(key)
+                if name and name not in featured:
+                    featured.append(name)
+    return featured
+
+
+def join_titles(names: list[str]) -> str:
+    if len(names) <= 2:
+        return " and ".join(names)
+    return ", ".join(names[:-1]) + ", and " + names[-1]
+
+
+def render_metadata(config: dict) -> dict[str, str]:
+    """Store copy with `{featured}` filled in, so new fresh shots mean new copy."""
+    meta = config.get("metadata") or {}
+    titles = featured_titles(config)
+    fallback = "the year's biggest movie"
+    values = {"{featured}": titles[0] if titles else fallback, "{featured_all}": join_titles(titles) or fallback}
+    fields = {}
+    for name in ("name", "subtitle", "promotionalText", "description"):
+        text = str(meta.get(name, ""))
+        for placeholder, value in values.items():
+            text = text.replace(placeholder, value)
+        fields[name] = text
+    fields["keywords"] = ",".join(word.strip() for word in meta.get("keywords", []))
+    return fields
+
+
+def metadata_problems(fields: dict[str, str]) -> list[str]:
+    problems = []
+    for name, limit in METADATA_LIMITS.items():
+        if not fields.get(name):
+            problems.append(f"{name} is empty")
+        elif len(fields[name]) > limit:
+            problems.append(f"{name} is {len(fields[name])} characters; the limit is {limit}")
+    for name, text in fields.items():
+        for service in OTHER_SERVICES:
+            if re.search(rf"\b{re.escape(service)}\b", text, re.I):
+                problems.append(f"{name} names another service ({service}); Apple rejects that")
+    words = [word for word in fields.get("keywords", "").split(",") if word]
+    taken = set(re.findall(r"[a-z0-9]+", (fields.get("name", "") + " " + fields.get("subtitle", "")).lower()))
+    for word in words:
+        if word.lower() in KEYWORD_BANNED:
+            problems.append(f"keyword '{word}' is a trademark or platform word Apple does not allow")
+        if word.lower() in taken:
+            problems.append(f"keyword '{word}' is already in the name or subtitle; it wastes characters")
+        if word != word.strip():
+            problems.append(f"keyword '{word}' has spaces around it; they count toward the limit")
+    if len(words) != len({word.lower() for word in words}):
+        problems.append("keywords repeat a word")
+    if TMDB_ATTRIBUTION not in fields.get("description", ""):
+        problems.append("description is missing the TMDB attribution line TMDB's terms require")
+    return problems
+
+
+def write_metadata(config: dict) -> str:
+    """Writes one paste-ready file per field plus a summary; exits on any problem."""
+    fields = render_metadata(config)
+    problems = metadata_problems(fields)
+    if problems:
+        sys.exit("Store copy needs fixes in titles.json `metadata`:\n  - " + "\n  - ".join(problems))
+    out_dir = os.path.join(OUTPUT, "appstore", "metadata")
+    os.makedirs(out_dir, exist_ok=True)
+    for name, filename in METADATA_FILES.items():
+        with open(os.path.join(out_dir, filename), "w", encoding="utf-8") as handle:
+            handle.write(fields[name] + "\n")
+    summary = ["# Store copy", ""]
+    for name, filename in METADATA_FILES.items():
+        summary += [f"## {name} ({len(fields[name])}/{METADATA_LIMITS[name]})", "", fields[name], ""]
+    with open(os.path.join(out_dir, "metadata.md"), "w", encoding="utf-8") as handle:
+        handle.write("\n".join(summary))
+    print(f"Store copy in {os.path.relpath(out_dir, ROOT)} (all fields within Apple's limits)")
+    return out_dir
+
+
 # MARK: - videos
 
 
@@ -711,6 +820,10 @@ def main(argv: list[str] | None = None) -> int:
         if name == "screenshots":
             command.add_argument("--only", help="comma-separated shot ids")
 
+    sub.add_parser("metadata", help="render and check the store copy")
+    p_refresh = sub.add_parser("refresh", help="screenshots, frame, header, and store copy in one go")
+    p_refresh.add_argument("--videos", action="store_true", help="also record the website tour")
+
     p_header = sub.add_parser("header", help="product page header and search results art")
     p_header.add_argument("--appearance", choices=[*APPEARANCES, "all"], default="all")
 
@@ -738,6 +851,17 @@ def main(argv: list[str] | None = None) -> int:
             capture_screenshots(devices, appearances, args.only)
         else:
             frame(load_config(), devices, appearances)
+            # New screenshots go out with matching copy.
+            write_metadata(load_config())
+    elif args.command == "metadata":
+        write_metadata(load_config())
+    elif args.command == "refresh":
+        capture_screenshots(CAPTURE_DEVICES, list(APPEARANCES), None)
+        frame(load_config(), list(DEVICES), list(APPEARANCES))
+        render_jobs(banner_jobs(load_config(), list(APPEARANCES)))
+        write_metadata(load_config())
+        if args.videos:
+            record_tour("iphone", "dark", 720)
     elif args.command == "header":
         appearances = list(APPEARANCES) if args.appearance == "all" else [args.appearance]
         render_jobs(banner_jobs(load_config(), appearances))

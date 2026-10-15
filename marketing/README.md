@@ -4,9 +4,11 @@ App Store screenshots, an App Store app preview, and website clips, all made fro
 real app on the simulator. One file drives them: [`titles.json`](titles.json).
 
 ```bash
+python3 scripts/marketing.py refresh       # all of the below except videos, in order
 python3 scripts/marketing.py screenshots   # raw PNGs, iPhone + iPad, light + dark
 python3 scripts/marketing.py frame         # captioned App Store images
 python3 scripts/marketing.py header        # product page header + search results art
+python3 scripts/marketing.py metadata      # store copy, checked (frame runs it too)
 python3 scripts/marketing.py videos        # website clips + App Store app preview
 python3 scripts/marketing.py videos --reuse  # re-cut the last recording (no simulator)
 ```
@@ -20,6 +22,7 @@ Everything lands in `marketing/output/` (gitignored):
 | `appstore/ipad/<appearance>/` | 2064×2752 | App Store Connect, 13" iPad (required when the app runs on iPad) |
 | `appstore/header/header-<appearance>.png` | 3840×1646 (21:9), opaque PNG | Product page header (iOS 27+) |
 | `appstore/header/search-<appearance>.png` | 3840×2560 (3:2), opaque PNG | Search results asset (iOS 27+) |
+| `appstore/metadata/*.txt` | Subtitle, promotional text, description, keywords; `metadata.md` shows them all with character counts | Paste into App Store Connect |
 | `raw/` | Unframed simulator captures | Website, press kit, README |
 | `video/iphone/dark/<clip>.mp4`, `.webm`, `.jpg` | Muted, looping, 720 px wide | Website |
 | `video/iphone/dark/appstore-preview.mp4` | 886×1920, 30 fps, ≤ 30 s | App Store Connect app preview |
@@ -75,6 +78,14 @@ for apps built with the iOS 27.1 SDK.
   `subcaption`, and one phone showing the iPhone raw capture named in `shot`.
   Apple: no prices, URLs, awards you haven't won, or other platforms' logos. Check
   both in App Store Connect's Preview.
+- `metadata`: the store copy. `name` and `subtitle` (30 characters each),
+  `promotionalText` (170), `description` (4,000), and `keywords` (a list, 100
+  characters joined). `{featured}` becomes the first title a `fresh` shot opens and
+  `{featured_all}` lists them all, so new fresh shots mean new copy. The script
+  refuses copy that is over a limit, names another app or service, uses award
+  trademarks or words from the name and subtitle as keywords, or drops the TMDB
+  attribution line. Promotional text can change any time without review; the rest
+  ships with a version.
 - `tour`: website clips, one per entry, played at a human pace and cut from one
   screen recording. Each takes `route` or `openList`, then `actions` (below);
   `hold` is how long the last frame stays.
@@ -112,7 +123,8 @@ so they are the place to rotate what is current: a big premiere, Oscar season
 2. Pick titles people will recognize. A popular show nobody has heard of does less
    than an Emmy winner. Swap their ids into `library` and the `fresh` shots' routes.
 3. `python3 scripts/marketing.py hydrate` fills in titles, posters, dates, and genres.
-4. Re-run `screenshots`, `frame`, and `videos`.
+4. Reread `metadata` in `titles.json`: the description should still match the app.
+5. `python3 scripts/marketing.py refresh --videos`.
 
 Keep the awards shots and prestige titles (Severance, Oppenheimer, Parasite) as
 they are. They don't go stale.

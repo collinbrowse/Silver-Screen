@@ -9,6 +9,28 @@
     "subcaption": "Every movie and show you love, with the Oscars, BAFTAs, and Emmys they won.",
     "shot": "movie-rating"
   },
+  "metadata": {
+    "name": "Silver Screen",
+    "subtitle": "Track & rate movies and TV",
+    "promotionalText": "Just saw {featured}? Rate it, write your review, and line up what's next on your watchlist. Every Best Picture winner is a tap away.",
+    "description": "Silver Screen keeps track of every movie and series you watch. Rate what you've seen, write your own reviews, build lists, and look up the awards history behind the titles you love.\n\nNo account needed. Your lists, ratings, and reviews stay on your device.\n\nWHAT'S WORTH WATCHING\n• See what's popular, in theaters, and coming soon\n• Switch between movies, series, or both\n• Sort by popularity, rating, name, or release date\n• Watch trailers and see where each title is streaming\n\nRATE IT. REVIEW IT. REMEMBER IT.\n• Score movies, series, seasons, and episodes from 0.5 to 10 in half points\n• Write a personal review for anything you watch\n• Your ratings show up everywhere the title does\n\nAWARDS HISTORY, BUILT IN\n• Browse Oscar, BAFTA, and Emmy history by ceremony and category\n• Switch between the winners and every nominee\n• See the awards on each title, with the category and the year\n• See the awards on each person, and open the film or episode they were for\n\nTV, DOWN TO THE EPISODE\n• Every season and episode of a series\n• Keep your place with In Progress\n• Rate and review single episodes, not just the show\n\nLISTS THAT ARE YOURS\n• Start with Watched and Watchlist\n• Make ranked lists for anything: your favorites this year, a director's best, a rewatch queue\n• Keep separate lists for actors and filmmakers\n• A collection opens every film in the series\n\nSEARCH THAT FORGIVES TYPOS\n• Find movies, series, and people in one place\n• A close spelling still finds the name\n\nPrivate by design: no account and no sign-up. Everything you add stays on your iPhone or iPad.\n\nThis product uses the TMDB API but is not endorsed or certified by TMDB.",
+    "keywords": [
+      "watchlist",
+      "film",
+      "diary",
+      "log",
+      "review",
+      "shows",
+      "series",
+      "episodes",
+      "awards",
+      "cinema",
+      "journal",
+      "watched",
+      "ranked",
+      "lists"
+    ]
+  },
   "shots": [
     {
       "id": "browse",

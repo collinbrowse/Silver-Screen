@@ -239,6 +239,63 @@ class BannerTests(unittest.TestCase):
                 marketing.OUTPUT = original
 
 
+class MetadataTests(unittest.TestCase):
+    ATTRIBUTION = marketing.TMDB_ATTRIBUTION
+
+    def config(self, **meta):
+        base = {
+            "name": "Silver Screen",
+            "subtitle": "Track & rate movies and TV",
+            "promotionalText": "Just saw {featured}? Rate it.",
+            "description": "Keeps track of what you watch.\n\n" + self.ATTRIBUTION,
+            "keywords": ["watchlist", "film"],
+        }
+        base.update(meta)
+        return {
+            "shots": [
+                {"id": "browse", "fresh": True, "route": {"selectedTab": "browse"}},
+                {"id": "movie", "fresh": True, "route": {"browsePath": [{"movieDetail": {"id": 1}}]}},
+                {"id": "series", "fresh": True, "route": {"browsePath": [{"tvSeries": {"id": 2}}]}},
+                {"id": "old", "route": {"browsePath": [{"movieDetail": {"id": 3}}]}},
+            ],
+            "library": {"watched": [
+                {"id": 1, "kind": "movie", "title": "Project Hail Mary"},
+                {"id": 2, "kind": "tv", "title": "Lanterns"},
+                {"id": 3, "kind": "movie", "title": "Parasite"},
+            ]},
+            "metadata": base,
+        }
+
+    def test_featured_titles_come_from_fresh_shots_in_order(self):
+        self.assertEqual(marketing.featured_titles(self.config()), ["Project Hail Mary", "Lanterns"])
+
+    def test_render_fills_featured_placeholders_and_joins_keywords(self):
+        fields = marketing.render_metadata(self.config(promotionalText="{featured} / {featured_all}"))
+        self.assertEqual(fields["promotionalText"], "Project Hail Mary / Project Hail Mary and Lanterns")
+        self.assertEqual(fields["keywords"], "watchlist,film")
+
+    def test_valid_copy_has_no_problems(self):
+        self.assertEqual(marketing.metadata_problems(marketing.render_metadata(self.config())), [])
+
+    def test_problems_catch_limits_other_services_trademarks_and_wasted_keywords(self):
+        fields = marketing.render_metadata(self.config(
+            subtitle="Like Letterboxd for movies and TV, but better",
+            keywords=["oscars", "movies", "film", "film"],
+            description="No attribution here.",
+        ))
+        problems = "\n".join(marketing.metadata_problems(fields))
+        self.assertIn("subtitle is 45 characters", problems)
+        self.assertIn("names another service (letterboxd)", problems)
+        self.assertIn("keyword 'oscars' is a trademark", problems)
+        self.assertIn("keyword 'movies' is already in the name or subtitle", problems)
+        self.assertIn("keywords repeat a word", problems)
+        self.assertIn("missing the TMDB attribution", problems)
+
+    def test_the_checked_in_copy_passes(self):
+        fields = marketing.render_metadata(marketing.load_config())
+        self.assertEqual(marketing.metadata_problems(fields), [])
+
+
 class FreezeTests(unittest.TestCase):
     def test_keep_ranges_trims_each_freeze_to_the_hold(self):
         spans = marketing.keep_ranges(20.0, [(2.0, 10.0), (12.0, 12.5), (15.0, 20.0)], hold=0.8)
