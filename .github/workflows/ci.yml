@@ -42,6 +42,10 @@ jobs:
         run: |
           python3 scripts/test_release.py
           python3 scripts/test_asc_api.py
+      - name: Scheduled check script tests
+        run: |
+          python3 scripts/test_tmdb_health.py
+          python3 scripts/test_weekly_digest.py
 
   unit-tests:
     name: Unit tests

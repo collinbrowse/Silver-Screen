@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import gzip
 import unittest
 from pathlib import Path
 
@@ -117,6 +118,73 @@ class ASCClientTests(unittest.TestCase):
         )
         with self.assertRaises(asc_api.ASCError):
             client.find_build_id("app-1", "0.1.1", "8")
+
+
+SALES_REPORT = "\t".join(
+    ["Provider", "SKU", "Title", "Product Type Identifier", "Units", "Apple Identifier"]
+) + "\n" + "\n".join(
+    "\t".join(row)
+    for row in [
+        ["APPLE", "ss", "Silver Screen", "1", "12", "6700000001"],
+        ["APPLE", "ss", "Silver Screen", "1F", "3.00", "6700000001"],
+        ["APPLE", "ss", "Silver Screen", "7", "40", "6700000001"],
+        ["APPLE", "other", "Other App", "1", "99", "6700000002"],
+    ]
+) + "\n"
+
+
+class ASCReportTests(unittest.TestCase):
+    def client(self, http=None, download=None):
+        return asc_api.ASCClient(
+            asc_api.ASCCredentials("KEY", "ISSUER", Path("/tmp/missing.p8")),
+            http=http or (lambda *args: self.fail("unexpected JSON call")),
+            download=download or (lambda *args: self.fail("unexpected download")),
+            token="test-token",
+        )
+
+    def test_sum_units_counts_first_downloads_for_one_app(self) -> None:
+        self.assertEqual(asc_api.sum_units(SALES_REPORT, apple_id="6700000001"), 15)
+        self.assertEqual(asc_api.sum_units(SALES_REPORT), 114)
+
+    def test_sales_report_gunzips_and_sends_filters(self) -> None:
+        seen = []
+
+        def download(method, url, headers, body):
+            seen.append((url, headers))
+            return 200, gzip.compress(SALES_REPORT.encode())
+
+        text = self.client(download=download).sales_report("8812345", "2026-10-11")
+        self.assertEqual(text, SALES_REPORT)
+        url, headers = seen[0]
+        self.assertIn("filter%5BvendorNumber%5D=8812345", url)
+        self.assertIn("filter%5BreportDate%5D=2026-10-11", url)
+        self.assertIn("filter%5Bfrequency%5D=WEEKLY", url)
+        self.assertEqual(headers["Accept"], "application/a-gzip")
+
+    def test_sales_report_is_none_without_sales(self) -> None:
+        client = self.client(download=lambda *args: (404, b'{"errors":[{"code":"NOT_FOUND"}]}'))
+        self.assertIsNone(client.sales_report("8812345", "2026-10-11"))
+
+    def test_sales_report_raises_on_permission_failure(self) -> None:
+        client = self.client(download=lambda *args: (403, b'{"errors":[{"code":"FORBIDDEN"}]}'))
+        with self.assertRaises(asc_api.ASCError):
+            client.sales_report("8812345", "2026-10-11")
+
+    def test_customer_reviews_flattens_attributes_newest_first(self) -> None:
+        seen = []
+
+        def http(method, url, headers, body):
+            seen.append(url)
+            return 200, {
+                "data": [
+                    {"id": "r1", "attributes": {"rating": 5, "title": "Great", "createdDate": "2026-10-12T10:00:00Z"}},
+                ]
+            }
+
+        reviews = self.client(http=http).customer_reviews("app-1")
+        self.assertEqual(reviews, [{"id": "r1", "rating": 5, "title": "Great", "createdDate": "2026-10-12T10:00:00Z"}])
+        self.assertIn("/v1/apps/app-1/customerReviews", seen[0])
+        self.assertIn("sort=-createdDate", seen[0])
 
 
 if __name__ == "__main__":

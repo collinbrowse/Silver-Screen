@@ -1,0 +1,36 @@
+name: TMDB health
+
+# The app depends entirely on TMDB. Once a day, call the endpoints it uses and
+# check the fields its DTOs decode. A failure comments on the open
+# `tmdb-health` issue, or opens one, so repeat failures stay in one thread.
+
+on:
+  schedule:
+    # 13:00 UTC daily. 7:00 AM America/Denver during daylight time, 6:00 AM in winter.
+    - cron: "0 13 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: tmdb-health
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    name: Check TMDB endpoints
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Test checker
+        run: python3 scripts/test_tmdb_health.py
+
+      - name: Check TMDB
+        env:
+          TMDB_ACCESS_TOKEN: ${{ secrets.TMDB_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/tmdb_health.py --file-issue
