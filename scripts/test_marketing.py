@@ -183,6 +183,27 @@ class CaptureTests(unittest.TestCase):
         self.assertEqual(jobs[1]["caption"], "Lists")
 
 
+class DeviceSetTests(unittest.TestCase):
+    def test_six_point_three_set_is_framed_from_the_six_point_nine_captures_at_its_own_size(self):
+        config = {"shots": [{"id": "browse", "caption": "Browse"}]}
+        with tempfile.TemporaryDirectory() as output:
+            original = marketing.OUTPUT
+            marketing.OUTPUT = output
+            try:
+                raw = os.path.join(marketing.raw_dir("iphone", "dark"), "browse.png")
+                os.makedirs(os.path.dirname(raw), exist_ok=True)
+                open(raw, "wb").close()
+                (job,) = marketing.frame_jobs(config, ["iphone-6.3"], ["dark"])
+            finally:
+                marketing.OUTPUT = original
+        self.assertEqual(job["input"], raw)
+        self.assertEqual((job["width"], job["height"]), (1206, 2622))
+        self.assertIn(os.path.join("appstore", "iphone-6.3", "dark"), job["output"])
+
+    def test_only_simulator_backed_sets_are_captured(self):
+        self.assertEqual(marketing.CAPTURE_DEVICES, ["iphone", "ipad"])
+
+
 class BannerTests(unittest.TestCase):
     CONFIG = {
         "header": {"wordmark": "Silver Screen"},

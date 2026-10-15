@@ -42,13 +42,18 @@ TMDB_API = "https://api.themoviedb.org/3"
 SKIP_TV_GENRES = {10762, 10763, 10764, 10766, 10767}
 MIN_VOTES = {"movie": 200, "tv": 100}
 
-# App Store sizes Apple requires today. The 6.9" iPhone set also covers smaller
-# iPhones; the 13" iPad set covers smaller iPads.
+# App Store screenshot sets. Apple requires a 6.3" iPhone set ("Dynamic Island,
+# medium"), a large iPhone set (6.9" here), and a 13" iPad set when the app runs on
+# iPad. The 6.3" set is framed from the 6.9" captures: same shape, so no extra run.
 DEVICES = {
     "iphone": {
         "name": "SS Marketing iPhone 17 Pro Max",
         "type": "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max",
         "size": (1320, 2868),
+    },
+    "iphone-6.3": {
+        "raw_from": "iphone",
+        "size": (1206, 2622),
     },
     "ipad": {
         "name": "SS Marketing iPad Pro 13",
@@ -56,6 +61,7 @@ DEVICES = {
         "size": (2064, 2752),
     },
 }
+CAPTURE_DEVICES = [name for name, spec in DEVICES.items() if "raw_from" not in spec]
 APPEARANCES = ("light", "dark")
 APP_NAME = "Silver Screen"
 # Apple's creative asset sizes (iOS 27): product page header and search results.
@@ -407,7 +413,7 @@ def frame_jobs(config: dict, devices: list[str], appearances: list[str]) -> list
         width, height = DEVICES[device]["size"]
         for appearance in appearances:
             for number, shot in enumerate(shots_for(config, device), start=1):
-                raw = os.path.join(raw_dir(device, appearance), f"{shot['id']}.png")
+                raw = os.path.join(raw_dir(DEVICES[device].get("raw_from", device), appearance), f"{shot['id']}.png")
                 if not os.path.exists(raw) or not shot.get("caption"):
                     continue
                 jobs.append({
@@ -699,7 +705,8 @@ def main(argv: list[str] | None = None) -> int:
         ("frame", "caption raw screenshots at App Store sizes"),
     ):
         command = sub.add_parser(name, help=help_text)
-        command.add_argument("--device", choices=[*DEVICES, "all"], default="all")
+        choices = CAPTURE_DEVICES if name == "screenshots" else list(DEVICES)
+        command.add_argument("--device", choices=[*choices, "all"], default="all")
         command.add_argument("--appearance", choices=[*APPEARANCES, "all"], default="all")
         if name == "screenshots":
             command.add_argument("--only", help="comma-separated shot ids")
@@ -708,7 +715,7 @@ def main(argv: list[str] | None = None) -> int:
     p_header.add_argument("--appearance", choices=[*APPEARANCES, "all"], default="all")
 
     p_videos = sub.add_parser("videos", help="record and encode the website tour")
-    p_videos.add_argument("--device", choices=list(DEVICES), default="iphone")
+    p_videos.add_argument("--device", choices=CAPTURE_DEVICES, default="iphone")
     p_videos.add_argument("--appearance", choices=list(APPEARANCES), default="dark")
     p_videos.add_argument("--width", type=int, default=720, help="website clip width in pixels")
     p_videos.add_argument("--reuse", action="store_true", help="re-cut the last recording without recording again")
@@ -724,7 +731,8 @@ def main(argv: list[str] | None = None) -> int:
         write_config(config)
         print(f"Refreshed {count} titles in {os.path.relpath(TITLES, ROOT)}.")
     elif args.command in ("screenshots", "frame"):
-        devices = list(DEVICES) if args.device == "all" else [args.device]
+        everything = CAPTURE_DEVICES if args.command == "screenshots" else list(DEVICES)
+        devices = everything if args.device == "all" else [args.device]
         appearances = list(APPEARANCES) if args.appearance == "all" else [args.appearance]
         if args.command == "screenshots":
             capture_screenshots(devices, appearances, args.only)

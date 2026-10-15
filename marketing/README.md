@@ -15,8 +15,9 @@ Everything lands in `marketing/output/` (gitignored):
 
 | Folder | What | Where it goes |
 |--------|------|---------------|
-| `appstore/iphone/<appearance>/` | 1320×2868, numbered in upload order | App Store Connect, 6.9" iPhone |
-| `appstore/ipad/<appearance>/` | 2064×2752 | App Store Connect, 13" iPad |
+| `appstore/iphone-6.3/<appearance>/` | 1206×2622, numbered in upload order | App Store Connect, iPhone 6.1"/6.3" slot (**required**) |
+| `appstore/iphone/<appearance>/` | 1320×2868, numbered in upload order | App Store Connect, iPhone 6.9" slot (large iPhone; required unless you give 6.5") |
+| `appstore/ipad/<appearance>/` | 2064×2752 | App Store Connect, 13" iPad (required when the app runs on iPad) |
 | `appstore/header/header-<appearance>.png` | 3840×1646 (21:9), opaque PNG | Product page header (iOS 27+) |
 | `appstore/header/search-<appearance>.png` | 3840×2560 (3:2), opaque PNG | Search results asset (iOS 27+) |
 | `raw/` | Unframed simulator captures | Website, press kit, README |
@@ -26,6 +27,12 @@ Everything lands in `marketing/output/` (gitignored):
 
 Needs Xcode, the gitignored `Secrets.xcconfig` (the app loads live TMDB data), and
 `ffmpeg` for videos (`brew install ffmpeg`).
+
+Apple's required sizes change; check the
+[screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)
+before an upload. The 6.3" set is framed from the 6.9" captures (same shape), so it
+needs no extra simulator run. iPhone Duo screenshots become required in April 2027
+for apps built with the iOS 27.1 SDK.
 
 ## How it works
 
