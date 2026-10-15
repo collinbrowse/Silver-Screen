@@ -121,7 +121,7 @@ struct GenreBrowseView: View {
         List {
             Section {
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                    HStack(alignment: .center, spacing: DesignSpacing.sm) {
+                    CatalogRowLayout {
                         Button {
                             open(row)
                         } label: {
@@ -139,7 +139,7 @@ struct GenreBrowseView: View {
                             )
                         }
                         .buttonStyle(.plain)
-
+                    } control: {
                         WatchedToggleButton(
                             draft: row.listItem(),
                             lists: lists,

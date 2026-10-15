@@ -100,7 +100,7 @@ struct AwardTitlesView: View {
         List {
             Section {
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                    HStack(alignment: .center, spacing: DesignSpacing.sm) {
+                    CatalogRowLayout {
                         Button {
                             router?.push(row.route)
                         } label: {
@@ -118,7 +118,7 @@ struct AwardTitlesView: View {
                             )
                         }
                         .buttonStyle(.plain)
-
+                    } control: {
                         if let draft = row.listDraft {
                             WatchedToggleButton(
                                 draft: draft,

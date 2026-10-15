@@ -88,7 +88,7 @@ struct CollectionView: View {
             if !content.parts.isEmpty {
                 Section {
                     ForEach(Array(content.parts.enumerated()), id: \.element.id) { index, row in
-                        HStack(alignment: .center, spacing: DesignSpacing.sm) {
+                        CatalogRowLayout {
                             Button {
                                 router?.push(.movieDetail(id: row.id))
                             } label: {
@@ -105,6 +105,7 @@ struct CollectionView: View {
                                 )
                             }
                             .buttonStyle(.plain)
+                        } control: {
                             WatchedToggleButton(
                                 draft: row.listItem(),
                                 lists: lists,

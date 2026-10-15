@@ -30,15 +30,31 @@ struct CatalogRowView: View {
     let placeholderSystemImage: String
     let imageLoader: ImageLoader
 
-    private var imageWidth: CGFloat {
+    static func imageWidth(for density: Density) -> CGFloat {
         switch density {
             case .standard: 120
             case .compact: 40
         }
     }
 
+    static func imageSpacing(for density: Density) -> CGFloat {
+        switch density {
+            case .standard: DesignSpacing.md
+            case .compact: DesignSpacing.sm
+        }
+    }
+
+    /// Where the text column starts, so a control stacked under the row lines up with it.
+    static func detailsLeading(for density: Density) -> CGFloat {
+        imageWidth(for: density) + imageSpacing(for: density)
+    }
+
+    private var imageWidth: CGFloat {
+        Self.imageWidth(for: density)
+    }
+
     var body: some View {
-        HStack(alignment: density == .compact ? .center : .top, spacing: density == .compact ? DesignSpacing.sm : DesignSpacing.md) {
+        HStack(alignment: density == .compact ? .center : .top, spacing: Self.imageSpacing(for: density)) {
             RemoteImageView(
                 path: imagePath,
                 kind: imageKind,
