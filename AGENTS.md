@@ -16,6 +16,7 @@ Architecture conventions live in [`.cursor/rules/architecture.mdc`](.cursor/rule
 
 ## Pointers
 
+- Launch plan: [`LAUNCH.md`](LAUNCH.md) holds the pre-launch checklist and the post-launch feature list. When the user asks to add, remove, move, or check off an item on either list, edit that file and keep its sections.
 - Architecture: [`.cursor/rules/architecture.mdc`](.cursor/rules/architecture.mdc) (always on), plus scoped rules for concurrency, SwiftUI, data layer, image loading, secrets, errors and logging, observability, accessibility, documentation comments, formatting, tests, commits, pull requests, and shell progress
 - Awards shelves and the weekly catalog: [`AWARDS.md`](AWARDS.md)
 - Hooks: [`.cursor/hooks.json`](.cursor/hooks.json) — stop hook runs `SilverScreenTests` via [`.cursor/hooks/run-unit-tests.sh`](.cursor/hooks/run-unit-tests.sh) (warm default DerivedData; skips when the source fingerprint matches the last pass); shell hook blocks non-Sentry third-party deps
