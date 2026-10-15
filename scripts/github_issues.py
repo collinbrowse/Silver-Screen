@@ -103,6 +103,9 @@ class GitHubIssues:
             payload={"title": title, "body": body, "labels": list(labels)},
         )
 
+    def update_issue(self, number, **fields):
+        return self.request("PATCH", f"/issues/{number}", payload=fields)
+
     def comment(self, number, body):
         return self.request("POST", f"/issues/{number}/comments", payload={"body": body})
 
