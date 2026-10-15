@@ -121,7 +121,7 @@ struct GenreBrowseView: View {
         List {
             Section {
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                    HStack(alignment: .center, spacing: DesignSpacing.sm) {
+                    CatalogRowLayout {
                         Button {
                             open(row)
                         } label: {
@@ -131,6 +131,7 @@ struct GenreBrowseView: View {
                                 genre: row.genreLine,
                                 metadata: row.formattedDate,
                                 userScore: row.formattedUserScore,
+                                kindLabel: row.media == .movie ? "Movie" : "TV",
                                 imagePath: row.posterPath,
                                 imageKind: .poster,
                                 placeholderSystemImage: row.media == .movie ? "film" : "tv",
@@ -138,7 +139,7 @@ struct GenreBrowseView: View {
                             )
                         }
                         .buttonStyle(.plain)
-
+                    } control: {
                         WatchedToggleButton(
                             draft: row.listItem(),
                             lists: lists,

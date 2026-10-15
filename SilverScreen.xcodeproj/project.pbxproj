@@ -164,6 +164,7 @@
 		E2A000232788B823003D8011 /* TVEpisodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A000242788B823003D8011 /* TVEpisodeView.swift */; };
 		E2A000252788B823003D8011 /* TVDetailComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A000262788B823003D8011 /* TVDetailComponents.swift */; };
 		E2A000272788B823003D8011 /* CatalogRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A000282788B823003D8011 /* CatalogRowView.swift */; };
+		1BE216CAF1CE011D7CD4E90A /* CatalogRowLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13C6852100B8FF24A1A6D7FD /* CatalogRowLayout.swift */; };
 		E2A000292788B823003D8011 /* ReviewCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A0002A2788B823003D8011 /* ReviewCard.swift */; };
 		E2A0002D2788B823003D8011 /* SearchViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A0002E2788B823003D8011 /* SearchViewModelTests.swift */; };
 		E2A0002F2788B823003D8011 /* CollectionViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A000302788B823003D8011 /* CollectionViewModelTests.swift */; };
@@ -410,6 +411,7 @@
 		E2A000242788B823003D8011 /* TVEpisodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVEpisodeView.swift; sourceTree = "<group>"; };
 		E2A000262788B823003D8011 /* TVDetailComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVDetailComponents.swift; sourceTree = "<group>"; };
 		E2A000282788B823003D8011 /* CatalogRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogRowView.swift; sourceTree = "<group>"; };
+		13C6852100B8FF24A1A6D7FD /* CatalogRowLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogRowLayout.swift; sourceTree = "<group>"; };
 		E2A0002A2788B823003D8011 /* ReviewCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCard.swift; sourceTree = "<group>"; };
 		E2A0002E2788B823003D8011 /* SearchViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchViewModelTests.swift; sourceTree = "<group>"; };
 		E2A000302788B823003D8011 /* CollectionViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionViewModelTests.swift; sourceTree = "<group>"; };
@@ -583,6 +585,7 @@
 				A74402CEEF26417386C6193E /* ReviewPageList.swift */,
 				72A5E4B67C374969A541FC1A /* LoadActivityBanner.swift */,
 				E2A000282788B823003D8011 /* CatalogRowView.swift */,
+				13C6852100B8FF24A1A6D7FD /* CatalogRowLayout.swift */,
 				C3A100052788B823003D8011 /* TrailerPlayerView.swift */,
 				E2A0002A2788B823003D8011 /* ReviewCard.swift */,
 				B100012D2788B823003D8011 /* EmptyStateView.swift */,
@@ -1128,6 +1131,7 @@
 				E2A000252788B823003D8011 /* TVDetailComponents.swift in Sources */,
 				NU0000022788B823003D8011 /* TVNextUpLabel.swift in Sources */,
 				E2A000272788B823003D8011 /* CatalogRowView.swift in Sources */,
+				1BE216CAF1CE011D7CD4E90A /* CatalogRowLayout.swift in Sources */,
 				E2A000292788B823003D8011 /* ReviewCard.swift in Sources */,
 				A10000022788B823003D8011 /* HTTPClient.swift in Sources */,
 				B100001A2788B823003D8011 /* URLSessionHTTPClient.swift in Sources */,

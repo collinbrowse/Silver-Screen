@@ -100,7 +100,7 @@ struct AwardTitlesView: View {
         List {
             Section {
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                    HStack(alignment: .center, spacing: DesignSpacing.sm) {
+                    CatalogRowLayout {
                         Button {
                             router?.push(row.route)
                         } label: {
@@ -110,6 +110,7 @@ struct AwardTitlesView: View {
                                 genre: row.awardYear,
                                 metadata: row.genreLine,
                                 userScore: row.userScore,
+                                kindLabel: row.kindLabel,
                                 imagePath: row.imagePath,
                                 imageKind: row.artwork == .still ? .backdrop : .poster,
                                 placeholderSystemImage: row.artwork == .still ? "tv" : "film",
@@ -117,7 +118,7 @@ struct AwardTitlesView: View {
                             )
                         }
                         .buttonStyle(.plain)
-
+                    } control: {
                         if let draft = row.listDraft {
                             WatchedToggleButton(
                                 draft: draft,

@@ -230,7 +230,8 @@ struct SearchView: View {
                         count: rows.count,
                         showsLoadingRow: false,
                         rowID: "m-\(row.id)",
-                        loadsMore: false
+                        loadsMore: false,
+                        density: .compact
                     ) {
                         open(.movieDetail(id: row.id))
                     } label: {
@@ -255,7 +256,8 @@ struct SearchView: View {
                         count: rows.count,
                         showsLoadingRow: false,
                         rowID: "t-\(row.id)",
-                        loadsMore: false
+                        loadsMore: false,
+                        density: .compact
                     ) {
                         open(.tvSeries(id: row.id))
                     } label: {
@@ -280,7 +282,8 @@ struct SearchView: View {
                         count: rows.count,
                         showsLoadingRow: false,
                         rowID: "p-\(row.id)",
-                        loadsMore: false
+                        loadsMore: false,
+                        density: .compact
                     ) {
                         open(.person(id: row.id))
                     } label: {
@@ -304,7 +307,8 @@ struct SearchView: View {
                         count: items.count,
                         showsLoadingRow: activity == .loadingMore,
                         rowID: item.id,
-                        loadsMore: true
+                        loadsMore: true,
+                        density: .standard
                     ) {
                         open(route(for: item))
                     } label: {
@@ -435,15 +439,17 @@ struct SearchView: View {
         showsLoadingRow: Bool,
         rowID: String,
         loadsMore: Bool,
+        density: CatalogRowView.Density,
         action: @escaping () -> Void,
         @ViewBuilder label: () -> Label,
         @ViewBuilder star: () -> Star
     ) -> some View {
-        HStack(alignment: .center, spacing: DesignSpacing.sm) {
+        CatalogRowLayout(density: density) {
             Button(action: action) {
                 label()
             }
             .buttonStyle(.plain)
+        } control: {
             star()
         }
         .id(rowID)
