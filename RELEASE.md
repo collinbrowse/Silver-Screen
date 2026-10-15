@@ -173,7 +173,8 @@ GitHub Actions repository secrets for [`.github/workflows/release.yml`](.github/
 | `SENTRY_DSN` | Crash reporting in the uploaded build |
 | `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` | dSYM upload |
 
-The TMDB health check and weekly digest reuse some of these. See
+The TMDB health check and weekly digest reuse some of these, and the digest
+reads Sentry with its own `SENTRY_READ_TOKEN`. See
 [Scheduled checks](OBSERVABILITY.md#scheduled-checks) for the full list.
 
 To make the development certificate secret, open Keychain Access → My

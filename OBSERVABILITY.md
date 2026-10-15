@@ -52,7 +52,7 @@ Repository secrets:
 | `TMDB_ACCESS_TOKEN` | TMDB health | Same token as the release job |
 | `ASC_KEY_ID` / `ASC_ISSUER_ID` / `ASC_API_KEY_P8` | Digest | Same App Store Connect key as the release job. Sales reports need the Admin, Finance, or Sales role. |
 | `ASC_VENDOR_NUMBER` | Digest | Sales and Trends vendor number (App Store Connect → Payments and Financial Reports, top left). Without it the digest skips downloads. |
-| `SENTRY_AUTH_TOKEN` | Digest | Same token as dSYM upload. Needs `org:read`, `project:read`, `project:releases`, and `event:read`. |
+| `SENTRY_READ_TOKEN` | Digest | Read-only Sentry token with `org:read`, `project:read`, and `event:read`. Kept apart from the release job's `SENTRY_AUTH_TOKEN`, which uploads dSYMs and has write access. The workflow passes it to the script as `SENTRY_AUTH_TOKEN`. |
 | `SENTRY_ORG` / `SENTRY_PROJECT` | Digest | Organization and project slugs |
 
 `GITHUB_TOKEN` comes from Actions; each workflow asks for `issues: write`.
