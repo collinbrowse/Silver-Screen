@@ -9,11 +9,13 @@
 import Foundation
 
 enum LibraryStoreMutation: Sendable, Equatable {
-    /// Replace all list / media / membership rows. Does not touch annotations or TV watch.
+    /// Make list / media / membership rows match the snapshot: insert, update changed rows,
+    /// and tombstone missing ones. Does not touch annotations or TV watch.
     case replaceLists(LibrarySnapshot)
-    /// Replace all annotation rows. Does not touch lists or TV watch.
+    /// Make annotation rows match the records, diffed the same way. Does not touch lists or TV watch.
     case replaceAnnotations([MediaAnnotation])
-    /// Replace all TV watch rows. Does not touch lists or annotations.
+    /// Make TV watch and completed-episode rows match the states, diffed the same way.
+    /// Does not touch lists or annotations.
     case replaceTVWatch([TVSeriesWatchState])
 }
 

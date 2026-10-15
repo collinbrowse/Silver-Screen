@@ -2,8 +2,9 @@
 //  SQLiteLibraryStore.swift
 //  SilverScreen
 //
-//  library.sqlite implementation of LibraryStore. Domain-scoped replace mutations
-//  keep list writes from touching annotations or TV progress (and vice versa).
+//  library.sqlite implementation of LibraryStore. Domain-scoped mutations keep list
+//  writes from touching annotations or TV progress (and vice versa), and each save is
+//  diffed against stored rows so revision, dates, and tombstones stay meaningful.
 //
 
 import Foundation
@@ -32,6 +33,8 @@ actor SQLiteLibraryStore: LibraryStore {
         self.tvWatchJSONURL = tvWatchJSONURL
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
+        // Stable key order, so an unchanged catalog snapshot compares equal on the next save.
+        encoder.outputFormatting = [.sortedKeys]
         self.encoder = encoder
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
@@ -258,6 +261,7 @@ actor SQLiteLibraryStore: LibraryStore {
             """
             SELECT series_id, season_number, episode_number
             FROM tv_episode_completed
+            WHERE deleted_at IS NULL
             ORDER BY series_id ASC, season_number ASC, episode_number ASC;
             """
         ) { statement in
@@ -419,7 +423,12 @@ actor SQLiteLibraryStore: LibraryStore {
         }
     }
 
-    // MARK: - Domain replace
+    // MARK: - Domain writes
+
+    // Each save diffs a domain snapshot against its stored rows inside one transaction:
+    // new rows are inserted, changed rows bump `revision` and `updated_at`, untouched rows
+    // keep both, and rows missing from the snapshot are tombstoned with `deleted_at`.
+    // An upsert whose key matches a tombstone revives that row instead of conflicting.
 
     private func replaceLists(_ snapshot: LibrarySnapshot) throws {
         try withTransaction { try writeLists(snapshot) }
@@ -427,16 +436,33 @@ actor SQLiteLibraryStore: LibraryStore {
 
     private func writeLists(_ snapshot: LibrarySnapshot) throws {
         let now = LibrarySQLDate.encode(Date())
-        try database.execute("DELETE FROM list_membership;")
-        try database.execute("DELETE FROM library_list;")
-        try database.execute("DELETE FROM media_item;")
 
+        var listIDs = Set<String>()
         for list in snapshot.lists {
+            listIDs.insert(list.id.uuidString)
             try database.run(
                 """
                 INSERT INTO library_list
-                  (id, name, segment, system_kind, sort, position, updated_at, revision, deleted_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 1, NULL);
+                  (id, name, segment, system_kind, sort, position,
+                   created_at, updated_at, revision, deleted_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?7, ?7, 1, NULL)
+                ON CONFLICT(id) DO UPDATE SET
+                  name = excluded.name,
+                  segment = excluded.segment,
+                  system_kind = excluded.system_kind,
+                  sort = excluded.sort,
+                  position = excluded.position,
+                  created_at = CASE WHEN library_list.deleted_at IS NULL
+                    THEN library_list.created_at ELSE excluded.created_at END,
+                  updated_at = excluded.updated_at,
+                  revision = library_list.revision + 1,
+                  deleted_at = NULL
+                WHERE library_list.deleted_at IS NOT NULL
+                   OR library_list.name IS NOT excluded.name
+                   OR library_list.segment IS NOT excluded.segment
+                   OR library_list.system_kind IS NOT excluded.system_kind
+                   OR library_list.sort IS NOT excluded.sort
+                   OR library_list.position IS NOT excluded.position;
                 """
             ) { statement in
                 SQLiteBinding.text(statement, index: 1, list.id.uuidString)
@@ -449,9 +475,10 @@ actor SQLiteLibraryStore: LibraryStore {
             }
         }
 
-        var seenMedia = Set<String>()
+        var mediaKeys = Set<String>()
+        var membershipIDs = Set<String>()
         for entry in snapshot.entries {
-            if seenMedia.insert(entry.itemKey).inserted {
+            if mediaKeys.insert(entry.itemKey).inserted {
                 let genresJSON = String(
                     data: (try? encoder.encode(entry.genreNames)) ?? Data("[]".utf8),
                     encoding: .utf8
@@ -461,7 +488,28 @@ actor SQLiteLibraryStore: LibraryStore {
                     INSERT INTO media_item
                       (item_key, tmdb_id, kind, title, image_path, release_date,
                        genre_names_json, vote_average, popularity, updated_at, revision, deleted_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NULL);
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NULL)
+                    ON CONFLICT(item_key) DO UPDATE SET
+                      tmdb_id = excluded.tmdb_id,
+                      kind = excluded.kind,
+                      title = excluded.title,
+                      image_path = excluded.image_path,
+                      release_date = excluded.release_date,
+                      genre_names_json = excluded.genre_names_json,
+                      vote_average = excluded.vote_average,
+                      popularity = excluded.popularity,
+                      updated_at = excluded.updated_at,
+                      revision = media_item.revision + 1,
+                      deleted_at = NULL
+                    WHERE media_item.deleted_at IS NOT NULL
+                       OR media_item.tmdb_id IS NOT excluded.tmdb_id
+                       OR media_item.kind IS NOT excluded.kind
+                       OR media_item.title IS NOT excluded.title
+                       OR media_item.image_path IS NOT excluded.image_path
+                       OR media_item.release_date IS NOT excluded.release_date
+                       OR media_item.genre_names_json IS NOT excluded.genre_names_json
+                       OR media_item.vote_average IS NOT excluded.vote_average
+                       OR media_item.popularity IS NOT excluded.popularity;
                     """
                 ) { statement in
                     SQLiteBinding.text(statement, index: 1, entry.itemKey)
@@ -479,15 +527,25 @@ actor SQLiteLibraryStore: LibraryStore {
 
             let membershipID = LibraryStableID.uuid(
                 from: "membership:\(entry.listID.uuidString):\(entry.itemKey)"
-            )
+            ).uuidString
+            membershipIDs.insert(membershipID)
             try database.run(
                 """
                 INSERT INTO list_membership
                   (id, list_id, item_key, added_at, position, updated_at, revision, deleted_at)
-                VALUES (?, ?, ?, ?, ?, ?, 1, NULL);
+                VALUES (?, ?, ?, ?, ?, ?, 1, NULL)
+                ON CONFLICT(id) DO UPDATE SET
+                  added_at = excluded.added_at,
+                  position = excluded.position,
+                  updated_at = excluded.updated_at,
+                  revision = list_membership.revision + 1,
+                  deleted_at = NULL
+                WHERE list_membership.deleted_at IS NOT NULL
+                   OR list_membership.added_at IS NOT excluded.added_at
+                   OR list_membership.position IS NOT excluded.position;
                 """
             ) { statement in
-                SQLiteBinding.text(statement, index: 1, membershipID.uuidString)
+                SQLiteBinding.text(statement, index: 1, membershipID)
                 SQLiteBinding.text(statement, index: 2, entry.listID.uuidString)
                 SQLiteBinding.text(statement, index: 3, entry.itemKey)
                 SQLiteBinding.text(statement, index: 4, LibrarySQLDate.encode(entry.addedAt))
@@ -495,6 +553,10 @@ actor SQLiteLibraryStore: LibraryStore {
                 SQLiteBinding.text(statement, index: 6, now)
             }
         }
+
+        try tombstoneRows(in: "list_membership", keyExpression: "id", keeping: membershipIDs, now: now)
+        try tombstoneRows(in: "media_item", keyExpression: "item_key", keeping: mediaKeys, now: now)
+        try tombstoneRows(in: "library_list", keyExpression: "id", keeping: listIDs, now: now)
     }
 
     private func replaceAnnotations(_ records: [MediaAnnotation]) throws {
@@ -503,22 +565,36 @@ actor SQLiteLibraryStore: LibraryStore {
 
     private func writeAnnotations(_ records: [MediaAnnotation]) throws {
         let now = LibrarySQLDate.encode(Date())
-        try database.execute("DELETE FROM annotation;")
+        var ids = Set<String>()
         for record in records {
             guard let normalized = record.normalized() else { continue }
             let id = LibraryStableID.uuid(
                 from: "annotation:\(normalized.key.kind.rawValue):\(normalized.key.subjectID):\(normalized.key.seasonNumber):\(normalized.key.episodeNumber)"
-            )
+            ).uuidString
+            ids.insert(id)
             let itemKey = "\(normalized.key.kind.rawValue)-\(normalized.key.subjectID)-\(normalized.key.seasonNumber)-\(normalized.key.episodeNumber)"
             try database.run(
                 """
                 INSERT INTO annotation
                   (id, item_key, kind, subject_id, season_number, episode_number,
-                   score, note, watched_at, updated_at, revision, deleted_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NULL);
+                   score, note, watched_at, created_at, updated_at, revision, deleted_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?10, ?10, 1, NULL)
+                ON CONFLICT(id) DO UPDATE SET
+                  score = excluded.score,
+                  note = excluded.note,
+                  watched_at = excluded.watched_at,
+                  created_at = CASE WHEN annotation.deleted_at IS NULL
+                    THEN annotation.created_at ELSE excluded.created_at END,
+                  updated_at = excluded.updated_at,
+                  revision = annotation.revision + 1,
+                  deleted_at = NULL
+                WHERE annotation.deleted_at IS NOT NULL
+                   OR annotation.score IS NOT excluded.score
+                   OR annotation.note IS NOT excluded.note
+                   OR annotation.watched_at IS NOT excluded.watched_at;
                 """
             ) { statement in
-                SQLiteBinding.text(statement, index: 1, id.uuidString)
+                SQLiteBinding.text(statement, index: 1, id)
                 SQLiteBinding.text(statement, index: 2, itemKey)
                 SQLiteBinding.text(statement, index: 3, normalized.key.kind.rawValue)
                 SQLiteBinding.int(statement, index: 4, normalized.key.subjectID)
@@ -530,6 +606,7 @@ actor SQLiteLibraryStore: LibraryStore {
                 SQLiteBinding.text(statement, index: 10, now)
             }
         }
+        try tombstoneRows(in: "annotation", keyExpression: "id", keeping: ids, now: now)
     }
 
     private func replaceTVWatch(_ states: [TVSeriesWatchState]) throws {
@@ -538,9 +615,10 @@ actor SQLiteLibraryStore: LibraryStore {
 
     private func writeTVWatch(_ states: [TVSeriesWatchState]) throws {
         let now = LibrarySQLDate.encode(Date())
-        try database.execute("DELETE FROM tv_episode_completed;")
-        try database.execute("DELETE FROM tv_series_watch;")
+        var seriesKeys = Set<String>()
+        var episodeKeys = Set<String>()
         for state in states {
+            seriesKeys.insert(String(state.seriesID))
             let catalogJSON: String?
             if let catalog = state.catalogSnapshot,
                let data = try? encoder.encode(catalog) {
@@ -553,7 +631,20 @@ actor SQLiteLibraryStore: LibraryStore {
                 INSERT INTO tv_series_watch
                   (series_id, next_up_season, next_up_episode, next_up_title,
                    catalog_snapshot_json, updated_at, revision, deleted_at)
-                VALUES (?, ?, ?, ?, ?, ?, 1, NULL);
+                VALUES (?, ?, ?, ?, ?, ?, 1, NULL)
+                ON CONFLICT(series_id) DO UPDATE SET
+                  next_up_season = excluded.next_up_season,
+                  next_up_episode = excluded.next_up_episode,
+                  next_up_title = excluded.next_up_title,
+                  catalog_snapshot_json = excluded.catalog_snapshot_json,
+                  updated_at = excluded.updated_at,
+                  revision = tv_series_watch.revision + 1,
+                  deleted_at = NULL
+                WHERE tv_series_watch.deleted_at IS NOT NULL
+                   OR tv_series_watch.next_up_season IS NOT excluded.next_up_season
+                   OR tv_series_watch.next_up_episode IS NOT excluded.next_up_episode
+                   OR tv_series_watch.next_up_title IS NOT excluded.next_up_title
+                   OR tv_series_watch.catalog_snapshot_json IS NOT excluded.catalog_snapshot_json;
                 """
             ) { statement in
                 SQLiteBinding.int(statement, index: 1, state.seriesID)
@@ -564,17 +655,81 @@ actor SQLiteLibraryStore: LibraryStore {
                 SQLiteBinding.text(statement, index: 6, now)
             }
             for episode in state.completed {
+                episodeKeys.insert(
+                    Self.episodeKey(
+                        seriesID: state.seriesID,
+                        seasonNumber: episode.seasonNumber,
+                        episodeNumber: episode.episodeNumber
+                    )
+                )
+                // A completed episode has no content beyond its key, so only a revival
+                // (re-marking an unmarked episode) changes an existing row.
                 try database.run(
                     """
                     INSERT INTO tv_episode_completed
-                      (series_id, season_number, episode_number)
-                    VALUES (?, ?, ?);
+                      (series_id, season_number, episode_number,
+                       completed_at, updated_at, revision, deleted_at)
+                    VALUES (?, ?, ?, ?4, ?4, 1, NULL)
+                    ON CONFLICT(series_id, season_number, episode_number) DO UPDATE SET
+                      completed_at = excluded.completed_at,
+                      updated_at = excluded.updated_at,
+                      revision = tv_episode_completed.revision + 1,
+                      deleted_at = NULL
+                    WHERE tv_episode_completed.deleted_at IS NOT NULL;
                     """
                 ) { statement in
                     SQLiteBinding.int(statement, index: 1, state.seriesID)
                     SQLiteBinding.int(statement, index: 2, episode.seasonNumber)
                     SQLiteBinding.int(statement, index: 3, episode.episodeNumber)
+                    SQLiteBinding.text(statement, index: 4, now)
                 }
+            }
+        }
+        try tombstoneRows(
+            in: "tv_episode_completed",
+            keyExpression: "series_id || ':' || season_number || ':' || episode_number",
+            keeping: episodeKeys,
+            now: now
+        )
+        try tombstoneRows(
+            in: "tv_series_watch",
+            keyExpression: "CAST(series_id AS TEXT)",
+            keeping: seriesKeys,
+            now: now
+        )
+    }
+
+    private static func episodeKey(seriesID: Int, seasonNumber: Int, episodeNumber: Int) -> String {
+        "\(seriesID):\(seasonNumber):\(episodeNumber)"
+    }
+
+    /// Tombstones live rows whose key is not in `keeping`. `table` and `keyExpression`
+    /// are fixed SQL from this file, never user input.
+    private func tombstoneRows(
+        in table: String,
+        keyExpression: String,
+        keeping keys: Set<String>,
+        now: String
+    ) throws {
+        var removed: [Int] = []
+        try database.collect(
+            "SELECT rowid, \(keyExpression) FROM \(table) WHERE deleted_at IS NULL;"
+        ) { statement in
+            guard let key = SQLiteBinding.columnText(statement, index: 1) else { return }
+            if !keys.contains(key) {
+                removed.append(SQLiteBinding.columnInt(statement, index: 0))
+            }
+        }
+        for rowID in removed {
+            try database.run(
+                """
+                UPDATE \(table)
+                SET deleted_at = ?1, updated_at = ?1, revision = revision + 1
+                WHERE rowid = ?2;
+                """
+            ) { statement in
+                SQLiteBinding.text(statement, index: 1, now)
+                SQLiteBinding.int(statement, index: 2, rowID)
             }
         }
     }
