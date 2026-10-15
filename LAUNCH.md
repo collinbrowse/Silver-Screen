@@ -66,9 +66,9 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
       3. Add `TMDB_BASE_URL` to the xcconfig, point `TMDBRequestBuilder` at it, and remove `TMDB_ACCESS_TOKEN` from `Info.plist`. Images keep loading straight from `image.tmdb.org`, which needs no token.
       4. Optional: check an App Attest assertion in the Worker so only the real app can call it.
       5. After the release ships, rotate the token on TMDB, because older test builds contain it.
-- [ ] Daily TMDB health check: a scheduled GitHub Action calls a few endpoints the app
+- [x] Daily TMDB health check: a scheduled GitHub Action calls a few endpoints the app
       uses with the CI token, checks the fields the DTOs decode, and opens an issue on failure
-- [ ] Weekly digest: a GitHub Action every Monday that pulls downloads, ratings, and new
+- [x] Weekly digest: a GitHub Action every Monday that pulls downloads, ratings, and new
       reviews from the App Store Connect API, plus crash-free sessions, top issues, and
       feedback count from Sentry, and posts them as a GitHub issue
 
@@ -91,6 +91,12 @@ retention, feature use). Options:
   (no new dependency).
 - **Your own endpoint**: the Worker from the TMDB proxy could take events too. Cheapest
   over time, but you'd build the dashboards yourself.
+
+Whichever option wins, also keep a metrics history: one place where the weekly digest's
+numbers (downloads, ratings, reviews, crash-free rates, feedback) and any product
+analytics build up so they can be analyzed and charted over time. It could be plain
+storage an AI agent reads to write a report on demand, or a dashboard of its own. Decide
+later. Until then, each week's numbers live only in that week's digest issue.
 
 ## Post-launch features
 
