@@ -10,6 +10,7 @@ Architecture conventions live in [`.cursor/rules/architecture.mdc`](.cursor/rule
 - Ship work through pull requests. `main` is the branch that ships.
 - **PR bodies must follow** [`.github/pull_request_template.md`](.github/pull_request_template.md) in full — see [`.cursor/rules/pull-requests.mdc`](.cursor/rules/pull-requests.mdc). CI runs [`scripts/validate-pr-body.py`](scripts/validate-pr-body.py).
 - Commits stay reviewable: one logical unit each — see [`.cursor/rules/commits.mdc`](.cursor/rules/commits.mdc).
+- **Never push to a branch that has an open PR** unless the user asks for that push — commit locally and let them push (each push burns a CI run). See [`.cursor/rules/commits.mdc`](.cursor/rules/commits.mdc#pushing).
 - Long-running shell jobs stay observable: `tee` to a log, never `… | tail -N` without `-f` — see [`.cursor/rules/shell-progress.mdc`](.cursor/rules/shell-progress.mdc).
 - For `xcodebuild test`, do **not** pass `-derivedDataPath` (cold rebuilds). Prefer `-only-testing:SilverScreenTests/<Class>` mid-turn; the stop hook still owns the full suite — see [`.cursor/rules/shell-progress.mdc`](.cursor/rules/shell-progress.mdc).
 
