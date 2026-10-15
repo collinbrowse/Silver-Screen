@@ -2,14 +2,12 @@
   "refreshed": "2026-10-14",
   "_readme": "See marketing/README.md. Shots marked fresh feature current titles; refresh them each release.",
   "header": {
+    "wordmark": "Silver Screen"
+  },
+  "search": {
     "caption": "Watch. Rate. Remember.",
-    "shots": [
-      "movie-rating",
-      "browse",
-      "series",
-      "awards",
-      "custom-list"
-    ]
+    "subcaption": "Every movie and show you love, with the Oscars, BAFTAs, and Emmys they won.",
+    "shot": "movie-rating"
   },
   "shots": [
     {

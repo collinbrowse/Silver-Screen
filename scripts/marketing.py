@@ -431,30 +431,39 @@ def frame(config: dict, devices: list[str], appearances: list[str]) -> None:
 
 
 def banner_jobs(config: dict, appearances: list[str]) -> list[dict]:
-    """Header and search art. Phones come from the iPhone raw captures named in
-    `header.shots`, middle phone first."""
+    """Header (brand art and wordmark, no app UI) and search art (phrase plus one
+    phone, from the iPhone raw capture named in `search.shot`)."""
     header = config.get("header") or {}
-    shots = header.get("shots", [])
-    if not header.get("caption") or not shots:
-        sys.exit("titles.json needs a `header` with `caption` and `shots`.")
+    search = config.get("search") or {}
+    if not header.get("wordmark") or not search.get("caption") or not search.get("shot"):
+        sys.exit("titles.json needs `header.wordmark`, `search.caption`, and `search.shot`.")
     jobs = []
     for appearance in appearances:
-        inputs = [os.path.join(raw_dir("iphone", appearance), f"{shot}.png") for shot in shots]
-        missing = [path for path in inputs if not os.path.exists(path)]
-        if missing:
-            sys.exit(f"Missing raw captures: {', '.join(os.path.relpath(m, ROOT) for m in missing)}. Run `screenshots` first.")
-        for name, (width, height) in BANNERS.items():
-            jobs.append({
-                "kind": "banner",
-                "inputs": inputs,
-                "output": os.path.join(OUTPUT, "appstore", "header", f"{name}-{appearance}.png"),
-                "caption": header["caption"],
-                "subcaption": header.get("subcaption", ""),
-                "width": width,
-                "height": height,
-                "device": "iphone",
-                "appearance": appearance,
-            })
+        phone = os.path.join(raw_dir("iphone", appearance), f"{search['shot']}.png")
+        if not os.path.exists(phone):
+            sys.exit(f"Missing raw capture {os.path.relpath(phone, ROOT)}. Run `screenshots` first.")
+        common = {"device": "iphone", "appearance": appearance}
+        width, height = BANNERS["header"]
+        jobs.append({
+            **common,
+            "kind": "header",
+            "output": os.path.join(OUTPUT, "appstore", "header", f"header-{appearance}.png"),
+            "caption": header["wordmark"],
+            "subcaption": header.get("tagline", ""),
+            "width": width,
+            "height": height,
+        })
+        width, height = BANNERS["search"]
+        jobs.append({
+            **common,
+            "kind": "search",
+            "input": phone,
+            "output": os.path.join(OUTPUT, "appstore", "header", f"search-{appearance}.png"),
+            "caption": search["caption"],
+            "subcaption": search.get("subcaption", ""),
+            "width": width,
+            "height": height,
+        })
     return jobs
 
 

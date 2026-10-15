@@ -16,12 +16,11 @@
 import AppKit
 import SwiftUI
 
-/// One image to write. Sizes are pixels. `kind` is `screenshot` (one `input`) or
-/// `banner` (several `inputs`, fanned out with the first in the middle).
+/// One image to write. Sizes are pixels. `kind` is `screenshot` (default, one
+/// `input`), `header` (no input), or `search` (one `input`, the phone shown).
 struct Job: Decodable {
     let kind: String?
     let input: String?
-    let inputs: [String]?
     let output: String
     let caption: String
     let subcaption: String?
@@ -125,6 +124,9 @@ struct PhoneFrame: View {
 struct BrandBackground: View {
     let isDark: Bool
     let size: CGSize
+    /// Warm orange glow on dark screenshots; the header art uses a cool teal glow,
+    /// since orange over a large teal field turns muddy.
+    var warmGlow = true
 
     var body: some View {
         let reach = max(size.width, size.height)
@@ -132,7 +134,7 @@ struct BrandBackground: View {
             if isDark {
                 LinearGradient(colors: [Palette.tealMid, Palette.tealDeep], startPoint: .top, endPoint: .bottom)
                 RadialGradient(
-                    colors: [Palette.accent.opacity(0.22), .clear],
+                    colors: [(warmGlow ? Palette.accent.opacity(0.22) : Palette.teal.opacity(0.45)), .clear],
                     center: .init(x: 0.5, y: 0.55),
                     startRadius: 0,
                     endRadius: reach * 0.75
@@ -150,65 +152,148 @@ struct BrandBackground: View {
     }
 }
 
-/// Product page header (21:9) or search results art (3:2): one short phrase over
-/// a fan of phones. Apple crops these differently per device and publishes no safe
-/// area, so the phrase and the middle phone stay in the center third; the outer
-/// phones are decoration that may be cropped away.
-struct BannerArt: View {
+/// The app icon's motif: a film strip winding across the canvas, with frames down
+/// the middle and sprocket holes along both edges. Drawn, so it scales to any size.
+struct FilmStrip: View {
+    /// Center line height (share of canvas height) at mid-width.
+    let base: Double
+    /// Rise from left to right edge, as a share of height (negative climbs to the right).
+    let tilt: Double
+    /// Wave height and number of waves across the width.
+    let amplitude: Double
+    let cycles: Double
+    let phase: Double
+    /// Band thickness as a share of canvas height.
+    let thickness: Double
+    let isDark: Bool
+
+    var body: some View {
+        GeometryReader { proxy in
+            let size = proxy.size
+            let band = size.height * thickness
+            let points = curve(in: size)
+            let film = isDark ? Color(red: 0.72, green: 0.80, blue: 0.83) : Palette.teal
+            let frame = isDark ? Color(red: 0.60, green: 0.69, blue: 0.73) : Color(red: 0.24, green: 0.53, blue: 0.62)
+            let hole = isDark ? Palette.tealDeep : Palette.silver
+
+            ZStack {
+                Self.path(points)
+                    .stroke(film, style: StrokeStyle(lineWidth: band, lineCap: .butt, lineJoin: .round))
+                    .shadow(color: .black.opacity(isDark ? 0.45 : 0.18), radius: band * 0.25, y: band * 0.12)
+                Self.path(points)
+                    .stroke(frame, style: StrokeStyle(lineWidth: band * 0.56, lineCap: .butt, dash: [band * 0.78, band * 0.1]))
+                ForEach([-1.0, 1.0], id: \.self) { side in
+                    Self.path(Self.offset(points, by: side * band * 0.39))
+                        .stroke(hole, style: StrokeStyle(lineWidth: band * 0.1, lineCap: .butt, dash: [band * 0.1, band * 0.1]))
+                }
+            }
+        }
+    }
+
+    /// Sampled densely so the sprocket rows can follow the curve's normal.
+    private func curve(in size: CGSize) -> [CGPoint] {
+        let margin = size.width * 0.08
+        let steps = 400
+        return (0...steps).map { index in
+            let t = Double(index) / Double(steps)
+            let share = base + tilt * (t - 0.5) + amplitude * sin(2 * .pi * (cycles * t + phase))
+            return CGPoint(x: -margin + t * (size.width + 2 * margin), y: share * size.height)
+        }
+    }
+
+    static func offset(_ points: [CGPoint], by distance: Double) -> [CGPoint] {
+        points.indices.map { index in
+            let previous = points[max(index - 1, 0)]
+            let next = points[min(index + 1, points.count - 1)]
+            let dx = next.x - previous.x
+            let dy = next.y - previous.y
+            let length = max(sqrt(dx * dx + dy * dy), 0.0001)
+            return CGPoint(x: points[index].x - dy / length * distance, y: points[index].y + dx / length * distance)
+        }
+    }
+
+    static func path(_ points: [CGPoint]) -> Path {
+        Path { path in
+            path.addLines(points)
+        }
+    }
+}
+
+/// Product page header (21:9): brand art and a wordmark, no app UI, like Apple's
+/// examples. iPhone shows roughly the middle 60% under the back and share buttons,
+/// so the wordmark is centered and the strip's busy parts stay to the sides.
+struct HeaderArt: View {
     let job: Job
-    let screenshots: [NSImage]
 
     private var isDark: Bool { job.appearance == "dark" }
 
     var body: some View {
         let unit = job.height / 1646
-        let isWide = job.width / job.height > 2
-        let phoneWidth = (isWide ? 560 : 640) * unit
-        let textHeight = (isWide ? 300 : 380) * unit
-        // Middle phone first, then alternating left and right, farther out each pair.
-        let slots: [(x: Double, scale: Double, angle: Double, dim: Double)] = [
-            (0, 1, 0, 0),
-            (-1, 0.86, -6, 0.15),
-            (1, 0.86, 6, 0.15),
-            (-2, 0.74, -11, 0.3),
-            (2, 0.74, 11, 0.3),
-        ]
-        let spacing = phoneWidth * (isWide ? 1.08 : 1.06)
-
-        ZStack(alignment: .top) {
-            BrandBackground(isDark: isDark, size: CGSize(width: job.width, height: job.height))
-
-            ForEach(Array(zip(screenshots, slots).enumerated().reversed()), id: \.offset) { _, pair in
-                let (image, slot) = pair
-                PhoneFrame(
-                    screenshot: image,
-                    screenWidth: phoneWidth,
-                    corner: phoneWidth * 0.14,
-                    bezel: 9 * unit,
-                    unit: unit * 0.5,
-                    isDark: isDark
-                )
-                .overlay(Color.black.opacity(slot.dim).clipShape(RoundedRectangle(cornerRadius: phoneWidth * 0.15, style: .continuous)))
-                .scaleEffect(slot.scale, anchor: .top)
-                .rotationEffect(.degrees(slot.angle), anchor: .top)
-                .offset(x: slot.x * spacing, y: textHeight + abs(slot.x) * 70 * unit)
+        ZStack {
+            BrandBackground(isDark: isDark, size: CGSize(width: job.width, height: job.height), warmGlow: false)
+            FilmStrip(base: 0.76, tilt: -0.08, amplitude: 0.07, cycles: 1.3, phase: 0.05, thickness: 0.14, isDark: isDark)
+            VStack(spacing: 30 * unit) {
+                Text(job.caption.uppercased())
+                    .font(.system(size: 230 * unit, weight: .semibold).width(.expanded))
+                    .tracking(18 * unit)
+                    .foregroundStyle(isDark ? Color.white : Palette.tealDeep)
+                    .shadow(color: .black.opacity(isDark ? 0.35 : 0.08), radius: 30 * unit)
+                if let subcaption = job.subcaption, !subcaption.isEmpty {
+                    Text(subcaption)
+                        .font(.system(size: 64 * unit, weight: .medium))
+                        .foregroundStyle(isDark ? Color.white.opacity(0.75) : Palette.teal)
+                }
             }
+            .offset(y: -200 * unit)
+        }
+        .frame(width: job.width, height: job.height)
+        .clipped()
+    }
+}
 
-            VStack(spacing: 18 * unit) {
-                Text(job.caption)
-                    .font(.system(size: (isWide ? 116 : 140) * unit, weight: .bold))
-                    .tracking(-2 * unit)
+/// Search results art (3:2): one phrase on the left and one phone on the right,
+/// like Apple's Forest Explorer and Airline examples.
+struct SearchArt: View {
+    let job: Job
+    let screenshot: NSImage
+
+    private var isDark: Bool { job.appearance == "dark" }
+
+    var body: some View {
+        let unit = job.height / 2560
+        let phoneWidth = 1040 * unit
+        ZStack(alignment: .topLeading) {
+            BrandBackground(isDark: isDark, size: CGSize(width: job.width, height: job.height), warmGlow: false)
+            FilmStrip(base: 0.74, tilt: -0.72, amplitude: 0.04, cycles: 1, phase: 0, thickness: 0.15, isDark: isDark)
+                .opacity(0.9)
+
+            VStack(alignment: .leading, spacing: 56 * unit) {
+                Text(job.caption.replacingOccurrences(of: ". ", with: ".\n"))
+                    .font(.system(size: 250 * unit, weight: .bold))
+                    .tracking(-4 * unit)
+                    .lineSpacing(-10 * unit)
                     .foregroundStyle(isDark ? Color.white : Palette.tealDeep)
                 if let subcaption = job.subcaption, !subcaption.isEmpty {
                     Text(subcaption)
-                        .font(.system(size: (isWide ? 52 : 62) * unit, weight: .medium))
-                        .foregroundStyle(isDark ? Color.white.opacity(0.72) : Palette.teal)
+                        .font(.system(size: 84 * unit, weight: .medium))
+                        .foregroundStyle(isDark ? Color.white.opacity(0.75) : Palette.teal)
+                        .frame(width: 1600 * unit, alignment: .leading)
                 }
             }
-            .multilineTextAlignment(.center)
-            .padding(.top, (isWide ? 100 : 130) * unit)
+            .padding(.leading, 300 * unit)
+            .padding(.top, 520 * unit)
+
+            PhoneFrame(
+                screenshot: screenshot,
+                screenWidth: phoneWidth,
+                corner: phoneWidth * 0.14,
+                bezel: 18 * unit,
+                unit: unit,
+                isDark: isDark
+            )
+            .offset(x: job.width - phoneWidth - 520 * unit, y: 300 * unit)
         }
-        .frame(width: job.width, height: job.height, alignment: .top)
+        .frame(width: job.width, height: job.height, alignment: .topLeading)
         .clipped()
     }
 }
@@ -233,16 +318,21 @@ func opaque(_ image: CGImage) -> CGImage? {
 
 @MainActor
 func render(_ job: Job) throws {
-    let paths = job.inputs ?? [job.input].compactMap { $0 }
-    let images = try paths.map { path in
+    let images = try [job.input].compactMap { $0 }.map { path in
         guard let image = NSImage(contentsOfFile: path) else {
             throw NSError(domain: "frame", code: 1, userInfo: [NSLocalizedDescriptionKey: "Unreadable \(path)"])
         }
         return image
     }
-    let content: AnyView = job.kind == "banner"
-        ? AnyView(BannerArt(job: job, screenshots: images))
-        : AnyView(FramedShot(job: job, screenshot: images[0]))
+    let content: AnyView
+    switch job.kind {
+        case "header":
+            content = AnyView(HeaderArt(job: job))
+        case "search":
+            content = AnyView(SearchArt(job: job, screenshot: images[0]))
+        default:
+            content = AnyView(FramedShot(job: job, screenshot: images[0]))
+    }
     let renderer = ImageRenderer(content: content)
     renderer.scale = 1
     renderer.proposedSize = ProposedViewSize(width: job.width, height: job.height)

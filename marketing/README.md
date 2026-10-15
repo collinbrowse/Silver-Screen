@@ -60,11 +60,14 @@ Needs Xcode, the gitignored `Secrets.xcconfig` (the app loads live TMDB data), a
   - `caption`, `subcaption`: the text `frame` puts above the screenshot.
   - `devices`: `["iphone"]` or `["ipad"]` to limit a shot. Missing means both.
   - `fresh: true` marks a shot that features current titles.
-- `header`: the product page header and search results art. `caption` is one short
-  phrase (Apple: no prices, URLs, awards you haven't won, or other platforms);
-  `shots` are iPhone raw captures, middle phone first, then alternating outward.
-  Apple crops these per device and publishes no safe area, so the phrase and the
-  middle phone stay in the center third. Check both in App Store Connect's Preview.
+- `header`: the product page header. Following Apple's examples it has no app UI,
+  only brand art (a film strip like the app icon's) and `wordmark`; `tagline` adds
+  an optional short line. iPhone shows about the middle 60% under the back and share
+  buttons, so the wordmark stays centered.
+- `search`: the search results art: `caption` (one short phrase), an optional
+  `subcaption`, and one phone showing the iPhone raw capture named in `shot`.
+  Apple: no prices, URLs, awards you haven't won, or other platforms' logos. Check
+  both in App Store Connect's Preview.
 - `tour`: website clips, one per entry, played at a human pace and cut from one
   screen recording. Each takes `route` or `openList`, then `actions` (below);
   `hold` is how long the last frame stays.
@@ -93,7 +96,8 @@ or three months. App Store screenshots only change with a version submission.
 
 The header and search art go through the Asset Library and need no new version,
 so they are the place to rotate what is current: a big premiere, Oscar season
-(January to March), Emmy season (September). Edit `header` and re-run `header`.
+(January to March), Emmy season (September). Edit `header` or `search` and re-run
+`header`.
 
 1. `python3 scripts/marketing.py suggest` lists what is trending, now playing, and
    popular on TMDB, without unreleased titles, low-vote titles, or talk, reality,
