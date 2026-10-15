@@ -6,7 +6,7 @@ Ask Claude to add, remove, move, or check off items ("add widgets to post-launch
 
 ## Pre-launch checklist
 
-### Blocker: keep every library change history-safe
+### Blocker: keep every library change history-safe (done in #37)
 
 Accounts and social come next, and the first sign-in has to upload the library a person
 already built, with its real dates. Today every save deletes the whole domain's rows
@@ -20,15 +20,15 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 - Deletes are hard deletes, so there are no tombstones to sync a removal.
 - `tv_episode_completed` has no timestamp, so "watched S1E3 on…" is never recorded.
 
-- [ ] Change the three writes from delete-and-reinsert to a diff: insert new rows, update
+- [x] Change the three writes from delete-and-reinsert to a diff: insert new rows, update
       only rows whose content changed (bump `revision`, set `updated_at`), and tombstone
       removed rows with `deleted_at`. Keep each domain's save one transaction.
-- [ ] Schema v3: add `created_at` to `library_list` and `annotation`, and `completed_at`
+- [x] Schema v3: add `created_at` to `library_list` and `annotation`, and `completed_at`
       to `tv_episode_completed`. Backfill from the best date already stored
       (`watched_at`, `added_at`, else the migration time).
-- [ ] Tests: saving one rating leaves other rows' `updated_at` and `revision` alone;
+- [x] Tests: saving one rating leaves other rows' `updated_at` and `revision` alone;
       removing a list item leaves a tombstone; the v2 to v3 migration keeps every row.
-- [ ] Update `PERSISTENCE.md` to say rows are now diffed.
+- [x] Update `PERSISTENCE.md` to say rows are now diffed.
 
 ### App Store requirements
 
