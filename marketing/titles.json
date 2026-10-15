@@ -1,6 +1,16 @@
 {
   "refreshed": "2026-10-14",
   "_readme": "See marketing/README.md. Shots marked fresh feature current titles; refresh them each release.",
+  "header": {
+    "caption": "Watch. Rate. Remember.",
+    "shots": [
+      "movie-rating",
+      "browse",
+      "series",
+      "awards",
+      "custom-list"
+    ]
+  },
   "shots": [
     {
       "id": "browse",

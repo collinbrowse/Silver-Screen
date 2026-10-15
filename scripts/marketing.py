@@ -8,6 +8,7 @@ the library a capture launch starts with. See marketing/README.md.
   hydrate      Fill title, poster, dates, genres, and scores in titles.json from TMDB ids.
   screenshots  Run the MarketingCapture UI test per device and appearance; save raw PNGs.
   frame        Put each raw PNG on a captioned background at App Store size.
+  header       Product page header (21:9) and search results art (3:2) from raw PNGs.
   videos       Record the website tour and encode MP4, WebM, and a poster frame.
 
 No third-party packages. Tests import this module and never hit the network.
@@ -57,6 +58,8 @@ DEVICES = {
 }
 APPEARANCES = ("light", "dark")
 APP_NAME = "Silver Screen"
+# Apple's creative asset sizes (iOS 27): product page header and search results.
+BANNERS = {"header": (3840, 1646), "search": (3840, 2560)}
 
 
 # MARK: - TMDB
@@ -424,6 +427,38 @@ def frame(config: dict, devices: list[str], appearances: list[str]) -> None:
     jobs = frame_jobs(config, devices, appearances)
     if not jobs:
         sys.exit("No raw screenshots yet. Run `marketing.py screenshots` first.")
+    render_jobs(jobs)
+
+
+def banner_jobs(config: dict, appearances: list[str]) -> list[dict]:
+    """Header and search art. Phones come from the iPhone raw captures named in
+    `header.shots`, middle phone first."""
+    header = config.get("header") or {}
+    shots = header.get("shots", [])
+    if not header.get("caption") or not shots:
+        sys.exit("titles.json needs a `header` with `caption` and `shots`.")
+    jobs = []
+    for appearance in appearances:
+        inputs = [os.path.join(raw_dir("iphone", appearance), f"{shot}.png") for shot in shots]
+        missing = [path for path in inputs if not os.path.exists(path)]
+        if missing:
+            sys.exit(f"Missing raw captures: {', '.join(os.path.relpath(m, ROOT) for m in missing)}. Run `screenshots` first.")
+        for name, (width, height) in BANNERS.items():
+            jobs.append({
+                "kind": "banner",
+                "inputs": inputs,
+                "output": os.path.join(OUTPUT, "appstore", "header", f"{name}-{appearance}.png"),
+                "caption": header["caption"],
+                "subcaption": header.get("subcaption", ""),
+                "width": width,
+                "height": height,
+                "device": "iphone",
+                "appearance": appearance,
+            })
+    return jobs
+
+
+def render_jobs(jobs: list[dict]) -> None:
     path = os.path.join(OUTPUT, "frame-jobs.json")
     os.makedirs(OUTPUT, exist_ok=True)
     with open(path, "w", encoding="utf-8") as handle:
@@ -660,6 +695,9 @@ def main(argv: list[str] | None = None) -> int:
         if name == "screenshots":
             command.add_argument("--only", help="comma-separated shot ids")
 
+    p_header = sub.add_parser("header", help="product page header and search results art")
+    p_header.add_argument("--appearance", choices=[*APPEARANCES, "all"], default="all")
+
     p_videos = sub.add_parser("videos", help="record and encode the website tour")
     p_videos.add_argument("--device", choices=list(DEVICES), default="iphone")
     p_videos.add_argument("--appearance", choices=list(APPEARANCES), default="dark")
@@ -683,6 +721,9 @@ def main(argv: list[str] | None = None) -> int:
             capture_screenshots(devices, appearances, args.only)
         else:
             frame(load_config(), devices, appearances)
+    elif args.command == "header":
+        appearances = list(APPEARANCES) if args.appearance == "all" else [args.appearance]
+        render_jobs(banner_jobs(load_config(), appearances))
     elif args.command == "videos":
         if not shutil.which("ffmpeg"):
             sys.exit("videos needs ffmpeg: brew install ffmpeg")

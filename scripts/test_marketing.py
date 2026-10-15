@@ -183,6 +183,37 @@ class CaptureTests(unittest.TestCase):
         self.assertEqual(jobs[1]["caption"], "Lists")
 
 
+class BannerTests(unittest.TestCase):
+    def test_banner_jobs_make_header_and_search_per_appearance_from_iphone_captures(self):
+        config = {"header": {"caption": "Watch. Rate. Remember.", "shots": ["browse", "list"]}}
+        with tempfile.TemporaryDirectory() as output:
+            original = marketing.OUTPUT
+            marketing.OUTPUT = output
+            try:
+                for name in ("browse", "list"):
+                    path = os.path.join(marketing.raw_dir("iphone", "dark"), f"{name}.png")
+                    os.makedirs(os.path.dirname(path), exist_ok=True)
+                    open(path, "wb").close()
+                jobs = marketing.banner_jobs(config, ["dark"])
+            finally:
+                marketing.OUTPUT = original
+        self.assertEqual([os.path.basename(job["output"]) for job in jobs], ["header-dark.png", "search-dark.png"])
+        self.assertEqual((jobs[0]["width"], jobs[0]["height"]), (3840, 1646))
+        self.assertEqual((jobs[1]["width"], jobs[1]["height"]), (3840, 2560))
+        self.assertEqual([os.path.basename(path) for path in jobs[0]["inputs"]], ["browse.png", "list.png"])
+        self.assertEqual(jobs[0]["kind"], "banner")
+
+    def test_banner_jobs_without_captures_exits(self):
+        with tempfile.TemporaryDirectory() as output:
+            original = marketing.OUTPUT
+            marketing.OUTPUT = output
+            try:
+                with self.assertRaises(SystemExit):
+                    marketing.banner_jobs({"header": {"caption": "Hi", "shots": ["browse"]}}, ["dark"])
+            finally:
+                marketing.OUTPUT = original
+
+
 class FreezeTests(unittest.TestCase):
     def test_keep_ranges_trims_each_freeze_to_the_hold(self):
         spans = marketing.keep_ranges(20.0, [(2.0, 10.0), (12.0, 12.5), (15.0, 20.0)], hold=0.8)
