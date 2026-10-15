@@ -20,6 +20,7 @@ struct AppDependencies {
     let libraryStore: SQLiteLibraryStore
     let router: AppRouter
     let logger: any AppLogging
+    let settings: SettingsContext
 
     /// Builds the app's dependency graph. A demo launch swaps in a throwaway library.
     static func live(demo: DemoMode? = nil) throws -> AppDependencies {
@@ -66,6 +67,9 @@ struct AppDependencies {
             logger: logger
         )
         let router = AppRouter()
+        let settings = SettingsContext(appInfo: .live()) { submission in
+            SentryBootstrap.sendFeedback(message: submission.message, email: submission.email)
+        }
         return AppDependencies(
             movies: movies,
             shows: shows,
@@ -79,7 +83,8 @@ struct AppDependencies {
             imageLoader: imageLoader,
             libraryStore: libraryStore,
             router: router,
-            logger: logger
+            logger: logger,
+            settings: settings
         )
     }
 }

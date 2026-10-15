@@ -78,6 +78,16 @@ enum SentryBootstrap {
         started.withLock { $0 = true }
     }
 
+    /// Sends in-app feedback. The release tag carries the version and build.
+    /// Returns false when Sentry was never started (missing DSN), so the screen can say so.
+    static func sendFeedback(message: String, email: String?) -> Bool {
+        guard isStarted else {
+            return false
+        }
+        SentrySDK.capture(feedback: SentryFeedback(message: message, name: nil, email: email, source: .custom))
+        return true
+    }
+
     /// Forwards a developer-authored technical error already logged via `AppLogging`.
     /// No-op when Sentry was never started (missing DSN).
     static func captureError(_ message: String, category: LogCategory) {

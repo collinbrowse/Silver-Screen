@@ -11,6 +11,8 @@ import SwiftUI
 struct LibraryHomeView: View {
     @Bindable var viewModel: LibraryHomeViewModel
     let imageLoader: ImageLoader
+    let settings: SettingsContext
+    @State private var showingSettings = false
     @State private var editMode: EditMode = .inactive
     @State private var showingNameDialog = false
     @State private var nameDialogIsRename = false
@@ -51,6 +53,14 @@ struct LibraryHomeView: View {
         .navigationTitle("Library")
         .toolbarTitleDisplayMode(.inlineLarge)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    showingSettings = true
+                } label: {
+                    Image(systemName: "gearshape")
+                }
+                .accessibilityLabel("Settings")
+            }
             ToolbarItemGroup(placement: .topBarTrailing) {
                 if viewModel.canReorderLists {
                     EditButton()
@@ -69,6 +79,9 @@ struct LibraryHomeView: View {
             }
         }
         .environment(\.editMode, $editMode)
+        .sheet(isPresented: $showingSettings) {
+            SettingsView(context: settings)
+        }
         .onChange(of: viewModel.canReorderLists) { _, canReorder in
             if !canReorder {
                 editMode = .inactive

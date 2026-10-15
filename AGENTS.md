@@ -8,14 +8,16 @@ Architecture conventions live in [`.cursor/rules/architecture.mdc`](.cursor/rule
 - No 3rd-party dependencies **except Sentry** (Cocoa via SPM in the Xcode project). See [`.cursor/rules/observability.mdc`](.cursor/rules/observability.mdc).
 - Add unit tests for completed work.
 - Ship work through pull requests. `main` is the branch that ships.
+- Turn on **Auto-fix** for every PR right after opening it — see [`.cursor/rules/pull-requests.mdc`](.cursor/rules/pull-requests.mdc).
 - **PR bodies must follow** [`.github/pull_request_template.md`](.github/pull_request_template.md) in full — see [`.cursor/rules/pull-requests.mdc`](.cursor/rules/pull-requests.mdc). CI runs [`scripts/validate-pr-body.py`](scripts/validate-pr-body.py).
 - Commits stay reviewable: one logical unit each — see [`.cursor/rules/commits.mdc`](.cursor/rules/commits.mdc).
-- **Never push to a branch that has an open PR** unless the user asks for that push — commit locally and let them push (each push burns a CI run). See [`.cursor/rules/commits.mdc`](.cursor/rules/commits.mdc#pushing).
+- **Never push to a branch that has an open PR** unless the user asks for that push or it's an Auto-fix response to a CI-monitor event — commit locally and let them push (each push burns a CI run). See [`.cursor/rules/commits.mdc`](.cursor/rules/commits.mdc#pushing).
 - Long-running shell jobs stay observable: `tee` to a log, never `… | tail -N` without `-f` — see [`.cursor/rules/shell-progress.mdc`](.cursor/rules/shell-progress.mdc).
 - For `xcodebuild test`, do **not** pass `-derivedDataPath` (cold rebuilds). Prefer `-only-testing:SilverScreenTests/<Class>` mid-turn; the stop hook still owns the full suite — see [`.cursor/rules/shell-progress.mdc`](.cursor/rules/shell-progress.mdc).
 
 ## Pointers
 
+- Launch plan: [`LAUNCH.md`](LAUNCH.md) holds the pre-launch checklist and the post-launch feature list. When the user asks to add, remove, move, or check off an item on either list, edit that file and keep its sections.
 - Architecture: [`.cursor/rules/architecture.mdc`](.cursor/rules/architecture.mdc) (always on), plus scoped rules for concurrency, SwiftUI, data layer, image loading, secrets, errors and logging, observability, accessibility, documentation comments, formatting, tests, commits, pull requests, and shell progress
 - Awards shelves and the weekly catalog: [`AWARDS.md`](AWARDS.md)
 - Hooks: [`.cursor/hooks.json`](.cursor/hooks.json) — stop hook runs `SilverScreenTests` via [`.cursor/hooks/run-unit-tests.sh`](.cursor/hooks/run-unit-tests.sh) (warm default DerivedData; skips when the source fingerprint matches the last pass); shell hook blocks non-Sentry third-party deps

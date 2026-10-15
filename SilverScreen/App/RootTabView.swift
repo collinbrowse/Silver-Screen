@@ -18,6 +18,7 @@ struct RootTabView: View {
     let awards: AwardsRepository
     let imageLoader: ImageLoader
     let libraryHomeViewModel: LibraryHomeViewModel
+    let settings: SettingsContext
 
     @State private var browseViewModel: BrowseListViewModel
     @State private var searchViewModel: SearchViewModel
@@ -34,7 +35,8 @@ struct RootTabView: View {
         tvWatch: TVWatchRepository,
         awards: AwardsRepository,
         imageLoader: ImageLoader,
-        libraryHomeViewModel: LibraryHomeViewModel
+        libraryHomeViewModel: LibraryHomeViewModel,
+        settings: SettingsContext
     ) {
         self.router = router
         self.movies = movies
@@ -48,6 +50,7 @@ struct RootTabView: View {
         self.awards = awards
         self.imageLoader = imageLoader
         self.libraryHomeViewModel = libraryHomeViewModel
+        self.settings = settings
         _browseViewModel = State(
             initialValue: BrowseListViewModel(
                 movies: movies,
@@ -164,7 +167,8 @@ struct RootTabView: View {
                     awards: awards,
                     movies: movies,
                     shows: shows,
-                    people: people
+                    people: people,
+                    settings: settings
                 )
             }
         }
