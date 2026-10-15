@@ -21,6 +21,7 @@ When creating or editing a GitHub pull request for this repo, the body **must** 
    ```
    Or: `python3 scripts/validate-pr-body.py --pr <number>`
 4. CI runs the same script on pull requests and **fails** if sections are missing.
+5. **Turn on Auto-fix** for the new PR right after opening it (in the Claude desktop app: the `ccd_pr` set-monitor tool with `auto_fix` on). The app then wakes the session on CI failures, merge conflicts, and review comments. The user has approved this for every PR.
 
 ## Do not
 
