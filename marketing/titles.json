@@ -1,0 +1,667 @@
+{
+  "refreshed": "2026-10-14",
+  "_readme": "See marketing/README.md. Shots marked fresh feature current titles; refresh them each release.",
+  "header": {
+    "wordmark": "Silver Screen"
+  },
+  "search": {
+    "caption": "Watch. Rate. Remember.",
+    "subcaption": "Every movie and show you love, with the Oscars, BAFTAs, and Emmys they won.",
+    "shot": "movie-rating"
+  },
+  "metadata": {
+    "name": "Silver Screen",
+    "subtitle": "Track & rate movies and TV",
+    "promotionalText": "Just saw {featured}? Rate it, write your review, and line up what's next on your watchlist. Every Best Picture winner is a tap away.",
+    "description": "Silver Screen keeps track of every movie and series you watch. Rate what you've seen, write your own reviews, build lists, and look up the awards history behind the titles you love.\n\nNo account needed. Your lists, ratings, and reviews stay on your device.\n\nWHAT'S WORTH WATCHING\n• See what's popular, in theaters, and coming soon\n• Switch between movies, series, or both\n• Sort by popularity, rating, name, or release date\n• Watch trailers and see where each title is streaming\n\nRATE IT. REVIEW IT. REMEMBER IT.\n• Score movies, series, seasons, and episodes from 0.5 to 10 in half points\n• Write a personal review for anything you watch\n• Your ratings show up everywhere the title does\n\nAWARDS HISTORY, BUILT IN\n• Browse Oscar, BAFTA, and Emmy history by ceremony and category\n• Switch between the winners and every nominee\n• See the awards on each title, with the category and the year\n• See the awards on each person, and open the film or episode they were for\n\nTV, DOWN TO THE EPISODE\n• Every season and episode of a series\n• Keep your place with In Progress\n• Rate and review single episodes, not just the show\n\nLISTS THAT ARE YOURS\n• Start with Watched and Watchlist\n• Make ranked lists for anything: your favorites this year, a director's best, a rewatch queue\n• Keep separate lists for actors and filmmakers\n• A collection opens every film in the series\n\nSEARCH THAT FORGIVES TYPOS\n• Find movies, series, and people in one place\n• A close spelling still finds the name\n\nPrivate by design: no account and no sign-up. Everything you add stays on your iPhone or iPad.\n\nThis product uses the TMDB API but is not endorsed or certified by TMDB.",
+    "keywords": [
+      "watchlist",
+      "film",
+      "diary",
+      "log",
+      "review",
+      "shows",
+      "series",
+      "episodes",
+      "awards",
+      "cinema",
+      "journal",
+      "watched",
+      "ranked",
+      "lists"
+    ]
+  },
+  "shots": [
+    {
+      "id": "browse",
+      "fresh": true,
+      "caption": "Everything worth watching",
+      "subcaption": "Popular, in theaters, and coming soon",
+      "route": {
+        "selectedTab": "browse"
+      }
+    },
+    {
+      "id": "movie-rating",
+      "fresh": true,
+      "caption": "Rate it. Review it.",
+      "subcaption": "Half-point scores and notes of your own",
+      "route": {
+        "selectedTab": "browse",
+        "browsePath": [
+          {
+            "movieDetail": {
+              "id": 687163
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "awards",
+      "caption": "Awards history, built in",
+      "subcaption": "Oscars, BAFTAs, and Emmys",
+      "route": {
+        "selectedTab": "search"
+      }
+    },
+    {
+      "id": "library",
+      "caption": "Lists that are yours",
+      "subcaption": "Watched, Watchlist, and your own rankings",
+      "route": {
+        "selectedTab": "library"
+      }
+    },
+    {
+      "id": "best-picture",
+      "caption": "Every winner. Every nominee.",
+      "subcaption": "Browse any category, any year",
+      "route": {
+        "selectedTab": "search",
+        "searchPath": [
+          {
+            "awardTitles": {
+              "_0": {
+                "family": "academy",
+                "category": "Best Picture"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "series",
+      "caption": "TV, down to the episode",
+      "subcaption": "Seasons, episodes, and the Emmys they won",
+      "route": {
+        "selectedTab": "browse",
+        "browsePath": [
+          {
+            "tvSeries": {
+              "id": 95396
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "custom-list",
+      "caption": "Rank your favorites",
+      "subcaption": "Make a list for anything",
+      "route": {
+        "selectedTab": "library"
+      },
+      "openList": "Best of 2026",
+      "settle": 12
+    }
+  ],
+  "tour": [
+    {
+      "id": "browse",
+      "route": {
+        "selectedTab": "browse"
+      },
+      "actions": [
+        {
+          "waitFor": "Spider-Man"
+        },
+        {
+          "wait": 1
+        },
+        {
+          "swipeUp": 3
+        },
+        {
+          "swipeDown": 1
+        }
+      ]
+    },
+    {
+      "id": "rate",
+      "route": {
+        "selectedTab": "browse",
+        "browsePath": [
+          {
+            "movieDetail": {
+              "id": 1084244
+            }
+          }
+        ]
+      },
+      "actions": [
+        {
+          "waitFor": "Add rating"
+        },
+        {
+          "tapContaining": "Add rating"
+        },
+        {
+          "wait": 0.8
+        },
+        {
+          "slide": 0.88
+        },
+        {
+          "waitFor": "Your rating, 9.0"
+        },
+        {
+          "type": "Funnier than it had any right to be.",
+          "into": "Note"
+        },
+        {
+          "tap": "Save"
+        },
+        {
+          "wait": 2
+        }
+      ]
+    },
+    {
+      "id": "awards",
+      "route": {
+        "selectedTab": "search"
+      },
+      "actions": [
+        {
+          "wait": 1
+        },
+        {
+          "tapContaining": "Oscar"
+        },
+        {
+          "wait": 1
+        },
+        {
+          "scrollTo": "Best Picture"
+        },
+        {
+          "tap": "Best Picture"
+        },
+        {
+          "waitFor": "Oppenheimer"
+        },
+        {
+          "swipeUp": 1
+        },
+        {
+          "tap": "Nominees"
+        },
+        {
+          "wait": 1.5
+        }
+      ]
+    },
+    {
+      "id": "search",
+      "route": {
+        "selectedTab": "search"
+      },
+      "actions": [
+        {
+          "search": "christopher waltz"
+        },
+        {
+          "wait": 2
+        },
+        {
+          "tapContaining": "Christoph Waltz"
+        },
+        {
+          "wait": 1.5
+        },
+        {
+          "swipeUp": 2
+        }
+      ]
+    },
+    {
+      "id": "person",
+      "route": {
+        "selectedTab": "search",
+        "searchPath": [
+          {
+            "person": {
+              "id": 2037
+            }
+          }
+        ]
+      },
+      "actions": [
+        {
+          "wait": 1
+        },
+        {
+          "scrollTo": "Awards"
+        },
+        {
+          "swipeUp": 1
+        }
+      ]
+    },
+    {
+      "id": "library",
+      "route": {
+        "selectedTab": "library"
+      },
+      "actions": [
+        {
+          "wait": 1
+        },
+        {
+          "tap": "Best of 2026"
+        },
+        {
+          "wait": 1.2
+        }
+      ]
+    },
+    {
+      "id": "tv",
+      "route": {
+        "selectedTab": "browse",
+        "browsePath": [
+          {
+            "tvSeries": {
+              "id": 95396
+            }
+          }
+        ]
+      },
+      "actions": [
+        {
+          "wait": 1
+        },
+        {
+          "scrollTo": "Season 1"
+        },
+        {
+          "tapContaining": "Season 1"
+        },
+        {
+          "wait": 1.5
+        },
+        {
+          "swipeUp": 1
+        }
+      ]
+    }
+  ],
+  "library": {
+    "watched": [
+      {
+        "id": 687163,
+        "kind": "movie",
+        "title": "Project Hail Mary",
+        "posterPath": "/iOb2fjXLbpJgyQXe46n1WtGCnaa.jpg",
+        "releaseDate": "2026-03-15",
+        "genres": [
+          "Science Fiction",
+          "Adventure"
+        ],
+        "voteAverage": 8.634,
+        "popularity": 95.189,
+        "score": 9.5,
+        "note": "Rocky is the best movie character in years. Saw it twice in IMAX."
+      },
+      {
+        "id": 95396,
+        "kind": "tv",
+        "title": "Severance",
+        "posterPath": "/pPHpeI2X1qEd1CS1SeyrdhZ4qnT.jpg",
+        "releaseDate": "2022-02-17",
+        "genres": [
+          "Drama",
+          "Mystery",
+          "Sci-Fi & Fantasy"
+        ],
+        "voteAverage": 8.394,
+        "popularity": 52.408,
+        "score": 9.5,
+        "note": "Season 2 finale had me yelling at the TV."
+      },
+      {
+        "id": 969681,
+        "kind": "movie",
+        "title": "Spider-Man: Brand New Day",
+        "posterPath": "/bjiS5ipwxb9JFy3XRRN4OAilSeX.jpg",
+        "releaseDate": "2026-07-29",
+        "genres": [
+          "Science Fiction",
+          "Action",
+          "Adventure"
+        ],
+        "voteAverage": 8.5,
+        "popularity": 842.854,
+        "score": 8.0
+      },
+      {
+        "id": 95480,
+        "kind": "tv",
+        "title": "Slow Horses",
+        "posterPath": "/AdYr4DjOgXvDUMwu6vEhZy1Rnxk.jpg",
+        "releaseDate": "2022-04-01",
+        "genres": [
+          "Crime",
+          "Drama",
+          "Mystery"
+        ],
+        "voteAverage": 8.0,
+        "popularity": 217.905,
+        "score": 9.0,
+        "note": "Gary Oldman should never be allowed to stop playing Lamb."
+      },
+      {
+        "id": 872585,
+        "kind": "movie",
+        "title": "Oppenheimer",
+        "posterPath": "/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+        "releaseDate": "2023-07-19",
+        "genres": [
+          "Drama",
+          "History"
+        ],
+        "voteAverage": 8.022,
+        "popularity": 69.858,
+        "score": 9.0
+      },
+      {
+        "id": 136315,
+        "kind": "tv",
+        "title": "The Bear",
+        "posterPath": "/eKfVzzEazSIjJMrw9ADa2x8ksLz.jpg",
+        "releaseDate": "2022-06-23",
+        "genres": [
+          "Drama",
+          "Comedy"
+        ],
+        "voteAverage": 8.154,
+        "popularity": 65.213,
+        "score": 8.5
+      },
+      {
+        "id": 693134,
+        "kind": "movie",
+        "title": "Dune: Part Two",
+        "posterPath": "/6izwz7rsy95ARzTR3poZ8H6c5pp.jpg",
+        "releaseDate": "2024-02-27",
+        "genres": [
+          "Science Fiction",
+          "Adventure"
+        ],
+        "voteAverage": 8.14,
+        "popularity": 63.273,
+        "score": 9.0
+      },
+      {
+        "id": 126308,
+        "kind": "tv",
+        "title": "Shōgun",
+        "posterPath": "/7O4iVfOMQmdCSxhOg1WnzG1AgYT.jpg",
+        "releaseDate": "2024-02-27",
+        "genres": [
+          "Drama",
+          "War & Politics"
+        ],
+        "voteAverage": 8.429,
+        "popularity": 42.686,
+        "score": 9.5
+      },
+      {
+        "id": 496243,
+        "kind": "movie",
+        "title": "Parasite",
+        "posterPath": "/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg",
+        "releaseDate": "2019-05-30",
+        "genres": [
+          "Comedy",
+          "Thriller",
+          "Drama"
+        ],
+        "voteAverage": 8.5,
+        "popularity": 34.934,
+        "score": 10.0,
+        "note": "Perfect. Every rewatch finds something new."
+      },
+      {
+        "id": 76331,
+        "kind": "tv",
+        "title": "Succession",
+        "posterPath": "/z0XiwdrCQ9yVIr4O0pxzaAYRxdW.jpg",
+        "releaseDate": "2018-06-03",
+        "genres": [
+          "Drama",
+          "Comedy"
+        ],
+        "voteAverage": 8.302,
+        "popularity": 69.442,
+        "score": 10.0
+      }
+    ],
+    "watchlist": [
+      {
+        "id": 1084244,
+        "kind": "movie",
+        "title": "Toy Story 5",
+        "posterPath": "/sfQtVlIHljToOwYjhe21KPGzZWK.jpg",
+        "releaseDate": "2026-06-17",
+        "genres": [
+          "Animation",
+          "Family",
+          "Comedy",
+          "Adventure"
+        ],
+        "voteAverage": 8.286,
+        "popularity": 149.969
+      },
+      {
+        "id": 95350,
+        "kind": "tv",
+        "title": "Lanterns",
+        "posterPath": "/gpC7h43xPMEV3goYMQShfJbTtLq.jpg",
+        "releaseDate": "2026-08-16",
+        "genres": [
+          "Drama",
+          "Mystery",
+          "Sci-Fi & Fantasy"
+        ],
+        "voteAverage": 8.3,
+        "popularity": 181.233
+      },
+      {
+        "id": 1339713,
+        "kind": "movie",
+        "title": "Obsession",
+        "posterPath": "/bRwnj8WEKBCvmfeUNOukJPwB43K.jpg",
+        "releaseDate": "2026-05-13",
+        "genres": [
+          "Horror",
+          "Thriller"
+        ],
+        "voteAverage": 8.181,
+        "popularity": 120.02
+      },
+      {
+        "id": 247718,
+        "kind": "tv",
+        "title": "MobLand",
+        "posterPath": "/5Xc7WpWsgflfgEMoBlf9TmWhfbH.jpg",
+        "releaseDate": "2025-03-30",
+        "genres": [
+          "Crime",
+          "Drama"
+        ],
+        "voteAverage": 8.502,
+        "popularity": 276.407
+      },
+      {
+        "id": 97546,
+        "kind": "tv",
+        "title": "Ted Lasso",
+        "posterPath": "/uRHsiw1wLxPHFXkkv4Ix1s0O6f4.jpg",
+        "releaseDate": "2020-08-14",
+        "genres": [
+          "Drama",
+          "Comedy"
+        ],
+        "voteAverage": 8.362,
+        "popularity": 268.38
+      }
+    ],
+    "lists": [
+      {
+        "name": "Best of 2026",
+        "items": [
+          {
+            "id": 687163,
+            "kind": "movie",
+            "title": "Project Hail Mary",
+            "posterPath": "/iOb2fjXLbpJgyQXe46n1WtGCnaa.jpg",
+            "releaseDate": "2026-03-15",
+            "genres": [
+              "Science Fiction",
+              "Adventure"
+            ],
+            "voteAverage": 8.634,
+            "popularity": 95.189
+          },
+          {
+            "id": 1339713,
+            "kind": "movie",
+            "title": "Obsession",
+            "posterPath": "/bRwnj8WEKBCvmfeUNOukJPwB43K.jpg",
+            "releaseDate": "2026-05-13",
+            "genres": [
+              "Horror",
+              "Thriller"
+            ],
+            "voteAverage": 8.181,
+            "popularity": 120.02
+          },
+          {
+            "id": 969681,
+            "kind": "movie",
+            "title": "Spider-Man: Brand New Day",
+            "posterPath": "/bjiS5ipwxb9JFy3XRRN4OAilSeX.jpg",
+            "releaseDate": "2026-07-29",
+            "genres": [
+              "Science Fiction",
+              "Action",
+              "Adventure"
+            ],
+            "voteAverage": 8.5,
+            "popularity": 842.854
+          },
+          {
+            "id": 95350,
+            "kind": "tv",
+            "title": "Lanterns",
+            "posterPath": "/gpC7h43xPMEV3goYMQShfJbTtLq.jpg",
+            "releaseDate": "2026-08-16",
+            "genres": [
+              "Drama",
+              "Mystery",
+              "Sci-Fi & Fantasy"
+            ],
+            "voteAverage": 8.3,
+            "popularity": 181.233
+          }
+        ]
+      },
+      {
+        "name": "Best Picture Rewatch",
+        "items": [
+          {
+            "id": 872585,
+            "kind": "movie",
+            "title": "Oppenheimer",
+            "posterPath": "/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg",
+            "releaseDate": "2023-07-19",
+            "genres": [
+              "Drama",
+              "History"
+            ],
+            "voteAverage": 8.022,
+            "popularity": 69.858
+          },
+          {
+            "id": 496243,
+            "kind": "movie",
+            "title": "Parasite",
+            "posterPath": "/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg",
+            "releaseDate": "2019-05-30",
+            "genres": [
+              "Comedy",
+              "Thriller",
+              "Drama"
+            ],
+            "voteAverage": 8.5,
+            "popularity": 34.934
+          },
+          {
+            "id": 545611,
+            "kind": "movie",
+            "title": "Everything Everywhere All at Once",
+            "posterPath": "/u68AjlvlutfEIcpmbYpKcdi09ut.jpg",
+            "releaseDate": "2022-03-24",
+            "genres": [
+              "Action",
+              "Adventure",
+              "Science Fiction"
+            ],
+            "voteAverage": 7.716,
+            "popularity": 24.291
+          },
+          {
+            "id": 6977,
+            "kind": "movie",
+            "title": "No Country for Old Men",
+            "posterPath": "/6d5XOczc226jECq0LIX0siKtgHR.jpg",
+            "releaseDate": "2007-11-09",
+            "genres": [
+              "Crime",
+              "Thriller",
+              "Western"
+            ],
+            "voteAverage": 7.95,
+            "popularity": 25.191
+          },
+          {
+            "id": 238,
+            "kind": "movie",
+            "title": "The Godfather",
+            "posterPath": "/3bhkrj58Vtu7enYsRolD1fZdja1.jpg",
+            "releaseDate": "1972-03-14",
+            "genres": [
+              "Drama",
+              "Crime"
+            ],
+            "voteAverage": 8.689,
+            "popularity": 56.912
+          }
+        ]
+      }
+    ]
+  }
+}
