@@ -9,7 +9,7 @@
 import Foundation
 
 enum LibrarySchema {
-    static let currentVersion = 2
+    static let currentVersion = 3
 
     static let v1Statements: [String] = [
         """
@@ -136,11 +136,57 @@ enum LibrarySchema {
         """,
     ]
 
+    /// History-safe writes: creation dates on lists, annotations, and completed episodes,
+    /// plus sync metadata so unmarking an episode leaves a tombstone. Each date is
+    /// backfilled from the best one already stored, falling back to the row's last
+    /// `updated_at` (never later than the migration).
+    static let v3Statements: [String] = [
+        "ALTER TABLE library_list ADD COLUMN created_at TEXT;",
+        """
+        UPDATE library_list SET created_at = COALESCE(
+          (SELECT MIN(m.added_at) FROM list_membership m WHERE m.list_id = library_list.id),
+          updated_at,
+          strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+        );
+        """,
+        "ALTER TABLE annotation ADD COLUMN created_at TEXT;",
+        """
+        UPDATE annotation SET created_at = COALESCE(
+          watched_at,
+          (SELECT MIN(m.added_at) FROM list_membership m
+            WHERE m.item_key = CASE annotation.kind
+              WHEN 'movie' THEN 'movie-' || annotation.subject_id
+              WHEN 'tvSeries' THEN 'tv-' || annotation.subject_id
+            END),
+          updated_at,
+          strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+        );
+        """,
+        "ALTER TABLE tv_episode_completed ADD COLUMN completed_at TEXT;",
+        "ALTER TABLE tv_episode_completed ADD COLUMN updated_at TEXT;",
+        "ALTER TABLE tv_episode_completed ADD COLUMN revision INTEGER NOT NULL DEFAULT 1;",
+        "ALTER TABLE tv_episode_completed ADD COLUMN deleted_at TEXT;",
+        """
+        UPDATE tv_episode_completed SET completed_at = COALESCE(
+          (SELECT a.watched_at FROM annotation a
+            WHERE a.kind = 'tvEpisode'
+              AND a.subject_id = tv_episode_completed.series_id
+              AND a.season_number = tv_episode_completed.season_number
+              AND a.episode_number = tv_episode_completed.episode_number),
+          (SELECT w.updated_at FROM tv_series_watch w
+            WHERE w.series_id = tv_episode_completed.series_id),
+          strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+        );
+        """,
+        "UPDATE tv_episode_completed SET updated_at = completed_at;",
+    ]
+
     /// SQL for a single schema version. Unknown versions fail instead of no-op.
     static func statements(for version: Int) throws -> [String] {
         switch version {
             case 1: return v1Statements
             case 2: return v2Statements
+            case 3: return v3Statements
             default:
                 throw SQLiteDatabaseError.executionFailed(
                     message: "unknown library schema version \(version)"
@@ -170,9 +216,9 @@ enum LibrarySQLDate {
     }
 }
 
-/// Stable ids for rows that replace-all would otherwise recreate each save.
+/// Stable ids so a diffed write matches each snapshot row to the row it already stored.
 enum LibraryStableID {
-    /// Deterministic UUID so replace-all writes keep the same membership/annotation ids.
+    /// Deterministic UUID so every save maps to the same membership/annotation ids.
     static func uuid(from string: String) -> UUID {
         var hash = [UInt8](repeating: 0, count: 16)
         let data = Data(string.utf8)
