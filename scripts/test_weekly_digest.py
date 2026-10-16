@@ -6,7 +6,9 @@ from __future__ import annotations
 import datetime as dt
 import json
 import unittest
+import urllib.error
 import urllib.parse
+from unittest import mock
 
 import asc_api
 import weekly_digest
@@ -151,6 +153,14 @@ class DigestTests(unittest.TestCase):
         self.assertIn("_Unavailable: ASC sales report failed (403)_", body)
         self.assertIn("**4.00★** from 3 ratings", body)
 
+    def test_a_network_error_in_one_section_does_not_sink_the_others(self) -> None:
+        def offline():
+            raise ConnectionResetError(54, "Connection reset by peer")
+
+        body = self.build(asc_client=FakeASC(), vendor_number="881", rating_lookup=offline)
+        self.assertIn("_Unavailable: [Errno 54] Connection reset by peer_", body)
+        self.assertIn("**30** first-time downloads", body)
+
     def test_sentry_sections(self) -> None:
         issues = [
             {"shortId": "SILVER-1A", "permalink": "https://sentry.io/i/1", "title": "Crash in [Detail]",
@@ -209,6 +219,32 @@ class SentryClientTests(unittest.TestCase):
         sentry = weekly_digest.SentryClient("tok", "org", "ios", http=lambda *args, **kwargs: (401, {"detail": "bad"}))
         with self.assertRaises(weekly_digest.SourceError):
             sentry.project_id()
+
+    def test_http_json_turns_network_failures_into_source_errors(self) -> None:
+        class SlowResponse:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc):
+                return False
+
+            def read(self):
+                raise TimeoutError("The read operation timed out")
+
+        url = "https://sentry.io/api/0/projects/?token=secret"
+        failures = [
+            {"side_effect": urllib.error.URLError("Name or service not known")},
+            {"side_effect": TimeoutError("timed out")},
+            {"return_value": SlowResponse()},
+        ]
+        for patch in failures:
+            with self.subTest(patch=patch):
+                with mock.patch("urllib.request.urlopen", **patch):
+                    with self.assertRaises(weekly_digest.SourceError) as caught:
+                        weekly_digest.http_json("GET", url, {})
+                self.assertNotIn("secret", str(caught.exception))
 
     def test_itunes_rating_is_none_before_launch(self) -> None:
         self.assertIsNone(weekly_digest.itunes_rating("b", http=lambda *args: (200, {"resultCount": 0, "results": []})))
