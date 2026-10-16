@@ -23,8 +23,6 @@ enum SettingsDestination: Hashable {
 struct SettingsView: View {
     let context: SettingsContext
     @Environment(\.dismiss) private var dismiss
-    /// TMDB's attribution asks for its logo near the API notice, less prominent than our own branding.
-    @ScaledMetric(relativeTo: .footnote) private var tmdbLogoHeight: CGFloat = 12
 
     var body: some View {
         NavigationStack {
@@ -57,10 +55,9 @@ struct SettingsView: View {
                     Text("Data Sources")
                 } footer: {
                     VStack(alignment: .leading, spacing: DesignSpacing.sm) {
+                        // Bitmaps sized for 12 pt, so the logo stays a fixed size. TMDB asks for it
+                        // near the API notice and less prominent than our own branding.
                         Image("TMDBLogo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: tmdbLogoHeight)
                             .accessibilityLabel("The Movie Database (TMDB) logo")
                         Text("This product uses the TMDB API but is not endorsed or certified by TMDB.")
                     }
