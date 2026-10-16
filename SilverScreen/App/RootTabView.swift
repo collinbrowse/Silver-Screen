@@ -20,6 +20,7 @@ struct RootTabView: View {
     let libraryHomeViewModel: LibraryHomeViewModel
     let settings: SettingsContext
     @Bindable var onboarding: OnboardingGate
+    let reviewPrompter: ReviewPrompter
 
     @State private var browseViewModel: BrowseListViewModel
     @State private var searchViewModel: SearchViewModel
@@ -38,7 +39,8 @@ struct RootTabView: View {
         imageLoader: ImageLoader,
         libraryHomeViewModel: LibraryHomeViewModel,
         settings: SettingsContext,
-        onboarding: OnboardingGate
+        onboarding: OnboardingGate,
+        reviewPrompter: ReviewPrompter
     ) {
         self.router = router
         self.movies = movies
@@ -54,6 +56,7 @@ struct RootTabView: View {
         self.libraryHomeViewModel = libraryHomeViewModel
         self.settings = settings
         self.onboarding = onboarding
+        self.reviewPrompter = reviewPrompter
         _browseViewModel = State(
             initialValue: BrowseListViewModel(
                 movies: movies,
@@ -121,6 +124,7 @@ struct RootTabView: View {
                     imageLoader: imageLoader
                 )
             }
+            .modifier(ReviewPromptPresenter(prompter: reviewPrompter))
     }
 
     /// On Mac this iOS app keeps a tab bar and does not minimize it. Hiding that

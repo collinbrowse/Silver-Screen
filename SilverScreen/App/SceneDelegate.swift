@@ -83,7 +83,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 imageLoader: dependencies.imageLoader,
                 libraryHomeViewModel: libraryHomeViewModel,
                 settings: dependencies.settings,
-                onboarding: onboarding
+                onboarding: onboarding,
+                reviewPrompter: dependencies.reviewPrompter
             )
             if let seedURL = demo?.seedURL {
                 // A demo launch holds the first frame until the seed is written, so
