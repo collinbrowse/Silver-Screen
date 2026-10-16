@@ -78,7 +78,9 @@ anywhere other than `api.themoviedb.org`, the app sends no token.
   ```
 
   Keep the `TMDB_ACCESS_TOKEN` repository secret. The daily TMDB health check
-  and the awards catalog job still call TMDB directly with it.
+  and the awards catalog job still call TMDB directly with it. Once this
+  variable is set, the health check also calls `TMDB_PROXY_URL/movie/550` with
+  no token and fails if the Worker does not return the movie.
 
 - **Local builds.** Optional. Add this to `Secrets.xcconfig`, writing `//` as
   `/$()/` because xcconfig treats `//` as a comment:
