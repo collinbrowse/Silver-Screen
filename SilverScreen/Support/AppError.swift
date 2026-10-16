@@ -13,6 +13,7 @@ enum AppError: Error, Equatable, Sendable {
     case decoding
     case persistence
     case missingAccessToken
+    case invalidBaseURL
     case unknown
 
     var title: String {
@@ -31,6 +32,8 @@ enum AppError: Error, Equatable, Sendable {
                 return "Couldn't Save"
             case .missingAccessToken:
                 return "Missing Access Token"
+            case .invalidBaseURL:
+                return "Invalid Movie Service Address"
             case .unknown:
                 return "Something Went Wrong"
         }
@@ -52,6 +55,8 @@ enum AppError: Error, Equatable, Sendable {
                 return "Your change couldn't be saved. Please try again."
             case .missingAccessToken:
                 return "Copy Secrets.example.xcconfig to Secrets.xcconfig and set TMDB_ACCESS_TOKEN to the API Read Access Token on the TMDB API settings page. A v3 API key will not work."
+            case .invalidBaseURL:
+                return "Set TMDB_BASE_URL in Secrets.xcconfig to an https address, written as https:/$()/host/3, or remove it to call TMDB directly."
             case .unknown:
                 return "Please try again. If the problem continues, come back later."
         }
@@ -61,7 +66,7 @@ enum AppError: Error, Equatable, Sendable {
         switch self {
             case .offline, .timedOut, .server, .unknown, .decoding:
                 return true
-            case .unauthorized, .persistence, .missingAccessToken:
+            case .unauthorized, .persistence, .missingAccessToken, .invalidBaseURL:
                 return false
         }
     }
