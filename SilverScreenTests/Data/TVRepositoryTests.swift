@@ -169,6 +169,15 @@ final class TVRepositoryTests: XCTestCase {
                 XCTAssertTrue(page.hasMore)
                 }
 
+                func test_topRated_requestsTopRatedTV() async throws {
+                let client = RecordingHTTPClient(stub: .success(TMDBFixtures.popularTVPage))
+                let repository = TVRepository.test(client: client)
+                let page = try await repository.topRated(page: 1)
+                let path = await client.lastPath
+                XCTAssertEqual(path, "/3/tv/top_rated")
+                XCTAssertEqual(page.series.map(\.name), ["Breaking Bad"])
+                }
+
                 func test_series_skipsMalformedImagesAndKeepsTheSeries() async throws {
                 let payload = Data("""
                     {
