@@ -21,7 +21,7 @@ deploy tool, and `npx` fetches it when you run it.
 ## Test
 
 ```bash
-node --test worker/
+node --test 'worker/test/*.test.js'
 ```
 
 CI runs this in the **Validate rules** job.

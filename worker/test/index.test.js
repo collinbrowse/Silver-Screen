@@ -1,5 +1,5 @@
 // Routing, header, cache, and rate-limit tests for the TMDB proxy.
-// Run with `node --test worker/` (Node 20+, no dependencies).
+// Run with `node --test 'worker/test/*.test.js'` (Node 22+, no dependencies).
 
 import assert from "node:assert/strict";
 import { test } from "node:test";

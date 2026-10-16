@@ -4,6 +4,6 @@
   "type": "module",
   "description": "Cloudflare Worker that adds the TMDB token server-side. No runtime dependencies.",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test 'test/*.test.js'"
   }
 }
