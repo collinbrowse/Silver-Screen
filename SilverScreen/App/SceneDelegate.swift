@@ -39,6 +39,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 appRouter = dependencies.router
             }
             let libraryHomeViewModel = LibraryHomeViewModel(lists: dependencies.lists)
+            let onboarding = OnboardingGate(
+                marker: OnboardingMarkerStore(defaults: .standard),
+                lists: dependencies.lists,
+                annotations: dependencies.annotations,
+                isDemo: demo != nil,
+                router: dependencies.router,
+                library: libraryHomeViewModel
+            )
+            Task { await onboarding.evaluate() }
             Task { try? await dependencies.libraryStore.bootstrap() }
             Task { try? await dependencies.lists.loadIndex() }
             Task { await dependencies.awards.prepare() }
@@ -73,7 +82,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 awards: dependencies.awards,
                 imageLoader: dependencies.imageLoader,
                 libraryHomeViewModel: libraryHomeViewModel,
-                settings: dependencies.settings
+                settings: dependencies.settings,
+                onboarding: onboarding
             )
             if let seedURL = demo?.seedURL {
                 // A demo launch holds the first frame until the seed is written, so

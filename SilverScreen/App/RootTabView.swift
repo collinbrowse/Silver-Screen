@@ -19,6 +19,7 @@ struct RootTabView: View {
     let imageLoader: ImageLoader
     let libraryHomeViewModel: LibraryHomeViewModel
     let settings: SettingsContext
+    @Bindable var onboarding: OnboardingGate
 
     @State private var browseViewModel: BrowseListViewModel
     @State private var searchViewModel: SearchViewModel
@@ -36,7 +37,8 @@ struct RootTabView: View {
         awards: AwardsRepository,
         imageLoader: ImageLoader,
         libraryHomeViewModel: LibraryHomeViewModel,
-        settings: SettingsContext
+        settings: SettingsContext,
+        onboarding: OnboardingGate
     ) {
         self.router = router
         self.movies = movies
@@ -51,6 +53,7 @@ struct RootTabView: View {
         self.imageLoader = imageLoader
         self.libraryHomeViewModel = libraryHomeViewModel
         self.settings = settings
+        self.onboarding = onboarding
         _browseViewModel = State(
             initialValue: BrowseListViewModel(
                 movies: movies,
@@ -102,6 +105,20 @@ struct RootTabView: View {
                     canClear: session.canClear,
                     onSave: { await listChanges.saveRatingAnnotation(score: $0, note: $1) },
                     onClear: { await listChanges.clearRatingAnnotation() }
+                )
+            }
+            .fullScreenCover(isPresented: $onboarding.isPresented) {
+                OnboardingView(
+                    viewModel: OnboardingViewModel(
+                        movies: movies,
+                        shows: shows,
+                        lists: lists,
+                        annotations: annotations,
+                        tvWatch: tvWatch,
+                        awards: awards,
+                        gate: onboarding
+                    ),
+                    imageLoader: imageLoader
                 )
             }
     }
@@ -168,7 +185,8 @@ struct RootTabView: View {
                     movies: movies,
                     shows: shows,
                     people: people,
-                    settings: settings
+                    settings: settings,
+                    onGetStarted: onboarding.reopen
                 )
             }
         }

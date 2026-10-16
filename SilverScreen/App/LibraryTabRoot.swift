@@ -18,10 +18,17 @@ struct LibraryTabRoot: View {
     let shows: TVRepository
     let people: PersonRepository
     let settings: SettingsContext
+    /// Reopens onboarding from the empty Library.
+    let onGetStarted: () -> Void
 
     var body: some View {
         NavigationStack(path: $router.path) {
-            LibraryHomeView(viewModel: viewModel, imageLoader: imageLoader, settings: settings)
+            LibraryHomeView(
+                viewModel: viewModel,
+                imageLoader: imageLoader,
+                settings: settings,
+                onGetStarted: onGetStarted
+            )
                 .navigationDestination(for: Route.self) { route in
                     AppRouteDestination(
                         route: route,

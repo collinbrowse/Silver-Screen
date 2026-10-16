@@ -12,6 +12,8 @@ struct LibraryHomeView: View {
     @Bindable var viewModel: LibraryHomeViewModel
     let imageLoader: ImageLoader
     let settings: SettingsContext
+    /// Reopens onboarding from the empty state.
+    let onGetStarted: () -> Void
     @State private var showingSettings = false
     @State private var editMode: EditMode = .inactive
     @State private var showingNameDialog = false
@@ -29,7 +31,9 @@ struct LibraryHomeView: View {
                     EmptyStateView(
                         title: "No Lists",
                         message: emptyMessage,
-                        systemImage: "books.vertical"
+                        systemImage: "books.vertical",
+                        actionTitle: viewModel.segment == .moviesAndTV ? "Get started" : nil,
+                        action: onGetStarted
                     )
                 case .loaded(_, let activity):
                     list
@@ -138,6 +142,18 @@ struct LibraryHomeView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 List {
+                    if viewModel.showsGetStarted {
+                        Section {
+                            EmptyStateView(
+                                title: "Nothing Saved Yet",
+                                message: emptyMessage,
+                                systemImage: "books.vertical",
+                                actionTitle: "Get started",
+                                action: onGetStarted
+                            )
+                            .listRowSeparator(.hidden)
+                        }
+                    }
                     if !system.isEmpty {
                         Section {
                             ForEach(Array(system.enumerated()), id: \.element.id) { index, list in
