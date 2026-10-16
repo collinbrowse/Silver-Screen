@@ -53,7 +53,8 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 
 - [ ] Onboarding: a first-launch flow that gets someone to a non-empty library (rate a few
       titles they've seen, start a watchlist) instead of an empty Library tab
-- [ ] Review prompt: SwiftUI `requestReview` after a good moment, such as the 5th saved rating, at most once per version, never after an error
+- [x] Review prompt: SwiftUI `requestReview` after a good moment, such as the 5th saved rating, at most once per version, never after an error.
+      Ratings saved during onboarding (before `onboardingCompletedAt`) do not count.
 - [ ] Analytics: pick the tool (see the decision below), then send a handful of anonymous
       events: onboarding finished, first rating, list created, title added to watchlist.
       Declare them on the privacy label as Product Interaction, not linked.

@@ -21,6 +21,7 @@ struct AppDependencies {
     let router: AppRouter
     let logger: any AppLogging
     let settings: SettingsContext
+    let reviewPrompter: ReviewPrompter
 
     /// Builds the app's dependency graph. A demo launch swaps in a throwaway library.
     static func live(demo: DemoMode? = nil) throws -> AppDependencies {
@@ -67,7 +68,14 @@ struct AppDependencies {
             logger: logger
         )
         let router = AppRouter()
-        let settings = SettingsContext(appInfo: .live()) { submission in
+        let appInfo = AppInfo.live()
+        let reviewPrompter = ReviewPrompter(
+            appVersion: appInfo.marketingVersion,
+            defaults: .standard
+        ) { cutoff in
+            try await libraryStore.countRatings(createdAfter: cutoff)
+        }
+        let settings = SettingsContext(appInfo: appInfo) { submission in
             SentryBootstrap.sendFeedback(message: submission.message, email: submission.email)
         }
         return AppDependencies(
@@ -84,7 +92,8 @@ struct AppDependencies {
             libraryStore: libraryStore,
             router: router,
             logger: logger,
-            settings: settings
+            settings: settings,
+            reviewPrompter: reviewPrompter
         )
     }
 }

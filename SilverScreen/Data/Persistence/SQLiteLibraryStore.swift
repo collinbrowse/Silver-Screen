@@ -216,6 +216,28 @@ actor SQLiteLibraryStore: LibraryStore {
         return records
     }
 
+    /// Live ratings (rows with a score) first saved after `cutoff`, or all of them when
+    /// `cutoff` is nil. Uses `created_at`, so editing an older rating does not make it new.
+    func countRatings(createdAfter cutoff: Date?) async throws -> Int {
+        try await ensureBootstrapped()
+        var count = 0
+        try database.collect(
+            """
+            SELECT COUNT(*)
+            FROM annotation
+            WHERE deleted_at IS NULL
+              AND score IS NOT NULL
+              AND (?1 IS NULL OR julianday(created_at) > julianday(?1));
+            """,
+            binds: { statement in
+                SQLiteBinding.text(statement, index: 1, cutoff.map(LibrarySQLDate.encode))
+            }
+        ) { statement in
+            count = SQLiteBinding.columnInt(statement, index: 0)
+        }
+        return count
+    }
+
     func fetchTVWatchStates() async throws -> [TVSeriesWatchState] {
         try await ensureBootstrapped()
         var states: [TVSeriesWatchState] = []
