@@ -2,7 +2,7 @@
 //  ReviewPrompt.swift
 //  SilverScreen
 //
-//  When to ask for an App Store review: after the 5th saved rating, at most once
+//  When to ask for an App Store review: on the 5th saved rating, at most once
 //  per app version, never right after a failed save. Ratings saved during
 //  onboarding do not count. The root view watches `ReviewPrompter` and calls
 //  SwiftUI's `requestReview`.
@@ -23,7 +23,8 @@ enum OnboardingCompletion {
 
 /// The review prompt rule, kept free of storage so it can be tested directly.
 enum ReviewPromptPolicy {
-    /// The rating count that makes a good moment to ask.
+    /// The rating count that makes a good moment to ask. Only this exact count asks:
+    /// someone already past it knows the app and does not need the prompt.
     static let ratingThreshold = 5
 
     /// - Parameters:
@@ -39,7 +40,7 @@ enum ReviewPromptPolicy {
     ) -> Bool {
         guard !followsFailedSave else { return false }
         guard lastPromptedVersion != currentVersion else { return false }
-        return ratingCount >= ratingThreshold
+        return ratingCount == ratingThreshold
     }
 }
 

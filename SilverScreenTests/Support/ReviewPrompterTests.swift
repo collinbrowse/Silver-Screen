@@ -42,6 +42,14 @@ final class ReviewPrompterTests: XCTestCase {
         XCTAssertEqual(prompter.requestCount, 0)
     }
 
+    func test_ratingSaveFinished_pastFifthRating_doesNotRequest() async {
+        let prompter = makePrompter(ratings: RatingCounter(count: 6))
+
+        await prompter.ratingSaveFinished(.succeeded)
+
+        XCTAssertEqual(prompter.requestCount, 0)
+    }
+
     func test_ratingSaveFinished_secondTimeInSameVersion_doesNotRequestAgain() async {
         let prompter = makePrompter(ratings: RatingCounter(count: 5))
         await prompter.ratingSaveFinished(.succeeded)
@@ -53,7 +61,7 @@ final class ReviewPrompterTests: XCTestCase {
 
     func test_ratingSaveFinished_inNewVersionAfterEarlierPrompt_requests() async {
         defaults.set("1.0", forKey: ReviewPrompter.promptedVersionKey)
-        let prompter = makePrompter(ratings: RatingCounter(count: 7))
+        let prompter = makePrompter(ratings: RatingCounter(count: 5))
 
         await prompter.ratingSaveFinished(.succeeded)
 
