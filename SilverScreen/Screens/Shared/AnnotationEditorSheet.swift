@@ -7,7 +7,8 @@
 //  stays on this sheet. Cancelled writes do not show a persistence banner. The
 //  view model owns dismissal after success. The note field fills leftover height
 //  above the keyboard as the sheet resizes. Focus is resigned before any dismiss
-//  so the keyboard and sheet do not fight.
+//  so the keyboard and sheet do not fight. Every save outcome goes to the
+//  review prompter, which decides whether this is a good moment to ask.
 //
 
 import SwiftUI
@@ -20,6 +21,8 @@ struct AnnotationEditorSheet: View {
     let onClear: () async -> AnnotationEditorWriteResult
 
     @Environment(\.dismiss) private var dismiss
+    /// Nil in previews and anywhere the root did not install one.
+    @Environment(ReviewPrompter.self) private var reviewPrompter: ReviewPrompter?
     /// Committed rating for Save. Nil until the title already had one or the slider moves.
     @State private var score: Double?
     /// Slider thumb position; does not imply a chosen score until `score` is set.
@@ -188,7 +191,9 @@ struct AnnotationEditorSheet: View {
             return
         }
         await resignNoteFocusBeforeLeaving()
-        finish(await onSave(score, note))
+        let result = await onSave(score, note)
+        finish(result)
+        await reviewPrompter?.ratingSaveFinished(result)
     }
 
     private func clearAnnotation() async {

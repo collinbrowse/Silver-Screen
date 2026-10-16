@@ -70,7 +70,7 @@ Silver Screen is a native iPhone app. To run it from this repo:
 
 1. Install [Xcode 26](https://developer.apple.com/xcode/) or newer.
 2. On [The Movie Database API settings](https://www.themoviedb.org/settings/api), copy the API Read Access Token.
-3. Copy `Secrets.example.xcconfig` to `Secrets.xcconfig` and set `TMDB_ACCESS_TOKEN`.
+3. Copy `Secrets.example.xcconfig` to `Secrets.xcconfig` and set `TMDB_ACCESS_TOKEN`. Release builds use the [TMDB proxy](worker/README.md) instead.
 4. Open `SilverScreen.xcodeproj` and run the **SilverScreen** scheme.
 
 ## Data sources

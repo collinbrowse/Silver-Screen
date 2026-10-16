@@ -60,19 +60,33 @@ jobs:
       - name: Write secrets
         env:
           TMDB_ACCESS_TOKEN: ${{ secrets.TMDB_ACCESS_TOKEN }}
+          # The deployed worker/ proxy, such as https://silverscreen-tmdb.<subdomain>.workers.dev/3.
+          # A repository variable, not a secret: the URL ships in the app either way.
+          TMDB_PROXY_URL: ${{ vars.TMDB_PROXY_URL }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
         run: |
-          if [ -z "$TMDB_ACCESS_TOKEN" ] || [ -z "$SENTRY_DSN" ] || [ -z "$ASC_API_KEY_P8" ]; then
-            echo "::error::Need repository secrets TMDB_ACCESS_TOKEN, SENTRY_DSN, ASC_API_KEY_P8, ASC_KEY_ID, ASC_ISSUER_ID"
+          if [ -z "$SENTRY_DSN" ] || [ -z "$ASC_API_KEY_P8" ]; then
+            echo "::error::Need repository secrets SENTRY_DSN, ASC_API_KEY_P8, ASC_KEY_ID, ASC_ISSUER_ID"
             exit 1
           fi
           # xcconfig treats // as a comment, so https:// would be cut to https:.
           # Write it as https:/$()/ like Secrets.example.xcconfig. Already-escaped
           # values have no // and pass through unchanged.
           dsn=$(printf '%s' "$SENTRY_DSN" | sed 's#//#/$()/#g')
+          if [ -n "$TMDB_PROXY_URL" ]; then
+            # The proxy adds the TMDB token, so the binary ships without one.
+            proxy=$(printf '%s' "$TMDB_PROXY_URL" | sed 's#//#/$()/#g')
+            tmdb_lines="TMDB_BASE_URL = ${proxy}"
+          elif [ -n "$TMDB_ACCESS_TOKEN" ]; then
+            echo "::warning::Repository variable TMDB_PROXY_URL is not set, so this build calls TMDB directly with the bundled token. See worker/README.md."
+            tmdb_lines="TMDB_ACCESS_TOKEN = ${TMDB_ACCESS_TOKEN}"
+          else
+            echo "::error::Set repository variable TMDB_PROXY_URL (see worker/README.md) or repository secret TMDB_ACCESS_TOKEN"
+            exit 1
+          fi
           cat > Secrets.xcconfig <<EOF
-          TMDB_ACCESS_TOKEN = ${TMDB_ACCESS_TOKEN}
+          ${tmdb_lines}
           SENTRY_DSN = ${dsn}
           EOF
           # runner.temp is not available in a job-level env block, so the path

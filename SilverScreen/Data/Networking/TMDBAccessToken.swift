@@ -2,18 +2,15 @@
 //  TMDBAccessToken.swift
 //  SilverScreen
 //
-//  Reads the TMDB API Read Access Token from Info.plist. Requests send it
-//  as a bearer header. A v3 API key is rejected here so it never reaches a URL.
+//  Validates the TMDB API Read Access Token from Info.plist for direct calls.
+//  Requests send it as a bearer header. A v3 API key is rejected here so it never
+//  reaches a URL. Proxy builds ship no token; see TMDBConnection.
 //
 
 import Foundation
 
 /// Bundled TMDB read-access token. Missing, unsubstituted, and v3-key values fail at launch.
 enum TMDBAccessToken {
-    static func fromBundle(_ bundle: Bundle = .main) throws -> String {
-        try validated(bundle.object(forInfoDictionaryKey: "TMDBAccessToken") as? String)
-    }
-
     /// Accepts a read-access token. A missing value, an unsubstituted `$(TMDB_ACCESS_TOKEN)`,
     /// and a 32-character v3 API key all fail the same way.
     static func validated(_ raw: String?) throws -> String {

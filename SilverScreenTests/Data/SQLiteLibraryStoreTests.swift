@@ -697,6 +697,45 @@ final class SQLiteLibraryStoreTests: XCTestCase {
         )
     }
 
+    func test_countRatings_withoutCutoff_countsEveryLiveScore() async throws {
+        let store = try makeStore()
+        try await store.apply(.replaceAnnotations([
+            MediaAnnotation(key: .movie(1), score: 8, note: nil, watchedAt: nil),
+            MediaAnnotation(key: .series(2), score: 7, note: nil, watchedAt: nil),
+            MediaAnnotation(key: .movie(3), score: nil, note: "Note only", watchedAt: nil),
+            MediaAnnotation(key: .movie(4), score: 6, note: nil, watchedAt: nil),
+        ]))
+        try await store.apply(.replaceAnnotations([
+            MediaAnnotation(key: .movie(1), score: 8, note: nil, watchedAt: nil),
+            MediaAnnotation(key: .series(2), score: 7, note: nil, watchedAt: nil),
+            MediaAnnotation(key: .movie(3), score: nil, note: "Note only", watchedAt: nil),
+        ]))
+
+        let count = try await store.countRatings(createdAfter: nil)
+
+        XCTAssertEqual(count, 2)
+    }
+
+    func test_countRatings_withCutoff_skipsRatingsCreatedBefore() async throws {
+        let store = try makeStore()
+        try await store.apply(.replaceAnnotations([
+            MediaAnnotation(key: .movie(1), score: 8, note: nil, watchedAt: nil),
+            MediaAnnotation(key: .movie(2), score: 7, note: nil, watchedAt: nil),
+        ]))
+        try backdateAnnotations()
+        try await store.apply(.replaceAnnotations([
+            MediaAnnotation(key: .movie(1), score: 9, note: nil, watchedAt: nil),
+            MediaAnnotation(key: .movie(2), score: 7, note: nil, watchedAt: nil),
+            MediaAnnotation(key: .movie(3), score: 6, note: nil, watchedAt: nil),
+        ]))
+
+        let count = try await store.countRatings(
+            createdAfter: try XCTUnwrap(LibrarySQLDate.decode("2021-01-01T00:00:00.000Z"))
+        )
+
+        XCTAssertEqual(count, 1, "Editing movie 1 keeps its old created_at; only movie 3 is new")
+    }
+
     private static let oldDate = "2020-01-01T00:00:00.000Z"
 
     /// Moves every annotation's dates into the past, so a later write that touched a

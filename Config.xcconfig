@@ -1,8 +1,15 @@
 // Shared build settings. Secrets.xcconfig is optional so a fresh clone
 // without a key still opens the project; the app fails clearly at launch.
 // Version.xcconfig is required: it is the only shipping version.
+
+// TMDB by default. Secrets.xcconfig (or the release job) overrides this with the
+// proxy in worker/, and then the build needs no TMDB_ACCESS_TOKEN. It is set
+// before the include so Secrets.xcconfig wins. xcconfig treats // as a comment.
+TMDB_BASE_URL = https:/$()/api.themoviedb.org/3
+
 #include? "Secrets.xcconfig"
 #include "Version.xcconfig"
 
 TMDBAccessToken = $(TMDB_ACCESS_TOKEN)
+TMDBBaseURL = $(TMDB_BASE_URL)
 SentryDSN = $(SENTRY_DSN)
