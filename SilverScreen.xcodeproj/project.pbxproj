@@ -239,6 +239,7 @@
 		12CD4F709858FE5E58E3A313 /* AcknowledgementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 916478276EA922BADD12683C /* AcknowledgementsView.swift */; };
 		A7CA6C88B871936C0E9A256B /* AppInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC815E0E78D769875E215A35 /* AppInfoTests.swift */; };
 		D915A332BEE5149A1CABE619 /* FeedbackViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CFC32D1E81090C6E092F2DB /* FeedbackViewModelTests.swift */; };
+		714A13F5C8850FBB61E21502 /* SettingsAssetsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FAA25938801AC12AB682A9A /* SettingsAssetsTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -495,6 +496,7 @@
 		916478276EA922BADD12683C /* AcknowledgementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcknowledgementsView.swift; sourceTree = "<group>"; };
 		EC815E0E78D769875E215A35 /* AppInfoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppInfoTests.swift; sourceTree = "<group>"; };
 		6CFC32D1E81090C6E092F2DB /* FeedbackViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackViewModelTests.swift; sourceTree = "<group>"; };
+		9FAA25938801AC12AB682A9A /* SettingsAssetsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAssetsTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -927,6 +929,7 @@
 			isa = PBXGroup;
 			children = (
 				6CFC32D1E81090C6E092F2DB /* FeedbackViewModelTests.swift */,
+				9FAA25938801AC12AB682A9A /* SettingsAssetsTests.swift */,
 				F100000B2788B823003D8011 /* BrowseListViewModelTests.swift */,
 				G1E000162788B823003D8011 /* GenreBrowseViewModelTests.swift */,
 				E2A0002E2788B823003D8011 /* SearchViewModelTests.swift */,
@@ -1312,6 +1315,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D915A332BEE5149A1CABE619 /* FeedbackViewModelTests.swift in Sources */,
+				714A13F5C8850FBB61E21502 /* SettingsAssetsTests.swift in Sources */,
 				A7CA6C88B871936C0E9A256B /* AppInfoTests.swift in Sources */,
 				BDE0862D4994D9B477EB63AF /* DemoModeTests.swift in Sources */,
 				F100000A2788B823003D8011 /* BrowseListViewModelTests.swift in Sources */,

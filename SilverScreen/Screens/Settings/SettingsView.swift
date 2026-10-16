@@ -2,7 +2,7 @@
 //  SettingsView.swift
 //  SilverScreen
 //
-//  Feedback, support and privacy links, data credits, and the app version.
+//  Feedback, support and privacy links, data credits with TMDB's logo, and the app version.
 //  Opens as a sheet from Library.
 //
 
@@ -23,6 +23,8 @@ enum SettingsDestination: Hashable {
 struct SettingsView: View {
     let context: SettingsContext
     @Environment(\.dismiss) private var dismiss
+    /// TMDB's attribution asks for its logo near the API notice, less prominent than our own branding.
+    @ScaledMetric(relativeTo: .footnote) private var tmdbLogoHeight: CGFloat = 12
 
     var body: some View {
         NavigationStack {
@@ -54,7 +56,14 @@ struct SettingsView: View {
                 } header: {
                     Text("Data Sources")
                 } footer: {
-                    Text("This product uses the TMDB API but is not endorsed or certified by TMDB.")
+                    VStack(alignment: .leading, spacing: DesignSpacing.sm) {
+                        Image("TMDBLogo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: tmdbLogoHeight)
+                            .accessibilityLabel("The Movie Database (TMDB) logo")
+                        Text("This product uses the TMDB API but is not endorsed or certified by TMDB.")
+                    }
                 }
 
                 Section {
