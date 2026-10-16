@@ -136,11 +136,17 @@ export async function handle(request, env, ctx, deps) {
     return cached;
   }
 
-  const upstream = await deps.fetch(target, {
-    method: "GET",
-    headers: upstreamHeaders(token),
-    cf: upstreamCacheOptions(),
-  });
+  let upstream;
+  try {
+    upstream = await deps.fetch(target, {
+      method: "GET",
+      headers: upstreamHeaders(token),
+      cf: upstreamCacheOptions(),
+    });
+  } catch {
+    // TMDB unreachable. Return JSON the app can decode, not a Worker exception page.
+    return errorResponse(502, "Could not reach TMDB.");
+  }
 
   const cacheable = upstream.status === 200;
   const response = new Response(upstream.body, {

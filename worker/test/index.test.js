@@ -285,3 +285,17 @@ test("fails clearly when the token secret is missing", async () => {
   assert.match(await response.text(), /wrangler secret put TMDB_ACCESS_TOKEN/);
   assert.equal(upstream.calls.length, 0);
 });
+
+test("returns 502 JSON when TMDB cannot be reached", async () => {
+  const fetch = async () => {
+    throw new TypeError("network connection lost");
+  };
+  const ctx = fakeContext();
+
+  const response = await handle(get("/3/movie/278"), { TMDB_ACCESS_TOKEN: TOKEN }, ctx, { fetch, cache: fakeCache() });
+
+  assert.equal(response.status, 502);
+  assert.equal(response.headers.get("Cache-Control"), "no-store");
+  assert.deepEqual(await response.json(), { status_message: "Could not reach TMDB." });
+  assert.equal(ctx.pending.length, 0);
+});
