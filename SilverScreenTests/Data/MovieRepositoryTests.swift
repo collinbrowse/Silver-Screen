@@ -185,7 +185,7 @@ final class MovieRepositoryTests: XCTestCase {
 
     func test_movieDetail_sendsBearerTokenAndMapsFields() async throws {
         let client = RecordingHTTPClient(stub: .success(TMDBFixtures.movieDetailShawshank))
-        let repository = MovieRepository.test(client: client, accessToken: "test-key")
+        let repository = MovieRepository.test(client: client, connection: .direct(accessToken: "test-key"))
 
         let detail = try await repository.movieDetail(id: 278)
 

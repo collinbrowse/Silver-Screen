@@ -19,12 +19,12 @@ final class MovieRepository: Sendable {
 
     init(
         client: any HTTPClient,
-        accessToken: String,
+        connection: TMDBConnection,
         logger: any AppLogging,
         sleeper: any Sleeper = TaskSleeper()
     ) {
         self.client = client
-        self.requests = TMDBRequestBuilder(accessToken: accessToken)
+        self.requests = TMDBRequestBuilder(connection: connection)
         self.logger = logger
         self.sleeper = sleeper
     }

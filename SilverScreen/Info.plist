@@ -45,6 +45,8 @@
 	</array>
 	<key>TMDBAccessToken</key>
 	<string>$(TMDB_ACCESS_TOKEN)</string>
+	<key>TMDBBaseURL</key>
+	<string>$(TMDB_BASE_URL)</string>
 	<key>SentryDSN</key>
 	<string>$(SENTRY_DSN)</string>
 	<key>UIApplicationSceneManifest</key>

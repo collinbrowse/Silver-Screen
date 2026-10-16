@@ -42,12 +42,12 @@ extension MovieRepository {
     /// Test factory: real repository over a fake client, no retry backoff delay.
     static func test(
         client: any HTTPClient,
-        accessToken: String = "test",
+        connection: TMDBConnection = .direct(accessToken: "test"),
         logger: any AppLogging = SilentLogger()
     ) -> MovieRepository {
         MovieRepository(
             client: client,
-            accessToken: accessToken,
+            connection: connection,
             logger: logger,
             sleeper: NoopSleeper()
         )
@@ -58,12 +58,12 @@ extension PersonRepository {
     /// Test factory: real repository over a fake client, no retry backoff delay.
     static func test(
         client: any HTTPClient,
-        accessToken: String = "test",
+        connection: TMDBConnection = .direct(accessToken: "test"),
         logger: any AppLogging = SilentLogger()
     ) -> PersonRepository {
         PersonRepository(
             client: client,
-            accessToken: accessToken,
+            connection: connection,
             logger: logger,
             sleeper: NoopSleeper()
         )
@@ -74,12 +74,12 @@ extension TVRepository {
     /// Test factory: real repository over a fake client, no retry backoff delay.
     static func test(
         client: any HTTPClient,
-        accessToken: String = "test",
+        connection: TMDBConnection = .direct(accessToken: "test"),
         logger: any AppLogging = SilentLogger()
     ) -> TVRepository {
         TVRepository(
             client: client,
-            accessToken: accessToken,
+            connection: connection,
             logger: logger,
             sleeper: NoopSleeper()
         )
