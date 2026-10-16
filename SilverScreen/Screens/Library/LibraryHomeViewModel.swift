@@ -33,6 +33,16 @@ final class LibraryHomeViewModel {
         return !allCustom.isEmpty && shownCustom.count == allCustom.count
     }
 
+    /// The Movies & TV segment holds no titles yet, so the Library offers onboarding again.
+    /// Hidden while Find list has text, since the rows below are then search results.
+    var showsGetStarted: Bool {
+        guard segment == .moviesAndTV,
+              searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              case .loaded(let snapshot, _) = state else { return false }
+        let listIDs = Set(snapshot.lists(in: .moviesAndTV).map(\.id))
+        return !snapshot.entries.contains { listIDs.contains($0.listID) }
+    }
+
     func membershipCount(for listID: UUID) -> Int {
         guard case .loaded(let snapshot, _) = state else { return 0 }
         return snapshot.entries.filter { $0.listID == listID }.count

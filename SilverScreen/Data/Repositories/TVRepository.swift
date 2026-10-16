@@ -109,6 +109,18 @@ final class TVRepository: Sendable {
         )
     }
 
+    /// TMDB's top-rated series (`/tv/top_rated`), which needs a large vote count to rank.
+    /// Onboarding uses it for shows people are likely to have seen.
+    func topRated(page: Int, locale: Locale = .current) async throws -> TVSeriesPage {
+        try await fetchSeriesPage(
+            path: "tv/top_rated",
+            context: "Top rated TV",
+            page: page,
+            extra: [],
+            locale: locale
+        )
+    }
+
     func search(query: String, page: Int, locale: Locale = .current) async throws -> TVSeriesPage {
         try await fetchSeriesPage(
             path: "search/tv",

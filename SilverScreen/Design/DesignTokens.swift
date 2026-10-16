@@ -34,6 +34,10 @@ enum DesignTheme {
     /// Card / chip surfaces.
     static var surface: Color { Color(.secondarySystemBackground) }
 
+    /// Floating cards over a dimmed screen: white in light mode, lifted gray in dark,
+    /// so the card's edge still reads against a black backdrop.
+    static var elevated: Color { Color(.secondarySystemGroupedBackground) }
+
     static var textPrimary: Color { Color(.label) }
     static var textSecondary: Color { Color(.secondaryLabel) }
     static var textMuted: Color { Color(.tertiaryLabel) }
