@@ -1,0 +1,8 @@
+{
+  "images" : [
+    { "filename" : "TMDBLogo.png", "idiom" : "universal", "scale" : "1x" },
+    { "filename" : "TMDBLogo@2x.png", "idiom" : "universal", "scale" : "2x" },
+    { "filename" : "TMDBLogo@3x.png", "idiom" : "universal", "scale" : "3x" }
+  ],
+  "info" : { "author" : "xcode", "version" : 1 }
+}

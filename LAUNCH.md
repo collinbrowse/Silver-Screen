@@ -40,7 +40,7 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
       Then check that `https://collinbrowse.github.io/Silver-Screen/privacy/` and `/support/` load.
 - [ ] Add a support email address to `docs/support.md` (Apple expects contact details on the support URL)
 - [ ] Sentry project settings: turn on "Prevent Storing of IP Addresses", so crash reports stay unlinked to a person
-- [ ] Add the official TMDB logo to Settings → Data Sources (TMDB's attribution rules ask for it)
+- [x] Add the official TMDB logo to Settings → Data Sources (TMDB's attribution rules ask for it)
 - [ ] App Store Connect privacy label, matching `PrivacyInfo.xcprivacy`:
       - Not linked to you: Crash Data, Performance Data, Other Diagnostic Data (App Functionality)
       - Linked to you: Email Address and Customer Support, only when someone sends feedback with an email (App Functionality)
@@ -53,7 +53,8 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 
 - [ ] Onboarding: a first-launch flow that gets someone to a non-empty library (rate a few
       titles they've seen, start a watchlist) instead of an empty Library tab
-- [ ] Review prompt: SwiftUI `requestReview` after a good moment, such as the 5th saved rating, at most once per version, never after an error
+- [x] Review prompt: SwiftUI `requestReview` after a good moment, such as the 5th saved rating, at most once per version, never after an error.
+      Ratings saved during onboarding (before `onboardingCompletedAt`) do not count.
 - [ ] Analytics: pick the tool (see the decision below), then send a handful of anonymous
       events: onboarding finished, first rating, list created, title added to watchlist.
       Declare them on the privacy label as Product Interaction, not linked.
