@@ -114,6 +114,9 @@ struct LibraryDetailView: View {
                     .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
                 }
                 .listStyle(.plain)
+                // A readable column rather than columns: swipe-to-remove and drag-to-reorder
+                // work on whole rows, so each title keeps a row of its own.
+                .readableContentMargins()
                 .environment(\.editMode, viewModel.allowsReorder ? $editMode : .constant(.inactive))
             }
         }
@@ -137,6 +140,7 @@ struct LibraryDetailView: View {
         .pickerStyle(.segmented)
         .padding(.horizontal, DesignSpacing.lg)
         .padding(.vertical, DesignSpacing.sm)
+        .readableColumn()
         .accessibilityLabel("Filter titles")
     }
 
