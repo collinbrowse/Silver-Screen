@@ -110,6 +110,9 @@ struct RootTabView: View {
                     onClear: { await listChanges.clearRatingAnnotation() }
                 )
             }
+            .modifier(ReviewPromptPresenter(prompter: reviewPrompter))
+            // Outside the review prompter's environment: ratings made during onboarding
+            // must not ask for a review, since no completion date exists yet to exclude them.
             .fullScreenCover(isPresented: $onboarding.isPresented) {
                 OnboardingView(
                     viewModel: OnboardingViewModel(
@@ -124,7 +127,6 @@ struct RootTabView: View {
                     imageLoader: imageLoader
                 )
             }
-            .modifier(ReviewPromptPresenter(prompter: reviewPrompter))
     }
 
     /// On Mac this iOS app keeps a tab bar and does not minimize it. Hiding that

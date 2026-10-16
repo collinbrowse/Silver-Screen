@@ -2,7 +2,7 @@
 //  OnboardingWelcomeView.swift
 //  SilverScreen
 //
-//  First onboarding screen: the wordmark, three promises, Get Started and Skip.
+//  First onboarding screen: the app icon and name, three promises, Get Started and Skip.
 //
 
 import SwiftUI
@@ -14,11 +14,24 @@ struct OnboardingWelcomeView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignSpacing.xxl) {
-                Text("Silver Screen")
-                    .font(.system(.largeTitle, design: .serif, weight: .bold))
-                    .foregroundStyle(DesignTheme.textPrimary)
-                    .accessibilityAddTraits(.isHeader)
-                    .padding(.top, DesignSpacing.xxl)
+                VStack(alignment: .leading, spacing: DesignSpacing.lg) {
+                    // The app icon artwork, so the brand mark matches the Home Screen.
+                    Image("AppIconMark")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 88, height: 88)
+                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                .strokeBorder(DesignTheme.separator, lineWidth: 0.5)
+                        }
+                        .accessibilityHidden(true)
+                    Text("Silver Screen")
+                        .font(.largeTitle.bold())
+                        .foregroundStyle(DesignTheme.textPrimary)
+                        .accessibilityAddTraits(.isHeader)
+                }
+                .padding(.top, DesignSpacing.xxl)
 
                 VStack(alignment: .leading, spacing: DesignSpacing.xl) {
                     feature(
@@ -68,7 +81,8 @@ struct OnboardingWelcomeView: View {
     }
 
     private func feature(symbol: String, title: String, message: String) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: DesignSpacing.lg) {
+        // Centered on the title and description together, not the title's baseline.
+        HStack(alignment: .center, spacing: DesignSpacing.lg) {
             Image(systemName: symbol)
                 .font(.title2)
                 .foregroundStyle(DesignTheme.accent)

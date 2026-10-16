@@ -84,10 +84,42 @@ enum OnboardingCatalog {
         series.filter { genres.isDisjoint(with: $0.genreIDs) }
     }
 
-    /// Search results from both kinds, most popular first.
-    static func searchResults(movies: [Movie], series: [TVSeriesSummary]) -> [OnboardingTitle] {
-        (titles(movies) + titles(series))
-            .sorted { $0.draft.popularity > $1.draft.popularity }
+}
+
+extension OnboardingCatalog {
+    /// Movie and series search for both grids, most popular first. Fails only
+    /// when both searches failed; one failed half still shows the other's results.
+    static func search(
+        query: String,
+        movies: MovieRepository,
+        shows: TVRepository
+    ) async -> LoadState<[OnboardingTitle]> {
+        async let movieResults = OnboardingSeenViewModel.capture {
+            titles(try await movies.searchMovies(query: query, page: 1).movies)
+        }
+        async let showResults = OnboardingSeenViewModel.capture {
+            titles(try await shows.search(query: query, page: 1).series)
+        }
+        let found = await [movieResults, showResults]
+        var results: [OnboardingTitle] = []
+        var firstError: AppError?
+        var failures = 0
+        for result in found {
+            switch result {
+                case .success(let page):
+                    results += page
+                case .failure(let error):
+                    failures += 1
+                    firstError = firstError ?? (error as? AppError) ?? .unknown
+            }
+        }
+        if !results.isEmpty {
+            return .loaded(results.sorted { $0.draft.popularity > $1.draft.popularity })
+        }
+        if failures == found.count, let firstError {
+            return .failed(firstError)
+        }
+        return .empty
     }
 }
 

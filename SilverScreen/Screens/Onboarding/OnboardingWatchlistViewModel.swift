@@ -13,6 +13,8 @@ import Foundation
 @MainActor
 final class OnboardingWatchlistViewModel {
     private(set) var state: LoadState<[OnboardingTitle]> = .idle
+    private(set) var searchResults: LoadState<[OnboardingTitle]> = .idle
+    var searchText = ""
     /// Item keys on Watchlist, including ones already there before this step.
     private(set) var pickedKeys: Set<String> = []
 
@@ -28,6 +30,35 @@ final class OnboardingWatchlistViewModel {
         self.movies = movies
         self.shows = shows
         self.lists = lists
+    }
+
+    private var trimmedQuery: String {
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var isSearching: Bool { !trimmedQuery.isEmpty }
+
+    /// The grid on screen: search results while a query is typed, otherwise suggestions.
+    var displayed: LoadState<[OnboardingTitle]> {
+        isSearching ? searchResults : state
+    }
+
+    /// Movie and series search, minus the seen picks. An empty query clears results.
+    func search() async {
+        let query = trimmedQuery
+        guard !query.isEmpty else {
+            searchResults = .idle
+            return
+        }
+        searchResults = .loading
+        let found = await OnboardingCatalog.search(query: query, movies: movies, shows: shows)
+        guard !Task.isCancelled, query == trimmedQuery else { return }
+        if case .loaded(let titles, _) = found {
+            let kept = OnboardingCatalog.excluding(titles, keys: excludedKeys)
+            searchResults = kept.isEmpty ? .empty : .loaded(kept)
+        } else {
+            searchResults = found
+        }
     }
 
     func isPicked(_ title: OnboardingTitle) -> Bool {
@@ -125,8 +156,13 @@ final class OnboardingWatchlistViewModel {
             } else {
                 pickedKeys.remove(title.id)
             }
-            guard !(error is CancellationError), case .loaded(let titles, _) = state else { return }
-            state = .loaded(titles, activity: .failed((error as? AppError) ?? .persistence))
+            guard !(error is CancellationError) else { return }
+            let appError = (error as? AppError) ?? .persistence
+            if isSearching, case .loaded(let titles, _) = searchResults {
+                searchResults = .loaded(titles, activity: .failed(appError))
+            } else if case .loaded(let titles, _) = state {
+                state = .loaded(titles, activity: .failed(appError))
+            }
         }
     }
 }

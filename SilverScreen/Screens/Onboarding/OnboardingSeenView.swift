@@ -2,8 +2,8 @@
 //  OnboardingSeenView.swift
 //  SilverScreen
 //
-//  "What have you seen?" Tap a poster to put it on Watched, then rate it with
-//  the stars under it or leave it unrated. Continue works at any time.
+//  "What have you seen?" Tap a poster to put it on Watched, then rate it from
+//  the chip under it or leave it unrated. Continue works at any time.
 //
 
 import SwiftUI
@@ -14,6 +14,9 @@ struct OnboardingSeenView: View {
     let onBack: () -> Void
     let onSkip: () -> Void
     let onContinue: () -> Void
+
+    /// The picked title whose rating sheet is open.
+    @State private var rating: OnboardingTitle?
 
     var body: some View {
         NavigationStack {
@@ -58,6 +61,18 @@ struct OnboardingSeenView: View {
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 OnboardingBottomBar(title: "Continue", action: onContinue)
             }
+            .sheet(item: $rating) { title in
+                AnnotationEditorSheet(
+                    title: title.draft.title,
+                    score: viewModel.score(for: title),
+                    note: viewModel.note(for: title) ?? "",
+                    canClear: viewModel.score(for: title) != nil,
+                    onSave: { score, note in
+                        closingOnSuccess(await viewModel.rate(title, score: score, note: note))
+                    },
+                    onClear: { closingOnSuccess(await viewModel.clearRating(title)) }
+                )
+            }
         }
         .task { await viewModel.load() }
         .task(id: viewModel.searchText) {
@@ -74,20 +89,38 @@ struct OnboardingSeenView: View {
                 .font(DesignTypography.title)
                 .foregroundStyle(DesignTheme.textPrimary)
                 .accessibilityAddTraits(.isHeader)
-            Text("Tap anything you have watched. Rate \(OnboardingSeenViewModel.ratingGoal) to get started.")
+            Text("Tap everything you've watched. Rating is optional, but a few ratings give your library a head start.")
                 .font(DesignTypography.body)
                 .foregroundStyle(DesignTheme.textSecondary)
-            ProgressView(value: viewModel.goalFraction) {
-                Text(viewModel.goalText)
-                    .font(DesignTypography.metadata)
-                    .foregroundStyle(DesignTheme.textSecondary)
-            }
-            .tint(DesignTheme.accent)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Rating goal")
-            .accessibilityValue(viewModel.goalText)
+                .fixedSize(horizontal: false, vertical: true)
+            goal
         }
         .padding(.top, DesignSpacing.sm)
+    }
+
+    /// The optional rating goal: a bar and count, then a checkmark once it is met.
+    private var goal: some View {
+        VStack(alignment: .leading, spacing: DesignSpacing.xs) {
+            HStack(spacing: DesignSpacing.sm) {
+                if viewModel.isGoalMet {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(DesignTheme.accent)
+                }
+                Text(viewModel.goalText)
+                    .font(DesignTypography.metadata)
+                    .foregroundStyle(DesignTheme.textPrimary)
+                Spacer(minLength: DesignSpacing.sm)
+                Text("Goal: \(OnboardingSeenViewModel.ratingGoal) · optional")
+                    .font(DesignTypography.chip)
+                    .foregroundStyle(DesignTheme.textSecondary)
+            }
+            ProgressView(value: viewModel.goalFraction)
+                .tint(DesignTheme.accent)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Optional rating goal")
+        .accessibilityValue(viewModel.goalText)
+        .accessibilityHint("Continue works at any time.")
     }
 
     private func cell(_ title: OnboardingTitle, width: CGFloat) -> some View {
@@ -103,14 +136,19 @@ struct OnboardingSeenView: View {
             onTap: { Task { await viewModel.toggle(title) } }
         ) {
             if picked {
-                OnboardingStarRating(
-                    title: title.draft.title,
-                    score: viewModel.score(for: title)
-                ) { score in
-                    Task { await viewModel.rate(title, score: score) }
+                OnboardingRateChip(title: title.draft.title, score: viewModel.score(for: title)) {
+                    rating = title
                 }
             }
         }
+    }
+
+    /// The sheet leaves dismissal to its owner after a successful write.
+    private func closingOnSuccess(_ result: AnnotationEditorWriteResult) -> AnnotationEditorWriteResult {
+        if result == .succeeded {
+            rating = nil
+        }
+        return result
     }
 
     private func retry() async {

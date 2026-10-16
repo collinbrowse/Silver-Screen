@@ -24,6 +24,8 @@ final class OnboardingSeenViewModel {
     private(set) var pickedKeys: Set<String> = []
     /// Item key to half-point score. A pick without an entry is unrated.
     private(set) var scores: [String: Double] = [:]
+    /// Item key to the note saved with the score, so the sheet reopens with it.
+    private(set) var notes: [String: String] = [:]
 
     private let movies: MovieRepository
     private let shows: TVRepository
@@ -66,11 +68,11 @@ final class OnboardingSeenViewModel {
 
     var ratedCount: Int { scores.count }
 
+    var isGoalMet: Bool { ratedCount >= Self.ratingGoal }
+
     /// "2 of 5 rated", or a done message once the goal is met.
     var goalText: String {
-        ratedCount >= Self.ratingGoal
-            ? "\(ratedCount) rated. Nice."
-            : "\(ratedCount) of \(Self.ratingGoal) rated"
+        isGoalMet ? "\(ratedCount) rated. Nice start." : "\(ratedCount) of \(Self.ratingGoal) rated"
     }
 
     var goalFraction: Double {
@@ -83,6 +85,10 @@ final class OnboardingSeenViewModel {
 
     func score(for title: OnboardingTitle) -> Double? {
         scores[title.id]
+    }
+
+    func note(for title: OnboardingTitle) -> String? {
+        notes[title.id]
     }
 
     /// Restores picks already in the library, then fetches every suggestion source at once.
@@ -146,31 +152,10 @@ final class OnboardingSeenViewModel {
             return
         }
         searchResults = .loading
-        async let movieResults = Self.capture { [movies] in
-            OnboardingCatalog.titles(try await movies.searchMovies(query: query, page: 1).movies)
-        }
-        async let showResults = Self.capture { [shows] in
-            OnboardingCatalog.titles(try await shows.search(query: query, page: 1).series)
-        }
-        let found = await [movieResults, showResults]
+        let found = await OnboardingCatalog.search(query: query, movies: movies, shows: shows)
         // A newer query owns the grid now.
         guard !Task.isCancelled, query == trimmedQuery else { return }
-
-        var titles: [OnboardingTitle] = []
-        var firstError: AppError?
-        for result in found {
-            switch result {
-                case .success(let page): titles += page
-                case .failure(let error): firstError = firstError ?? (error as? AppError) ?? .unknown
-            }
-        }
-        if !titles.isEmpty {
-            searchResults = .loaded(titles.sorted { $0.draft.popularity > $1.draft.popularity })
-        } else if let firstError, found.allSatisfy({ if case .failure = $0 { true } else { false } }) {
-            searchResults = .failed(firstError)
-        } else {
-            searchResults = .empty
-        }
+        searchResults = found
     }
 
     /// Puts the title on Watched, or takes it back off along with its score.
@@ -182,16 +167,19 @@ final class OnboardingSeenViewModel {
 
         if pickedKeys.contains(title.id) {
             let priorScore = scores[title.id]
+            let priorNote = notes[title.id]
             pickedKeys.remove(title.id)
             scores[title.id] = nil
+            notes[title.id] = nil
             do {
                 try await removeFromWatched(title)
-                if priorScore != nil {
+                if priorScore != nil || priorNote != nil {
                     try await annotations.clear(for: title.annotationKey)
                 }
             } catch {
                 pickedKeys.insert(title.id)
                 scores[title.id] = priorScore
+                notes[title.id] = priorNote
                 noteSaveFailure(error)
             }
         } else {
@@ -205,22 +193,33 @@ final class OnboardingSeenViewModel {
         }
     }
 
-    /// Saves a half-point score for a picked title, or clears it when `score` is nil.
-    func rate(_ title: OnboardingTitle, score: Double?) async {
-        guard pickedKeys.contains(title.id) else { return }
-        if let score, !UserScore.isValid(score) { return }
-        let prior = scores[title.id]
-        guard prior != score else { return }
-        scores[title.id] = score
+    /// Saves a half-point score and note from the rating sheet. Only picked titles
+    /// can be rated. A failure keeps the sheet open, so the grid shows no banner.
+    func rate(_ title: OnboardingTitle, score: Double, note: String) async -> AnnotationEditorWriteResult {
+        guard pickedKeys.contains(title.id), UserScore.isValid(score) else { return .failed }
         do {
-            if let score {
-                try await annotations.saveScore(score, for: title.annotationKey)
-            } else {
-                try await annotations.clear(for: title.annotationKey)
-            }
+            let saved = try await annotations.save(score: score, note: note, for: title.annotationKey)
+            scores[title.id] = saved.score
+            notes[title.id] = saved.note
+            return .succeeded
+        } catch is CancellationError {
+            return .cancelled
         } catch {
-            scores[title.id] = prior
-            noteSaveFailure(error)
+            return .failed
+        }
+    }
+
+    /// Removes the score and note from the rating sheet. The title stays on Watched.
+    func clearRating(_ title: OnboardingTitle) async -> AnnotationEditorWriteResult {
+        do {
+            try await annotations.clear(for: title.annotationKey)
+            scores[title.id] = nil
+            notes[title.id] = nil
+            return .succeeded
+        } catch is CancellationError {
+            return .cancelled
+        } catch {
+            return .failed
         }
     }
 
@@ -289,6 +288,7 @@ final class OnboardingSeenViewModel {
             }
             if keys.contains(itemKey) {
                 scores[itemKey] = score
+                notes[itemKey] = record.note
             }
         }
     }

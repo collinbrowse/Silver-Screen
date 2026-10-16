@@ -2,7 +2,7 @@
 //  OnboardingCatalogTests.swift
 //  SilverScreenTests
 //
-//  Grid merging, exclusion, the star mapping, and width-based columns.
+//  Grid merging, exclusion, source filters, and width-based columns.
 //
 
 import SwiftUI
@@ -67,13 +67,6 @@ final class OnboardingCatalogTests: XCTestCase {
         let kept = OnboardingCatalog.series(shows, dropping: OnboardingCatalog.dailyTVGenres)
 
         XCTAssertEqual(kept.map(\.id), [1])
-    }
-
-    func test_starScore_mapsTouchToHalfPoints() {
-        XCTAssertEqual(OnboardingStarRating.score(at: 0, width: 100), 0.5)
-        XCTAssertEqual(OnboardingStarRating.score(at: 50, width: 100), 5)
-        XCTAssertEqual(OnboardingStarRating.score(at: 51, width: 100), 5.5)
-        XCTAssertEqual(OnboardingStarRating.score(at: 140, width: 100), 10)
     }
 
     func test_gridLayout_columnsFollowAvailableWidth() {

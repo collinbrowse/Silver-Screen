@@ -76,6 +76,26 @@ final class OnboardingWatchlistViewModelTests: XCTestCase {
         XCTAssertFalse(keys.contains("tv-1396"))
     }
 
+    func test_search_leavesOutSeenPicks() async {
+        let client = RoutingHTTPClient(routes: [
+            "/search/movie": .success(TMDBFixtures.topMoviesPage1),
+            "/search/tv": .success(TMDBFixtures.popularTVPage),
+            "/movie/": .success(TMDBFixtures.topMoviesPage1),
+            "/tv/": .success(TMDBFixtures.popularTVPage),
+        ])
+        let viewModel = OnboardingWatchlistViewModel(
+            movies: .test(client: client),
+            shows: .test(client: client),
+            lists: .empty()
+        )
+        await viewModel.load(excluding: ["movie-278"])
+        viewModel.searchText = "the"
+
+        await viewModel.search()
+
+        XCTAssertEqual(Set(ids(viewModel.displayed)), ["movie-238", "tv-1396"])
+    }
+
     private func makeViewModel(lists: ListsRepository) -> OnboardingWatchlistViewModel {
         // Every movie list returns the same two movies; every TV list returns Breaking Bad.
         let client = RoutingHTTPClient(routes: [

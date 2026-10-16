@@ -42,7 +42,7 @@ final class OnboardingSeenViewModelTests: XCTestCase {
         let title = OnboardingTitle(draft: OnboardingFixtures.movieDraft(id: 278))
         await viewModel.toggle(title)
 
-        await viewModel.rate(title, score: 8.5)
+        _ = await viewModel.rate(title, score: 8.5, note: "")
 
         let saved = try await annotations.annotation(for: .movie(278))
         XCTAssertEqual(saved?.score, 8.5)
@@ -55,19 +55,53 @@ final class OnboardingSeenViewModelTests: XCTestCase {
         let viewModel = makeViewModel()
         let title = OnboardingTitle(draft: OnboardingFixtures.movieDraft(id: 278))
 
-        await viewModel.rate(title, score: 6)
+        _ = await viewModel.rate(title, score: 6, note: "")
 
         let saved = try await annotations.annotation(for: .movie(278))
         XCTAssertNil(saved)
     }
 
-    func test_rateNil_clearsScore() async throws {
+    func test_rate_savesNoteWithScore() async throws {
         let viewModel = makeViewModel()
         let title = OnboardingTitle(draft: OnboardingFixtures.movieDraft(id: 278))
         await viewModel.toggle(title)
-        await viewModel.rate(title, score: 4)
 
-        await viewModel.rate(title, score: nil)
+        let result = await viewModel.rate(title, score: 7.5, note: "Rewatch with friends")
+
+        XCTAssertEqual(result, .succeeded)
+        let saved = try await annotations.annotation(for: .movie(278))
+        XCTAssertEqual(saved?.note, "Rewatch with friends")
+        XCTAssertEqual(viewModel.note(for: title), "Rewatch with friends")
+    }
+
+    func test_rate_unpickedTitle_fails() async {
+        let viewModel = makeViewModel()
+        let title = OnboardingTitle(draft: OnboardingFixtures.movieDraft(id: 278))
+
+        let result = await viewModel.rate(title, score: 6, note: "")
+
+        XCTAssertEqual(result, .failed)
+    }
+
+    func test_goalMet_afterFiveRatings() async {
+        let viewModel = makeViewModel()
+        for id in 1...5 {
+            let title = OnboardingTitle(draft: OnboardingFixtures.movieDraft(id: id))
+            await viewModel.toggle(title)
+            _ = await viewModel.rate(title, score: 8, note: "")
+        }
+
+        XCTAssertTrue(viewModel.isGoalMet)
+        XCTAssertEqual(viewModel.goalText, "5 rated. Nice start.")
+    }
+
+    func test_clearRating_clearsScore() async throws {
+        let viewModel = makeViewModel()
+        let title = OnboardingTitle(draft: OnboardingFixtures.movieDraft(id: 278))
+        await viewModel.toggle(title)
+        _ = await viewModel.rate(title, score: 4, note: "")
+
+        _ = await viewModel.clearRating(title)
 
         let saved = try await annotations.annotation(for: .movie(278))
         XCTAssertNil(saved)
@@ -78,7 +112,7 @@ final class OnboardingSeenViewModelTests: XCTestCase {
         let viewModel = makeViewModel()
         let title = OnboardingTitle(draft: OnboardingFixtures.movieDraft(id: 278))
         await viewModel.toggle(title)
-        await viewModel.rate(title, score: 9)
+        _ = await viewModel.rate(title, score: 9, note: "")
 
         await viewModel.toggle(title)
 
@@ -109,7 +143,7 @@ final class OnboardingSeenViewModelTests: XCTestCase {
         let title = OnboardingTitle(draft: OnboardingFixtures.seriesDraft(id: 1396))
         await viewModel.toggle(title)
 
-        await viewModel.rate(title, score: 9.5)
+        _ = await viewModel.rate(title, score: 9.5, note: "")
 
         let saved = try await annotations.annotation(for: .series(1396))
         XCTAssertEqual(saved?.score, 9.5)
@@ -130,7 +164,7 @@ final class OnboardingSeenViewModelTests: XCTestCase {
         let viewModel = makeViewModel()
         let title = OnboardingTitle(draft: OnboardingFixtures.movieDraft(id: 278))
         await viewModel.toggle(title)
-        await viewModel.rate(title, score: 7)
+        _ = await viewModel.rate(title, score: 7, note: "")
 
         XCTAssertEqual(viewModel.goalText, "1 of 5 rated")
     }
