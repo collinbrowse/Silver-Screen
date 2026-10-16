@@ -90,7 +90,8 @@ To archive from a Mac instead of Actions: check out the tag and run
 `python3 scripts/release.py archive --upload`, then
 `python3 scripts/release.py tf-notes --wait 900`.
 
-`archive` also refuses a binary without a TMDB token or a usable Sentry DSN.
+`archive` also refuses a binary without a usable Sentry DSN, a direct-TMDB binary
+without a TMDB token, and a proxy binary that still contains one.
 In `Secrets.xcconfig`, write the DSN as `https:/$()/…` because xcconfig treats
 `//` as a comment. The release job escapes the `SENTRY_DSN` secret for you, so
 the secret can hold the plain `https://` DSN.
@@ -169,9 +170,14 @@ GitHub Actions repository secrets for [`.github/workflows/release.yml`](.github/
 | --- | --- |
 | `ASC_KEY_ID` / `ASC_ISSUER_ID` / `ASC_API_KEY_P8` | App Store Connect API key (`.p8` body). Use the Admin role: signing on a fresh runner needs cloud-managed certificates. |
 | `DEV_CERT_P12_BASE64` / `DEV_CERT_PASSWORD` | One Apple Development certificate and its private key (`.p12`, base64) so archives reuse it instead of creating a certificate per run |
-| `TMDB_ACCESS_TOKEN` | Release binary networking |
+| `TMDB_ACCESS_TOKEN` | Release binary networking, only while `TMDB_PROXY_URL` is unset |
 | `SENTRY_DSN` | Crash reporting in the uploaded build |
 | `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` / `SENTRY_PROJECT` | dSYM upload |
+
+Repository variable `TMDB_PROXY_URL` (Settings → Secrets and variables → Actions →
+Variables) is the deployed [TMDB proxy](worker/README.md), including `/3`. When it is
+set, the release job writes it as `TMDB_BASE_URL` and the binary ships without the TMDB
+token. When it is unset, the job falls back to the `TMDB_ACCESS_TOKEN` secret and warns.
 
 The TMDB health check and weekly digest reuse some of these, and the digest
 reads Sentry with its own `SENTRY_READ_TOKEN`. See

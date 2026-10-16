@@ -1,0 +1,9 @@
+{
+  "name": "silverscreen-tmdb-proxy",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker that adds the TMDB token server-side. No runtime dependencies.",
+  "scripts": {
+    "test": "node --test 'test/*.test.js'"
+  }
+}

@@ -22,11 +22,14 @@ import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlparse
 
 PROD_BUNDLE_ID = "com.collinbrowse.thesilverscreen"
 DEV_BUNDLE_ID = "com.collinbrowse.thesilverscreen.dev"
 PROD_DISPLAY_NAME = "Silver Screen"
 DEV_DISPLAY_NAME = "Silver Dev"
+# TMDBBaseURL pointing anywhere else is the worker/ proxy, which holds the token.
+TMDB_API_HOST = "api.themoviedb.org"
 
 APP_BUNDLE_IDS = frozenset({PROD_BUNDLE_ID, DEV_BUNDLE_ID})
 
@@ -786,13 +789,34 @@ def _upload_command(ipa: Path) -> tuple[list[str], dict[str, str]]:
 def embedded_config_problems(info: dict) -> list[str]:
     """Secrets the Release binary reads at launch. Empty or truncated values ship a broken app.
 
+    A proxy build (TMDBBaseURL is not TMDB) must not contain the TMDB token. A direct
+    build must contain it.
+
     xcconfig treats `//` as a comment, so an unescaped `https://` DSN is cut to
     `https:` and Sentry silently stays off. The app strips `$()` at runtime.
     """
     problems: list[str] = []
     token = str(info.get("TMDBAccessToken", "")).strip()
-    if not token or token.startswith("$("):
-        problems.append("The archive has no TMDBAccessToken. Set TMDB_ACCESS_TOKEN in Secrets.xcconfig.")
+    has_token = bool(token) and not token.startswith("$(")
+    base_url = str(info.get("TMDBBaseURL", "")).replace("$()", "").strip()
+    uses_proxy = bool(base_url) and not base_url.startswith("$(") and urlparse(base_url).hostname != TMDB_API_HOST
+    if uses_proxy:
+        if not base_url.startswith("https://"):
+            problems.append(
+                "The archive's TMDBBaseURL is not an https URL. In Secrets.xcconfig write "
+                "TMDB_BASE_URL = https:/$()/HOST/3, because xcconfig treats // as a comment."
+            )
+        if has_token:
+            # The proxy holds the token. Shipping it as well defeats the point of the proxy.
+            problems.append(
+                "The archive calls the TMDB proxy but still contains TMDBAccessToken. "
+                "Leave TMDB_ACCESS_TOKEN out of Secrets.xcconfig when TMDB_BASE_URL is the proxy."
+            )
+    elif not has_token:
+        problems.append(
+            "The archive has no TMDBAccessToken. Set TMDB_BASE_URL to the TMDB proxy, "
+            "or TMDB_ACCESS_TOKEN in Secrets.xcconfig."
+        )
     dsn = str(info.get("SentryDSN", "")).replace("$()", "").strip()
     if not (dsn.startswith("https://") and "@" in dsn):
         problems.append(

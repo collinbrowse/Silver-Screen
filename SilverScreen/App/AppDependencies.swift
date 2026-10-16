@@ -25,21 +25,21 @@ struct AppDependencies {
     /// Builds the app's dependency graph. A demo launch swaps in a throwaway library.
     static func live(demo: DemoMode? = nil) throws -> AppDependencies {
         let logger = OSAppLogger()
-        let accessToken = try TMDBAccessToken.fromBundle()
+        let connection = try TMDBConnection.fromBundle()
         let httpClient = URLSessionHTTPClient()
         let movies = MovieRepository(
             client: httpClient,
-            accessToken: accessToken,
+            connection: connection,
             logger: logger
         )
         let people = PersonRepository(
             client: httpClient,
-            accessToken: accessToken,
+            connection: connection,
             logger: logger
         )
         let shows = TVRepository(
             client: httpClient,
-            accessToken: accessToken,
+            connection: connection,
             logger: logger
         )
         let libraryStore = try demo?.libraryStore() ?? SQLiteLibraryStore.live()

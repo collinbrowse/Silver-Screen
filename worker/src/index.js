@@ -1,0 +1,109 @@
+// TMDB proxy for Silver Screen.
+//
+// Forwards GET /3/* to api.themoviedb.org and adds the bearer token from the
+// TMDB_ACCESS_TOKEN Worker secret, so the token never ships in the app and can be
+// rotated without an app update. Successful responses are cached for a few hours,
+// and each client IP is rate-limited by the RATE_LIMITER binding (wrangler.toml).
+//
+// Images do not come through here: the app loads them from image.tmdb.org, which
+// needs no token. See worker/README.md for deploy steps.
+
+export const UPSTREAM_ORIGIN = "https://api.themoviedb.org";
+export const CACHE_SECONDS = 4 * 60 * 60;
+export const RETRY_AFTER_SECONDS = 60;
+
+// Upstream URL for a proxied request, or null when the path is not a TMDB v3 path.
+// The query string passes through unchanged, so language and paging still reach TMDB.
+export function upstreamURL(requestURL) {
+  const url = new URL(requestURL);
+  if (!url.pathname.startsWith("/3/")) {
+    return null;
+  }
+  return `${UPSTREAM_ORIGIN}${url.pathname}${url.search}`;
+}
+
+// Headers sent to TMDB. Nothing from the client is forwarded, so a client cannot
+// replace the token or add cookies, and the cache key stays the URL alone.
+export function upstreamHeaders(token) {
+  return new Headers({
+    Accept: "application/json",
+    Authorization: `Bearer ${token}`,
+  });
+}
+
+// Headers returned to the app. Only the content type survives from TMDB.
+export function responseHeaders(upstream, cacheable) {
+  const headers = new Headers();
+  const contentType = upstream.headers.get("Content-Type");
+  if (contentType) {
+    headers.set("Content-Type", contentType);
+  }
+  headers.set("Cache-Control", cacheable ? `public, max-age=${CACHE_SECONDS}` : "no-store");
+  return headers;
+}
+
+// The client IP Cloudflare saw. Every request without one shares a single bucket.
+export function clientKey(request) {
+  return request.headers.get("CF-Connecting-IP") ?? "unknown";
+}
+
+function errorResponse(status, message, extraHeaders = {}) {
+  return new Response(JSON.stringify({ status_message: message }), {
+    status,
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store", ...extraHeaders },
+  });
+}
+
+// Handles one request. `deps` lets tests swap in a fake upstream and cache.
+export async function handle(request, env, ctx, deps) {
+  if (request.method !== "GET") {
+    return errorResponse(405, "Only GET is supported.", { Allow: "GET" });
+  }
+
+  const target = upstreamURL(request.url);
+  if (!target) {
+    return errorResponse(404, "Not found.");
+  }
+
+  const token = (env.TMDB_ACCESS_TOKEN ?? "").trim();
+  if (!token) {
+    // A missing secret is a deploy mistake. Say so without echoing anything.
+    return errorResponse(500, "The proxy has no TMDB token. Run wrangler secret put TMDB_ACCESS_TOKEN.");
+  }
+
+  if (env.RATE_LIMITER) {
+    const { success } = await env.RATE_LIMITER.limit({ key: clientKey(request) });
+    if (!success) {
+      return errorResponse(429, "Too many requests.", { "Retry-After": String(RETRY_AFTER_SECONDS) });
+    }
+  }
+
+  const cacheKey = new Request(target, { method: "GET" });
+  const cached = await deps.cache?.match(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const upstream = await deps.fetch(target, {
+    method: "GET",
+    headers: upstreamHeaders(token),
+    cf: { cacheTtl: CACHE_SECONDS, cacheEverything: true },
+  });
+
+  const cacheable = upstream.status === 200;
+  const response = new Response(upstream.body, {
+    status: upstream.status,
+    headers: responseHeaders(upstream, cacheable),
+  });
+  if (cacheable && deps.cache) {
+    ctx.waitUntil(deps.cache.put(cacheKey, response.clone()));
+  }
+  return response;
+}
+
+export default {
+  async fetch(request, env, ctx) {
+    // caches.default is a no-op on workers.dev and works on a custom domain.
+    return handle(request, env, ctx, { fetch: (url, init) => fetch(url, init), cache: caches.default });
+  },
+};

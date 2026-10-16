@@ -61,9 +61,9 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 ### Infrastructure and automation
 
 - [ ] Move the TMDB token off the device behind a small proxy, so the token can be rotated without an app update:
-      1. Deploy a Cloudflare Worker (free tier) that forwards `/3/*` to `api.themoviedb.org` and adds the bearer token, stored as a Worker secret.
-      2. Cache responses in the Worker for a few hours, and rate-limit by IP.
-      3. Add `TMDB_BASE_URL` to the xcconfig, point `TMDBRequestBuilder` at it, and remove `TMDB_ACCESS_TOKEN` from `Info.plist`. Images keep loading straight from `image.tmdb.org`, which needs no token.
+      1. [x] Write a Cloudflare Worker (free tier) that forwards `/3/*` to `api.themoviedb.org` and adds the bearer token, stored as a Worker secret. Deploy it and set the `TMDB_PROXY_URL` repository variable with [`worker/README.md`](worker/README.md).
+      2. [x] Cache responses in the Worker for a few hours, and rate-limit by IP.
+      3. [x] Add `TMDB_BASE_URL` to the xcconfig, point `TMDBRequestBuilder` at it, and remove `TMDB_ACCESS_TOKEN` from `Info.plist`. Images keep loading straight from `image.tmdb.org`, which needs no token.
       4. Optional: check an App Attest assertion in the Worker so only the real app can call it.
       5. After the release ships, rotate the token on TMDB, because older test builds contain it.
 - [x] Daily TMDB health check: a scheduled GitHub Action calls a few endpoints the app

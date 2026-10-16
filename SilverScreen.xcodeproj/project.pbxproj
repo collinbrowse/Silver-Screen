@@ -64,6 +64,7 @@
 		B10000182788B823003D8011 /* MovieSummaryDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000192788B823003D8011 /* MovieSummaryDTO.swift */; };
 		B100001A2788B823003D8011 /* URLSessionHTTPClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100001B2788B823003D8011 /* URLSessionHTTPClient.swift */; };
 		B100001C2788B823003D8011 /* TMDBAccessToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100001D2788B823003D8011 /* TMDBAccessToken.swift */; };
+		1C69D7A60CC97B64162AD21F /* TMDBConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 189830395701F435D007985C /* TMDBConnection.swift */; };
 		B100001E2788B823003D8011 /* MovieRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100001F2788B823003D8011 /* MovieRepository.swift */; };
 		B10000202788B823003D8011 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000212788B823003D8011 /* ImageLoader.swift */; };
 		B10000222788B823003D8011 /* MovieRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000232788B823003D8011 /* MovieRepositoryTests.swift */; };
@@ -143,6 +144,7 @@
 		D1A0000D2788B823003D8011 /* StreamingProviderLogoRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A0000E2788B823003D8011 /* StreamingProviderLogoRow.swift */; };
 		D1A0000F2788B823003D8011 /* TMDBWatchProvidersDecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A000102788B823003D8011 /* TMDBWatchProvidersDecodingTests.swift */; };
 		C4E1A0012788B823003D8011 /* TMDBAccessTokenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4E1A0022788B823003D8011 /* TMDBAccessTokenTests.swift */; };
+		5637202A0F20EEA4357DEC80 /* TMDBRequestBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94658BDF2392F9D2FE107F1C /* TMDBRequestBuilderTests.swift */; };
 		D1A000112788B823003D8011 /* StreamingProviderLaunch.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A000122788B823003D8011 /* StreamingProviderLaunch.swift */; };
 		D1A000132788B823003D8011 /* StreamingProviderLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A000142788B823003D8011 /* StreamingProviderLaunchTests.swift */; };
 		D1A000152788B823003D8011 /* StreamingProviderCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1A000162788B823003D8011 /* StreamingProviderCore.swift */; };
@@ -337,6 +339,7 @@
 		B10000192788B823003D8011 /* MovieSummaryDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovieSummaryDTO.swift; sourceTree = "<group>"; };
 		B100001B2788B823003D8011 /* URLSessionHTTPClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLSessionHTTPClient.swift; sourceTree = "<group>"; };
 		B100001D2788B823003D8011 /* TMDBAccessToken.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TMDBAccessToken.swift; sourceTree = "<group>"; };
+		189830395701F435D007985C /* TMDBConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TMDBConnection.swift; sourceTree = "<group>"; };
 		B100001F2788B823003D8011 /* MovieRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovieRepository.swift; sourceTree = "<group>"; };
 		B10000212788B823003D8011 /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
 		B10000232788B823003D8011 /* MovieRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovieRepositoryTests.swift; sourceTree = "<group>"; };
@@ -418,6 +421,7 @@
 		D1A0000E2788B823003D8011 /* StreamingProviderLogoRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingProviderLogoRow.swift; sourceTree = "<group>"; };
 		D1A000102788B823003D8011 /* TMDBWatchProvidersDecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TMDBWatchProvidersDecodingTests.swift; sourceTree = "<group>"; };
 		C4E1A0022788B823003D8011 /* TMDBAccessTokenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TMDBAccessTokenTests.swift; sourceTree = "<group>"; };
+		94658BDF2392F9D2FE107F1C /* TMDBRequestBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TMDBRequestBuilderTests.swift; sourceTree = "<group>"; };
 		D1A000122788B823003D8011 /* StreamingProviderLaunch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingProviderLaunch.swift; sourceTree = "<group>"; };
 		D1A000142788B823003D8011 /* StreamingProviderLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingProviderLaunchTests.swift; sourceTree = "<group>"; };
 		D1A000162788B823003D8011 /* StreamingProviderCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingProviderCore.swift; sourceTree = "<group>"; };
@@ -839,6 +843,7 @@
 				B10002332788B823003D8011 /* TMDBRequestBuilder.swift */,
 				B10002352788B823003D8011 /* Sleeper.swift */,
 				B100001D2788B823003D8011 /* TMDBAccessToken.swift */,
+				189830395701F435D007985C /* TMDBConnection.swift */,
 				B10000192788B823003D8011 /* MovieSummaryDTO.swift */,
 				B10002032788B823003D8011 /* MovieDetailDTO.swift */,
 				B10003032788B823003D8011 /* PersonDetailDTO.swift */,
@@ -1008,6 +1013,7 @@
 				C3A100072788B823003D8011 /* OfficialYouTubeTrailersTests.swift */,
 				D1A000102788B823003D8011 /* TMDBWatchProvidersDecodingTests.swift */,
 				C4E1A0022788B823003D8011 /* TMDBAccessTokenTests.swift */,
+				94658BDF2392F9D2FE107F1C /* TMDBRequestBuilderTests.swift */,
 			);
 			path = Data;
 			sourceTree = "<group>";
@@ -1263,6 +1269,7 @@
 				B10002322788B823003D8011 /* TMDBRequestBuilder.swift in Sources */,
 				B10002342788B823003D8011 /* Sleeper.swift in Sources */,
 				B100001C2788B823003D8011 /* TMDBAccessToken.swift in Sources */,
+				1C69D7A60CC97B64162AD21F /* TMDBConnection.swift in Sources */,
 				B100001E2788B823003D8011 /* MovieRepository.swift in Sources */,
 				B10000102788B823003D8011 /* AppError.swift in Sources */,
 				D1A000112788B823003D8011 /* StreamingProviderLaunch.swift in Sources */,
@@ -1415,6 +1422,7 @@
 				C3A100082788B823003D8011 /* OfficialYouTubeTrailersTests.swift in Sources */,
 				D1A0000F2788B823003D8011 /* TMDBWatchProvidersDecodingTests.swift in Sources */,
 				C4E1A0012788B823003D8011 /* TMDBAccessTokenTests.swift in Sources */,
+				5637202A0F20EEA4357DEC80 /* TMDBRequestBuilderTests.swift in Sources */,
 				B10000262788B823003D8011 /* ImageLoaderTests.swift in Sources */,
 				FE0000092788B823003D8011 /* SentryBootstrapTests.swift in Sources */,
 				D1A000132788B823003D8011 /* StreamingProviderLaunchTests.swift in Sources */,

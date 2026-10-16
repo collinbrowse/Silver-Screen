@@ -1,0 +1,19 @@
+# Cloudflare Worker that proxies TMDB for Silver Screen. Deploy steps: README.md.
+name = "silverscreen-tmdb"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+# The token is a secret, never a [vars] entry:
+#   npx wrangler secret put TMDB_ACCESS_TOKEN
+
+# Per-IP limit. Each app screen makes a few TMDB calls; images do not come here.
+# period must be 10 or 60 seconds. namespace_id is any positive integer unique
+# to this account.
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1001"
+
+  [ratelimits.simple]
+  limit = 240
+  period = 60
