@@ -39,13 +39,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 appRouter = dependencies.router
             }
             let libraryHomeViewModel = LibraryHomeViewModel(lists: dependencies.lists)
+            let tour = TourController(router: dependencies.router, lists: dependencies.lists)
             let onboarding = OnboardingGate(
                 marker: OnboardingMarkerStore(defaults: .standard),
                 lists: dependencies.lists,
                 annotations: dependencies.annotations,
                 isDemo: demo != nil,
                 router: dependencies.router,
-                library: libraryHomeViewModel
+                library: libraryHomeViewModel,
+                tour: tour
             )
             Task { await onboarding.evaluate() }
             Task { try? await dependencies.libraryStore.bootstrap() }
@@ -84,6 +86,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 libraryHomeViewModel: libraryHomeViewModel,
                 settings: dependencies.settings,
                 onboarding: onboarding,
+                tour: tour,
                 reviewPrompter: dependencies.reviewPrompter
             )
             if let seedURL = demo?.seedURL {

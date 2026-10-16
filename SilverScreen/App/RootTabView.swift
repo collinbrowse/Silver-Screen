@@ -20,6 +20,7 @@ struct RootTabView: View {
     let libraryHomeViewModel: LibraryHomeViewModel
     let settings: SettingsContext
     @Bindable var onboarding: OnboardingGate
+    let tour: TourController
     let reviewPrompter: ReviewPrompter
 
     @State private var browseViewModel: BrowseListViewModel
@@ -40,6 +41,7 @@ struct RootTabView: View {
         libraryHomeViewModel: LibraryHomeViewModel,
         settings: SettingsContext,
         onboarding: OnboardingGate,
+        tour: TourController,
         reviewPrompter: ReviewPrompter
     ) {
         self.router = router
@@ -56,6 +58,7 @@ struct RootTabView: View {
         self.libraryHomeViewModel = libraryHomeViewModel
         self.settings = settings
         self.onboarding = onboarding
+        self.tour = tour
         self.reviewPrompter = reviewPrompter
         _browseViewModel = State(
             initialValue: BrowseListViewModel(
@@ -94,10 +97,17 @@ struct RootTabView: View {
         let bannerMessage = listChanges.message
         tabs
             .environment(listChanges)
+            .environment(tour)
             .overlay(alignment: .bottom) {
                 if bannerMessage != nil {
                     ListChangeBanner(notice: listChanges)
                         .id(listChanges.presentationID)
+                }
+            }
+            // Over the tab bar and any pushed screen, under sheets.
+            .overlay {
+                if tour.isActive {
+                    TourOverlay(tour: tour)
                 }
             }
             .sheet(item: toastAnnotationEditorBinding) { session in

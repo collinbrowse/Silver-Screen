@@ -264,6 +264,11 @@
 		BE80998215FE97031C214DD1 /* OnboardingWatchlistViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B862E00F8FC703BEAB76371F /* OnboardingWatchlistViewModelTests.swift */; };
 		54187C9215ACB5D31F52E02A /* OnboardingCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04EFF01621A4E2250D8C6367 /* OnboardingCatalogTests.swift */; };
 		714A13F5C8850FBB61E21502 /* SettingsAssetsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FAA25938801AC12AB682A9A /* SettingsAssetsTests.swift */; };
+		BC6E373C8DCB795F40662D2A /* TourStop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B0269C24FB3FC16DDFE8D0A /* TourStop.swift */; };
+		1F54BE5452C455F27D9429B4 /* TourController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A555543FA2C1C89D073138FC /* TourController.swift */; };
+		98DD8D97420A5823AAD4A5EC /* TourAnchorModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = E522B3786DF4F31C7609388C /* TourAnchorModifier.swift */; };
+		1CC482D9627E246053972AE5 /* TourOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6EB521A5F8E188EB822F847 /* TourOverlay.swift */; };
+		AB8EACAC6FC8FDCE611C82E1 /* TourControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7640C70F4C19BDB3E6D95AC /* TourControllerTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -545,6 +550,11 @@
 		B862E00F8FC703BEAB76371F /* OnboardingWatchlistViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingWatchlistViewModelTests.swift; sourceTree = "<group>"; };
 		04EFF01621A4E2250D8C6367 /* OnboardingCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCatalogTests.swift; sourceTree = "<group>"; };
 		9FAA25938801AC12AB682A9A /* SettingsAssetsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAssetsTests.swift; sourceTree = "<group>"; };
+		4B0269C24FB3FC16DDFE8D0A /* TourStop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TourStop.swift; sourceTree = "<group>"; };
+		A555543FA2C1C89D073138FC /* TourController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TourController.swift; sourceTree = "<group>"; };
+		E522B3786DF4F31C7609388C /* TourAnchorModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TourAnchorModifier.swift; sourceTree = "<group>"; };
+		B6EB521A5F8E188EB822F847 /* TourOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TourOverlay.swift; sourceTree = "<group>"; };
+		F7640C70F4C19BDB3E6D95AC /* TourControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TourControllerTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -642,6 +652,7 @@
 		B10001142788B823003D8011 /* Screens */ = {
 			isa = PBXGroup;
 			children = (
+				B4DA49D7C6FB8C3901FC4793 /* Tour */,
 				41491D8643D223068E698444 /* Onboarding */,
 				B7AE5A13ED9DD5C410826A4E /* Settings */,
 				F10000092788B823003D8011 /* Browse */,
@@ -983,6 +994,7 @@
 		T1A000012788B823003D8011 /* Screens */ = {
 			isa = PBXGroup;
 			children = (
+				F7640C70F4C19BDB3E6D95AC /* TourControllerTests.swift */,
 				04EFF01621A4E2250D8C6367 /* OnboardingCatalogTests.swift */,
 				B862E00F8FC703BEAB76371F /* OnboardingWatchlistViewModelTests.swift */,
 				23625CCE0E543A6DC7F5E17A /* OnboardingSeenViewModelTests.swift */,
@@ -1070,6 +1082,17 @@
 				65F583B2713055E676FDAA30 /* OnboardingGate.swift */,
 			);
 			path = Onboarding;
+			sourceTree = "<group>";
+		};
+		B4DA49D7C6FB8C3901FC4793 /* Tour */ = {
+			isa = PBXGroup;
+			children = (
+				B6EB521A5F8E188EB822F847 /* TourOverlay.swift */,
+				E522B3786DF4F31C7609388C /* TourAnchorModifier.swift */,
+				A555543FA2C1C89D073138FC /* TourController.swift */,
+				4B0269C24FB3FC16DDFE8D0A /* TourStop.swift */,
+			);
+			path = Tour;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -1210,6 +1233,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1CC482D9627E246053972AE5 /* TourOverlay.swift in Sources */,
+				98DD8D97420A5823AAD4A5EC /* TourAnchorModifier.swift in Sources */,
+				1F54BE5452C455F27D9429B4 /* TourController.swift in Sources */,
+				BC6E373C8DCB795F40662D2A /* TourStop.swift in Sources */,
 				79BA7F5E1DD41D4C78B629AD /* OnboardingBottomBar.swift in Sources */,
 				8F543ADC1418B683A31E1F96 /* OnboardingRateChip.swift in Sources */,
 				4B62D6C1214653A87A5B7850 /* OnboardingPosterCell.swift in Sources */,
@@ -1411,6 +1438,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AB8EACAC6FC8FDCE611C82E1 /* TourControllerTests.swift in Sources */,
 				54187C9215ACB5D31F52E02A /* OnboardingCatalogTests.swift in Sources */,
 				BE80998215FE97031C214DD1 /* OnboardingWatchlistViewModelTests.swift in Sources */,
 				D3492BE0A930888280D22674 /* OnboardingSeenViewModelTests.swift in Sources */,

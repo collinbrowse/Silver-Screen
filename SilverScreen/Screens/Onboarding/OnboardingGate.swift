@@ -21,6 +21,8 @@ final class OnboardingGate {
     private let isDemo: Bool
     private let router: AppRouter
     private let library: LibraryHomeViewModel?
+    /// The feature tour that picks up on the Library after a finish (not a skip).
+    private let tour: TourController?
 
     init(
         marker: OnboardingMarkerStore,
@@ -28,7 +30,8 @@ final class OnboardingGate {
         annotations: AnnotationsRepository,
         isDemo: Bool,
         router: AppRouter,
-        library: LibraryHomeViewModel? = nil
+        library: LibraryHomeViewModel? = nil,
+        tour: TourController? = nil
     ) {
         self.marker = marker
         self.lists = lists
@@ -36,6 +39,7 @@ final class OnboardingGate {
         self.isDemo = isDemo
         self.router = router
         self.library = library
+        self.tour = tour
     }
 
     /// First launch means nothing saved anywhere and no earlier finish or skip.
@@ -76,12 +80,14 @@ final class OnboardingGate {
         isPresented = false
     }
 
-    /// Finish: write the marker and land on the Library root with the new picks.
+    /// Finish: write the marker, land on the Library root with the new picks, and
+    /// start the feature tour there.
     func finish() async {
         marker.markCompleted()
         router.favorites.popToRoot()
         router.openLibrary()
         isPresented = false
         await library?.load()
+        await tour?.start()
     }
 }

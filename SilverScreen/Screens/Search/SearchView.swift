@@ -125,6 +125,7 @@ struct SearchView: View {
                         .accessibilityHint("Opens this award list")
                     }
                 }
+                .tourAnchor(.awardShelves)
 
                 Text("Genre")
                     .font(DesignTypography.section)

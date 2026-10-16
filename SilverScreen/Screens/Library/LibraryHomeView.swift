@@ -78,6 +78,7 @@ struct LibraryHomeView: View {
                     showingNameDialog = true
                 } label: {
                     Image(systemName: "plus")
+                        .tourAnchor(.newList)
                 }
                 .accessibilityLabel("New list")
             }
@@ -227,6 +228,18 @@ struct LibraryHomeView: View {
             .accessibilityElement(children: .combine)
         }
         .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
+        .tourAnchor(Self.tourAnchor(for: list))
+    }
+
+    /// The pinned Movies & TV lists the tour's first stop highlights.
+    private static func tourAnchor(for list: LibraryList) -> TourAnchor? {
+        guard list.segment == .moviesAndTV else { return nil }
+        switch list.system {
+            case .watched: return .libraryWatched
+            case .inProgress: return .libraryInProgress
+            case .watchlist: return .libraryWatchlist
+            case nil: return nil
+        }
     }
 
     private func countText(for list: LibraryList) -> String {
