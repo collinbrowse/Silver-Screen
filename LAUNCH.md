@@ -55,8 +55,25 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 ### Product
 
 - [ ] Onboarding: a first-launch flow that gets someone to a non-empty library (rate a few
-      titles they've seen, start a watchlist) instead of an empty Library tab
-- [ ] Review prompt: SwiftUI `requestReview` after a good moment, such as the 5th saved rating, at most once per version, never after an error
+      titles they've seen, start a watchlist) instead of an empty Library tab. Decided:
+      - Who sees it: no list entries, no ratings, and a "finished or skipped" flag that is
+        unset. Never in `DemoMode`. A full-screen cover over `RootTabView`.
+      - Welcome: wordmark, three lines (rate anything, awards built in, private with no
+        account), Get Started and Skip.
+      - "What have you seen?": a poster grid of movies and shows (TMDB top rated and
+        popular, plus Best Picture winners from the bundled awards catalog) and a search
+        field. Tapping a poster puts it on Watched and shows inline stars under it to rate,
+        or leave unrated. "Rate 5 to get started" is a goal; Continue works at any time.
+        Shows go on Watched with an optional series rating. Marking a series watched goes
+        through the episode ledger (every episode completed, as the eye toggle does), with
+        no confirm dialog: the onboarding step is the confirmation.
+      - "What do you want to watch?": upcoming, now playing, and popular movies and shows,
+        minus anything already picked. Tapping one adds it to Watchlist.
+      - Done: close on the Library tab with Watched and Watchlist filled.
+      - Skipped it? The empty Library state gets a "Get started" button that reopens the flow.
+      - Saves go through the existing repositories; the grid sizes its columns to the width.
+- [ ] Review prompt: SwiftUI `requestReview` after a good moment, such as the 5th saved rating, at most once per version, never after an error.
+      Ratings saved during onboarding don't count toward the 5th.
 - [ ] Analytics: pick the tool (see the decision below), then send a handful of anonymous
       events: onboarding finished, first rating, list created, title added to watchlist.
       Declare them on the privacy label as Product Interaction, not linked.
