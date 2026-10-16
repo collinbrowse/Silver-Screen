@@ -270,6 +270,36 @@ class ArchiveTests(unittest.TestCase):
         self.assertIn("TMDBAccessToken", problems[0])
         self.assertIn("SentryDSN", problems[1])
 
+    def test_embedded_config_accepts_proxy_without_token(self) -> None:
+        dsn = "https://abc@o1.ingest.us.sentry.io/2"
+        for base_url in ("https:/$()/silverscreen-tmdb.example.workers.dev/3", "https://tmdb.example.com/3"):
+            info = {"TMDBAccessToken": "", "TMDBBaseURL": base_url, "SentryDSN": dsn}
+            self.assertEqual(release.embedded_config_problems(info), [])
+        direct = {"TMDBAccessToken": "eyJtoken", "TMDBBaseURL": "https://api.themoviedb.org/3", "SentryDSN": dsn}
+        self.assertEqual(release.embedded_config_problems(direct), [])
+
+    def test_embedded_config_rejects_token_in_proxy_build(self) -> None:
+        info = {
+            "TMDBAccessToken": "eyJtoken",
+            "TMDBBaseURL": "https://silverscreen-tmdb.example.workers.dev/3",
+            "SentryDSN": "https://abc@o1.ingest.us.sentry.io/2",
+        }
+        problems = release.embedded_config_problems(info)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("still contains TMDBAccessToken", problems[0])
+
+    def test_embedded_config_rejects_truncated_proxy_url_and_missing_direct_token(self) -> None:
+        dsn = "https://abc@o1.ingest.us.sentry.io/2"
+        # What xcconfig leaves of an unescaped https:// base URL.
+        truncated = release.embedded_config_problems({"TMDBAccessToken": "", "TMDBBaseURL": "https:", "SentryDSN": dsn})
+        self.assertEqual(len(truncated), 1)
+        self.assertIn("TMDBBaseURL", truncated[0])
+        direct = release.embedded_config_problems(
+            {"TMDBAccessToken": "", "TMDBBaseURL": "https://api.themoviedb.org/3", "SentryDSN": dsn}
+        )
+        self.assertEqual(len(direct), 1)
+        self.assertIn("TMDBAccessToken", direct[0])
+
     def test_key_path_must_be_named_for_altool(self) -> None:
         self.assertIsNone(release.key_path_problem("ABC123", "/tmp/keys/AuthKey_ABC123.p8"))
         self.assertIsNone(release.key_path_problem("ABC123", ""))
