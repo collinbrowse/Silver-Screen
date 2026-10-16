@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { CACHE_SECONDS, handle, upstreamURL } from "../src/index.js";
+import { CACHE_SECONDS, handle, isAllowedPath, upstreamURL } from "../src/index.js";
 
 const TOKEN = "worker-secret-token";
 
@@ -67,6 +67,100 @@ test("upstreamURL keeps the /3 path and query, and rejects anything else", () =>
   assert.equal(upstreamURL("https://proxy.example/3"), null);
   assert.equal(upstreamURL("https://proxy.example/4/list/1"), null);
   assert.equal(upstreamURL("https://proxy.example/3/../4/list/1"), null);
+});
+
+test("allows every TMDB path the app and the health check call", () => {
+  const paths = [
+    "/3/movie/278",
+    "/3/movie/278/reviews",
+    "/3/movie/now_playing",
+    "/3/movie/upcoming",
+    "/3/movie/popular",
+    "/3/collection/10",
+    "/3/tv/1396",
+    "/3/tv/1396/season/1",
+    "/3/tv/1396/season/1/episode/1",
+    "/3/tv/1396/watch/providers",
+    "/3/tv/1396/reviews",
+    "/3/tv/on_the_air",
+    "/3/tv/popular",
+    "/3/person/287",
+    "/3/person/popular",
+    "/3/search/movie",
+    "/3/search/tv",
+    "/3/search/person",
+    "/3/discover/movie",
+    "/3/discover/tv",
+  ];
+  for (const path of paths) {
+    assert.equal(isAllowedPath(path), true, path);
+  }
+});
+
+test("rejects TMDB paths the app does not use", () => {
+  const paths = [
+    "/3/",
+    "/3/movie",
+    "/3/movie/",
+    "/3/movie//reviews",
+    "/3/account/1",
+    "/3/authentication/token/new",
+    "/3/list/1",
+    "/3/find/tt0111161",
+    "/3/configuration",
+    "/3/search/multi",
+    "/3/search/movie/extra",
+    "/3/discover/person",
+    "/3/trending/movie/day",
+    "/4/list/1",
+  ];
+  for (const path of paths) {
+    assert.equal(isAllowedPath(path), false, path);
+  }
+});
+
+test("returns 404 JSON for a disallowed path without calling TMDB", async () => {
+  const upstream = fakeUpstream();
+
+  const response = await handle(get("/3/account/1"), { TMDB_ACCESS_TOKEN: TOKEN }, fakeContext(), {
+    fetch: upstream.fetch,
+  });
+
+  assert.equal(response.status, 404);
+  assert.equal(response.headers.get("Content-Type"), "application/json");
+  assert.deepEqual(await response.json(), { status_message: "Not found." });
+  assert.equal(upstream.calls.length, 0);
+});
+
+test("returns 400 for encoded separators and dots in any case", async () => {
+  const upstream = fakeUpstream();
+  const env = { TMDB_ACCESS_TOKEN: TOKEN };
+  const paths = [
+    "/3/movie/278%2f..%2f..%2faccount",
+    "/3/movie/278%2F",
+    "/3/movie/278%5creviews",
+    "/3/movie/278%5C",
+    "/3/movie/278%2e",
+    "/3/movie/a%2Eb",
+  ];
+
+  for (const path of paths) {
+    const response = await handle(get(path), env, fakeContext(), { fetch: upstream.fetch });
+    assert.equal(response.status, 400, path);
+    assert.equal(response.headers.get("Content-Type"), "application/json");
+  }
+  assert.equal(upstream.calls.length, 0);
+});
+
+test("resolves dot segments before the allow-list check", async () => {
+  const upstream = fakeUpstream();
+
+  const response = await handle(get("/3/movie/../account/1"), { TMDB_ACCESS_TOKEN: TOKEN }, fakeContext(), {
+    fetch: upstream.fetch,
+  });
+
+  assert.equal(response.status, 404);
+  assert.equal(upstream.calls.length, 0);
 });
 
 test("forwards with the Worker's bearer token and drops client headers", async () => {

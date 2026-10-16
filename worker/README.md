@@ -5,7 +5,12 @@ A Cloudflare Worker that keeps the TMDB token off the device. The app calls
 `https://api.themoviedb.org/3/...` with the bearer token from a Worker secret.
 To rotate the token, change the secret. No app update is needed.
 
-- Forwards `GET /3/*` only. Other methods get 405, and other paths get 404.
+- Forwards `GET` only, and only the TMDB paths the app uses: `/3/movie/…`,
+  `/3/tv/…`, `/3/person/…`, `/3/collection/…`, `/3/search/{movie,tv,person}`,
+  and `/3/discover/{movie,tv}` (`ALLOWED_RESOURCES` and `ALLOWED_ENDPOINTS` in
+  `src/index.js`). Other methods get 405, and other paths get 404. A path with
+  an encoded `/`, `\`, or `.` (`%2F`, `%5C`, `%2E`) gets 400. When the app starts
+  calling a new TMDB path, add it to the allow-list and deploy the Worker first.
 - Sends TMDB only `Accept` and the Worker's own `Authorization`. Nothing from the
   client is forwarded.
 - Caches 200 responses for 4 hours (`CACHE_SECONDS` in `src/index.js`), keyed by
