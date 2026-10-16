@@ -23,7 +23,7 @@ Strict layering, one direction only:
 
 TMDB has no awards endpoint. The catalog is a Wikidata snapshot joined to TMDB by IMDb id, compiled by [`scripts/build_awards_catalog.py`](scripts/build_awards_catalog.py) and refreshed from `main` at most weekly. The phone never queries Wikidata. See [`AWARDS.md`](AWARDS.md).
 
-The read access token lives in a gitignored `Secrets.xcconfig` as `TMDB_ACCESS_TOKEN`, is copied into `Info.plist`, and is read at launch. Requests send it as `Authorization: Bearer …`. Logs omit request URLs and that header.
+The read access token lives in a gitignored `Secrets.xcconfig` as `TMDB_ACCESS_TOKEN`, is copied into `Info.plist`, and is read at launch. When `TMDB_BASE_URL` points at the [TMDB proxy](worker/README.md), the app sends no token and the proxy adds it. Requests send it as `Authorization: Bearer …`. Logs omit request URLs and that header.
 
 ## Persistence
 
