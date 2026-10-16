@@ -95,8 +95,8 @@ Worker with step 3 and in the `TMDB_ACCESS_TOKEN` repository secret.
 
 Cloudflare's Cache API stores nothing on a `workers.dev` hostname. It works on a
 custom domain. On `workers.dev`, the Worker also asks Cloudflare to cache the
-TMDB fetch (`cf.cacheTtl`), but the cached copy is not guaranteed. To make
-caching reliable, add a custom domain under **Workers & Pages →
+TMDB fetch for 2xx responses only (`cf.cacheTtlByStatus`), but the cached copy
+is not guaranteed. To make caching reliable, add a custom domain under **Workers & Pages →
 silverscreen-tmdb → Settings → Domains & Routes**, then use that domain in
 `TMDB_PROXY_URL`.
 

@@ -31,6 +31,15 @@ export function upstreamHeaders(token) {
   });
 }
 
+// Cloudflare fetch-cache options for the TMDB request. Only 2xx is kept, so a 404
+// or 5xx is not replayed for hours. Everything else gets a TTL of 0 (do not cache).
+export function upstreamCacheOptions() {
+  return {
+    cacheEverything: true,
+    cacheTtlByStatus: { "200-299": CACHE_SECONDS, "300-599": 0 },
+  };
+}
+
 // Headers returned to the app. Only the content type survives from TMDB.
 export function responseHeaders(upstream, cacheable) {
   const headers = new Headers();
@@ -87,7 +96,7 @@ export async function handle(request, env, ctx, deps) {
   const upstream = await deps.fetch(target, {
     method: "GET",
     headers: upstreamHeaders(token),
-    cf: { cacheTtl: CACHE_SECONDS, cacheEverything: true },
+    cf: upstreamCacheOptions(),
   });
 
   const cacheable = upstream.status === 200;

@@ -91,6 +91,16 @@ test("forwards with the Worker's bearer token and drops client headers", async (
   assert.equal(init.headers.get("CF-Connecting-IP"), null);
 });
 
+test("asks Cloudflare's fetch cache to keep only 2xx responses", async () => {
+  const upstream = fakeUpstream();
+
+  await handle(get("/3/movie/278"), { TMDB_ACCESS_TOKEN: TOKEN }, fakeContext(), { fetch: upstream.fetch });
+
+  const { cf } = upstream.calls[0].init;
+  assert.equal(cf.cacheTtl, undefined);
+  assert.deepEqual(cf.cacheTtlByStatus, { "200-299": CACHE_SECONDS, "300-599": 0 });
+});
+
 test("returns only the content type and a cache header, never the token", async () => {
   const upstream = fakeUpstream();
   const response = await handle(get("/3/movie/278"), { TMDB_ACCESS_TOKEN: TOKEN }, fakeContext(), {
