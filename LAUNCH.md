@@ -47,7 +47,10 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
       - Tracking: none
 - [ ] App Store Connect: privacy policy URL, support URL, Entertainment category, copyright, age rating questionnaire
 - [ ] App Review notes: no sign-in needed; all data is local
-- [ ] iPad: either polish the iPad layouts or ship iPhone-only for v1 (`TARGETED_DEVICE_FAMILY` is `1,2` today)
+- [ ] Large screens (decided): build the layouts for iPhone Duo first, then use its larger
+      screens as the iPad screens. Base each layout on the available width (size classes),
+      not on the device model, so one set of views serves both. iPad ships with those layouts
+      (`TARGETED_DEVICE_FAMILY` stays `1,2`), and `marketing.py` already captures a 13" iPad set.
 
 ### Product
 
