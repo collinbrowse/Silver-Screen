@@ -15,6 +15,7 @@ struct AppDependencies {
     let listChanges: ListChangeNotice
     let annotations: AnnotationsRepository
     let tvWatch: TVWatchRepository
+    let diary: DiaryContext
     let awards: AwardsRepository
     let imageLoader: ImageLoader
     let libraryStore: SQLiteLibraryStore
@@ -60,6 +61,11 @@ struct AppDependencies {
             lists: lists,
             logger: logger
         )
+        let diary = DiaryContext(
+            diary: DiaryRepository(store: LibraryDiaryStoreAdapter(library: libraryStore), logger: logger),
+            lists: lists,
+            logger: logger
+        )
         let imageLoader = ImageLoader(client: URLSessionHTTPClient.images(), logger: logger)
         let awards = AwardsRepository(
             client: httpClient,
@@ -87,6 +93,7 @@ struct AppDependencies {
             listChanges: listChanges,
             annotations: annotations,
             tvWatch: tvWatch,
+            diary: diary,
             awards: awards,
             imageLoader: imageLoader,
             libraryStore: libraryStore,

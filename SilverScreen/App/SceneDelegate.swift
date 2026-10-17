@@ -76,6 +76,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 settings: dependencies.settings,
                 reviewPrompter: dependencies.reviewPrompter
             )
+            .environment(dependencies.diary)
             if let seedURL = demo?.seedURL {
                 // A demo launch holds the first frame until the seed is written, so
                 // screens never read an empty library and miss the seeded rows.
