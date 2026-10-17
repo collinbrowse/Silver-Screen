@@ -212,6 +212,7 @@
 		L1B000172788B823003D8011 /* LibraryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B000182788B823003D8011 /* LibraryDetailView.swift */; };
 		L1B000192788B823003D8011 /* LibraryDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B0001A2788B823003D8011 /* LibraryDetailViewModel.swift */; };
 		L1B0001B2788B823003D8011 /* ListsRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B0001C2788B823003D8011 /* ListsRepositoryTests.swift */; };
+		06C75927AEFBD1C860D3EB6A /* AnalyticsEventsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2320AC1CDC1D283FD06FB1DD /* AnalyticsEventsTests.swift */; };
 		L1B0001D2788B823003D8011 /* LibraryViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B0001E2788B823003D8011 /* LibraryViewModelTests.swift */; };
 		L1B0001F2788B823003D8011 /* InMemoryListsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B000202788B823003D8011 /* InMemoryListsStore.swift */; };
 		L1B000212788B823003D8011 /* LibraryListArtwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = L1B000222788B823003D8011 /* LibraryListArtwork.swift */; };
@@ -479,6 +480,7 @@
 		L1B000182788B823003D8011 /* LibraryDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryDetailView.swift; sourceTree = "<group>"; };
 		L1B0001A2788B823003D8011 /* LibraryDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryDetailViewModel.swift; sourceTree = "<group>"; };
 		L1B0001C2788B823003D8011 /* ListsRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListsRepositoryTests.swift; sourceTree = "<group>"; };
+		2320AC1CDC1D283FD06FB1DD /* AnalyticsEventsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsEventsTests.swift; sourceTree = "<group>"; };
 		L1B0001E2788B823003D8011 /* LibraryViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViewModelTests.swift; sourceTree = "<group>"; };
 		L1B000202788B823003D8011 /* InMemoryListsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InMemoryListsStore.swift; sourceTree = "<group>"; };
 		L1B000222788B823003D8011 /* LibraryListArtwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryListArtwork.swift; sourceTree = "<group>"; };
@@ -992,6 +994,7 @@
 				0E19281196038680DB89C0C3 /* DemoModeTests.swift */,
 				TW00000F2788B823003D8011 /* TVWatchProgressTests.swift */,
 				L1B0001C2788B823003D8011 /* ListsRepositoryTests.swift */,
+				2320AC1CDC1D283FD06FB1DD /* AnalyticsEventsTests.swift */,
 				SQL0000E2788B823003D8011 /* SQLiteLibraryStoreTests.swift */,
 				TW0000112788B823003D8011 /* TVWatchRepositoryTests.swift */,
 				B10003172788B823003D8011 /* PersonRepositoryTests.swift */,
@@ -1389,6 +1392,7 @@
 				TW0000102788B823003D8011 /* TVWatchProgressTests.swift in Sources */,
 				B10002122788B823003D8011 /* MovieDetailViewModelTests.swift in Sources */,
 				L1B0001B2788B823003D8011 /* ListsRepositoryTests.swift in Sources */,
+				06C75927AEFBD1C860D3EB6A /* AnalyticsEventsTests.swift in Sources */,
 				TW0000122788B823003D8011 /* TVWatchRepositoryTests.swift in Sources */,
 				L1B0001D2788B823003D8011 /* LibraryViewModelTests.swift in Sources */,
 				LC0000022788B823003D8011 /* ListChangeNoticeTests.swift in Sources */,
