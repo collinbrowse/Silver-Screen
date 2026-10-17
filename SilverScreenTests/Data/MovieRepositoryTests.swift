@@ -445,6 +445,29 @@ final class MovieRepositoryTests: XCTestCase {
         XCTAssertEqual(logger.errorCount, 0)
     }
 
+    func test_topMovies_whenNotFound_throwsNonRetryableServerError() async {
+        let client = FakeHTTPClient(stub: .success(Data(), status: 404))
+        let repository = MovieRepository.test(client: client)
+
+        do {
+            _ = try await repository.topMovies(page: 1)
+            XCTFail("Expected not found")
+        } catch let error as AppError {
+            XCTAssertEqual(error, .server(status: 404))
+            XCTAssertFalse(error.isRetryable)
+        } catch {
+            XCTFail("Expected AppError, got \(error)")
+        }
+    }
+
+    func test_serverError_retryableOnlyForServerFaultsAndRateLimits() {
+        XCTAssertTrue(AppError.server(status: 500).isRetryable)
+        XCTAssertTrue(AppError.server(status: 503).isRetryable)
+        XCTAssertTrue(AppError.server(status: 429).isRetryable)
+        XCTAssertFalse(AppError.server(status: 404).isRetryable)
+        XCTAssertFalse(AppError.server(status: 422).isRetryable)
+    }
+
     func test_retryDelay_pastTheListedDelays_holdsAtTheLastOne() {
         XCTAssertEqual(HTTPTransport.retryDelay(after: 0), HTTPTransport.retryDelays[0])
         XCTAssertEqual(HTTPTransport.retryDelay(after: 7), HTTPTransport.retryDelays.last)
