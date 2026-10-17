@@ -30,6 +30,9 @@ struct TrailerPlayerView: View {
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
+        // Page-sized on iPad so the video is not squeezed into a form sheet.
+        // Phones already present it full height.
+        .presentationSizing(.page)
     }
 }
 

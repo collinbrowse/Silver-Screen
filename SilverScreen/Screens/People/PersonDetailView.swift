@@ -111,8 +111,7 @@ struct PersonDetailView: View {
                 }
             }
             .padding(.vertical, DesignSpacing.lg)
-            .frame(maxWidth: 700)
-            .frame(maxWidth: .infinity)
+            .readableColumn()
             .coordinateSpace(.named("detailScroll"))
         }
         .scrollingInlineTitle(navigationTitle)

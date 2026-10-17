@@ -114,6 +114,10 @@ struct RootTabView: View {
     /// bar during search lays the system search field out through `UIScreen`
     /// focus, which UIKit rejects and terminates the process. The search field
     /// itself is a text field on Mac; see `MacSearchField`.
+    ///
+    /// Elsewhere the tabs adapt to the window's width: a regular-width window (iPad,
+    /// a wide foldable screen) can open them as a sidebar, and a compact one keeps the
+    /// bottom tab bar. Each tab keeps its own `NavigationStack` either way.
     @ViewBuilder
     private var tabs: some View {
         if ProcessInfo.processInfo.isiOSAppOnMac {
@@ -122,6 +126,7 @@ struct RootTabView: View {
                 .tabBarMinimizeBehavior(.never)
         } else {
             tabView
+                .tabViewStyle(.sidebarAdaptable)
         }
     }
 

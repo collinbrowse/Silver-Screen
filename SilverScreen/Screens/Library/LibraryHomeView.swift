@@ -121,6 +121,7 @@ struct LibraryHomeView: View {
         .pickerStyle(.segmented)
         .padding(.horizontal, DesignSpacing.lg)
         .padding(.vertical, DesignSpacing.sm)
+        .readableColumn()
         .accessibilityLabel("Library")
     }
 
@@ -185,6 +186,9 @@ struct LibraryHomeView: View {
                     }
                 }
                 .listStyle(.plain)
+                // A readable column rather than columns: swipe actions and drag-to-reorder
+                // work on whole rows, so each list keeps a row of its own.
+                .readableColumn()
                 .environment(\.editMode, viewModel.canReorderLists ? $editMode : .constant(.inactive))
             }
         }

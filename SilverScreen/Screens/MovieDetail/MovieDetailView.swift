@@ -216,7 +216,7 @@ struct MovieDetailView: View {
                 }
             }
             .padding(.bottom, DesignSpacing.lg)
-            .frame(width: min(width, 700))
+            .frame(width: min(width, ReadableWidth.maximum))
             .frame(maxWidth: .infinity)
             .coordinateSpace(.named("detailScroll"))
         }

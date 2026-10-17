@@ -18,6 +18,7 @@ struct GenreBrowseView: View {
     var router: NavigationRouter?
 
     @State private var scrolledID: String?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(
         genre: MergedGenre,
@@ -117,78 +118,93 @@ struct GenreBrowseView: View {
         }
     }
 
+    /// One row per title on a phone. Wider screens put two or three titles in each
+    /// list row; see `CatalogGridMetrics`.
     private func list(_ rows: [BrowseRow], activity: LoadActivity) -> some View {
-        List {
-            Section {
-                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                    CatalogRowLayout {
-                        Button {
-                            open(row)
-                        } label: {
-                            CatalogRowView(
-                                title: row.title,
-                                nextUp: row.nextUp,
-                                genre: row.genreLine,
-                                metadata: row.formattedDate,
-                                userScore: row.formattedUserScore,
-                                kindLabel: row.media == .movie ? "Movie" : "TV",
-                                imagePath: row.posterPath,
-                                imageKind: .poster,
-                                placeholderSystemImage: row.media == .movie ? "film" : "tv",
-                                imageLoader: imageLoader
-                            )
+        ContentWidthReader { width in
+            let columns = CatalogGridMetrics.columnCount(
+                forWidth: width,
+                isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
+            )
+            List {
+                Section {
+                    ForEach(CatalogGrid.rows(rows, columns: columns, id: \.id)) { gridRow in
+                        CatalogColumnsRow(row: gridRow, columns: columns, id: \.id) { row in
+                            rowCell(row)
                         }
-                        .buttonStyle(.plain)
-                    } control: {
-                        WatchedToggleButton(
-                            draft: row.listItem(),
-                            lists: lists,
-                            index: listsIndex,
-                            tvWatch: tvWatch,
-                            shows: shows
-                        ) {
-                            viewModel.noteListSaveFailed()
+                        .id(gridRow.id)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 8))
+                        .listRowSeparatorBetweenCells(
+                            isFirst: gridRow.isFirst,
+                            isLast: gridRow.isLast && activity != .loadingMore
+                        )
+                        .onAppear {
+                            if gridRow.isLast {
+                                Task { await viewModel.loadMore() }
+                            }
                         }
                     }
-                    .id(row.id)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 8))
-                    .listRowSeparatorBetweenCells(
-                        isFirst: index == 0,
-                        isLast: index == rows.count - 1 && activity != .loadingMore
-                    )
-                    .onAppear {
-                        if index == rows.count - 1 {
-                            Task { await viewModel.loadMore() }
-                        }
-                    }
-                }
 
-                if activity == .loadingMore {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .listRowSeparator(.hidden)
+                    if activity == .loadingMore {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .listRowSeparator(.hidden)
+                    }
+                } header: {
+                    FittingSegmentedControl(
+                        title: "",
+                        options: MediaTypes.allCases,
+                        selection: Binding(
+                            get: { viewModel.media },
+                            set: { newValue in Task { await viewModel.setMedia(newValue) } }
+                        ),
+                        label: { $0.title },
+                        symbol: { $0.symbol }
+                    )
+                    .padding(.horizontal, DesignSpacing.lg)
+                    .readableColumn()
+                    .background(.clear)
+                    .offset(y: -8)
                 }
-            } header: {
-                FittingSegmentedControl(
-                    title: "",
-                    options: MediaTypes.allCases,
-                    selection: Binding(
-                        get: { viewModel.media },
-                        set: { newValue in Task { await viewModel.setMedia(newValue) } }
-                    ),
-                    label: { $0.title },
-                    symbol: { $0.symbol }
-                )
-                .padding(.horizontal, DesignSpacing.lg)
-                .background(.clear)
-                .offset(y: -8)
+                .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
             }
-            .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
+            .listStyle(.plain)
+            .scrollPosition(id: $scrolledID)
+            .overlay(alignment: .top) {
+                LoadActivityBanner(activity: activity)
+            }
         }
-        .listStyle(.plain)
-        .scrollPosition(id: $scrolledID)
-        .overlay(alignment: .top) {
-            LoadActivityBanner(activity: activity)
+    }
+
+    private func rowCell(_ row: BrowseRow) -> some View {
+        CatalogRowLayout {
+            Button {
+                open(row)
+            } label: {
+                CatalogRowView(
+                    title: row.title,
+                    nextUp: row.nextUp,
+                    genre: row.genreLine,
+                    metadata: row.formattedDate,
+                    userScore: row.formattedUserScore,
+                    kindLabel: row.media == .movie ? "Movie" : "TV",
+                    imagePath: row.posterPath,
+                    imageKind: .poster,
+                    placeholderSystemImage: row.media == .movie ? "film" : "tv",
+                    imageLoader: imageLoader
+                )
+            }
+            .buttonStyle(.plain)
+        } control: {
+            WatchedToggleButton(
+                draft: row.listItem(),
+                lists: lists,
+                index: listsIndex,
+                tvWatch: tvWatch,
+                shows: shows
+            ) {
+                viewModel.noteListSaveFailed()
+            }
         }
     }
 

@@ -14,6 +14,8 @@ struct AwardTitlesView: View {
     let tvWatch: TVWatchRepository
     var router: NavigationRouter?
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     init(
         request: AwardTitleRequest,
         awards: AwardsRepository,
@@ -96,62 +98,76 @@ struct AwardTitlesView: View {
         }
     }
 
+    /// One row per title on a phone. Wider screens put two or three titles in each
+    /// list row; see `CatalogGridMetrics`.
     private func list(_ rows: [AwardTitleRow], activity: LoadActivity) -> some View {
-        List {
-            Section {
-                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                    CatalogRowLayout {
-                        Button {
-                            router?.push(row.route)
-                        } label: {
-                            CatalogRowView(
-                                title: row.title,
-                                nextUp: row.nextUp,
-                                genre: row.awardYear,
-                                metadata: row.genreLine,
-                                userScore: row.userScore,
-                                kindLabel: row.kindLabel,
-                                imagePath: row.imagePath,
-                                imageKind: row.artwork == .still ? .backdrop : .poster,
-                                placeholderSystemImage: row.artwork == .still ? "tv" : "film",
-                                imageLoader: imageLoader
-                            )
+        ContentWidthReader { width in
+            let columns = CatalogGridMetrics.columnCount(
+                forWidth: width,
+                isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
+            )
+            List {
+                Section {
+                    ForEach(CatalogGrid.rows(rows, columns: columns, id: \.id)) { gridRow in
+                        CatalogColumnsRow(row: gridRow, columns: columns, id: \.id) { row in
+                            rowCell(row)
                         }
-                        .buttonStyle(.plain)
-                    } control: {
-                        if let draft = row.listDraft {
-                            WatchedToggleButton(
-                                draft: draft,
-                                lists: lists,
-                                index: listsIndex,
-                                tvWatch: tvWatch,
-                                shows: shows,
-                                onFailure: { viewModel.noteListSaveFailed() }
-                            )
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 8))
+                        .listRowSeparatorBetweenCells(
+                            isFirst: gridRow.isFirst,
+                            isLast: gridRow.isLast && activity != .loadingMore
+                        )
+                        .onAppear {
+                            if gridRow.isLast {
+                                Task { await viewModel.loadMore() }
+                            }
                         }
                     }
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 8))
-                    .listRowSeparatorBetweenCells(
-                        isFirst: index == 0,
-                        isLast: index == rows.count - 1 && activity != .loadingMore
-                    )
-                    .onAppear {
-                        if index == rows.count - 1 {
-                            Task { await viewModel.loadMore() }
-                        }
+                    if activity == .loadingMore {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .listRowSeparator(.hidden)
                     }
                 }
-                if activity == .loadingMore {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .listRowSeparator(.hidden)
-                }
+                .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
             }
-            .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
+            .listStyle(.plain)
+            .overlay(alignment: .top) {
+                LoadActivityBanner(activity: activity)
+            }
         }
-        .listStyle(.plain)
-        .overlay(alignment: .top) {
-            LoadActivityBanner(activity: activity)
+    }
+
+    private func rowCell(_ row: AwardTitleRow) -> some View {
+        CatalogRowLayout {
+            Button {
+                router?.push(row.route)
+            } label: {
+                CatalogRowView(
+                    title: row.title,
+                    nextUp: row.nextUp,
+                    genre: row.awardYear,
+                    metadata: row.genreLine,
+                    userScore: row.userScore,
+                    kindLabel: row.kindLabel,
+                    imagePath: row.imagePath,
+                    imageKind: row.artwork == .still ? .backdrop : .poster,
+                    placeholderSystemImage: row.artwork == .still ? "tv" : "film",
+                    imageLoader: imageLoader
+                )
+            }
+            .buttonStyle(.plain)
+        } control: {
+            if let draft = row.listDraft {
+                WatchedToggleButton(
+                    draft: draft,
+                    lists: lists,
+                    index: listsIndex,
+                    tvWatch: tvWatch,
+                    shows: shows,
+                    onFailure: { viewModel.noteListSaveFailed() }
+                )
+            }
         }
     }
 }

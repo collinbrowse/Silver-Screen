@@ -206,6 +206,7 @@ struct TVSeriesView: View {
                 }
             }
             .padding(.bottom, DesignSpacing.lg)
+            .readableColumn()
             .coordinateSpace(.named("detailScroll"))
         }
         .heroStatusBarBleed(enabled: bleedsToTop)

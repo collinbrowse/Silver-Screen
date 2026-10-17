@@ -214,6 +214,7 @@ struct TVEpisodeView: View {
                 }
             }
             .padding(.bottom, DesignSpacing.lg)
+            .readableColumn()
             .coordinateSpace(.named("detailScroll"))
             }
         }
