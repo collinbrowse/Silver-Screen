@@ -42,7 +42,8 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 - [ ] Sentry project settings: turn on "Prevent Storing of IP Addresses", so crash reports stay unlinked to a person
 - [x] Add the official TMDB logo to Settings → Data Sources (TMDB's attribution rules ask for it)
 - [ ] App Store Connect privacy label, matching `PrivacyInfo.xcprivacy`:
-      - Not linked to you: Crash Data, Performance Data, Other Diagnostic Data (App Functionality)
+      - Not linked to you: Crash Data, Performance Data, Other Diagnostic Data (App Functionality);
+        Product Interaction (Analytics)
       - Linked to you: Email Address and Customer Support, only when someone sends feedback with an email (App Functionality)
       - Tracking: none
 - [ ] App Store Connect: privacy policy URL, support URL, Entertainment category, copyright, age rating questionnaire
@@ -61,6 +62,9 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 - [ ] Analytics: pick the tool (see the decision below), then send a handful of anonymous
       events: onboarding finished, first rating, list created, title added to watchlist.
       Declare them on the privacy label as Product Interaction, not linked.
+      TelemetryDeck client, events, Settings toggle, and privacy manifest are built. Left:
+      create the TelemetryDeck app, set `TELEMETRYDECK_APP_ID` (OBSERVABILITY.md → Product
+      analytics), send the onboarding event once onboarding merges, and check signals arrive.
 
 ### Infrastructure and automation
 
@@ -84,6 +88,11 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 - [ ] No pre-order and no press kit (decided)
 
 ### Decision needed: analytics
+
+**Decided (October 16, 2026): TelemetryDeck, through a few lines of `URLSession` against its
+v2 ingest API, so Sentry stays the only dependency.** App Store Connect Analytics keeps
+covering downloads, conversion, and retention at no cost. Setup and verification are in
+[`OBSERVABILITY.md`](OBSERVABILITY.md) under Product analytics.
 
 Sentry reports crashes, errors, and performance. It doesn't do product analytics (funnels,
 retention, feature use). Options:
