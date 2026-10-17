@@ -1,0 +1,286 @@
+//
+//  TelemetryDeckClient.swift
+//  SilverScreen
+//
+//  First-party sender for TelemetryDeck's v2 ingest API
+//  (https://telemetrydeck.com/docs/ingest/v2), so analytics needs no SDK.
+//  Events wait a few seconds in memory and go up as one JSON array. A failed
+//  upload retries with backoff; a rejected one is dropped. Nothing here throws
+//  into the caller or touches the main actor.
+//
+
+import CryptoKit
+import Foundation
+
+/// Where the app ID comes from and where signals go.
+enum TelemetryDeckConfiguration {
+    /// Info.plist key, filled from `TELEMETRYDECK_APP_ID` in Secrets.xcconfig.
+    static let infoKey = "TelemetryDeckAppID"
+    static let ingestURL = URL(string: "https://nom.telemetrydeck.com/v2/")!
+
+    /// The app ID, or nil when it is missing, empty, unsubstituted (`$(…)`), or not a UUID.
+    /// Nil turns analytics off.
+    static func resolvedAppID(infoDictionary: [String: Any]) -> String? {
+        guard let raw = infoDictionary[infoKey] as? String else { return nil }
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard UUID(uuidString: trimmed) != nil else { return nil }
+        return trimmed
+    }
+}
+
+/// One element of the ingest body. Field names are TelemetryDeck's.
+struct TelemetryDeckSignal: Encodable, Equatable, Sendable {
+    let appID: String
+    /// SHA-256 of the random install ID. TelemetryDeck salts and hashes it again on receipt.
+    let clientUser: String
+    /// New each launch, so TelemetryDeck can count sessions.
+    let sessionID: String
+    let type: String
+    /// True in Debug builds. TelemetryDeck keeps test signals out of production charts.
+    let isTestMode: Bool
+    /// Flat strings only: app version and OS version, never user content.
+    let payload: [String: String]
+}
+
+/// Turns an event into a signal with this launch's fixed fields.
+struct TelemetryDeckSignalFactory: Sendable {
+    let appID: String
+    let sessionID: String
+    let isTestMode: Bool
+    let payload: [String: String]
+    let preferences: AnalyticsPreferences
+
+    func signal(for event: AnalyticsEvent) -> TelemetryDeckSignal {
+        TelemetryDeckSignal(
+            appID: appID,
+            clientUser: Self.hashed(preferences.installID()),
+            sessionID: sessionID,
+            type: event.rawValue,
+            isTestMode: isTestMode,
+            payload: payload
+        )
+    }
+
+    /// Lowercase hex SHA-256, the same digest TelemetryDeck's own SDK sends.
+    static func hashed(_ value: String) -> String {
+        SHA256.hash(data: Data(value.utf8))
+            .map { String(format: "%02x", $0) }
+            .joined()
+    }
+
+    /// The version context every signal carries. Keys are the ones TelemetryDeck's SDK
+    /// uses, so the dashboard's built-in version and OS breakdowns work.
+    static func defaultPayload(appInfo: AppInfo, os: OperatingSystemVersion) -> [String: String] {
+        [
+            "TelemetryDeck.AppInfo.version": appInfo.marketingVersion,
+            "TelemetryDeck.AppInfo.buildNumber": appInfo.build,
+            "TelemetryDeck.AppInfo.versionAndBuildNumber": "\(appInfo.marketingVersion) (build \(appInfo.build))",
+            "TelemetryDeck.Device.platform": "iOS",
+            "TelemetryDeck.Device.systemMajorVersion": "\(os.majorVersion)",
+            "TelemetryDeck.Device.systemMajorMinorVersion": "\(os.majorVersion).\(os.minorVersion)",
+        ]
+    }
+}
+
+/// Holds signals briefly and uploads them in batches, one request at a time.
+actor TelemetryDeckOutbox {
+    /// Oldest signals are dropped past this, so a long offline stretch cannot grow memory.
+    static let maxPending = 100
+    /// Coalesces events that happen together (create a list and add a title) into one request.
+    static let batchDelay: TimeInterval = 5
+    static let maxRetryDelay: TimeInterval = 15 * 60
+
+    /// What one upload attempt means for the batch.
+    enum UploadOutcome: Equatable {
+        case sent
+        /// The server refused the batch (bad app ID, malformed body). Retrying cannot help.
+        case rejected(status: Int)
+        /// Offline, timed out, rate limited, or a 5xx. Keep the batch and try again later.
+        case retryLater
+    }
+
+    private let client: any HTTPClient
+    private let preferences: AnalyticsPreferences
+    private let sleeper: any Sleeper
+    private let logger: any AppLogging
+    private var pending: [TelemetryDeckSignal] = []
+    private var flushTask: Task<Void, Never>?
+    private var isUploading = false
+    private var consecutiveFailures = 0
+
+    init(
+        client: any HTTPClient,
+        preferences: AnalyticsPreferences,
+        sleeper: any Sleeper = TaskSleeper(),
+        logger: any AppLogging
+    ) {
+        self.client = client
+        self.preferences = preferences
+        self.sleeper = sleeper
+        self.logger = logger
+    }
+
+    var pendingCount: Int { pending.count }
+
+    /// Queues a signal and makes sure an upload is scheduled.
+    func enqueue(_ signal: TelemetryDeckSignal) {
+        pending.append(signal)
+        trimPending()
+        scheduleFlush(after: Self.batchDelay)
+    }
+
+    /// Uploads everything pending now. Drops it instead when sharing was turned off
+    /// after the events were queued.
+    func flush() async {
+        guard preferences.isSharingEnabled else {
+            pending.removeAll()
+            return
+        }
+        guard !isUploading, !pending.isEmpty else { return }
+        let batch = pending
+        pending.removeAll()
+        isUploading = true
+        let outcome = await upload(batch)
+        isUploading = false
+
+        switch outcome {
+            case .sent:
+                consecutiveFailures = 0
+            case .rejected(let status):
+                consecutiveFailures = 0
+                logger.debug("TelemetryDeck rejected \(batch.count) signals with status \(status)", category: .networking)
+            case .retryLater:
+                pending.insert(contentsOf: batch, at: 0)
+                trimPending()
+                consecutiveFailures += 1
+                scheduleFlush(after: Self.retryDelay(afterFailures: consecutiveFailures))
+                return
+        }
+        // Events queued while this upload was in flight still need a request.
+        if !pending.isEmpty {
+            scheduleFlush(after: Self.batchDelay)
+        }
+    }
+
+    /// Waits for the upload `enqueue` scheduled. Lets tests observe it without sleeping.
+    func waitForScheduledFlush() async {
+        await flushTask?.value
+    }
+
+    /// 30 s, then doubling, capped at 15 minutes.
+    static func retryDelay(afterFailures failures: Int) -> TimeInterval {
+        let exponent = max(0, min(failures - 1, 10))
+        return min(30 * pow(2, Double(exponent)), maxRetryDelay)
+    }
+
+    /// Matches TelemetryDeck's SDK: client errors that cannot succeed later are dropped.
+    static func outcome(forStatus status: Int) -> UploadOutcome {
+        switch status {
+            case 200...299:
+                .sent
+            case 400, 401, 403, 404, 413, 422:
+                .rejected(status: status)
+            default:
+                .retryLater
+        }
+    }
+
+    /// POST of the batch as a JSON array.
+    static func request(for batch: [TelemetryDeckSignal]) throws -> URLRequest {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        var request = URLRequest(url: TelemetryDeckConfiguration.ingestURL)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 20
+        request.setValue("application/json; charset=utf-8", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try encoder.encode(batch)
+        return request
+    }
+
+    private func scheduleFlush(after delay: TimeInterval) {
+        guard flushTask == nil else { return }
+        flushTask = Task { [sleeper] in
+            try? await sleeper.sleep(seconds: delay)
+            await self.runScheduledFlush()
+        }
+    }
+
+    private func runScheduledFlush() async {
+        flushTask = nil
+        await flush()
+    }
+
+    private func upload(_ batch: [TelemetryDeckSignal]) async -> UploadOutcome {
+        let request: URLRequest
+        do {
+            request = try Self.request(for: batch)
+        } catch {
+            logger.debug("TelemetryDeck batch encode failed", category: .networking)
+            return .rejected(status: 0)
+        }
+        do {
+            let (_, response) = try await client.data(for: request)
+            return Self.outcome(forStatus: response.statusCode)
+        } catch {
+            // Never surfaced: analytics failing must not change anything the person sees.
+            logger.debug("TelemetryDeck upload failed; will retry", category: .networking)
+            return .retryLater
+        }
+    }
+
+    private func trimPending() {
+        if pending.count > Self.maxPending {
+            pending.removeFirst(pending.count - Self.maxPending)
+        }
+    }
+}
+
+/// The live `AnalyticsClient`. `send` checks the opt-out, builds the signal, and hands
+/// it to the outbox on a background task, so the caller never waits.
+struct TelemetryDeckClient: AnalyticsClient {
+    let factory: TelemetryDeckSignalFactory
+    let outbox: TelemetryDeckOutbox
+
+    func send(_ event: AnalyticsEvent) {
+        Task { [self] in
+            await record(event)
+        }
+    }
+
+    /// The work behind `send`, awaitable so tests can check the outbox afterwards.
+    func record(_ event: AnalyticsEvent) async {
+        guard factory.preferences.isSharingEnabled else { return }
+        await outbox.enqueue(factory.signal(for: event))
+    }
+
+    /// The composition root's analytics. No usable app ID means `DisabledAnalytics`.
+    /// Debug builds send in TelemetryDeck's test mode.
+    static func live(
+        infoDictionary: [String: Any],
+        client: any HTTPClient,
+        preferences: AnalyticsPreferences,
+        appInfo: AppInfo,
+        logger: any AppLogging
+    ) -> any AnalyticsClient {
+        guard let appID = TelemetryDeckConfiguration.resolvedAppID(infoDictionary: infoDictionary) else {
+            return DisabledAnalytics()
+        }
+        #if DEBUG
+        let isTestMode = true
+        #else
+        let isTestMode = false
+        #endif
+        let factory = TelemetryDeckSignalFactory(
+            appID: appID,
+            sessionID: UUID().uuidString,
+            isTestMode: isTestMode,
+            payload: TelemetryDeckSignalFactory.defaultPayload(
+                appInfo: appInfo,
+                os: ProcessInfo.processInfo.operatingSystemVersion
+            ),
+            preferences: preferences
+        )
+        let outbox = TelemetryDeckOutbox(client: client, preferences: preferences, logger: logger)
+        return TelemetryDeckClient(factory: factory, outbox: outbox)
+    }
+}
