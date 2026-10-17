@@ -74,6 +74,13 @@ enum SentryBootstrap {
         if let release = releaseName(infoDictionary: info) {
             options.releaseName = release
         }
+        // Debug and test-host runs share the shipping version numbers, so a separate
+        // environment keeps them out of the release health that promote decisions use.
+        #if DEBUG
+        options.environment = "debug"
+        #else
+        options.environment = "production"
+        #endif
         options.enableAutoSessionTracking = true
         options.sendDefaultPii = false
         // A failed-request event carries the request's query string, and 5xx responses

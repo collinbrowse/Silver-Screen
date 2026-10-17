@@ -31,13 +31,14 @@ final class SentryBootstrapTests: XCTestCase {
         XCTAssertEqual(sent.data?["url"] as? String, "https://api.themoviedb.org/3/search/movie")
     }
 
-    func test_configure_sendsNoFailedRequestEvents() {
+    func test_configure_sendsNoFailedRequestEventsAndTagsDebugRuns() {
         let options = Options()
         SentryBootstrap.configure(options, dsn: "https://abc@example.ingest.sentry.io/1", infoDictionary: [:])
 
         XCTAssertFalse(options.enableCaptureFailedRequests)
         XCTAssertFalse(options.sendDefaultPii)
         XCTAssertNotNil(options.beforeSendSpan)
+        XCTAssertEqual(options.environment, "debug")
     }
 
     func testReleaseNameMatchesTestFlightShape() {
