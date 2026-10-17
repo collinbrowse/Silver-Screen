@@ -68,6 +68,23 @@ final class ImageLoaderTests: XCTestCase {
         XCTAssertGreaterThan(image.size.height, 0)
     }
 
+    func test_displayImage_whenTheViewTaskWasCancelled_returnsNilEvenOnACacheHit() async throws {
+        let loader = ImageLoader.test(client: FakeHTTPClient(stub: .success(TestImages.pngData())))
+        let url = URL(string: "https://image.tmdb.org/t/p/w92/poster.jpg")!
+        let size = CGSize(width: 8, height: 8)
+        _ = try await loader.image(for: url, targetSize: size, scale: 1)
+
+        let stale = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return await loader.displayImage(for: url, targetSize: size, scale: 1)
+        }
+        let staleResult = await stale.value
+        let current = await loader.displayImage(for: url, targetSize: size, scale: 1)
+
+        XCTAssertNil(staleResult, "A cancelled view task must not overwrite a newer image")
+        XCTAssertNotNil(current)
+    }
+
     func test_cancelPrefetch_whileRealRequestInFlight_doesNotCancelIt() async throws {
         let client = BlockingHTTPClient(responseData: TestImages.pngData())
         let loader = ImageLoader.test(client: client)

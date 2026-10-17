@@ -41,6 +41,14 @@ actor ImageLoader {
         try await image(for: url, targetSize: targetSize, scale: scale, isPrefetch: false)
     }
 
+    /// The image a view should show, or nil when the load failed or the calling task was
+    /// cancelled. A view keyed with `.task(id:)` is cancelled when its path changes, and by
+    /// then a newer load may already have set the image; a nil here means "leave it alone".
+    func displayImage(for url: URL, targetSize: CGSize, scale: CGFloat) async -> UIImage? {
+        let loaded = try? await image(for: url, targetSize: targetSize, scale: scale)
+        return Task.isCancelled ? nil : loaded
+    }
+
     /// Shared fetch path. `isPrefetch` callers do not register as real waiters, which is what
     /// lets `cancelPrefetch` leave a coalesced fetch running for a visible cell.
     private func image(
