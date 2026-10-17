@@ -94,3 +94,32 @@ enum TMDBPageDecoding {
         return items
     }
 }
+
+extension KeyedDecodingContainer {
+    /// A list where one malformed element is skipped instead of failing the whole payload.
+    /// Nil when the key is absent or null. A value that is not a list still throws.
+    func decodeLossyArrayIfPresent<Element: Decodable>(
+        _ type: Element.Type,
+        forKey key: Key
+    ) throws -> [Element]? {
+        guard contains(key), try !decodeNil(forKey: key) else { return nil }
+        var unkeyed = try nestedUnkeyedContainer(forKey: key)
+        var items: [Element] = []
+        while !unkeyed.isAtEnd {
+            if let value = try unkeyed.decode(LossyElement<Element>.self).value {
+                items.append(value)
+            }
+        }
+        return items
+    }
+}
+
+/// One array element. A malformed element becomes nil and the container still advances.
+private struct LossyElement<Element: Decodable>: Decodable {
+    let value: Element?
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        value = try? container.decode(Element.self)
+    }
+}
