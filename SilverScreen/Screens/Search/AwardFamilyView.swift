@@ -63,7 +63,7 @@ struct AwardFamilyView: View {
                     .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
                     }
                     .listStyle(.plain)
-                    .readableContentMargins()
+                    .readableColumn()
                 case .failed(let error):
                     ErrorStateView(error: error) {
                     await viewModel.load()

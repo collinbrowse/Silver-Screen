@@ -53,12 +53,6 @@ enum ShelfGridMetrics {
 enum ReadableWidth {
     /// Matches the cap Movie and Person detail already used.
     static let maximum: CGFloat = 700
-
-    /// Margin on each side that centers a `maximum`-wide column in `width`.
-    /// Zero whenever the column already fits, so phone layouts do not change.
-    static func sideMargin(forWidth width: CGFloat) -> CGFloat {
-        max(0, (width - maximum) / 2)
-    }
 }
 
 /// One list row of up to `columns` catalog items laid side by side.

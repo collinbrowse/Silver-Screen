@@ -81,20 +81,6 @@ final class AdaptiveLayoutTests: XCTestCase {
         XCTAssertEqual(ShelfGridMetrics.columnCount(forWidth: 0), 2)
     }
 
-    // MARK: - Readable width
-
-    func test_readableMargin_iPhoneWidth_isZero() {
-        XCTAssertEqual(ReadableWidth.sideMargin(forWidth: 402), 0)
-    }
-
-    func test_readableMargin_iPhoneDuoInnerScreen_isZero() {
-        XCTAssertEqual(ReadableWidth.sideMargin(forWidth: 669), 0)
-    }
-
-    func test_readableMargin_iPadLandscape_centersColumn() {
-        XCTAssertEqual(ReadableWidth.sideMargin(forWidth: 1194), 247)
-    }
-
     // MARK: - Grid rows
 
     func test_rows_oneColumn_yieldsOneRowPerItem() {

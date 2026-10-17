@@ -3,7 +3,7 @@
 //  SilverScreen
 //
 //  Measures the width a screen is actually given (a split view or an iPad window,
-//  not the device) so layouts can pick columns and margins from it.
+//  not the device) so layouts can pick columns from it, plus the readable-column cap.
 //
 
 import SwiftUI
@@ -24,31 +24,10 @@ struct ContentWidthReader<Content: View>: View {
     }
 }
 
-/// Centers a list's or scroll view's content in a `ReadableWidth.maximum` column
-/// once the view is wider than that. The scroll indicator and background stay at
-/// the edges.
-private struct ReadableContentMargins: ViewModifier {
-    @State private var width: CGFloat = 0
-
-    func body(content: Content) -> some View {
-        content
-            .contentMargins(.horizontal, ReadableWidth.sideMargin(forWidth: width), for: .scrollContent)
-            .onGeometryChange(for: CGFloat.self) { proxy in
-                proxy.size.width
-            } action: { newWidth in
-                width = newWidth
-            }
-    }
-}
-
 extension View {
-    /// Keeps a text-heavy list or scroll view at a readable width on wide screens.
-    /// No effect at phone widths.
-    func readableContentMargins() -> some View {
-        modifier(ReadableContentMargins())
-    }
-
-    /// Caps a scroll view's content column at `ReadableWidth.maximum` and centers it.
+    /// Caps a list or a scroll view's content at `ReadableWidth.maximum` and centers it.
+    /// Layout keeps the column inside the safe area, so it centers beside an iPad
+    /// sidebar rather than under it. No effect at phone widths.
     func readableColumn() -> some View {
         frame(maxWidth: ReadableWidth.maximum)
             .frame(maxWidth: .infinity)

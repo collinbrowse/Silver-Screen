@@ -116,7 +116,7 @@ struct LibraryDetailView: View {
                 .listStyle(.plain)
                 // A readable column rather than columns: swipe-to-remove and drag-to-reorder
                 // work on whole rows, so each title keeps a row of its own.
-                .readableContentMargins()
+                .readableColumn()
                 .environment(\.editMode, viewModel.allowsReorder ? $editMode : .constant(.inactive))
             }
         }
