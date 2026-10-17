@@ -3,7 +3,8 @@
 //  SilverScreen
 //
 //  library.sqlite implementation of LibraryStore. Domain-scoped mutations keep list
-//  writes from touching annotations or TV progress (and vice versa), and each save is
+//  writes from touching annotations, TV progress, or the diary (and vice versa; the
+//  diary half lives in SQLiteLibraryStore+Diary.swift), and each save is
 //  diffed against stored rows so revision, dates, and tombstones stay meaningful.
 //
 
@@ -13,12 +14,14 @@ actor SQLiteLibraryStore: LibraryStore {
     static let databaseFileName = "library.sqlite"
     static let jsonImportStampKey = "json_import"
 
-    private let database: SQLiteDatabase
+    // `database`, `encoder`, `decoder`, `withTransaction`, `tombstoneRows`, and
+    // `ensureBootstrapped` are internal only so `SQLiteLibraryStore+Diary.swift` can use them.
+    let database: SQLiteDatabase
     private let listsJSONURL: URL
     private let annotationsJSONURL: URL
     private let tvWatchJSONURL: URL
-    private let encoder: JSONEncoder
-    private let decoder: JSONDecoder
+    let encoder: JSONEncoder
+    let decoder: JSONDecoder
     private var didBootstrap = false
 
     init(
@@ -315,12 +318,14 @@ actor SQLiteLibraryStore: LibraryStore {
                 try replaceAnnotations(records)
             case .replaceTVWatch(let states):
                 try replaceTVWatch(states)
+            case .replaceDiary(let entries):
+                try replaceDiary(entries)
         }
     }
 
     // MARK: - Bootstrap / import
 
-    private func ensureBootstrapped() async throws {
+    func ensureBootstrapped() async throws {
         if !didBootstrap {
             try await bootstrap()
         }
@@ -347,6 +352,9 @@ actor SQLiteLibraryStore: LibraryStore {
             try withTransaction {
                 for statement in try LibrarySchema.statements(for: version) {
                     try database.execute(statement)
+                }
+                if version == 4 {
+                    try backfillDiaryFromWatched()
                 }
                 try database.run(
                     "INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?);"
@@ -405,6 +413,11 @@ actor SQLiteLibraryStore: LibraryStore {
             if tvCount == 0 {
                 try writeTVWatch(tvStates)
             }
+            if listCount == 0 {
+                // Schema v4 ran before these lists existed, so give them their diary
+                // entries now, after annotations so each entry gets its rating.
+                try backfillDiaryFromWatched()
+            }
             try setSyncState(
                 Self.jsonImportStampKey,
                 value: LibrarySQLDate.encode(Date())
@@ -434,7 +447,7 @@ actor SQLiteLibraryStore: LibraryStore {
         }
     }
 
-    private func withTransaction(_ body: () throws -> Void) throws {
+    func withTransaction(_ body: () throws -> Void) throws {
         try database.execute("BEGIN IMMEDIATE;")
         do {
             try body()
@@ -726,8 +739,8 @@ actor SQLiteLibraryStore: LibraryStore {
     }
 
     /// Tombstones live rows whose key is not in `keeping`. `table` and `keyExpression`
-    /// are fixed SQL from this file, never user input.
-    private func tombstoneRows(
+    /// are fixed SQL from the store's own files, never user input.
+    func tombstoneRows(
         in table: String,
         keyExpression: String,
         keeping keys: Set<String>,

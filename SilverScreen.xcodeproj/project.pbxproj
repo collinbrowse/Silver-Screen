@@ -7,6 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FFC75DCB06DD8F7F23C02B44 /* DiaryEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650BB0C2EB6D4099886910E1 /* DiaryEntryTests.swift */; };
+		5CC25101B272073620C28D7C /* DiaryRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22899E2AE667CC1109104922 /* DiaryRepositoryTests.swift */; };
+		9C8A7CEDCD98A7B9B78E3851 /* DiaryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF25DCB2CB677BCE2694175A /* DiaryStoreTests.swift */; };
+		FCB2B29228E2D5CF931B6F46 /* InMemoryDiaryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8C8CE696DB805D83CE62939 /* InMemoryDiaryStore.swift */; };
+		B8AA6EC0D4B5040BC3BB9D3E /* DiaryRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 891B46E4269F72AF8EDD60D7 /* DiaryRepository.swift */; };
+		4AE18EE022F013245427C59C /* DiaryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE6E288267EFBC31634DA3FD /* DiaryStore.swift */; };
+		234F07BD2D511F5A71CDABBD /* SQLiteLibraryStore+Diary.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20F21127664D23117BC1786 /* SQLiteLibraryStore+Diary.swift */; };
+		A9467F8A6C5B5BA767DE181D /* DiaryEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = C97BE0A9149793537A169F88 /* DiaryEntry.swift */; };
 		SQL000012788B823003D8011 /* SQLiteDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL000022788B823003D8011 /* SQLiteDatabase.swift */; };
 		SQL000032788B823003D8011 /* LibrarySchema.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL000042788B823003D8011 /* LibrarySchema.swift */; };
 		SQL000052788B823003D8011 /* LibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL000062788B823003D8011 /* LibraryStore.swift */; };
@@ -266,6 +274,14 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		650BB0C2EB6D4099886910E1 /* DiaryEntryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryEntryTests.swift; sourceTree = "<group>"; };
+		22899E2AE667CC1109104922 /* DiaryRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryRepositoryTests.swift; sourceTree = "<group>"; };
+		AF25DCB2CB677BCE2694175A /* DiaryStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryStoreTests.swift; sourceTree = "<group>"; };
+		F8C8CE696DB805D83CE62939 /* InMemoryDiaryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InMemoryDiaryStore.swift; sourceTree = "<group>"; };
+		891B46E4269F72AF8EDD60D7 /* DiaryRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryRepository.swift; sourceTree = "<group>"; };
+		FE6E288267EFBC31634DA3FD /* DiaryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryStore.swift; sourceTree = "<group>"; };
+		A20F21127664D23117BC1786 /* SQLiteLibraryStore+Diary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SQLiteLibraryStore+Diary.swift"; sourceTree = "<group>"; };
+		C97BE0A9149793537A169F88 /* DiaryEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryEntry.swift; sourceTree = "<group>"; };
 		SQL000022788B823003D8011 /* SQLiteDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteDatabase.swift; sourceTree = "<group>"; };
 		SQL000042788B823003D8011 /* LibrarySchema.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySchema.swift; sourceTree = "<group>"; };
 		SQL000062788B823003D8011 /* LibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryStore.swift; sourceTree = "<group>"; };
@@ -553,6 +569,7 @@
 				TW00000D2788B823003D8011 /* InMemoryTVWatchStore.swift */,
 				L1B000202788B823003D8011 /* InMemoryListsStore.swift */,
 				SQL0000C2788B823003D8011 /* InMemoryLibraryStore.swift */,
+				F8C8CE696DB805D83CE62939 /* InMemoryDiaryStore.swift */,
 				D1A000142788B823003D8011 /* StreamingProviderLaunchTests.swift */,
 			);
 			path = Support;
@@ -574,6 +591,7 @@
 				A1A000042788B823003D8011 /* AwardsRepository.swift */,
 				B10003072788B823003D8011 /* PersonRepository.swift */,
 				C20000072788B823003D8011 /* AnnotationsRepository.swift */,
+				891B46E4269F72AF8EDD60D7 /* DiaryRepository.swift */,
 				TW0000072788B823003D8011 /* TVWatchRepository.swift */,
 				L1B0000C2788B823003D8011 /* ListsRepository.swift */,
 				W1R000012788B823003D8011 /* WatchedRatings.swift */,
@@ -587,6 +605,7 @@
 			isa = PBXGroup;
 			children = (
 				C20000032788B823003D8011 /* AnnotationsStore.swift */,
+				FE6E288267EFBC31634DA3FD /* DiaryStore.swift */,
 				TW0000032788B823003D8011 /* TVWatchStore.swift */,
 				C20000052788B823003D8011 /* FileAnnotationsStore.swift */,
 				TW0000052788B823003D8011 /* FileTVWatchStore.swift */,
@@ -597,6 +616,7 @@
 				SQL000042788B823003D8011 /* LibrarySchema.swift */,
 				SQL000062788B823003D8011 /* LibraryStore.swift */,
 				SQL000082788B823003D8011 /* SQLiteLibraryStore.swift */,
+				A20F21127664D23117BC1786 /* SQLiteLibraryStore+Diary.swift */,
 				SQL0000A2788B823003D8011 /* LibraryStoreAdapters.swift */,
 			);
 			path = Persistence;
@@ -834,6 +854,7 @@
 			children = (
 				BE714FA9307044B100F6F593 /* MediaTypes.swift */,
 				C20000012788B823003D8011 /* MediaAnnotation.swift */,
+				C97BE0A9149793537A169F88 /* DiaryEntry.swift */,
 				TW0000012788B823003D8011 /* TVWatchProgress.swift */,
 				F10000042788B823003D8011 /* BrowseCatalog.swift */,
 				E2A000042788B823003D8011 /* CatalogMedia.swift */,
@@ -977,6 +998,9 @@
 				E2A000322788B823003D8011 /* TVRepositoryTests.swift */,
 				B10000232788B823003D8011 /* MovieRepositoryTests.swift */,
 				C200000D2788B823003D8011 /* AnnotationsRepositoryTests.swift */,
+				650BB0C2EB6D4099886910E1 /* DiaryEntryTests.swift */,
+				22899E2AE667CC1109104922 /* DiaryRepositoryTests.swift */,
+				AF25DCB2CB677BCE2694175A /* DiaryStoreTests.swift */,
 				0E19281196038680DB89C0C3 /* DemoModeTests.swift */,
 				TW00000F2788B823003D8011 /* TVWatchProgressTests.swift */,
 				L1B0001C2788B823003D8011 /* ListsRepositoryTests.swift */,
@@ -1159,12 +1183,15 @@
 				E2A000012788B823003D8011 /* DisplayDate.swift in Sources */,
 				F20000012788B823003D8011 /* TMDBRating.swift in Sources */,
 				C20000022788B823003D8011 /* MediaAnnotation.swift in Sources */,
+				A9467F8A6C5B5BA767DE181D /* DiaryEntry.swift in Sources */,
 				TW0000022788B823003D8011 /* TVWatchProgress.swift in Sources */,
 				C20000042788B823003D8011 /* AnnotationsStore.swift in Sources */,
+				4AE18EE022F013245427C59C /* DiaryStore.swift in Sources */,
 				TW0000042788B823003D8011 /* TVWatchStore.swift in Sources */,
 				C20000062788B823003D8011 /* FileAnnotationsStore.swift in Sources */,
 				TW0000062788B823003D8011 /* FileTVWatchStore.swift in Sources */,
 				C20000082788B823003D8011 /* AnnotationsRepository.swift in Sources */,
+				B8AA6EC0D4B5040BC3BB9D3E /* DiaryRepository.swift in Sources */,
 				TW0000082788B823003D8011 /* TVWatchRepository.swift in Sources */,
 				C200000A2788B823003D8011 /* MediaDescriptionSection.swift in Sources */,
 				C200000C2788B823003D8011 /* InMemoryAnnotationsStore.swift in Sources */,
@@ -1310,6 +1337,7 @@
 				SQL000032788B823003D8011 /* LibrarySchema.swift in Sources */,
 				SQL000052788B823003D8011 /* LibraryStore.swift in Sources */,
 				SQL000072788B823003D8011 /* SQLiteLibraryStore.swift in Sources */,
+				234F07BD2D511F5A71CDABBD /* SQLiteLibraryStore+Diary.swift in Sources */,
 				SQL000092788B823003D8011 /* LibraryStoreAdapters.swift in Sources */,
 				L1B0000B2788B823003D8011 /* ListsRepository.swift in Sources */,
 				W1R000022788B823003D8011 /* WatchedRatings.swift in Sources */,
@@ -1370,6 +1398,9 @@
 				BE83E71A307944040032C03E /* InMemoryAnnotationsStore.swift in Sources */,
 				TW00000E2788B823003D8011 /* InMemoryTVWatchStore.swift in Sources */,
 				C200000E2788B823003D8011 /* AnnotationsRepositoryTests.swift in Sources */,
+				FFC75DCB06DD8F7F23C02B44 /* DiaryEntryTests.swift in Sources */,
+				5CC25101B272073620C28D7C /* DiaryRepositoryTests.swift in Sources */,
+				9C8A7CEDCD98A7B9B78E3851 /* DiaryStoreTests.swift in Sources */,
 				TW0000102788B823003D8011 /* TVWatchProgressTests.swift in Sources */,
 				B10002122788B823003D8011 /* MovieDetailViewModelTests.swift in Sources */,
 				L1B0001B2788B823003D8011 /* ListsRepositoryTests.swift in Sources */,
@@ -1380,6 +1411,7 @@
 				A8C1F0E24B7D9A116E305C42 /* TVWatchConfirmPresentationTests.swift in Sources */,
 				L1B0001F2788B823003D8011 /* InMemoryListsStore.swift in Sources */,
 				SQL0000B2788B823003D8011 /* InMemoryLibraryStore.swift in Sources */,
+				FCB2B29228E2D5CF931B6F46 /* InMemoryDiaryStore.swift in Sources */,
 				SQL0000D2788B823003D8011 /* SQLiteLibraryStoreTests.swift in Sources */,
 				B10002142788B823003D8011 /* NavigationRouterTests.swift in Sources */,
 				B10003162788B823003D8011 /* PersonRepositoryTests.swift in Sources */,
