@@ -9,11 +9,9 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 - **Fixed in …**: fixed in that PR or branch, with a regression test that fails without the fix.
   - Persistence: this PR, `claude/review-persistence`.
   - Networking: [#47](https://github.com/collinbrowse/Silver-Screen/pull/47), `claude/review-networking`.
-  - Observability: `claude/review-observability`.
-  - Image loading: `claude/review-images`.
-  - Worker, scripts and CI: `claude/review-ci-worker`.
-
-  The last three open as PRs after this one.
+  - Observability: [#50](https://github.com/collinbrowse/Silver-Screen/pull/50), `claude/review-observability`.
+  - Image loading: [#51](https://github.com/collinbrowse/Silver-Screen/pull/51), `claude/review-images`.
+  - Worker, scripts and CI: [#49](https://github.com/collinbrowse/Silver-Screen/pull/49), `claude/review-ci-worker`.
 - **Reported**: not fixed in this pass. Screens and App navigation belong to other in-flight work. Low-severity items and repository-setting decisions are left for the owner.
 
 ## Summary
@@ -374,7 +372,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 
 ### O1 · High · Search terms reach Sentry through network breadcrumbs, spans and failed-request events
 
-**Status:** Fixed in `claude/review-observability`
+**Status:** Fixed in #50
 
 **Where:**
 - `SilverScreen/Support/SentryBootstrap.swift:64-76`
@@ -393,7 +391,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 
 ### O2 · Medium · Debug and test-host runs report as production under the shipping release
 
-**Status:** Fixed in `claude/review-observability`
+**Status:** Fixed in #50
 
 **Where:** `SentryBootstrap.swift:64-76`
 
@@ -449,7 +447,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 
 ### I1 · Medium · A cancelled or stale image task wipes an image that already loaded
 
-**Status:** Fixed in `claude/review-images`
+**Status:** Fixed in #51
 
 **Where:**
 - `SilverScreen/Design/RemoteImageView.swift:47-66`
@@ -470,7 +468,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 
 ### I2 · Medium · Decoded-image cache and coalescing are keyed by URL only, so the first caller's size wins
 
-**Status:** Fixed in `claude/review-images`
+**Status:** Fixed in #51
 
 **Where:** `SilverScreen/Support/ImageLoader.swift:52-73`
 
@@ -515,7 +513,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 
 ### C1 · High · The awards-catalog workflow cannot update its branch after the first run
 
-**Status:** Fixed in `claude/review-ci-worker` (push); PR creation reported
+**Status:** Fixed in #49 (push); PR creation reported
 
 **Where:** `.github/workflows/awards-catalog.yml:42-55`
 
@@ -531,7 +529,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 
 ### C2 · Medium · The Worker's fetch cache can cache TMDB 404s for four hours
 
-**Status:** Fixed in `claude/review-ci-worker`
+**Status:** Fixed in #49
 
 **Where:** `worker/src/index.js:87-91`
 
@@ -541,7 +539,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 
 ### C3 · Medium · Any caller can use the Worker as a general TMDB proxy on the owner's token and daily quota
 
-**Status:** Fixed in `claude/review-ci-worker`
+**Status:** Fixed in #49
 
 **Where:** `worker/src/index.js:17-23, 58-101`
 
@@ -558,7 +556,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 
 ### C4 · Medium · The release job runs an unpinned `curl … | bash` with signing secrets in scope
 
-**Status:** Fixed in `claude/review-ci-worker`
+**Status:** Fixed in #49
 
 **Where:** `.github/workflows/release.yml:154`
 
@@ -566,7 +564,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 
 ### C5 · Medium · One network blip kills the weekly digest
 
-**Status:** Fixed in `claude/review-ci-worker`
+**Status:** Fixed in #49
 
 **Where:**
 - `scripts/asc_api.py:115-139`
@@ -580,7 +578,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 
 ### C6 · Medium · Nothing monitors the Worker that release builds depend on
 
-**Status:** Fixed in `claude/review-ci-worker`
+**Status:** Fixed in #49
 
 **Where:** `scripts/tmdb_health.py:33`
 
@@ -647,7 +645,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 
 ### C14 · Low · "Wikidata query failed" hides the cause
 
-**Status:** Fixed in `claude/review-ci-worker`
+**Status:** Fixed in #49
 
 **Where:** `scripts/build_awards_catalog.py:833`
 
