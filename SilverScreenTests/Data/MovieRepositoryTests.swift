@@ -4,6 +4,7 @@
 //
 
 import XCTest
+import os
 @testable import SilverScreen
 
 final class MovieRepositoryTests: XCTestCase {
@@ -423,4 +424,42 @@ final class MovieRepositoryTests: XCTestCase {
                 XCTAssertEqual(detail.title, "Dune")
                 XCTAssertTrue(detail.trailers.isEmpty)
                 }
-                }
+
+    func test_topMovies_whenURLSessionCancelsTheRequest_throwsCancellationWithoutRetryOrErrorLog() async {
+        let client = SequencingHTTPClient(stubs: [
+            .failure(URLError(.cancelled)),
+            .success(TMDBFixtures.topMoviesPage1),
+            ])
+        let logger = CountingLogger()
+        let repository = MovieRepository.test(client: client, logger: logger)
+
+        do {
+            _ = try await repository.topMovies(page: 1)
+            XCTFail("Expected cancellation")
+        } catch {
+            XCTAssertTrue(error is CancellationError, "Got \(error)")
+        }
+
+        let count = await client.requestCount
+        XCTAssertEqual(count, 1)
+        XCTAssertEqual(logger.errorCount, 0)
+    }
+
+    func test_retryDelay_pastTheListedDelays_holdsAtTheLastOne() {
+        XCTAssertEqual(HTTPTransport.retryDelay(after: 0), HTTPTransport.retryDelays[0])
+        XCTAssertEqual(HTTPTransport.retryDelay(after: 7), HTTPTransport.retryDelays.last)
+    }
+}
+
+/// Counts error-level log lines, which is also what reaches Sentry in production.
+private struct CountingLogger: AppLogging {
+    private let errors = OSAllocatedUnfairLock(initialState: 0)
+
+    var errorCount: Int { errors.withLock { $0 } }
+
+    func debug(_ message: String, category: LogCategory) {}
+
+    func error(_ message: String, category: LogCategory) {
+        errors.withLock { $0 += 1 }
+    }
+}
