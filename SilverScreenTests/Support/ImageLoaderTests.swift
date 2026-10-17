@@ -68,6 +68,22 @@ final class ImageLoaderTests: XCTestCase {
         XCTAssertGreaterThan(image.size.height, 0)
     }
 
+    func test_image_sameURLAtTwoSizes_decodesEachSizeInsteadOfReusingTheFirst() async throws {
+        let client = RecordingHTTPClient(stub: .success(TestImages.pngData(size: 64)))
+        let loader = ImageLoader.test(client: client)
+        let url = URL(string: "https://image.tmdb.org/t/p/w780/still.jpg")!
+
+        let small = try await loader.image(for: url, targetSize: CGSize(width: 12, height: 12), scale: 1)
+        let large = try await loader.image(for: url, targetSize: CGSize(width: 48, height: 48), scale: 1)
+        let smallAgain = try await loader.image(for: url, targetSize: CGSize(width: 12, height: 12), scale: 1)
+
+        XCTAssertEqual(small.size.width, 12)
+        XCTAssertEqual(large.size.width, 48)
+        XCTAssertTrue(smallAgain === small, "The same size is still served from the memory cache")
+        let requests = await client.requests.count
+        XCTAssertEqual(requests, 2)
+    }
+
     func test_displayImage_whenTheViewTaskWasCancelled_returnsNilEvenOnACacheHit() async throws {
         let loader = ImageLoader.test(client: FakeHTTPClient(stub: .success(TestImages.pngData())))
         let url = URL(string: "https://image.tmdb.org/t/p/w92/poster.jpg")!
