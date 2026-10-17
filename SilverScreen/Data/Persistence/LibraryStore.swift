@@ -2,7 +2,7 @@
 //  LibraryStore.swift
 //  SilverScreen
 //
-//  Unified disk boundary for lists, annotations, and TV progress. Repositories
+//  Unified disk boundary for lists, annotations, TV progress, and the diary. Repositories
 //  keep product rules; this store owns transactions against library.sqlite.
 //
 
@@ -17,6 +17,8 @@ enum LibraryStoreMutation: Sendable, Equatable {
     /// Make TV watch and completed-episode rows match the states, diffed the same way.
     /// Does not touch lists or annotations.
     case replaceTVWatch([TVSeriesWatchState])
+    /// Make diary rows match the entries, diffed the same way. Does not touch other domains.
+    case replaceDiary([DiaryEntry])
 }
 
 protocol LibraryStore: Sendable {
@@ -24,5 +26,6 @@ protocol LibraryStore: Sendable {
     func fetchSnapshot() async throws -> LibrarySnapshot
     func fetchAnnotations() async throws -> [MediaAnnotation]
     func fetchTVWatchStates() async throws -> [TVSeriesWatchState]
+    func fetchDiaryEntries() async throws -> [DiaryEntry]
     func apply(_ mutation: LibraryStoreMutation) async throws
 }

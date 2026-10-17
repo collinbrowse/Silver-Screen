@@ -245,6 +245,7 @@ struct MovieDetailView: View {
                 userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
                 onEdit: { viewModel.openAnnotationEditor() }
             )
+            LogWatchButton(title: LogWatchTitle(movie: content.detail), currentScore: content.userScore)
             MediaDescriptionSection(
                 overview: content.detail.overview,
                 note: content.userNote,
