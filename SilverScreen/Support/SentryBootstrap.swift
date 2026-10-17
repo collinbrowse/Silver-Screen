@@ -62,20 +62,52 @@ enum SentryBootstrap {
         }
 
         SentrySDK.start { options in
-            options.dsn = dsn
-            if let release = releaseName(infoDictionary: info) {
-                options.releaseName = release
-            }
-            options.enableAutoSessionTracking = true
-            options.sendDefaultPii = false
-            #if DEBUG
-            options.tracesSampleRate = 0
-            #else
-            options.tracesSampleRate = 0.2
-            #endif
+            configure(options, dsn: dsn, infoDictionary: info)
         }
 
         started.withLock { $0 = true }
+    }
+
+    /// Every option the app sets, kept apart from `start` so tests can check them.
+    static func configure(_ options: Options, dsn: String, infoDictionary info: [String: Any]) {
+        options.dsn = dsn
+        if let release = releaseName(infoDictionary: info) {
+            options.releaseName = release
+        }
+        options.enableAutoSessionTracking = true
+        options.sendDefaultPii = false
+        // A failed-request event carries the request's query string, and 5xx responses
+        // are already reported through `AppLogging` with the path only.
+        options.enableCaptureFailedRequests = false
+        options.beforeBreadcrumb = { scrubbed($0) }
+        options.beforeSendSpan = { scrubbed($0) }
+        #if DEBUG
+        options.tracesSampleRate = 0
+        #else
+        options.tracesSampleRate = 0.2
+        #endif
+    }
+
+    /// Keys where the SDK copies a request's query string and fragment. Search requests
+    /// carry what the user typed in `query`, which observability.mdc never sends.
+    static let requestURLDataKeys = ["http.query", "http.fragment"]
+
+    /// Drops the query and fragment from an HTTP breadcrumb. Other breadcrumbs pass through.
+    static func scrubbed(_ breadcrumb: Breadcrumb) -> Breadcrumb {
+        guard var data = breadcrumb.data else { return breadcrumb }
+        for key in requestURLDataKeys {
+            data[key] = nil
+        }
+        breadcrumb.data = data
+        return breadcrumb
+    }
+
+    /// Drops the query and fragment from a network span.
+    static func scrubbed(_ span: any Span) -> any Span {
+        for key in requestURLDataKeys {
+            span.removeData(key: key)
+        }
+        return span
     }
 
     /// Sends in-app feedback. The release tag carries the version and build.
