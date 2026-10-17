@@ -548,6 +548,12 @@ final class MovieRepository: Sendable {
         var skipped = 0
 
         for element in results {
+            // `JSONSerialization.data(withJSONObject:)` raises an Objective-C exception, which
+            // `catch` cannot handle, for a bare `null` or number. Skip those first.
+            guard JSONSerialization.isValidJSONObject(element) else {
+                skipped += 1
+                continue
+            }
             do {
                 let elementData = try JSONSerialization.data(withJSONObject: element)
                 let dto = try decoder.decode(MovieSummaryDTO.self, from: elementData)

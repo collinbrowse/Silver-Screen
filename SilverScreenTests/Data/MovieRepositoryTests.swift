@@ -472,6 +472,82 @@ final class MovieRepositoryTests: XCTestCase {
         XCTAssertEqual(HTTPTransport.retryDelay(after: 0), HTTPTransport.retryDelays[0])
         XCTAssertEqual(HTTPTransport.retryDelay(after: 7), HTTPTransport.retryDelays.last)
     }
+
+    func test_topMovies_whenAResultIsNotAnObject_skipsItInsteadOfCrashing() async throws {
+        let json = Data(
+            """
+            {
+              "page": 1,
+              "results": [
+                null,
+                42,
+                {"id": 1, "title": "Good", "release_date": "2000-01-01", "vote_average": 7.5}
+              ],
+              "total_pages": 1
+            }
+            """.utf8
+        )
+        let repository = MovieRepository.test(client: FakeHTTPClient(stub: .success(json)))
+
+        let page = try await repository.topMovies(page: 1)
+
+        XCTAssertEqual(page.movies.map(\.id), [1])
+    }
+
+    func test_movieDetail_keepsTheMovieWhenOneSimilarCastImageOrGenreIsMalformed() async throws {
+        let payload = Data(
+            """
+            {
+              "id": 1,
+              "title": "Dune",
+              "vote_average": 8,
+              "genres": [{"id": 878, "name": "Science Fiction"}, {"id": 12}],
+              "images": {
+                "backdrops": [{"file_path": "/b.jpg", "vote_average": 5}, {"vote_average": 1}]
+              },
+              "credits": {
+                "cast": [{"id": 10, "credit_id": "c10", "name": "Timothée Chalamet", "order": 0}, {"name": "No id"}],
+                "crew": [{"name": "No id"}]
+              },
+              "similar": {
+                "results": [
+                  {"id": 2, "title": "Arrival", "release_date": "2016-11-11", "vote_average": 7.6},
+                  {"id": 3, "title": null}
+                ]
+              }
+            }
+            """.utf8
+        )
+
+        let detail = try await MovieRepository.test(client: FakeHTTPClient(stub: .success(payload)))
+            .movieDetail(id: 1)
+
+        XCTAssertEqual(detail.title, "Dune")
+        XCTAssertEqual(detail.genres.map(\.id), [878])
+        XCTAssertEqual(detail.images.count, 1)
+        XCTAssertEqual(detail.cast.map(\.personID), [10])
+        XCTAssertEqual(detail.similar.map(\.id), [2])
+    }
+
+    func test_collection_keepsGoodPartsWhenOneIsMalformed() async throws {
+        let payload = Data(
+            """
+            {
+              "id": 9,
+              "name": "Dune Collection",
+              "parts": [
+                {"id": 1, "title": "Dune", "release_date": "2021-09-15", "vote_average": 7.8},
+                {"id": 2}
+              ]
+            }
+            """.utf8
+        )
+
+        let collection = try await MovieRepository.test(client: FakeHTTPClient(stub: .success(payload)))
+            .collection(id: 9)
+
+        XCTAssertEqual(collection.parts.map(\.id), [1])
+    }
 }
 
 /// Counts error-level log lines, which is also what reaches Sentry in production.
