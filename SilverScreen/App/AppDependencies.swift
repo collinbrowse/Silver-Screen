@@ -90,7 +90,10 @@ struct AppDependencies {
         ) { cutoff in
             try await libraryStore.countRatings(createdAfter: cutoff)
         }
-        let settings = SettingsContext(appInfo: appInfo) { submission in
+        let settings = SettingsContext(
+            appInfo: appInfo,
+            analyticsSharing: AnalyticsSharing(preferences: analyticsPreferences)
+        ) { submission in
             SentryBootstrap.sendFeedback(message: submission.message, email: submission.email)
         }
         return AppDependencies(
