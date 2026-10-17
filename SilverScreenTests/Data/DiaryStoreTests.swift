@@ -141,6 +141,47 @@ final class DiaryStoreTests: XCTestCase {
         XCTAssertEqual(entries.first?.watchedOn, DiaryDay(addedAt))
     }
 
+    func test_backfillNow_addsEntriesForWatchedAndNeverDuplicates() async throws {
+        let store = try makeStore()
+        try await store.bootstrap()
+        let watched = LibraryList.system(.watched)
+        try await store.apply(
+            .replaceLists(
+                LibrarySnapshot(
+                    lists: [watched],
+                    entries: [ListEntry(listID: watched.id, draft: draft(550), addedAt: Date(), position: 0)]
+                )
+            )
+        )
+
+        try await store.backfillDiaryFromWatchedNow()
+        try await store.backfillDiaryFromWatchedNow()
+
+        let entries = try await store.fetchDiaryEntries()
+        XCTAssertEqual(entries.map(\.id), [SQLiteLibraryStore.backfilledDiaryID(for: .movie(550))])
+    }
+
+    func test_backfillNow_doesNotReviveDeletedEntry() async throws {
+        let store = try makeStore()
+        try await store.bootstrap()
+        let watched = LibraryList.system(.watched)
+        try await store.apply(
+            .replaceLists(
+                LibrarySnapshot(
+                    lists: [watched],
+                    entries: [ListEntry(listID: watched.id, draft: draft(550), addedAt: Date(), position: 0)]
+                )
+            )
+        )
+        try await store.backfillDiaryFromWatchedNow()
+        try await store.apply(.replaceDiary([]))
+
+        try await store.backfillDiaryFromWatchedNow()
+
+        let entries = try await store.fetchDiaryEntries()
+        XCTAssertTrue(entries.isEmpty)
+    }
+
     // MARK: - Diffed writes
 
     func test_replaceDiary_roundTripsEveryField() async throws {

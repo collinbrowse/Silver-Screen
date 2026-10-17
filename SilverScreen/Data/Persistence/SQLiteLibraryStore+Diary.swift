@@ -250,6 +250,13 @@ extension SQLiteLibraryStore {
         return utc.component(.year, from: date)
     }
 
+    /// Runs the Watched backfill on its own, in one transaction. A demo launch seeds its
+    /// library after migrating, so it calls this to get the diary an upgrade would have.
+    func backfillDiaryFromWatchedNow() async throws {
+        try await ensureBootstrapped()
+        try withTransaction { try backfillDiaryFromWatched() }
+    }
+
     /// The id a backfilled entry gets for `subject`. Two devices that backfill the same
     /// title agree on it, so a later sync merges them instead of doubling the entry.
     static func backfilledDiaryID(for subject: DiarySubject) -> UUID {

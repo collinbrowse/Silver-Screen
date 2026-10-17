@@ -117,6 +117,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         do {
             let seed = try DemoLibrarySeed.load(from: url)
             try await seed.apply(lists: dependencies.lists, annotations: dependencies.annotations)
+            try await dependencies.libraryStore.backfillDiaryFromWatchedNow()
         } catch {
             dependencies.logger.error("Demo library seed failed: \(error)", category: .persistence)
         }
