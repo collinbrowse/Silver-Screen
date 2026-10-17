@@ -300,6 +300,14 @@ class ArchiveTests(unittest.TestCase):
         self.assertEqual(len(direct), 1)
         self.assertIn("TMDBAccessToken", direct[0])
 
+    def test_embedded_config_allows_missing_analytics_id_and_rejects_malformed_one(self) -> None:
+        base = {"TMDBAccessToken": "eyJtoken", "SentryDSN": "https://abc@o1.ingest.us.sentry.io/2"}
+        for app_id in ("", "$(TELEMETRYDECK_APP_ID)", "B97579B6-FFB8-4AC5-AAA7-DA5796CC5DCE"):
+            self.assertEqual(release.embedded_config_problems({**base, "TelemetryDeckAppID": app_id}), [])
+        problems = release.embedded_config_problems({**base, "TelemetryDeckAppID": "not-an-id"})
+        self.assertEqual(len(problems), 1)
+        self.assertIn("TelemetryDeckAppID", problems[0])
+
     def test_key_path_must_be_named_for_altool(self) -> None:
         self.assertIsNone(release.key_path_problem("ABC123", "/tmp/keys/AuthKey_ABC123.p8"))
         self.assertIsNone(release.key_path_problem("ABC123", ""))
