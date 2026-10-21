@@ -177,6 +177,7 @@ struct LibraryDetailView: View {
         .padding(.horizontal, DesignSpacing.lg)
         .padding(.vertical, DesignSpacing.sm)
         .readableColumn()
+        .foldPane()
         .accessibilityLabel("Filter titles")
     }
 

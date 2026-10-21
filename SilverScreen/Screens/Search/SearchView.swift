@@ -20,6 +20,8 @@ struct SearchView: View {
     var router: NavigationRouter?
 
     @State private var scrollID: String?
+    /// Where the iPhone Duo's fold crosses the shelf page, or nil.
+    @State private var shelfFold: FoldSplit?
     /// Mirrors the system search field's focus. Not passed into `.searchable`,
     /// because binding `isPresented` clears the visible query after a pop.
     @State private var fieldPresented = false
@@ -112,50 +114,88 @@ struct SearchView: View {
     }
 
     /// Two cards a row on a phone, more as the width allows; see `ShelfGridMetrics`.
-    /// The three award cards never leave empty slots beside them.
+    /// The three award cards never leave empty slots beside them. Across the iPhone
+    /// Duo's fold each section becomes one grid per pane, so no card sits on the crease.
     private var shelfGrid: some View {
         ContentWidthReader { width in
             let columns = ShelfGridMetrics.columnCount(forWidth: width)
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignSpacing.lg) {
-                    shelfSection(columns: min(columns, viewModel.shelves.count)) {
-                        ForEach(viewModel.shelves) { shelf in
-                            Button {
-                                openShelf(shelf)
-                            } label: {
-                                AwardShelfCard(shelf: shelf)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("\(shelf.title), \(shelf.subtitle)")
-                            .accessibilityHint("Opens this award list")
-                        }
-                    }
+                    shelves(
+                        viewModel.shelves,
+                        id: \.id,
+                        columns: min(columns, viewModel.shelves.count),
+                        cell: awardShelfButton
+                    )
 
                     Text("Genre")
                         .font(DesignTypography.section)
                         .foregroundStyle(DesignTheme.textPrimary)
                         .padding(.horizontal, DesignSpacing.lg)
 
-                    shelfSection(columns: columns) {
-                        ForEach(MergedGenre.searchShelf, id: \.self) { genre in
-                            Button {
-                                open(.genreBrowse(genre))
-                            } label: {
-                                GenreShelfCard(genre: genre)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityHint("Opens this genre list")
-                        }
-                    }
-                    .padding(.vertical, DesignSpacing.lg)
+                    shelves(MergedGenre.searchShelf, id: \.self, columns: columns, cell: genreShelfButton)
+                        .padding(.vertical, DesignSpacing.lg)
                 }
             }
+            .onFoldSplitChange { shelfFold = $0 }
         }
     }
 
-    private func shelfSection<Content: View>(
+    private func awardShelfButton(_ shelf: AwardShelf) -> some View {
+        Button {
+            openShelf(shelf)
+        } label: {
+            AwardShelfCard(shelf: shelf)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(shelf.title), \(shelf.subtitle)")
+        .accessibilityHint("Opens this award list")
+    }
+
+    private func genreShelfButton(_ genre: MergedGenre) -> some View {
+        Button {
+            open(.genreBrowse(genre))
+        } label: {
+            GenreShelfCard(genre: genre)
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens this genre list")
+    }
+
+    /// One shelf section: a single grid, or one grid per pane across a fold with the
+    /// cards dealt row by row so reading order holds.
+    @ViewBuilder
+    private func shelves<Item, ID: Hashable, Cell: View>(
+        _ items: [Item],
+        id: KeyPath<Item, ID>,
         columns: Int,
-        @ViewBuilder content: () -> Content
+        cell: @escaping (Item) -> Cell
+    ) -> some View {
+        if let shelfFold {
+            let perPane = FoldLayout.columnsPerPane(
+                split: shelfFold,
+                minimumCardWidth: ShelfGridMetrics.minimumCardWidth,
+                spacing: ShelfGridMetrics.cardSpacing,
+                sideInset: ShelfGridMetrics.sideInset
+            )
+            let panes = FoldLayout.distribute(items, perPane: perPane)
+            FoldPanesLayout(split: shelfFold) {
+                shelfGridSection(panes.leading, id: id, columns: perPane, cell: cell)
+                    .padding(.leading, ShelfGridMetrics.sideInset)
+                shelfGridSection(panes.trailing, id: id, columns: perPane, cell: cell)
+                    .padding(.trailing, ShelfGridMetrics.sideInset)
+            }
+        } else {
+            shelfGridSection(items, id: id, columns: columns, cell: cell)
+                .padding(.horizontal, ShelfGridMetrics.sideInset)
+        }
+    }
+
+    private func shelfGridSection<Item, ID: Hashable, Cell: View>(
+        _ items: [Item],
+        id: KeyPath<Item, ID>,
+        columns: Int,
+        cell: @escaping (Item) -> Cell
     ) -> some View {
         LazyVGrid(
             columns: Array(
@@ -164,9 +204,10 @@ struct SearchView: View {
             ),
             spacing: ShelfGridMetrics.cardSpacing
         ) {
-            content()
+            ForEach(items, id: id) { item in
+                cell(item)
+            }
         }
-        .padding(.horizontal, ShelfGridMetrics.sideInset)
     }
 
     private func openShelf(_ shelf: AwardShelf) {

@@ -22,5 +22,7 @@ struct EmptyStateView: View {
 
     var body: some View {
         ContentUnavailableView(title, systemImage: systemImage, description: Text(message))
+            // Centered text would sit on the iPhone Duo's crease; keep it in one pane.
+            .foldPane()
     }
 }

@@ -163,6 +163,7 @@ struct GenreBrowseView: View {
                     )
                     .padding(.horizontal, DesignSpacing.lg)
                     .readableColumn()
+                    .foldPane()
                     .background(.clear)
                     .offset(y: -8)
                 }

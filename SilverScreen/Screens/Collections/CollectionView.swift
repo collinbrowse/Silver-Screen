@@ -92,6 +92,7 @@ struct CollectionView: View {
                         }
                     }
                     .frame(maxWidth: ReadableWidth.maximum, alignment: .leading)
+                    .foldPane(alignment: .leading)
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel(headerLabel(content))
                     .coordinateSpace(.named("detailScroll"))

@@ -45,6 +45,8 @@ struct ListChangeBanner: View {
             .readableColumn()
             .padding(.horizontal, DesignSpacing.lg)
             .padding(.bottom, DesignSpacing.sm)
+            // On the iPhone Duo's fold, the toast and its Undo stay in the leading pane.
+            .foldPane()
             .accessibilityElement(children: .contain)
         }
     }

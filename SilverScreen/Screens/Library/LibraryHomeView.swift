@@ -123,6 +123,7 @@ struct LibraryHomeView: View {
         .padding(.horizontal, DesignSpacing.lg)
         .padding(.vertical, DesignSpacing.sm)
         .readableColumn()
+        .foldPane()
         .accessibilityLabel("Library")
     }
 
