@@ -115,6 +115,8 @@
 		1A5C9423F46F65AE88ACE759 /* ContentWidthReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5CCB70AFDBC900957ECA88 /* ContentWidthReader.swift */; };
 		1A5C8FAF15EDBD9E5069EFF1 /* DetailColumns.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5CAF7BDC5B50241FFE9605 /* DetailColumns.swift */; };
 		1A5C61C6C2B6AC28F10DDB3F /* CardLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5C555B9A63D87EF3BDD01F /* CardLabel.swift */; };
+		1A5C2C7633E4FA001C55885A /* FoldLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5C49C6C3B059AFA58855C1 /* FoldLayout.swift */; };
+		1A5C7AC40C0A9D886361B444 /* FoldPanes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5CCDA56597C07C444B1636 /* FoldPanes.swift */; };
 		B10003122788B823003D8011 /* SectionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10003132788B823003D8011 /* SectionHeader.swift */; };
 		B10003162788B823003D8011 /* PersonRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10003172788B823003D8011 /* PersonRepositoryTests.swift */; };
 		B10003182788B823003D8011 /* PersonDetailViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10003192788B823003D8011 /* PersonDetailViewModelTests.swift */; };
@@ -383,6 +385,8 @@
 		1A5CCB70AFDBC900957ECA88 /* ContentWidthReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentWidthReader.swift; sourceTree = "<group>"; };
 		1A5CAF7BDC5B50241FFE9605 /* DetailColumns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailColumns.swift; sourceTree = "<group>"; };
 		1A5C555B9A63D87EF3BDD01F /* CardLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardLabel.swift; sourceTree = "<group>"; };
+		1A5C49C6C3B059AFA58855C1 /* FoldLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoldLayout.swift; sourceTree = "<group>"; };
+		1A5CCDA56597C07C444B1636 /* FoldPanes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoldPanes.swift; sourceTree = "<group>"; };
 		B10003132788B823003D8011 /* SectionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionHeader.swift; sourceTree = "<group>"; };
 		B10003172788B823003D8011 /* PersonRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonRepositoryTests.swift; sourceTree = "<group>"; };
 		B10003192788B823003D8011 /* PersonDetailViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonDetailViewModelTests.swift; sourceTree = "<group>"; };
@@ -741,6 +745,8 @@
 				C20000092788B823003D8011 /* MediaDescriptionSection.swift */,
 				B10002212788B823003D8011 /* FlowLayout.swift */,
 				B10003132788B823003D8011 /* SectionHeader.swift */,
+				1A5CCDA56597C07C444B1636 /* FoldPanes.swift */,
+				1A5C49C6C3B059AFA58855C1 /* FoldLayout.swift */,
 				1A5C555B9A63D87EF3BDD01F /* CardLabel.swift */,
 				1A5CAF7BDC5B50241FFE9605 /* DetailColumns.swift */,
 				1A5CCB70AFDBC900957ECA88 /* ContentWidthReader.swift */,
@@ -1317,6 +1323,8 @@
 				B100030C2788B823003D8011 /* CreditsListViewModel.swift in Sources */,
 				B100030E2788B823003D8011 /* CreditsListView.swift in Sources */,
 				B10003122788B823003D8011 /* SectionHeader.swift in Sources */,
+				1A5C7AC40C0A9D886361B444 /* FoldPanes.swift in Sources */,
+				1A5C2C7633E4FA001C55885A /* FoldLayout.swift in Sources */,
 				1A5C61C6C2B6AC28F10DDB3F /* CardLabel.swift in Sources */,
 				1A5C8FAF15EDBD9E5069EFF1 /* DetailColumns.swift in Sources */,
 				1A5C9423F46F65AE88ACE759 /* ContentWidthReader.swift in Sources */,

@@ -172,6 +172,77 @@ final class AdaptiveLayoutTests: XCTestCase {
         XCTAssertTrue(CarouselMetrics.showsViewAll(totalCount: 15, previewCount: 14))
     }
 
+    // MARK: - Fold
+
+    /// The Duo's inner screen opened sideways, as the 27.1 simulator reports it: a
+    /// 40 pt crease at x 455.5 with 20 pt margins each side.
+    private let duoCrease = FoldDivision(
+        frame: CGRect(x: 455.5, y: 0, width: 40, height: 669),
+        leadingMargin: 20,
+        trailingMargin: 20
+    )
+
+    func test_foldSplit_duoInnerSideways_splitsAtCreaseWithMargins() throws {
+        let split = try XCTUnwrap(
+            FoldLayout.split(bounds: CGRect(x: 0, y: 0, width: 867, height: 669), divisions: [duoCrease])
+        )
+
+        XCTAssertEqual(split.leading, CGRect(x: 0, y: 0, width: 435.5, height: 669))
+        XCTAssertEqual(split.gutter, CGRect(x: 435.5, y: 0, width: 80, height: 669))
+        XCTAssertEqual(split.trailing, CGRect(x: 515.5, y: 0, width: 351.5, height: 669))
+    }
+
+    func test_foldSplit_noDivisions_isNil() {
+        XCTAssertNil(FoldLayout.split(bounds: CGRect(x: 0, y: 0, width: 867, height: 669), divisions: []))
+    }
+
+    func test_foldSplit_horizontalCrease_isNil() {
+        let upright = FoldDivision(frame: CGRect(x: 0, y: 455.5, width: 669, height: 40))
+
+        XCTAssertNil(FoldLayout.split(bounds: CGRect(x: 0, y: 0, width: 669, height: 951), divisions: [upright]))
+    }
+
+    func test_foldSplit_creaseOutsideView_isNil() {
+        // A view in the trailing pane only: the crease is left of it in its coordinates.
+        let crease = FoldDivision(frame: CGRect(x: -100, y: 0, width: 40, height: 669))
+
+        XCTAssertNil(FoldLayout.split(bounds: CGRect(x: 0, y: 0, width: 350, height: 669), divisions: [crease]))
+    }
+
+    func test_foldSplit_creaseNearEdge_isNil() {
+        let crease = FoldDivision(frame: CGRect(x: 60, y: 0, width: 40, height: 669))
+
+        XCTAssertNil(FoldLayout.split(bounds: CGRect(x: 0, y: 0, width: 867, height: 669), divisions: [crease]))
+    }
+
+    func test_foldSplit_rowShorterThanCrease_stillSplits() throws {
+        // A list row 120 pt tall in screen space reports the crease spanning past it.
+        let crease = FoldDivision(frame: CGRect(x: 439.5, y: -300, width: 40, height: 669))
+        let split = try XCTUnwrap(
+            FoldLayout.split(bounds: CGRect(x: 0, y: 0, width: 843, height: 120), divisions: [crease])
+        )
+
+        XCTAssertEqual(split.leading.width, 439.5)
+        XCTAssertEqual(split.trailing.minX, 479.5)
+        XCTAssertEqual(split.leading.height, 120)
+    }
+
+    func test_foldColumnsPerPane_usesNarrowerPane() throws {
+        let split = try XCTUnwrap(
+            FoldLayout.split(bounds: CGRect(x: 0, y: 0, width: 835, height: 669), divisions: [duoCrease])
+        )
+
+        // Trailing pane 319.5: (319.5 + 12) / 172 = 1.9, so one card per pane.
+        XCTAssertEqual(FoldLayout.columnsPerPane(split: split, minimumCardWidth: 160, spacing: 12), 1)
+    }
+
+    func test_foldDistribute_keepsReadingOrderRowByRow() {
+        let panes = FoldLayout.distribute(Array(1...7), perPane: 2)
+
+        XCTAssertEqual(panes.leading, [1, 2, 5, 6])
+        XCTAssertEqual(panes.trailing, [3, 4, 7])
+    }
+
     // MARK: - Grid rows
 
     func test_rows_oneColumn_yieldsOneRowPerItem() {
