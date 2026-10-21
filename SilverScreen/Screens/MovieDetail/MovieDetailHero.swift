@@ -76,10 +76,30 @@ struct DetailHero<Metadata: View>: View {
         }
     }
 
+    /// The backdrop keeps a 16:9 slot in the layout but draws under the side safe area
+    /// when the slot reaches the screen edge, so a side toolbar (the iPhone Duo's outer
+    /// screen) floats over the image instead of a blank strip. A slot centered in a
+    /// readable column does not reach the edge and stays as it is. The page count sits
+    /// in the fade at the bottom trailing corner, inside the safe area, clear of the
+    /// poster and of the title artwork higher up.
     private var backdropStage: some View {
+        Color.clear
+            .aspectRatio(16.0 / 9.0, contentMode: .fit)
+            .overlay {
+                backdropPager
+                    .ignoresSafeArea(.container, edges: .horizontal)
+            }
+            .overlay(alignment: .bottomTrailing) {
+                pageCapsule
+                    .padding(.trailing, DesignSpacing.lg)
+                    .padding(.bottom, DesignSpacing.md)
+            }
+    }
+
+    private var backdropPager: some View {
         GeometryReader { proxy in
             let width = proxy.size.width
-            let height = width * 9 / 16
+            let height = proxy.size.height
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 0) {
                     ForEach(Array(images.enumerated()), id: \.element.id) { index, image in
@@ -105,14 +125,8 @@ struct DetailHero<Metadata: View>: View {
                 .frame(height: height * 0.42)
                 .allowsHitTesting(false)
             }
-            .overlay(alignment: .bottomTrailing) {
-                pageCapsule
-                    .padding(.trailing, DesignSpacing.lg)
-                    .padding(.bottom, posterOverlap + DesignSpacing.md)
-            }
             .clipped()
         }
-        .aspectRatio(16.0 / 9.0, contentMode: .fit)
     }
 
     private func backdropPage(_ image: MovieImage, index: Int, width: CGFloat, height: CGFloat) -> some View {
@@ -120,7 +134,7 @@ struct DetailHero<Metadata: View>: View {
             path: image.filePath,
             kind: .backdrop,
             width: width,
-            aspectRatio: 16.0 / 9.0,
+            aspectRatio: height > 0 ? width / height : 16.0 / 9.0,
             imageLoader: imageLoader,
             placeholderSystemImage: "photo",
             cornerRadius: 0
