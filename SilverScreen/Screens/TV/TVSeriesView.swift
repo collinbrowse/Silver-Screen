@@ -21,6 +21,8 @@ struct TVSeriesView: View {
     @State private var selectedBackdropID: String?
     @State private var playingTrailer: MediaTrailer?
     @State private var loadingTrailerID: String?
+    /// True while the iPhone Duo's fold crosses the page; see `seriesFacts`.
+    @State private var isFolded = false
 
     private var fullscreenBinding: Binding<FullscreenImages?> {
         Binding(
@@ -157,51 +159,29 @@ struct TVSeriesView: View {
 
     private func seriesScroll(_ content: TVSeriesContent, scrollTo: @escaping (String) -> Void) -> some View {
         let bleedsToTop = !content.detail.images.isEmpty
+        // Read here, in the view's own body, so a fold change re-renders the page; a
+        // state read only inside the width reader's closure would not.
+        let pageIsFolded = isFolded
         return ContentWidthReader { width in
             let twoColumns = DetailLayoutMetrics.usesTwoColumns(
                 forWidth: width,
                 isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
             )
             let contentWidth = DetailLayoutMetrics.contentWidth(forWidth: width, twoColumns: twoColumns)
+            let sectionsInPanes = twoColumns && pageIsFolded
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignSpacing.xl) {
                     seriesHero(content, twoColumns: twoColumns)
-                    seriesFacts(content, scrollTo: scrollTo, twoColumns: twoColumns, contentWidth: contentWidth)
-                    if !content.seasons.isEmpty {
-                        seasonsCarousel(content)
-                    }
-                    if !content.recommendations.isEmpty {
-                        recommendationsCarousel(content)
-                    }
-                    if !content.detail.cast.isEmpty {
-                        TVCreditCarousel(
-                            title: "Cast",
-                            people: content.detail.cast,
-                            imageLoader: imageLoader
-                        ) { person in
-                            router?.push(.person(id: person.id))
-                        }
-                    }
-                    if !content.detail.directorsAndWriters.isEmpty {
-                        TVCreditCarousel(
-                            title: "Directors & Writers",
-                            people: content.detail.directorsAndWriters,
-                            imageLoader: imageLoader
-                        ) { person in
-                            router?.push(.person(id: person.id))
-                        }
-                    }
-                    if let reviews = content.reviews {
-                        ReviewPageList(
-                            items: reviews.items,
-                            hasMore: reviews.hasMore,
-                            totalCount: reviews.totalCount,
-                            isLoadingPage: reviews.isLoadingPage,
-                            pageError: reviews.pageError,
-                            loadMore: { await viewModel.loadMoreReviews() },
-                            scrollTo: scrollTo,
-                            columns: twoColumns ? 2 : 1
-                        )
+                    seriesFacts(
+                        content,
+                        scrollTo: scrollTo,
+                        twoColumns: twoColumns,
+                        contentWidth: contentWidth,
+                        sectionsInPanes: sectionsInPanes
+                    )
+                    if !sectionsInPanes {
+                        carousels(content)
+                        reviews(content, scrollTo: scrollTo, columns: twoColumns ? 2 : 1)
                     }
                     if !content.detail.streamingProviders.isEmpty {
                         JustWatchAttributionFooter()
@@ -212,6 +192,7 @@ struct TVSeriesView: View {
                 .readableColumn(maxWidth: DetailLayoutMetrics.columnCap(twoColumns: twoColumns))
                 .coordinateSpace(.named("detailScroll"))
             }
+            .onFoldSplitChange { isFolded = $0 != nil }
             .heroStatusBarBleed(enabled: bleedsToTop)
             .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
             .refreshable {
@@ -257,17 +238,21 @@ struct TVSeriesView: View {
         }
     }
 
-    /// Rating and storyline, with awards beside them on a wide page and below them on a phone.
+    /// Rating and storyline, with awards beside them on a wide page and below them on
+    /// a phone. With `sectionsInPanes` (the iPhone Duo's fold crosses the page) the
+    /// reviews join the leading pane and the carousels the trailing one, so nothing
+    /// below the hero spans the crease.
     private func seriesFacts(
         _ content: TVSeriesContent,
         scrollTo: @escaping (String) -> Void,
         twoColumns: Bool,
-        contentWidth: CGFloat
+        contentWidth: CGFloat,
+        sectionsInPanes: Bool
     ) -> some View {
         DetailColumns(
             twoColumns: twoColumns,
             contentWidth: contentWidth,
-            showsSecondary: !viewModel.awardRows.isEmpty,
+            showsSecondary: sectionsInPanes || !viewModel.awardRows.isEmpty,
             itemSpacing: DesignSpacing.md
         ) {
             TMDBRatingCard(
@@ -284,10 +269,64 @@ struct TVSeriesView: View {
                 onEdit: { viewModel.openAnnotationEditor() },
                 scrollTo: scrollTo
             )
+            if sectionsInPanes {
+                reviews(content, scrollTo: scrollTo, columns: 1)
+                    .inPane()
+            }
         } secondary: {
-            AwardRowsSection(rows: viewModel.awardRows)
+            if !viewModel.awardRows.isEmpty {
+                AwardRowsSection(rows: viewModel.awardRows)
+            }
+            if sectionsInPanes {
+                carousels(content)
+                    .inPane()
+            }
         }
         .padding(.horizontal, DesignSpacing.lg)
+    }
+
+    @ViewBuilder
+    private func carousels(_ content: TVSeriesContent) -> some View {
+        if !content.seasons.isEmpty {
+            seasonsCarousel(content)
+        }
+        if !content.recommendations.isEmpty {
+            recommendationsCarousel(content)
+        }
+        if !content.detail.cast.isEmpty {
+            TVCreditCarousel(
+                title: "Cast",
+                people: content.detail.cast,
+                imageLoader: imageLoader
+            ) { person in
+                router?.push(.person(id: person.id))
+            }
+        }
+        if !content.detail.directorsAndWriters.isEmpty {
+            TVCreditCarousel(
+                title: "Directors & Writers",
+                people: content.detail.directorsAndWriters,
+                imageLoader: imageLoader
+            ) { person in
+                router?.push(.person(id: person.id))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func reviews(_ content: TVSeriesContent, scrollTo: @escaping (String) -> Void, columns: Int) -> some View {
+        if let reviews = content.reviews {
+            ReviewPageList(
+                items: reviews.items,
+                hasMore: reviews.hasMore,
+                totalCount: reviews.totalCount,
+                isLoadingPage: reviews.isLoadingPage,
+                pageError: reviews.pageError,
+                loadMore: { await viewModel.loadMoreReviews() },
+                scrollTo: scrollTo,
+                columns: columns
+            )
+        }
     }
 
     private func seasonsCarousel(_ content: TVSeriesContent) -> some View {

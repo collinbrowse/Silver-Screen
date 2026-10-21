@@ -11,7 +11,8 @@ import SwiftUI
 /// stacked otherwise. `AnyLayout` keeps each section's identity across the switch,
 /// so an expanded storyline stays expanded when the device rotates or unfolds.
 /// Pass `showsSecondary: false` when the side column would be empty, so the main
-/// column takes the full width instead of leaving a gap.
+/// column takes the full width instead of leaving a gap. Across the iPhone Duo's
+/// fold the two columns take the two panes, with the crease as the gap.
 struct DetailColumns<Primary: View, Secondary: View>: View {
     let twoColumns: Bool
     let contentWidth: CGFloat
@@ -23,20 +24,18 @@ struct DetailColumns<Primary: View, Secondary: View>: View {
     @ViewBuilder let primary: Primary
     @ViewBuilder let secondary: Secondary
 
+    /// Where a fold crosses these columns, or nil.
+    @State private var fold: FoldSplit?
+
     private var isSideBySide: Bool {
         twoColumns && showsSecondary
     }
 
-    var body: some View {
-        let layout = isSideBySide
-            ? AnyLayout(
-                SideBySideColumnsLayout(
-                    secondaryWidth: DetailLayoutMetrics.secondaryWidth(forContentWidth: contentWidth),
-                    spacing: DetailLayoutMetrics.columnSpacing
-                )
-            )
-            : AnyLayout(VStackLayout(alignment: .leading, spacing: spacing))
+    private var foldPanes: FoldSplit? {
+        isSideBySide ? fold : nil
+    }
 
+    var body: some View {
         layout {
             VStack(alignment: .leading, spacing: itemSpacing) {
                 primary
@@ -49,6 +48,23 @@ struct DetailColumns<Primary: View, Secondary: View>: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+        }
+        .environment(\.carouselStaysInPane, foldPanes != nil)
+        .onFoldSplitChange { fold = $0 }
+    }
+
+    private var layout: AnyLayout {
+        if let foldPanes {
+            AnyLayout(FoldPanesLayout(split: foldPanes))
+        } else if isSideBySide {
+            AnyLayout(
+                SideBySideColumnsLayout(
+                    secondaryWidth: DetailLayoutMetrics.secondaryWidth(forContentWidth: contentWidth),
+                    spacing: DetailLayoutMetrics.columnSpacing
+                )
+            )
+        } else {
+            AnyLayout(VStackLayout(alignment: .leading, spacing: spacing))
         }
     }
 }

@@ -58,19 +58,24 @@ struct DetailHero<Metadata: View>: View {
             if !images.isEmpty {
                 backdropStage
             }
-            identity
-                .padding(.horizontal, DesignSpacing.lg)
-                .padding(.top, hasPoster && !images.isEmpty ? DesignSpacing.sm : 0)
-            if !genreNames.isEmpty {
-                GenreChipRow(names: genreNames)
+            // The backdrop may run across the iPhone Duo's crease, as a photo; the poster,
+            // title, and rows below it stay in the leading pane.
+            VStack(alignment: .leading, spacing: 0) {
+                identity
                     .padding(.horizontal, DesignSpacing.lg)
-                    .padding(.top, DesignSpacing.md)
+                    .padding(.top, hasPoster && !images.isEmpty ? DesignSpacing.sm : 0)
+                if !genreNames.isEmpty {
+                    GenreChipRow(names: genreNames)
+                        .padding(.horizontal, DesignSpacing.lg)
+                        .padding(.top, DesignSpacing.md)
+                }
+                if !streamingProviders.isEmpty {
+                    StreamingProviderLogoRow(providers: streamingProviders, imageLoader: imageLoader)
+                        .padding(.horizontal, DesignSpacing.lg)
+                        .padding(.top, DesignSpacing.md)
+                }
             }
-            if !streamingProviders.isEmpty {
-                StreamingProviderLogoRow(providers: streamingProviders, imageLoader: imageLoader)
-                    .padding(.horizontal, DesignSpacing.lg)
-                    .padding(.top, DesignSpacing.md)
-            }
+            .foldPane(.leading, alignment: .leading)
         }
         .onAppear(perform: reconcileSelection)
         .onChange(of: images.map(\.id)) { _, _ in

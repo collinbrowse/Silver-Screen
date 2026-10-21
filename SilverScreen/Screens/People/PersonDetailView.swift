@@ -15,6 +15,8 @@ struct PersonDetailView: View {
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.openURL) private var openURL
+    /// True while the iPhone Duo's fold crosses the page; see `metadataBlock`.
+    @State private var isFolded = false
 
     private let profileCardWidth: CGFloat = 140
     private let imageCardWidth: CGFloat = 180
@@ -95,36 +97,41 @@ struct PersonDetailView: View {
     }
 
     private func loadedBody(content: PersonDetailContent, activity: LoadActivity) -> some View {
-        ContentWidthReader { width in
+        // Read here, in the view's own body, so a fold change re-renders the page; a
+        // state read only inside the width reader's closure would not.
+        let pageIsFolded = isFolded
+        return ContentWidthReader { width in
             let twoColumns = DetailLayoutMetrics.usesTwoColumns(
                 forWidth: width,
                 isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
             )
             let contentWidth = DetailLayoutMetrics.contentWidth(forWidth: width, twoColumns: twoColumns)
-            let creditPreviewCount = CarouselMetrics.previewCount(
-                forWidth: contentWidth,
-                cardWidth: portraitCardWidth
-            )
+            let sectionsInPanes = twoColumns && pageIsFolded
+            // A carousel in one pane of a fold is phone-width, so it gets the phone preview.
+            let creditPreviewCount = sectionsInPanes
+                ? CarouselMetrics.compactPreviewCount
+                : CarouselMetrics.previewCount(forWidth: contentWidth, cardWidth: portraitCardWidth)
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignSpacing.xl) {
-                    metadataBlock(content, twoColumns: twoColumns, contentWidth: contentWidth)
-                    if let images = content.images {
-                        imagesCarousel(images)
-                    }
-                    ForEach(content.creditSections) { section in
-                        creditsCarousel(
-                            title: section.title,
-                            section: section,
-                            previewCount: creditPreviewCount,
-                            personID: content.detail.id,
-                            personName: content.detail.name
-                        )
+                    metadataBlock(
+                        content,
+                        twoColumns: twoColumns,
+                        contentWidth: contentWidth,
+                        sectionsInPanes: sectionsInPanes,
+                        creditPreviewCount: creditPreviewCount
+                    )
+                    if !sectionsInPanes {
+                        if let images = content.images {
+                            imagesCarousel(images)
+                        }
+                        creditCarousels(content, previewCount: creditPreviewCount)
                     }
                 }
                 .padding(.vertical, DesignSpacing.lg)
                 .readableColumn(maxWidth: DetailLayoutMetrics.columnCap(twoColumns: twoColumns))
                 .coordinateSpace(.named("detailScroll"))
             }
+            .onFoldSplitChange { isFolded = $0 != nil }
             .scrollingInlineTitle(navigationTitle)
             .overlay(alignment: .top) {
                 if case .failed(let error) = activity {
@@ -141,19 +148,27 @@ struct PersonDetailView: View {
     }
 
     /// Name and biography, then facts and awards: one column on a phone, the two
-    /// groups side by side on a wide page.
+    /// groups side by side on a wide page. With `sectionsInPanes` (the iPhone Duo's fold
+    /// crosses the page) the images join the leading pane and the credit carousels the
+    /// trailing one, so nothing spans the crease.
     private func metadataBlock(
         _ content: PersonDetailContent,
         twoColumns: Bool,
-        contentWidth: CGFloat
+        contentWidth: CGFloat,
+        sectionsInPanes: Bool,
+        creditPreviewCount: Int
     ) -> some View {
         DetailColumns(
             twoColumns: twoColumns,
             contentWidth: contentWidth,
-            showsSecondary: hasFacts(content) || !content.awards.isEmpty
+            showsSecondary: sectionsInPanes || hasFacts(content) || !content.awards.isEmpty
         ) {
             header(content)
             biographySection(content.detail.biography)
+            if sectionsInPanes, let images = content.images {
+                imagesCarousel(images)
+                    .inPane()
+            }
         } secondary: {
             if hasFacts(content) {
                 factsCard(content)
@@ -163,8 +178,24 @@ struct PersonDetailView: View {
                     router?.push(route)
                 }
             }
+            if sectionsInPanes {
+                creditCarousels(content, previewCount: creditPreviewCount)
+                    .inPane()
+            }
         }
         .padding(.horizontal, DesignSpacing.lg)
+    }
+
+    private func creditCarousels(_ content: PersonDetailContent, previewCount: Int) -> some View {
+        ForEach(content.creditSections) { section in
+            creditsCarousel(
+                title: section.title,
+                section: section,
+                previewCount: previewCount,
+                personID: content.detail.id,
+                personName: content.detail.name
+            )
+        }
     }
 
     private func header(_ content: PersonDetailContent) -> some View {

@@ -18,6 +18,8 @@ struct MovieDetailView: View {
     @State private var selectedBackdropID: String?
     @State private var playingTrailer: MediaTrailer?
     @State private var loadingTrailerID: String?
+    /// True while the iPhone Duo's fold crosses the page; see `metadataBlock`.
+    @State private var isFolded = false
 
     private let portraitCardWidth: CGFloat = 140
 
@@ -141,12 +143,16 @@ struct MovieDetailView: View {
         scrollTo: @escaping (String) -> Void
     ) -> some View {
         let bleedsToTop = content.images?.items.isEmpty == false
+        // Read here, in the view's own body, so a fold change re-renders the page; a
+        // state read only inside the width reader's closure would not.
+        let pageIsFolded = isFolded
         return GeometryReader { proxy in
             detailScroll(
                 content: content,
                 activity: activity,
                 scrollTo: scrollTo,
-                width: proxy.size.width
+                width: proxy.size.width,
+                pageIsFolded: pageIsFolded
             )
             .frame(width: proxy.size.width, height: proxy.size.height)
         }
@@ -158,13 +164,15 @@ struct MovieDetailView: View {
         content: MovieDetailContent,
         activity: LoadActivity,
         scrollTo: @escaping (String) -> Void,
-        width: CGFloat
+        width: CGFloat,
+        pageIsFolded: Bool
     ) -> some View {
         let twoColumns = DetailLayoutMetrics.usesTwoColumns(
             forWidth: width,
             isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
         )
         let contentWidth = DetailLayoutMetrics.contentWidth(forWidth: width, twoColumns: twoColumns)
+        let sectionsInPanes = twoColumns && pageIsFolded
         return ScrollView {
             VStack(alignment: .leading, spacing: DesignSpacing.xl) {
                 DetailHero(
@@ -197,22 +205,19 @@ struct MovieDetailView: View {
                     }
                 }
 
-                metadataBlock(content, scrollTo: scrollTo, twoColumns: twoColumns, contentWidth: contentWidth)
+                metadataBlock(
+                    content,
+                    scrollTo: scrollTo,
+                    twoColumns: twoColumns,
+                    contentWidth: contentWidth,
+                    sectionsInPanes: sectionsInPanes
+                )
 
-                if let cast = content.cast {
-                    castCarousel(cast)
-                }
-                if let crew = content.crew {
-                    crewCarousel(crew)
-                }
-                if let similar = content.similar {
-                    similarCarousel(similar)
-                }
-                if let collection = content.collection {
-                    collectionCarousel(collection)
-                }
-                if let reviews = content.reviews {
-                    reviewsSection(reviews, scrollTo: scrollTo, columns: twoColumns ? 2 : 1)
+                if !sectionsInPanes {
+                    carousels(content)
+                    if let reviews = content.reviews {
+                        reviewsSection(reviews, scrollTo: scrollTo, columns: twoColumns ? 2 : 1)
+                    }
                 }
                 if !content.detail.streamingProviders.isEmpty {
                     JustWatchAttributionFooter()
@@ -224,6 +229,7 @@ struct MovieDetailView: View {
             .frame(maxWidth: .infinity)
             .coordinateSpace(.named("detailScroll"))
         }
+        .onFoldSplitChange { isFolded = $0 != nil }
         .overlay(alignment: .top) {
             if case .failed(let error) = activity {
                 Text("\(error.title): \(error.message)")
@@ -240,11 +246,15 @@ struct MovieDetailView: View {
     /// Rating, storyline, facts, and awards, in that order on a phone. On a wide page
     /// awards take the side column and facts join the main one, since a long awards
     /// card already outweighs the rest; with no awards, facts take the side column.
+    /// With `sectionsInPanes` (the iPhone Duo's fold crosses the page) the carousels
+    /// and reviews join the two columns too, so nothing below the hero spans the crease:
+    /// reading goes in the leading pane, carousels in the trailing one.
     private func metadataBlock(
         _ content: MovieDetailContent,
         scrollTo: @escaping (String) -> Void,
         twoColumns: Bool,
-        contentWidth: CGFloat
+        contentWidth: CGFloat,
+        sectionsInPanes: Bool
     ) -> some View {
         let hasAwards = !viewModel.awardRows.isEmpty
         return DetailColumns(twoColumns: twoColumns, contentWidth: contentWidth) {
@@ -265,14 +275,38 @@ struct MovieDetailView: View {
             if hasAwards {
                 factsCard(content)
             }
+            if sectionsInPanes, let reviews = content.reviews {
+                reviewsSection(reviews, scrollTo: scrollTo, columns: 1)
+                    .inPane()
+            }
         } secondary: {
             if hasAwards {
                 AwardRowsSection(rows: viewModel.awardRows)
             } else {
                 factsCard(content)
             }
+            if sectionsInPanes {
+                carousels(content)
+                    .inPane()
+            }
         }
         .padding(.horizontal, DesignSpacing.lg)
+    }
+
+    @ViewBuilder
+    private func carousels(_ content: MovieDetailContent) -> some View {
+        if let cast = content.cast {
+            castCarousel(cast)
+        }
+        if let crew = content.crew {
+            crewCarousel(crew)
+        }
+        if let similar = content.similar {
+            similarCarousel(similar)
+        }
+        if let collection = content.collection {
+            collectionCarousel(collection)
+        }
     }
 
     // MARK: - Carousels

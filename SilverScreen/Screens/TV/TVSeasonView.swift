@@ -35,6 +35,8 @@ struct TVSeasonView: View {
     @Environment(ListChangeNotice.self) private var notice
     @State private var playingTrailer: MediaTrailer?
     @State private var loadingTrailerID: String?
+    /// True while the iPhone Duo's fold crosses the page; see `seasonFacts`.
+    @State private var isFolded = false
     let seriesID: Int
     let seasonNumber: Int
     /// When set (In Progress continue), scroll so this episode sits at the top after load.
@@ -217,12 +219,16 @@ struct TVSeasonView: View {
 
     private func loaded(_ content: TVSeasonContent) -> some View {
         let bleedsToTop = !content.images.isEmpty
+        // Read here, in the view's own body, so a fold change re-renders the page; a
+        // state read only inside the width reader's closure would not.
+        let pageIsFolded = isFolded
         return ContentWidthReader { width in
             let twoColumns = DetailLayoutMetrics.usesTwoColumns(
                 forWidth: width,
                 isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
             )
             let contentWidth = DetailLayoutMetrics.contentWidth(forWidth: width, twoColumns: twoColumns)
+            let sectionsInPanes = twoColumns && pageIsFolded
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: DesignSpacing.xl) {
@@ -233,24 +239,14 @@ struct TVSeasonView: View {
                                 proxy.scrollTo(id, anchor: .top)
                             },
                             twoColumns: twoColumns,
-                            contentWidth: contentWidth
+                            contentWidth: contentWidth,
+                            sectionsInPanes: sectionsInPanes
                         )
-                        if !content.cast.isEmpty {
-                            TVCreditCarousel(title: "Cast", people: content.cast, imageLoader: imageLoader) { person in
-                                router?.push(.person(id: person.id))
+                        if !sectionsInPanes {
+                            credits(content)
+                            if !content.episodes.isEmpty {
+                                episodes(content.episodes, seriesName: content.seriesName, columns: twoColumns ? 2 : 1)
                             }
-                        }
-                        if !content.directorsAndWriters.isEmpty {
-                            TVCreditCarousel(
-                                title: "Directors & Writers",
-                                people: content.directorsAndWriters,
-                                imageLoader: imageLoader
-                            ) { person in
-                                router?.push(.person(id: person.id))
-                            }
-                        }
-                        if !content.episodes.isEmpty {
-                            episodes(content.episodes, seriesName: content.seriesName, columns: twoColumns ? 2 : 1)
                         }
                         if !content.streamingProviders.isEmpty {
                             JustWatchAttributionFooter()
@@ -261,6 +257,7 @@ struct TVSeasonView: View {
                     .readableColumn(maxWidth: DetailLayoutMetrics.columnCap(twoColumns: twoColumns))
                     .coordinateSpace(.named("detailScroll"))
                 }
+                .onFoldSplitChange { isFolded = $0 != nil }
                 .heroStatusBarBleed(enabled: bleedsToTop)
                 .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
                 .background {
@@ -362,17 +359,21 @@ struct TVSeasonView: View {
         }
     }
 
-    /// Rating and overview, with awards beside them on a wide page and below them on a phone.
+    /// Rating and overview, with awards beside them on a wide page and below them on
+    /// a phone. With `sectionsInPanes` (the iPhone Duo's fold crosses the page) the
+    /// episodes join the leading pane, one per row, and cast and crew the trailing one,
+    /// so nothing below the hero spans the crease.
     private func seasonFacts(
         _ content: TVSeasonContent,
         scrollTo: @escaping (String) -> Void,
         twoColumns: Bool,
-        contentWidth: CGFloat
+        contentWidth: CGFloat,
+        sectionsInPanes: Bool
     ) -> some View {
         DetailColumns(
             twoColumns: twoColumns,
             contentWidth: contentWidth,
-            showsSecondary: !viewModel.awardRows.isEmpty,
+            showsSecondary: sectionsInPanes || !viewModel.awardRows.isEmpty,
             itemSpacing: DesignSpacing.md
         ) {
             TMDBRatingCard(
@@ -389,10 +390,38 @@ struct TVSeasonView: View {
                 onEdit: { viewModel.openAnnotationEditor() },
                 scrollTo: scrollTo
             )
+            if sectionsInPanes, !content.episodes.isEmpty {
+                episodes(content.episodes, seriesName: content.seriesName, columns: 1)
+                    .inPane()
+            }
         } secondary: {
-            AwardRowsSection(rows: viewModel.awardRows)
+            if !viewModel.awardRows.isEmpty {
+                AwardRowsSection(rows: viewModel.awardRows)
+            }
+            if sectionsInPanes {
+                credits(content)
+                    .inPane()
+            }
         }
         .padding(.horizontal, DesignSpacing.lg)
+    }
+
+    @ViewBuilder
+    private func credits(_ content: TVSeasonContent) -> some View {
+        if !content.cast.isEmpty {
+            TVCreditCarousel(title: "Cast", people: content.cast, imageLoader: imageLoader) { person in
+                router?.push(.person(id: person.id))
+            }
+        }
+        if !content.directorsAndWriters.isEmpty {
+            TVCreditCarousel(
+                title: "Directors & Writers",
+                people: content.directorsAndWriters,
+                imageLoader: imageLoader
+            ) { person in
+                router?.push(.person(id: person.id))
+            }
+        }
     }
 
     /// Season and episode screens save the series, using series fields plus season art when present.
