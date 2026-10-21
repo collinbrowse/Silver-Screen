@@ -18,6 +18,7 @@ struct LibraryHomeView: View {
     @State private var nameDialogIsRename = false
     @State private var dialogName = ""
     @State private var renameTarget: LibraryList?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Group {
@@ -138,59 +139,115 @@ struct LibraryHomeView: View {
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List {
-                    if !system.isEmpty {
-                        Section {
-                            ForEach(Array(system.enumerated()), id: \.element.id) { index, list in
-                                listLink(list)
-                                    .listRowSeparatorBetweenCells(
-                                        isFirst: index == 0,
-                                        isLast: custom.isEmpty && index == system.count - 1
-                                    )
+                ContentWidthReader { width in
+                    // Reordering drags whole rows, so edit mode is always one column.
+                    let columns = editMode.isEditing
+                        ? 1
+                        : CatalogGridMetrics.columnCount(
+                            forWidth: width,
+                            isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
+                        )
+                    List {
+                        if !system.isEmpty {
+                            Section {
+                                if columns == 1 {
+                                    ForEach(Array(system.enumerated()), id: \.element.id) { index, list in
+                                        listLink(list)
+                                            .listRowSeparatorBetweenCells(
+                                                isFirst: index == 0,
+                                                isLast: custom.isEmpty && index == system.count - 1
+                                            )
+                                    }
+                                } else {
+                                    columnRows(system, columns: columns, isFirstSection: true, isLastSection: custom.isEmpty)
+                                }
                             }
+                            .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: custom.isEmpty)
                         }
-                        .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: custom.isEmpty)
-                    }
-                    if !custom.isEmpty {
-                        Section {
-                            ForEach(Array(custom.enumerated()), id: \.element.id) { index, list in
-                                listLink(list)
-                                    .listRowSeparatorBetweenCells(
-                                        isFirst: system.isEmpty && index == 0,
-                                        isLast: index == custom.count - 1
-                                    )
-                                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                                        Button("Rename") {
-                                            beginRename(list)
-                                        }
-                                        .accessibilityLabel("Rename \(list.name)")
-                                    }
-                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                        Button("Delete", role: .destructive) {
-                                            Task { await viewModel.delete(list) }
-                                        }
-                                        .accessibilityLabel("Delete \(list.name)")
-                                    }
-                                    .contextMenu {
-                                        Button("Rename") { beginRename(list) }
-                                        Button("Delete", role: .destructive) {
-                                            Task { await viewModel.delete(list) }
-                                        }
-                                    }
+                        if !custom.isEmpty {
+                            Section {
+                                if columns == 1 {
+                                    customRows(custom, isFirstSection: system.isEmpty)
+                                } else {
+                                    columnRows(custom, columns: columns, isFirstSection: system.isEmpty, isLastSection: true)
+                                }
                             }
-                            .onMove(perform: viewModel.canReorderLists ? { source, destination in
-                                Task { await viewModel.moveLists(from: source, to: destination) }
-                                } : nil)
+                            .listSectionSeparatorBetweenCells(isFirstSection: system.isEmpty, isLastSection: true)
                         }
-                        .listSectionSeparatorBetweenCells(isFirstSection: system.isEmpty, isLastSection: true)
                     }
+                    .listStyle(.plain)
+                    .environment(\.editMode, viewModel.canReorderLists ? $editMode : .constant(.inactive))
                 }
-                .listStyle(.plain)
-                // A readable column rather than columns: swipe actions and drag-to-reorder
-                // work on whole rows, so each list keeps a row of its own.
-                .readableColumn()
-                .environment(\.editMode, viewModel.canReorderLists ? $editMode : .constant(.inactive))
             }
+        }
+    }
+
+    /// Custom lists one per row, with swipe to rename or delete and drag to reorder.
+    private func customRows(_ custom: [LibraryList], isFirstSection: Bool) -> some View {
+        ForEach(Array(custom.enumerated()), id: \.element.id) { index, list in
+            listLink(list)
+                .listRowSeparatorBetweenCells(
+                    isFirst: isFirstSection && index == 0,
+                    isLast: index == custom.count - 1
+                )
+                .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                    Button("Rename") {
+                        beginRename(list)
+                    }
+                    .accessibilityLabel("Rename \(list.name)")
+                }
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button("Delete", role: .destructive) {
+                        Task { await viewModel.delete(list) }
+                    }
+                    .accessibilityLabel("Delete \(list.name)")
+                }
+                .contextMenu {
+                    customListActions(list)
+                }
+        }
+        .onMove(perform: viewModel.canReorderLists ? { source, destination in
+            Task { await viewModel.moveLists(from: source, to: destination) }
+            } : nil)
+    }
+
+    /// Two or three lists per row on a wide screen. A swipe would act on the whole
+    /// row, so custom lists offer Rename and Delete from their context menu and as
+    /// VoiceOver actions. A plain button style keeps each link's tap to its own cell.
+    private func columnRows(
+        _ lists: [LibraryList],
+        columns: Int,
+        isFirstSection: Bool,
+        isLastSection: Bool
+    ) -> some View {
+        ForEach(CatalogGrid.rows(lists, columns: columns, id: \.id)) { row in
+            CatalogColumnsRow(row: row, columns: columns, id: \.id) { list in
+                listLink(list)
+                    .buttonStyle(.plain)
+                    .contextMenu {
+                        if !list.isSystem {
+                            customListActions(list)
+                        }
+                    }
+                    .accessibilityActions {
+                        if !list.isSystem {
+                            customListActions(list)
+                        }
+                    }
+            }
+            .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
+            .listRowSeparatorBetweenCells(
+                isFirst: isFirstSection && row.isFirst,
+                isLast: isLastSection && row.isLast
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func customListActions(_ list: LibraryList) -> some View {
+        Button("Rename") { beginRename(list) }
+        Button("Delete", role: .destructive) {
+            Task { await viewModel.delete(list) }
         }
     }
 
@@ -212,6 +269,7 @@ struct LibraryHomeView: View {
                 }
                 Spacer(minLength: 0)
             }
+            .contentShape(Rectangle())
             .accessibilityElement(children: .combine)
         }
         .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
