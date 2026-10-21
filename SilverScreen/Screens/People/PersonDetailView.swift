@@ -95,43 +95,61 @@ struct PersonDetailView: View {
     }
 
     private func loadedBody(content: PersonDetailContent, activity: LoadActivity) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DesignSpacing.xl) {
-                metadataBlock(content)
-                if let images = content.images {
-                    imagesCarousel(images)
+        ContentWidthReader { width in
+            let twoColumns = DetailLayoutMetrics.usesTwoColumns(
+                forWidth: width,
+                isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
+            )
+            let contentWidth = DetailLayoutMetrics.contentWidth(forWidth: width, twoColumns: twoColumns)
+            ScrollView {
+                VStack(alignment: .leading, spacing: DesignSpacing.xl) {
+                    metadataBlock(content, twoColumns: twoColumns, contentWidth: contentWidth)
+                    if let images = content.images {
+                        imagesCarousel(images)
+                    }
+                    ForEach(content.creditSections) { section in
+                        creditsCarousel(
+                            title: section.title,
+                            section: section,
+                            personID: content.detail.id,
+                            personName: content.detail.name
+                        )
+                    }
                 }
-                ForEach(content.creditSections) { section in
-                    creditsCarousel(
-                        title: section.title,
-                        section: section,
-                        personID: content.detail.id,
-                        personName: content.detail.name
-                    )
-                }
+                .padding(.vertical, DesignSpacing.lg)
+                .readableColumn(maxWidth: DetailLayoutMetrics.columnCap(twoColumns: twoColumns))
+                .coordinateSpace(.named("detailScroll"))
             }
-            .padding(.vertical, DesignSpacing.lg)
-            .readableColumn()
-            .coordinateSpace(.named("detailScroll"))
-        }
-        .scrollingInlineTitle(navigationTitle)
-        .overlay(alignment: .top) {
-            if case .failed(let error) = activity {
-                Text("\(error.title): \(error.message)")
-                    .font(.footnote)
-                    .foregroundStyle(.white)
-                    .padding(8)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.red)
-                    .accessibilityLabel("\(error.title). \(error.message)")
+            .scrollingInlineTitle(navigationTitle)
+            .overlay(alignment: .top) {
+                if case .failed(let error) = activity {
+                    Text("\(error.title): \(error.message)")
+                        .font(.footnote)
+                        .foregroundStyle(.white)
+                        .padding(8)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.red)
+                        .accessibilityLabel("\(error.title). \(error.message)")
+                }
             }
         }
     }
 
-    private func metadataBlock(_ content: PersonDetailContent) -> some View {
-        VStack(alignment: .leading, spacing: DesignSpacing.xl) {
+    /// Name and biography, then facts and awards: one column on a phone, the two
+    /// groups side by side on a wide page.
+    private func metadataBlock(
+        _ content: PersonDetailContent,
+        twoColumns: Bool,
+        contentWidth: CGFloat
+    ) -> some View {
+        DetailColumns(
+            twoColumns: twoColumns,
+            contentWidth: contentWidth,
+            showsSecondary: hasFacts(content) || !content.awards.isEmpty
+        ) {
             header(content)
             biographySection(content.detail.biography)
+        } secondary: {
             if hasFacts(content) {
                 factsCard(content)
             }

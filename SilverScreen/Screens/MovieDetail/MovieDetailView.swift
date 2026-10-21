@@ -160,7 +160,12 @@ struct MovieDetailView: View {
         scrollTo: @escaping (String) -> Void,
         width: CGFloat
     ) -> some View {
-        ScrollView {
+        let twoColumns = DetailLayoutMetrics.usesTwoColumns(
+            forWidth: width,
+            isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
+        )
+        let contentWidth = DetailLayoutMetrics.contentWidth(forWidth: width, twoColumns: twoColumns)
+        return ScrollView {
             VStack(alignment: .leading, spacing: DesignSpacing.xl) {
                 DetailHero(
                     title: content.detail.title,
@@ -171,7 +176,8 @@ struct MovieDetailView: View {
                     transitionNamespace: heroTransition,
                     onOpenPoster: { viewModel.openPoster() },
                     onOpenImage: { viewModel.openImages(initialID: $0) },
-                    streamingProviders: content.detail.streamingProviders
+                    streamingProviders: content.detail.streamingProviders,
+                    aspectRatio: DetailLayoutMetrics.heroAspectRatio(twoColumns: twoColumns)
                 ) {
                     VStack(alignment: .leading, spacing: DesignSpacing.lg) {
                         if !content.heroMetadataLine.isEmpty {
@@ -191,7 +197,7 @@ struct MovieDetailView: View {
                     }
                 }
 
-                metadataBlock(content, scrollTo: scrollTo)
+                metadataBlock(content, scrollTo: scrollTo, twoColumns: twoColumns, contentWidth: contentWidth)
 
                 if let cast = content.cast {
                     castCarousel(cast)
@@ -206,7 +212,7 @@ struct MovieDetailView: View {
                     collectionCarousel(collection)
                 }
                 if let reviews = content.reviews {
-                    reviewsSection(reviews, scrollTo: scrollTo)
+                    reviewsSection(reviews, scrollTo: scrollTo, columns: twoColumns ? 2 : 1)
                 }
                 if !content.detail.streamingProviders.isEmpty {
                     JustWatchAttributionFooter()
@@ -214,7 +220,7 @@ struct MovieDetailView: View {
                 }
             }
             .padding(.bottom, DesignSpacing.lg)
-            .frame(width: min(width, ReadableWidth.maximum))
+            .frame(width: contentWidth)
             .frame(maxWidth: .infinity)
             .coordinateSpace(.named("detailScroll"))
         }
@@ -231,11 +237,15 @@ struct MovieDetailView: View {
         }
     }
 
+    /// Rating and storyline, then facts and awards: one column on a phone, the two
+    /// groups side by side on a wide page.
     private func metadataBlock(
         _ content: MovieDetailContent,
-        scrollTo: @escaping (String) -> Void
+        scrollTo: @escaping (String) -> Void,
+        twoColumns: Bool,
+        contentWidth: CGFloat
     ) -> some View {
-        VStack(alignment: .leading, spacing: DesignSpacing.xl) {
+        DetailColumns(twoColumns: twoColumns, contentWidth: contentWidth) {
             TMDBRatingCard(
                 formattedRating: content.formattedRating,
                 accessibilityLabel: content.ratingAccessibilityLabel,
@@ -250,6 +260,7 @@ struct MovieDetailView: View {
                 onEdit: { viewModel.openAnnotationEditor() },
                 scrollTo: scrollTo
             )
+        } secondary: {
             factsCard(content)
             if !viewModel.awardRows.isEmpty {
                 AwardRowsSection(rows: viewModel.awardRows)
@@ -468,7 +479,8 @@ struct MovieDetailView: View {
 
     private func reviewsSection(
         _ section: MovieDetailContent.ReviewsSection,
-        scrollTo: @escaping (String) -> Void
+        scrollTo: @escaping (String) -> Void,
+        columns: Int
     ) -> some View {
         ReviewPageList(
             items: section.items,
@@ -477,7 +489,8 @@ struct MovieDetailView: View {
             isLoadingPage: section.isLoadingPage,
             pageError: section.pageError,
             loadMore: { await viewModel.loadMoreReviews() },
-            scrollTo: scrollTo
+            scrollTo: scrollTo,
+            columns: columns
         )
     }
 

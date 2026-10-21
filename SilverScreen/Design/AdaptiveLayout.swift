@@ -55,6 +55,58 @@ enum ReadableWidth {
     static let maximum: CGFloat = 700
 }
 
+/// How a detail page (movie, series, season, episode, person) uses a wide screen:
+/// a wider hero and a second column beside the main text, instead of one stretched
+/// column. Below the breakpoint the page keeps its phone layout.
+enum DetailLayoutMetrics {
+    /// Narrowest page that gets two columns. The iPhone Duo's inner screen in
+    /// landscape and every iPad window wider than a third qualify; the inner screen
+    /// in portrait (669 pt) stays one column.
+    static let twoColumnMinimumWidth: CGFloat = 760
+    /// Two-column pages stop growing here, so a 13" iPad does not spread them thin.
+    static let maximumContentWidth: CGFloat = 1180
+    static let columnSpacing: CGFloat = DesignSpacing.xl
+    /// The side column takes this share of the page, up to `maximumSecondaryWidth`.
+    static let secondaryShare: CGFloat = 0.42
+    static let maximumSecondaryWidth: CGFloat = 360
+    /// Phone hero shape.
+    static let compactHeroAspectRatio: CGFloat = 16.0 / 9.0
+    /// Wide hero shape: a full-width 16:9 backdrop would fill most of a landscape screen.
+    static let wideHeroAspectRatio: CGFloat = 21.0 / 9.0
+
+    /// Whether a page `width` points wide (inside the safe area) uses two columns.
+    /// Accessibility text sizes keep one column so long labels have the full width.
+    static func usesTwoColumns(forWidth width: CGFloat, isAccessibilitySize: Bool) -> Bool {
+        !isAccessibilitySize && width >= twoColumnMinimumWidth
+    }
+
+    /// Width of the page's content column: the readable cap on one column, the wider
+    /// cap on two. Before the page is measured (`width` 0) this is the readable cap,
+    /// so the first frame lays out as a phone page rather than collapsing.
+    static func contentWidth(forWidth width: CGFloat, twoColumns: Bool) -> CGFloat {
+        guard width > 0 else { return ReadableWidth.maximum }
+        return min(width, twoColumns ? maximumContentWidth : ReadableWidth.maximum)
+    }
+
+    /// The cap to apply to a scroll view's content column. A scroll view offers its
+    /// content the full width, safe area included, so capping at the measured width
+    /// would center a narrower column and stop the hero short of the screen edge.
+    static func columnCap(twoColumns: Bool) -> CGFloat {
+        twoColumns ? maximumContentWidth : ReadableWidth.maximum
+    }
+
+    /// Side column width for a two-column page whose content is `contentWidth` wide,
+    /// after the page's side insets.
+    static func secondaryWidth(forContentWidth contentWidth: CGFloat) -> CGFloat {
+        let available = contentWidth - DesignSpacing.lg * 2 - columnSpacing
+        return min(maximumSecondaryWidth, max(0, available * secondaryShare))
+    }
+
+    static func heroAspectRatio(twoColumns: Bool) -> CGFloat {
+        twoColumns ? wideHeroAspectRatio : compactHeroAspectRatio
+    }
+}
+
 /// One list row of up to `columns` catalog items laid side by side.
 struct CatalogGridRow<Item, ID: Hashable>: Identifiable {
     /// The first item's id, so a row keeps its identity (and each control's

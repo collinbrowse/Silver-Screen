@@ -25,11 +25,12 @@ struct ContentWidthReader<Content: View>: View {
 }
 
 extension View {
-    /// Caps a list or a scroll view's content at `ReadableWidth.maximum` and centers it.
-    /// Layout keeps the column inside the safe area, so it centers beside an iPad
-    /// sidebar rather than under it. No effect at phone widths.
-    func readableColumn() -> some View {
-        frame(maxWidth: ReadableWidth.maximum)
+    /// Caps a list or a scroll view's content at `maxWidth` (the readable width unless
+    /// a two-column detail page passes its wider cap) and centers it. Layout keeps the
+    /// column inside the safe area, so it centers beside an iPad sidebar rather than
+    /// under it. No effect at phone widths.
+    func readableColumn(maxWidth: CGFloat = ReadableWidth.maximum) -> some View {
+        frame(maxWidth: maxWidth)
             .frame(maxWidth: .infinity)
     }
 }

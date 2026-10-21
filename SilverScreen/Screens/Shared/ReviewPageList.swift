@@ -15,6 +15,8 @@ struct ReviewPageList: View {
     let pageError: AppError?
     let loadMore: () async -> Void
     var scrollTo: (String) -> Void = { _ in }
+    /// Review cards per row. Wide detail pages pass 2.
+    var columns: Int = 1
 
     @State private var page = 0
     @State private var awaitingPage = false
@@ -27,9 +29,18 @@ struct ReviewPageList: View {
                 .accessibilityAddTraits(.isHeader)
 
             VStack(alignment: .leading, spacing: DesignSpacing.md) {
-                ForEach(ReviewWindow.page(items, index: page)) { review in
-                    ReviewCard(review: review, scrollTo: scrollTo)
-                        .id(review.id)
+                LazyVGrid(
+                    columns: Array(
+                        repeating: GridItem(.flexible(), spacing: DesignSpacing.md, alignment: .top),
+                        count: max(columns, 1)
+                    ),
+                    alignment: .leading,
+                    spacing: DesignSpacing.md
+                ) {
+                    ForEach(ReviewWindow.page(items, index: page)) { review in
+                        ReviewCard(review: review, scrollTo: scrollTo)
+                            .id(review.id)
+                    }
                 }
 
                 if isLoadingPage {

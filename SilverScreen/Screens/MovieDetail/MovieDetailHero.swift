@@ -35,6 +35,8 @@ struct DetailHero<Metadata: View>: View {
     var genreNames: [String] = []
     /// Streaming logos share the genre-row inset and top spacing.
     var streamingProviders: [StreamingProvider] = []
+    /// Backdrop shape. Wide pages pass `DetailLayoutMetrics.wideHeroAspectRatio`.
+    var aspectRatio: CGFloat = DetailLayoutMetrics.compactHeroAspectRatio
     @ViewBuilder let metadata: () -> Metadata
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -76,7 +78,7 @@ struct DetailHero<Metadata: View>: View {
         }
     }
 
-    /// The backdrop keeps a 16:9 slot in the layout but draws under the side safe area
+    /// The backdrop keeps its `aspectRatio` slot in the layout but draws under the side safe area
     /// when the slot reaches the screen edge, so a side toolbar (the iPhone Duo's outer
     /// screen) floats over the image instead of a blank strip. A slot centered in a
     /// readable column does not reach the edge and stays as it is. The page count sits
@@ -84,7 +86,7 @@ struct DetailHero<Metadata: View>: View {
     /// poster and of the title artwork higher up.
     private var backdropStage: some View {
         Color.clear
-            .aspectRatio(16.0 / 9.0, contentMode: .fit)
+            .aspectRatio(aspectRatio, contentMode: .fit)
             .overlay {
                 backdropPager
                     .ignoresSafeArea(.container, edges: .horizontal)

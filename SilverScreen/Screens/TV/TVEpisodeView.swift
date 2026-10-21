@@ -16,6 +16,8 @@ struct TVEpisodeView: View {
     let seasonNumber: Int
     let episodeNumber: Int
     var router: NavigationRouter?
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(ListChangeNotice.self) private var notice
     @State private var playingTrailer: MediaTrailer?
     @State private var loadingTrailerID: String?
@@ -170,58 +172,66 @@ struct TVEpisodeView: View {
     private func loaded(_ content: TVEpisodeContent) -> some View {
         let images = content.heroImages
         let bleedsToTop = !images.isEmpty
-        return ScrollViewReader { proxy in
-            ScrollView {
-            VStack(alignment: .leading, spacing: DesignSpacing.xl) {
-                episodeHero(content, images: images)
-                episodeFacts(content, scrollTo: { id in
-                    proxy.scrollTo(id, anchor: .top)
-                })
-                if !viewModel.awardRows.isEmpty {
-                    AwardRowsSection(rows: viewModel.awardRows)
-                        .padding(.horizontal, DesignSpacing.lg)
-                }
-                if !content.otherEpisodes.isEmpty {
-                    otherEpisodes(content.otherEpisodes)
-                }
-                if !content.cast.isEmpty {
-                    TVCreditCarousel(title: "Cast", people: content.cast, imageLoader: imageLoader) { person in
-                        router?.push(.person(id: person.id))
+        return ContentWidthReader { width in
+            let twoColumns = DetailLayoutMetrics.usesTwoColumns(
+                forWidth: width,
+                isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
+            )
+            let contentWidth = DetailLayoutMetrics.contentWidth(forWidth: width, twoColumns: twoColumns)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: DesignSpacing.xl) {
+                        episodeHero(content, images: images, twoColumns: twoColumns)
+                        episodeFacts(
+                            content,
+                            scrollTo: { id in
+                                proxy.scrollTo(id, anchor: .top)
+                            },
+                            twoColumns: twoColumns,
+                            contentWidth: contentWidth
+                        )
+                        if !content.otherEpisodes.isEmpty {
+                            otherEpisodes(content.otherEpisodes)
+                        }
+                        if !content.cast.isEmpty {
+                            TVCreditCarousel(title: "Cast", people: content.cast, imageLoader: imageLoader) { person in
+                                router?.push(.person(id: person.id))
+                            }
+                        }
+                        if !content.guestStars.isEmpty {
+                            TVCreditCarousel(
+                                title: "Guest Stars",
+                                people: content.guestStars,
+                                imageLoader: imageLoader
+                            ) { person in
+                                router?.push(.person(id: person.id))
+                            }
+                        }
+                        if !content.directorsAndWriters.isEmpty {
+                            TVCreditCarousel(
+                                title: "Directors & Writers",
+                                people: content.directorsAndWriters,
+                                imageLoader: imageLoader
+                            ) { person in
+                                router?.push(.person(id: person.id))
+                            }
+                        }
+                        if !content.streamingProviders.isEmpty {
+                            JustWatchAttributionFooter()
+                                .padding(.horizontal, DesignSpacing.lg)
+                        }
                     }
-                }
-                if !content.guestStars.isEmpty {
-                    TVCreditCarousel(
-                        title: "Guest Stars",
-                        people: content.guestStars,
-                        imageLoader: imageLoader
-                    ) { person in
-                        router?.push(.person(id: person.id))
-                    }
-                }
-                if !content.directorsAndWriters.isEmpty {
-                    TVCreditCarousel(
-                        title: "Directors & Writers",
-                        people: content.directorsAndWriters,
-                        imageLoader: imageLoader
-                    ) { person in
-                        router?.push(.person(id: person.id))
-                    }
-                }
-                if !content.streamingProviders.isEmpty {
-                    JustWatchAttributionFooter()
-                        .padding(.horizontal, DesignSpacing.lg)
+                    .padding(.bottom, DesignSpacing.lg)
+                    .readableColumn(maxWidth: DetailLayoutMetrics.columnCap(twoColumns: twoColumns))
+                    .coordinateSpace(.named("detailScroll"))
                 }
             }
-            .padding(.bottom, DesignSpacing.lg)
-            .readableColumn()
-            .coordinateSpace(.named("detailScroll"))
-            }
+            .heroStatusBarBleed(enabled: bleedsToTop)
+            .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
         }
-        .heroStatusBarBleed(enabled: bleedsToTop)
-        .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
     }
 
-    private func episodeHero(_ content: TVEpisodeContent, images: [MovieImage]) -> some View {
+    private func episodeHero(_ content: TVEpisodeContent, images: [MovieImage], twoColumns: Bool) -> some View {
         DetailHero(
             title: content.title,
             eyebrow: seriesName,
@@ -232,7 +242,8 @@ struct TVEpisodeView: View {
             transitionNamespace: heroTransition,
             onOpenPoster: {},
             onOpenImage: { viewModel.openImages(initialID: $0) },
-            streamingProviders: content.streamingProviders
+            streamingProviders: content.streamingProviders,
+            aspectRatio: DetailLayoutMetrics.heroAspectRatio(twoColumns: twoColumns)
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.sm) {
                 Text(content.episodeNumberText)
@@ -251,11 +262,19 @@ struct TVEpisodeView: View {
         }
     }
 
+    /// Rating and overview, with awards beside them on a wide page and below them on a phone.
     private func episodeFacts(
         _ content: TVEpisodeContent,
-        scrollTo: @escaping (String) -> Void
+        scrollTo: @escaping (String) -> Void,
+        twoColumns: Bool,
+        contentWidth: CGFloat
     ) -> some View {
-        VStack(alignment: .leading, spacing: DesignSpacing.md) {
+        DetailColumns(
+            twoColumns: twoColumns,
+            contentWidth: contentWidth,
+            showsSecondary: !viewModel.awardRows.isEmpty,
+            itemSpacing: DesignSpacing.md
+        ) {
             TMDBRatingCard(
                 formattedRating: content.formattedRating,
                 accessibilityLabel: content.ratingAccessibilityLabel,
@@ -270,6 +289,8 @@ struct TVEpisodeView: View {
                 onEdit: { viewModel.openAnnotationEditor() },
                 scrollTo: scrollTo
             )
+        } secondary: {
+            AwardRowsSection(rows: viewModel.awardRows)
         }
         .padding(.horizontal, DesignSpacing.lg)
     }

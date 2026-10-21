@@ -30,6 +30,8 @@ struct TVSeasonView: View {
     let listsIndex: ListsIndex
     let tvWatch: TVWatchRepository
     var router: NavigationRouter?
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(ListChangeNotice.self) private var notice
     @State private var playingTrailer: MediaTrailer?
     @State private var loadingTrailerID: String?
@@ -215,60 +217,68 @@ struct TVSeasonView: View {
 
     private func loaded(_ content: TVSeasonContent) -> some View {
         let bleedsToTop = !content.images.isEmpty
-        return ScrollViewReader { proxy in
-            ScrollView {
-                VStack(alignment: .leading, spacing: DesignSpacing.xl) {
-                    seasonHero(content)
-                    seasonFacts(content, scrollTo: { id in
-                        proxy.scrollTo(id, anchor: .top)
-                    })
-                    if !viewModel.awardRows.isEmpty {
-                        AwardRowsSection(rows: viewModel.awardRows)
-                            .padding(.horizontal, DesignSpacing.lg)
-                    }
-                    if !content.cast.isEmpty {
-                        TVCreditCarousel(title: "Cast", people: content.cast, imageLoader: imageLoader) { person in
-                            router?.push(.person(id: person.id))
+        return ContentWidthReader { width in
+            let twoColumns = DetailLayoutMetrics.usesTwoColumns(
+                forWidth: width,
+                isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
+            )
+            let contentWidth = DetailLayoutMetrics.contentWidth(forWidth: width, twoColumns: twoColumns)
+            ScrollViewReader { proxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: DesignSpacing.xl) {
+                        seasonHero(content, twoColumns: twoColumns)
+                        seasonFacts(
+                            content,
+                            scrollTo: { id in
+                                proxy.scrollTo(id, anchor: .top)
+                            },
+                            twoColumns: twoColumns,
+                            contentWidth: contentWidth
+                        )
+                        if !content.cast.isEmpty {
+                            TVCreditCarousel(title: "Cast", people: content.cast, imageLoader: imageLoader) { person in
+                                router?.push(.person(id: person.id))
+                            }
+                        }
+                        if !content.directorsAndWriters.isEmpty {
+                            TVCreditCarousel(
+                                title: "Directors & Writers",
+                                people: content.directorsAndWriters,
+                                imageLoader: imageLoader
+                            ) { person in
+                                router?.push(.person(id: person.id))
+                            }
+                        }
+                        if !content.episodes.isEmpty {
+                            episodes(content.episodes, seriesName: content.seriesName, columns: twoColumns ? 2 : 1)
+                        }
+                        if !content.streamingProviders.isEmpty {
+                            JustWatchAttributionFooter()
+                                .padding(.horizontal, DesignSpacing.lg)
                         }
                     }
-                    if !content.directorsAndWriters.isEmpty {
-                        TVCreditCarousel(
-                            title: "Directors & Writers",
-                            people: content.directorsAndWriters,
-                            imageLoader: imageLoader
-                        ) { person in
-                            router?.push(.person(id: person.id))
+                    .padding(.bottom, DesignSpacing.lg)
+                    .readableColumn(maxWidth: DetailLayoutMetrics.columnCap(twoColumns: twoColumns))
+                    .coordinateSpace(.named("detailScroll"))
+                }
+                .heroStatusBarBleed(enabled: bleedsToTop)
+                .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
+                .background {
+                    WindowTopInsetReader { top in
+                        if top != statusBarHeight {
+                            statusBarHeight = top
                         }
                     }
-                    if !content.episodes.isEmpty {
-                        episodes(content.episodes, seriesName: content.seriesName)
-                    }
-                    if !content.streamingProviders.isEmpty {
-                        JustWatchAttributionFooter()
-                            .padding(.horizontal, DesignSpacing.lg)
-                    }
+                    .frame(width: 0, height: 0)
                 }
-                .padding(.bottom, DesignSpacing.lg)
-                .readableColumn()
-                .coordinateSpace(.named("detailScroll"))
-            }
-            .heroStatusBarBleed(enabled: bleedsToTop)
-            .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
-            .background {
-                WindowTopInsetReader { top in
-                    if top != statusBarHeight {
-                        statusBarHeight = top
-                    }
-                }
-                .frame(width: 0, height: 0)
-            }
-            .task(id: content.episodes.map(\.episodeNumber)) {
-                await scrollToFocusedEpisodeIfNeeded(proxy: proxy, episodes: content.episodes)
-            }
-            .onChange(of: statusBarHeight) { _, height in
-                guard height > 0, !didScrollToFocusedEpisode else { return }
-                Task {
+                .task(id: content.episodes.map(\.episodeNumber)) {
                     await scrollToFocusedEpisodeIfNeeded(proxy: proxy, episodes: content.episodes)
+                }
+                .onChange(of: statusBarHeight) { _, height in
+                    guard height > 0, !didScrollToFocusedEpisode else { return }
+                    Task {
+                        await scrollToFocusedEpisodeIfNeeded(proxy: proxy, episodes: content.episodes)
+                    }
                 }
             }
         }
@@ -314,7 +324,7 @@ struct TVSeasonView: View {
         "season-episode-\(episodeNumber)"
     }
 
-    private func seasonHero(_ content: TVSeasonContent) -> some View {
+    private func seasonHero(_ content: TVSeasonContent, twoColumns: Bool) -> some View {
         DetailHero(
             title: content.displayName,
             eyebrow: content.seriesName,
@@ -325,7 +335,8 @@ struct TVSeasonView: View {
             transitionNamespace: heroTransition,
             onOpenPoster: { viewModel.openPoster() },
             onOpenImage: { viewModel.openImages(initialID: $0) },
-            streamingProviders: content.streamingProviders
+            streamingProviders: content.streamingProviders,
+            aspectRatio: DetailLayoutMetrics.heroAspectRatio(twoColumns: twoColumns)
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.lg) {
                 VStack(alignment: .leading, spacing: DesignSpacing.sm) {
@@ -351,11 +362,19 @@ struct TVSeasonView: View {
         }
     }
 
+    /// Rating and overview, with awards beside them on a wide page and below them on a phone.
     private func seasonFacts(
         _ content: TVSeasonContent,
-        scrollTo: @escaping (String) -> Void
+        scrollTo: @escaping (String) -> Void,
+        twoColumns: Bool,
+        contentWidth: CGFloat
     ) -> some View {
-        VStack(alignment: .leading, spacing: DesignSpacing.md) {
+        DetailColumns(
+            twoColumns: twoColumns,
+            contentWidth: contentWidth,
+            showsSecondary: !viewModel.awardRows.isEmpty,
+            itemSpacing: DesignSpacing.md
+        ) {
             TMDBRatingCard(
                 formattedRating: content.formattedRating,
                 accessibilityLabel: content.ratingAccessibilityLabel,
@@ -370,6 +389,8 @@ struct TVSeasonView: View {
                 onEdit: { viewModel.openAnnotationEditor() },
                 scrollTo: scrollTo
             )
+        } secondary: {
+            AwardRowsSection(rows: viewModel.awardRows)
         }
         .padding(.horizontal, DesignSpacing.lg)
     }
@@ -485,55 +506,72 @@ struct TVSeasonView: View {
         await viewModel.reloadEpisodeScores()
     }
 
-    private func episodes(_ episodes: [TVEpisodeSummary], seriesName: String) -> some View {
+    /// One episode per row on a phone, `columns` per row on a wide page. A plain
+    /// `Grid` rather than a lazy one: Continue scrolls to an episode by id, so every
+    /// row has to exist.
+    private func episodes(_ episodes: [TVEpisodeSummary], seriesName: String, columns: Int) -> some View {
         VStack(alignment: .leading, spacing: DesignSpacing.md) {
             Text("Episodes")
                 .font(DesignTypography.section)
                 .foregroundStyle(DesignTheme.textPrimary)
                 .accessibilityAddTraits(.isHeader)
-                .padding(.horizontal, DesignSpacing.lg)
 
-            ForEach(episodes) { episode in
-                let isContinueFocus = scrollToEpisodeNumber == episode.episodeNumber
-                VStack(spacing: 0) {
-                    // Laid-out anchor above the row (collapsed visually via negative
-                    // padding) so scrollTo(.top) clears the nav title bar.
-                    if isContinueFocus {
-                        Color.clear
-                            .frame(height: focusedEpisodeScrollLift)
-                            .id(Self.episodeScrollID(episode.episodeNumber))
-                            .padding(.bottom, -focusedEpisodeScrollLift)
-                            .accessibilityHidden(true)
-                    }
-
-                    HStack(alignment: .top, spacing: DesignSpacing.sm) {
-                        Button {
-                            router?.push(
-                                .tvEpisode(
-                                    seriesID: seriesID,
-                                    seriesName: seriesName,
-                                    seasonNumber: seasonNumber,
-                                    episodeNumber: episode.episodeNumber,
-                                    seriesSnapshot: viewModel.seriesSnapshot
-                                )
-                            )
-                        } label: {
-                            episodeRow(episode)
+            Grid(
+                alignment: .topLeading,
+                horizontalSpacing: DesignSpacing.lg,
+                verticalSpacing: DesignSpacing.md
+            ) {
+                ForEach(CatalogGrid.rows(episodes, columns: columns, id: \.id)) { row in
+                    GridRow {
+                        ForEach(row.items) { episode in
+                            episodeCell(episode, seriesName: seriesName)
                         }
-                        .buttonStyle(.plain)
-
-                        EpisodeWatchButton(
-                            isCompleted: viewModel.completedEpisodeNumbers.contains(episode.episodeNumber),
-                            accessibilityTitle: episode.title
-                        ) {
-                            Task { await toggleEpisodeWatch(episode) }
-                        }
-                        .buttonStyle(.borderless)
                     }
-                    .padding(.horizontal, DesignSpacing.lg)
                 }
             }
         }
+        .padding(.horizontal, DesignSpacing.lg)
+    }
+
+    private func episodeCell(_ episode: TVEpisodeSummary, seriesName: String) -> some View {
+        let isContinueFocus = scrollToEpisodeNumber == episode.episodeNumber
+        return VStack(spacing: 0) {
+            // Laid-out anchor above the row (collapsed visually via negative
+            // padding) so scrollTo(.top) clears the nav title bar.
+            if isContinueFocus {
+                Color.clear
+                    .frame(height: focusedEpisodeScrollLift)
+                    .id(Self.episodeScrollID(episode.episodeNumber))
+                    .padding(.bottom, -focusedEpisodeScrollLift)
+                    .accessibilityHidden(true)
+            }
+
+            HStack(alignment: .top, spacing: DesignSpacing.sm) {
+                Button {
+                    router?.push(
+                        .tvEpisode(
+                            seriesID: seriesID,
+                            seriesName: seriesName,
+                            seasonNumber: seasonNumber,
+                            episodeNumber: episode.episodeNumber,
+                            seriesSnapshot: viewModel.seriesSnapshot
+                        )
+                    )
+                } label: {
+                    episodeRow(episode)
+                }
+                .buttonStyle(.plain)
+
+                EpisodeWatchButton(
+                    isCompleted: viewModel.completedEpisodeNumbers.contains(episode.episodeNumber),
+                    accessibilityTitle: episode.title
+                ) {
+                    Task { await toggleEpisodeWatch(episode) }
+                }
+                .buttonStyle(.borderless)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func episodeRow(_ episode: TVEpisodeSummary) -> some View {

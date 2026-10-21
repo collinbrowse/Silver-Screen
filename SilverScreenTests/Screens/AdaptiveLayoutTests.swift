@@ -5,6 +5,7 @@
 //  Widths below are what the list or screen is given, in points: iPhone 17e portrait
 //  (402), iPhone Duo outer (466) and inner (669) screens, iPad mini portrait (744),
 //  iPad Pro 11" portrait (834) and landscape (1194), and iPad Pro 13" landscape (1376).
+//  The Duo's inner screen in landscape is about 866 pt once its side toolbar is excluded.
 //
 
 import XCTest
@@ -79,6 +80,55 @@ final class AdaptiveLayoutTests: XCTestCase {
 
     func test_shelfColumns_unmeasuredWidth_isTwo() {
         XCTAssertEqual(ShelfGridMetrics.columnCount(forWidth: 0), 2)
+    }
+
+    // MARK: - Detail pages
+
+    func test_detailTwoColumns_iPhonePortrait_isFalse() {
+        XCTAssertFalse(DetailLayoutMetrics.usesTwoColumns(forWidth: 402, isAccessibilitySize: false))
+    }
+
+    func test_detailTwoColumns_iPhoneDuoInnerPortrait_isFalse() {
+        XCTAssertFalse(DetailLayoutMetrics.usesTwoColumns(forWidth: 669, isAccessibilitySize: false))
+    }
+
+    func test_detailTwoColumns_iPhoneDuoInnerLandscape_isTrue() {
+        XCTAssertTrue(DetailLayoutMetrics.usesTwoColumns(forWidth: 866, isAccessibilitySize: false))
+    }
+
+    func test_detailTwoColumns_iPadPortrait_isTrue() {
+        XCTAssertTrue(DetailLayoutMetrics.usesTwoColumns(forWidth: 834, isAccessibilitySize: false))
+    }
+
+    func test_detailTwoColumns_accessibilityText_isFalse() {
+        XCTAssertFalse(DetailLayoutMetrics.usesTwoColumns(forWidth: 1194, isAccessibilitySize: true))
+    }
+
+    func test_detailContentWidth_oneColumn_capsAtReadableWidth() {
+        XCTAssertEqual(DetailLayoutMetrics.contentWidth(forWidth: 740, twoColumns: false), ReadableWidth.maximum)
+    }
+
+    func test_detailContentWidth_twoColumns_fillsWidthUpToCap() {
+        XCTAssertEqual(DetailLayoutMetrics.contentWidth(forWidth: 866, twoColumns: true), 866)
+        XCTAssertEqual(DetailLayoutMetrics.contentWidth(forWidth: 1376, twoColumns: true), 1180)
+    }
+
+    func test_detailContentWidth_unmeasured_isReadableWidth() {
+        XCTAssertEqual(DetailLayoutMetrics.contentWidth(forWidth: 0, twoColumns: false), ReadableWidth.maximum)
+    }
+
+    func test_detailSecondaryWidth_iPhoneDuoInnerLandscape_takesShareOfPage() {
+        // (866 - 32 - 24) * 0.42 = 340.2
+        XCTAssertEqual(DetailLayoutMetrics.secondaryWidth(forContentWidth: 866), 340.2, accuracy: 0.01)
+    }
+
+    func test_detailSecondaryWidth_widePage_capsAtMaximum() {
+        XCTAssertEqual(DetailLayoutMetrics.secondaryWidth(forContentWidth: 1180), 360)
+    }
+
+    func test_detailHeroAspectRatio_widensOnTwoColumns() {
+        XCTAssertEqual(DetailLayoutMetrics.heroAspectRatio(twoColumns: false), 16.0 / 9.0)
+        XCTAssertEqual(DetailLayoutMetrics.heroAspectRatio(twoColumns: true), 21.0 / 9.0)
     }
 
     // MARK: - Grid rows

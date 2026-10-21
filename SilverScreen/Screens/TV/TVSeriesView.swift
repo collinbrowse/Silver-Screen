@@ -14,6 +14,8 @@ struct TVSeriesView: View {
     let tvWatch: TVWatchRepository
     var router: NavigationRouter?
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     @Environment(ListChangeNotice.self) private var notice
     @Namespace private var heroTransition
     @State private var selectedBackdropID: String?
@@ -155,66 +157,70 @@ struct TVSeriesView: View {
 
     private func seriesScroll(_ content: TVSeriesContent, scrollTo: @escaping (String) -> Void) -> some View {
         let bleedsToTop = !content.detail.images.isEmpty
-        return ScrollView {
-            VStack(alignment: .leading, spacing: DesignSpacing.xl) {
-                seriesHero(content)
-                seriesFacts(content, scrollTo: scrollTo)
-                if !viewModel.awardRows.isEmpty {
-                    AwardRowsSection(rows: viewModel.awardRows)
-                        .padding(.horizontal, DesignSpacing.lg)
-                }
-                if !content.seasons.isEmpty {
-                    seasonsCarousel(content)
-                }
-                if !content.recommendations.isEmpty {
-                    recommendationsCarousel(content)
-                }
-                if !content.detail.cast.isEmpty {
-                    TVCreditCarousel(
-                        title: "Cast",
-                        people: content.detail.cast,
-                        imageLoader: imageLoader
-                    ) { person in
-                        router?.push(.person(id: person.id))
+        return ContentWidthReader { width in
+            let twoColumns = DetailLayoutMetrics.usesTwoColumns(
+                forWidth: width,
+                isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
+            )
+            let contentWidth = DetailLayoutMetrics.contentWidth(forWidth: width, twoColumns: twoColumns)
+            ScrollView {
+                VStack(alignment: .leading, spacing: DesignSpacing.xl) {
+                    seriesHero(content, twoColumns: twoColumns)
+                    seriesFacts(content, scrollTo: scrollTo, twoColumns: twoColumns, contentWidth: contentWidth)
+                    if !content.seasons.isEmpty {
+                        seasonsCarousel(content)
+                    }
+                    if !content.recommendations.isEmpty {
+                        recommendationsCarousel(content)
+                    }
+                    if !content.detail.cast.isEmpty {
+                        TVCreditCarousel(
+                            title: "Cast",
+                            people: content.detail.cast,
+                            imageLoader: imageLoader
+                        ) { person in
+                            router?.push(.person(id: person.id))
+                        }
+                    }
+                    if !content.detail.directorsAndWriters.isEmpty {
+                        TVCreditCarousel(
+                            title: "Directors & Writers",
+                            people: content.detail.directorsAndWriters,
+                            imageLoader: imageLoader
+                        ) { person in
+                            router?.push(.person(id: person.id))
+                        }
+                    }
+                    if let reviews = content.reviews {
+                        ReviewPageList(
+                            items: reviews.items,
+                            hasMore: reviews.hasMore,
+                            totalCount: reviews.totalCount,
+                            isLoadingPage: reviews.isLoadingPage,
+                            pageError: reviews.pageError,
+                            loadMore: { await viewModel.loadMoreReviews() },
+                            scrollTo: scrollTo,
+                            columns: twoColumns ? 2 : 1
+                        )
+                    }
+                    if !content.detail.streamingProviders.isEmpty {
+                        JustWatchAttributionFooter()
+                            .padding(.horizontal, DesignSpacing.lg)
                     }
                 }
-                if !content.detail.directorsAndWriters.isEmpty {
-                    TVCreditCarousel(
-                        title: "Directors & Writers",
-                        people: content.detail.directorsAndWriters,
-                        imageLoader: imageLoader
-                    ) { person in
-                        router?.push(.person(id: person.id))
-                    }
-                }
-                if let reviews = content.reviews {
-                    ReviewPageList(
-                        items: reviews.items,
-                        hasMore: reviews.hasMore,
-                        totalCount: reviews.totalCount,
-                        isLoadingPage: reviews.isLoadingPage,
-                        pageError: reviews.pageError,
-                        loadMore: { await viewModel.loadMoreReviews() },
-                        scrollTo: scrollTo
-                    )
-                }
-                if !content.detail.streamingProviders.isEmpty {
-                    JustWatchAttributionFooter()
-                        .padding(.horizontal, DesignSpacing.lg)
-                }
+                .padding(.bottom, DesignSpacing.lg)
+                .readableColumn(maxWidth: DetailLayoutMetrics.columnCap(twoColumns: twoColumns))
+                .coordinateSpace(.named("detailScroll"))
             }
-            .padding(.bottom, DesignSpacing.lg)
-            .readableColumn()
-            .coordinateSpace(.named("detailScroll"))
-        }
-        .heroStatusBarBleed(enabled: bleedsToTop)
-        .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
-        .refreshable {
-            await viewModel.refresh()
+            .heroStatusBarBleed(enabled: bleedsToTop)
+            .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
+            .refreshable {
+                await viewModel.refresh()
+            }
         }
     }
 
-    private func seriesHero(_ content: TVSeriesContent) -> some View {
+    private func seriesHero(_ content: TVSeriesContent, twoColumns: Bool) -> some View {
         DetailHero(
             title: content.detail.name,
             posterPath: content.detail.posterPath,
@@ -224,7 +230,8 @@ struct TVSeriesView: View {
             transitionNamespace: heroTransition,
             onOpenPoster: { viewModel.openPoster() },
             onOpenImage: { viewModel.openImages(initialID: $0) },
-            streamingProviders: content.detail.streamingProviders
+            streamingProviders: content.detail.streamingProviders,
+            aspectRatio: DetailLayoutMetrics.heroAspectRatio(twoColumns: twoColumns)
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.lg) {
                 VStack(alignment: .leading, spacing: DesignSpacing.sm) {
@@ -250,11 +257,19 @@ struct TVSeriesView: View {
         }
     }
 
+    /// Rating and storyline, with awards beside them on a wide page and below them on a phone.
     private func seriesFacts(
         _ content: TVSeriesContent,
-        scrollTo: @escaping (String) -> Void
+        scrollTo: @escaping (String) -> Void,
+        twoColumns: Bool,
+        contentWidth: CGFloat
     ) -> some View {
-        VStack(alignment: .leading, spacing: DesignSpacing.md) {
+        DetailColumns(
+            twoColumns: twoColumns,
+            contentWidth: contentWidth,
+            showsSecondary: !viewModel.awardRows.isEmpty,
+            itemSpacing: DesignSpacing.md
+        ) {
             TMDBRatingCard(
                 formattedRating: content.formattedRating,
                 accessibilityLabel: content.ratingAccessibilityLabel,
@@ -269,6 +284,8 @@ struct TVSeriesView: View {
                 onEdit: { viewModel.openAnnotationEditor() },
                 scrollTo: scrollTo
             )
+        } secondary: {
+            AwardRowsSection(rows: viewModel.awardRows)
         }
         .padding(.horizontal, DesignSpacing.lg)
     }
