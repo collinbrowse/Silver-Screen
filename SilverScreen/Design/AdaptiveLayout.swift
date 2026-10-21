@@ -102,6 +102,17 @@ enum DetailLayoutMetrics {
         return min(maximumSecondaryWidth, max(0, available * secondaryShare))
     }
 
+    /// Main and side column widths in a two-column row `totalWidth` wide. The side
+    /// column never takes more than the row leaves after the spacing.
+    static func columnWidths(
+        totalWidth: CGFloat,
+        secondaryWidth: CGFloat,
+        spacing: CGFloat
+    ) -> (primary: CGFloat, secondary: CGFloat) {
+        let secondary = min(secondaryWidth, max(0, totalWidth - spacing))
+        return (max(0, totalWidth - secondary - spacing), secondary)
+    }
+
     static func heroAspectRatio(twoColumns: Bool) -> CGFloat {
         twoColumns ? wideHeroAspectRatio : compactHeroAspectRatio
     }

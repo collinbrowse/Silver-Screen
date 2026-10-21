@@ -126,6 +126,20 @@ final class AdaptiveLayoutTests: XCTestCase {
         XCTAssertEqual(DetailLayoutMetrics.secondaryWidth(forContentWidth: 1180), 360)
     }
 
+    func test_detailColumnWidths_splitsRowAfterSpacing() {
+        let columns = DetailLayoutMetrics.columnWidths(totalWidth: 834, secondaryWidth: 300, spacing: 24)
+
+        XCTAssertEqual(columns.primary, 510)
+        XCTAssertEqual(columns.secondary, 300)
+    }
+
+    func test_detailColumnWidths_narrowRow_neverGoesNegative() {
+        let columns = DetailLayoutMetrics.columnWidths(totalWidth: 100, secondaryWidth: 300, spacing: 24)
+
+        XCTAssertEqual(columns.primary, 0)
+        XCTAssertEqual(columns.secondary, 76)
+    }
+
     func test_detailHeroAspectRatio_widensOnTwoColumns() {
         XCTAssertEqual(DetailLayoutMetrics.heroAspectRatio(twoColumns: false), 16.0 / 9.0)
         XCTAssertEqual(DetailLayoutMetrics.heroAspectRatio(twoColumns: true), 21.0 / 9.0)

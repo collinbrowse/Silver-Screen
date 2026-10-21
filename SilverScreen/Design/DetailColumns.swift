@@ -29,31 +29,72 @@ struct DetailColumns<Primary: View, Secondary: View>: View {
 
     var body: some View {
         let layout = isSideBySide
-            ? AnyLayout(HStackLayout(alignment: .top, spacing: DetailLayoutMetrics.columnSpacing))
+            ? AnyLayout(
+                SideBySideColumnsLayout(
+                    secondaryWidth: DetailLayoutMetrics.secondaryWidth(forContentWidth: contentWidth),
+                    spacing: DetailLayoutMetrics.columnSpacing
+                )
+            )
             : AnyLayout(VStackLayout(alignment: .leading, spacing: spacing))
 
         layout {
             VStack(alignment: .leading, spacing: itemSpacing) {
                 primary
             }
-            // Side by side, the stack offers each column the row's full height; keep each
-            // at its natural height so a card with a flexible divider does not stretch.
-            .fixedSize(horizontal: false, vertical: isSideBySide)
             .frame(maxWidth: .infinity, alignment: .leading)
 
             if showsSecondary {
                 VStack(alignment: .leading, spacing: itemSpacing) {
                     secondary
                 }
-                .fixedSize(horizontal: false, vertical: isSideBySide)
-                .frame(
-                    width: isSideBySide
-                        ? DetailLayoutMetrics.secondaryWidth(forContentWidth: contentWidth)
-                        : nil,
-                    alignment: .leading
-                )
-                .frame(maxWidth: isSideBySide ? nil : .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+        }
+    }
+}
+
+/// Two subviews top-aligned side by side: the second gets `secondaryWidth` on the
+/// trailing edge, the first gets the rest. Each is measured once, at its column width
+/// and natural height. An `HStack` would also work, but it measures each child at
+/// several widths and again for alignment, and with deeply nested rows (a long awards
+/// card) that repeated measuring grows fast enough to hang the page. Natural heights
+/// also keep a card from stretching to the taller column.
+private struct SideBySideColumnsLayout: Layout {
+    let secondaryWidth: CGFloat
+    let spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? (secondaryWidth * 2 + spacing)
+        let columns = DetailLayoutMetrics.columnWidths(
+            totalWidth: width,
+            secondaryWidth: secondaryWidth,
+            spacing: spacing
+        )
+        let heights = zip(subviews, [columns.primary, columns.secondary]).map { subview, columnWidth in
+            subview.sizeThatFits(ProposedViewSize(width: columnWidth, height: nil)).height
+        }
+        return CGSize(width: width, height: heights.max() ?? 0)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let columns = DetailLayoutMetrics.columnWidths(
+            totalWidth: bounds.width,
+            secondaryWidth: secondaryWidth,
+            spacing: spacing
+        )
+        if let primary = subviews.first {
+            primary.place(
+                at: bounds.origin,
+                anchor: .topLeading,
+                proposal: ProposedViewSize(width: columns.primary, height: nil)
+            )
+        }
+        if subviews.count > 1 {
+            subviews[1].place(
+                at: CGPoint(x: bounds.maxX - columns.secondary, y: bounds.minY),
+                anchor: .topLeading,
+                proposal: ProposedViewSize(width: columns.secondary, height: nil)
+            )
         }
     }
 }
