@@ -37,7 +37,22 @@ struct FullscreenImageViewer: View {
         return images.firstIndex(where: { $0.id == selection }) ?? 0
     }
 
+    /// Close is a toolbar item rather than an overlay, so the system places it: top
+    /// trailing on a phone, and in the side toolbar on the iPhone Duo's outer screen.
     var body: some View {
+        NavigationStack {
+            viewer
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Close", systemImage: "xmark", action: onDismiss)
+                    }
+                }
+                .toolbarBackground(.hidden, for: .navigationBar)
+                .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+
+    private var viewer: some View {
         ZStack {
             DesignTheme.canvas.ignoresSafeArea()
 
@@ -66,13 +81,6 @@ struct FullscreenImageViewer: View {
             .ignoresSafeArea()
 
             VStack {
-                HStack {
-                    Spacer()
-                    closeButton
-                }
-                .padding(.horizontal, DesignSpacing.lg)
-                .padding(.top, DesignSpacing.sm)
-
                 Spacer()
 
                 if images.count > 1 {
@@ -101,17 +109,6 @@ struct FullscreenImageViewer: View {
                     }
                 }
         )
-    }
-
-    private var closeButton: some View {
-        Button(action: onDismiss) {
-            Image(systemName: "xmark")
-                .font(.body.weight(.semibold))
-                .foregroundStyle(DesignTheme.textPrimary)
-                .frame(width: 44, height: 44)
-                .background { chromeBackground }
-        }
-        .accessibilityLabel("Close")
     }
 
     @ViewBuilder
