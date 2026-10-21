@@ -56,22 +56,21 @@ struct AwardRowsSection: View {
             }
 
             if AwardRowsDisplay.showsToggle(total: rows.count) {
-                HStack {
-                    Spacer(minLength: 0)
-                    Button {
-                        isExpanded.toggle()
-                    } label: {
-                        Text(AwardRowsDisplay.toggleTitle(isExpanded: isExpanded))
-                            .font(DesignTypography.chip.weight(.semibold))
-                            .foregroundStyle(DesignTheme.accent)
-                            .padding(.horizontal, DesignSpacing.sm)
-                            .frame(minHeight: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(AwardRowsDisplay.toggleTitle(isExpanded: isExpanded))
-                    .accessibilityAddTraits(.isButton)
+                // The whole row under the card is the button, not just the short label,
+                // so Show more is easy to hit.
+                Button {
+                    isExpanded.toggle()
+                } label: {
+                    Text(AwardRowsDisplay.toggleTitle(isExpanded: isExpanded))
+                        .font(DesignTypography.chip.weight(.semibold))
+                        .foregroundStyle(DesignTheme.accent)
+                        .padding(.horizontal, DesignSpacing.sm)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .trailing)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel(AwardRowsDisplay.toggleTitle(isExpanded: isExpanded))
+                .accessibilityAddTraits(.isButton)
             }
         }
     }
