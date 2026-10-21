@@ -34,6 +34,22 @@ final class TVSeasonViewModelTests: XCTestCase {
         XCTAssertEqual(content.cast[0].name, "Bryan Cranston")
     }
 
+    func test_load_whenCancelled_returnsToIdleSoTheNextAppearanceLoadsAgain() async {
+        let viewModel = TVSeasonViewModel(
+            seriesID: 1396,
+            seriesName: "Breaking Bad",
+            seasonNumber: 1,
+            shows: TVRepository.test(client: FakeHTTPClient(stub: .failure(CancellationError()))),
+            annotations: AnnotationsRepository.empty()
+        )
+
+        await viewModel.load()
+
+        guard case .idle = viewModel.state else {
+            return XCTFail("Expected idle, got \(viewModel.state)")
+        }
+    }
+
     func test_load_whenSeriesSnapshotEmpty_fetchesSeriesForMembership() async {
         let client = RoutingHTTPClient(routes: [
             "/tv/1396/season/1": .success(TMDBFixtures.tvSeasonPilot),

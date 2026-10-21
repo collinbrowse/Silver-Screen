@@ -118,7 +118,9 @@ final class TVSeriesViewModel {
             await reloadWatchProgress(seasons: detail.seasons)
             await enrichListSnapshots(detail.listItem())
         } catch is CancellationError {
-            return
+            // The view only starts a load from `.idle`, so a load cancelled by a tab switch must
+            // go back to `.idle` or the screen keeps its spinner forever.
+            if case .loading = state { state = .idle }
         } catch let error as AppError {
             state = .failed(error)
         } catch {

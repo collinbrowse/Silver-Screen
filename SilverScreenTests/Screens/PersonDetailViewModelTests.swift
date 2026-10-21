@@ -149,6 +149,16 @@ final class PersonDetailViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.state, .failed(.offline))
     }
 
+    func test_load_whenCancelled_returnsToIdleSoTheNextAppearanceLoadsAgain() async {
+        let viewModel = makeViewModel(stub: .failure(CancellationError()))
+
+        await viewModel.load()
+
+        guard case .idle = viewModel.state else {
+            return XCTFail("Expected idle, got \(viewModel.state)")
+        }
+    }
+
     func test_retry_afterFailure_loadsDetail() async {
         let switchable = SwitchableHTTPClient(stub: .failure(URLError(.notConnectedToInternet)))
         let people = PersonRepository.test(client: switchable)

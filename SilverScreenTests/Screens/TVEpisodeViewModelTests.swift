@@ -39,6 +39,22 @@ final class TVEpisodeViewModelTests: XCTestCase {
         XCTAssertTrue(content.otherEpisodes.isEmpty)
     }
 
+    func test_load_whenCancelled_returnsToIdleSoTheNextAppearanceLoadsAgain() async {
+        let viewModel = TVEpisodeViewModel(
+            seriesID: 1396,
+            seasonNumber: 1,
+            episodeNumber: 1,
+            shows: TVRepository.test(client: FakeHTTPClient(stub: .failure(CancellationError()))),
+            annotations: AnnotationsRepository.empty()
+        )
+
+        await viewModel.load()
+
+        guard case .idle = viewModel.state else {
+            return XCTFail("Expected idle, got \(viewModel.state)")
+        }
+    }
+
     func test_load_whenSeriesSnapshotEmpty_fetchesSeriesForMembership() async {
         let client = RoutingHTTPClient(routes: [
             "/tv/1396/season/1/episode/1": .success(TMDBFixtures.tvEpisodePilot),

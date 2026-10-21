@@ -110,7 +110,9 @@ final class TVSeasonViewModel {
                 activity: personal.activity
             )
         } catch is CancellationError {
-            return
+            // The view only starts a load from `.idle`, so a load cancelled by a tab switch must
+            // go back to `.idle` or the screen keeps its spinner forever.
+            if case .loading = state { state = .idle }
         } catch let error as AppError {
             state = .failed(error)
         } catch {

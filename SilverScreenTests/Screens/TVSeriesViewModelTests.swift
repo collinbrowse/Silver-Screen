@@ -57,6 +57,21 @@ final class TVSeriesViewModelTests: XCTestCase {
         XCTAssertEqual(content.reviews?.hasMore, false)
     }
 
+    func test_load_whenCancelled_returnsToIdleSoTheNextAppearanceLoadsAgain() async {
+        let viewModel = TVSeriesViewModel(
+            seriesID: 1396,
+            shows: TVRepository.test(client: FakeHTTPClient(stub: .failure(CancellationError()))),
+            annotations: AnnotationsRepository.empty(),
+            lists: ListsRepository.empty()
+        )
+
+        await viewModel.load()
+
+        guard case .idle = viewModel.state else {
+            return XCTFail("Expected idle, got \(viewModel.state)")
+        }
+    }
+
     func test_loadMoreReviews_keepsTheListWhenTheNextPageFails() async {
         let client = SequencingHTTPClient(stubs: [
             .success(TMDBFixtures.tvSeriesBreakingBad),
