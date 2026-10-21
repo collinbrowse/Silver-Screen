@@ -115,6 +115,10 @@ struct ReviewPageList: View {
                     .disabled(isLoadingPage)
                 }
             }
+            // Lines up with where the review cards' corners start to round, like the
+            // Show more row under the awards card.
+            .padding(.horizontal, DesignRadius.card)
+            .frame(minHeight: 44)
         }
         .font(DesignTypography.chip.weight(.semibold))
         .foregroundStyle(DesignTheme.accent)
