@@ -73,28 +73,26 @@ struct TVSeriesView: View {
         .background(DesignTheme.canvas)
         .toolbar {
             if case .loaded(let content, _) = viewModel.state {
-                ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: 4) {
-                        WatchedToggleButton(
-                            draft: content.detail.listItem(),
-                            lists: lists,
-                            index: listsIndex,
-                            tvWatch: tvWatch,
-                            shows: shows,
-                            seasons: content.detail.seasons,
-                            chrome: false,
-                            isWatchedOverride: viewModel.isSeriesFullyWatched,
-                            onToggleComplete: { Task { await viewModel.reloadNextUp() } },
-                            onFailure: { viewModel.noteListSaveFailed() }
-                        )
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    WatchedToggleButton(
+                        draft: content.detail.listItem(),
+                        lists: lists,
+                        index: listsIndex,
+                        tvWatch: tvWatch,
+                        shows: shows,
+                        seasons: content.detail.seasons,
+                        chrome: false,
+                        isWatchedOverride: viewModel.isSeriesFullyWatched,
+                        onToggleComplete: { Task { await viewModel.reloadNextUp() } },
+                        onFailure: { viewModel.noteListSaveFailed() }
+                    )
 
-                        ListMembershipButton(
-                            draft: content.detail.listItem(),
-                            lists: lists,
-                            index: listsIndex
-                        ) {
-                            viewModel.noteListSaveFailed()
-                        }
+                    ListMembershipButton(
+                        draft: content.detail.listItem(),
+                        lists: lists,
+                        index: listsIndex
+                    ) {
+                        viewModel.noteListSaveFailed()
                     }
                 }
             }

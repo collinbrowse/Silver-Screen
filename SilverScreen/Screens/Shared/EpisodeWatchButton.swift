@@ -20,7 +20,8 @@ struct EpisodeWatchButton: View {
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.borderless)
+        // No button style here: `.borderless` pulls a toolbar button out of the
+        // vertical bar on iPhone Duo. Row call sites set their own.
         .accessibilityLabel(isCompleted ? "Mark \(accessibilityTitle) not watched" : "Mark \(accessibilityTitle) watched")
         .accessibilityValue(isCompleted ? "Watched" : "Not watched")
     }

@@ -103,39 +103,37 @@ struct TVSeasonView: View {
         .background(DesignTheme.canvas)
         .toolbar {
             if case .loaded(let content, _) = viewModel.state {
-                ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: 4) {
-                        Button {
-                            Task { await toggleSeasonWatched() }
-                        } label: {
-                            Image(systemName: viewModel.isSeasonFullyWatched ? "eye.fill" : "eye")
-                                .foregroundStyle(
-                                    viewModel.isSeasonFullyWatched
-                                        ? DesignTheme.accent
-                                        : DesignTheme.textPrimary
-                                )
-                                .frame(width: 44, height: 44)
-                                .contentShape(Rectangle())
-                        }
-                        .accessibilityLabel(
-                            viewModel.isSeasonFullyWatched
-                                ? "Mark season not watched"
-                                : "Mark season watched"
-                        )
-                        .accessibilityValue(
-                            viewModel.isSeasonFullyWatched ? "Watched" : "Not watched"
-                        )
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    Button {
+                        Task { await toggleSeasonWatched() }
+                    } label: {
+                        Image(systemName: viewModel.isSeasonFullyWatched ? "eye.fill" : "eye")
+                            .foregroundStyle(
+                                viewModel.isSeasonFullyWatched
+                                    ? DesignTheme.accent
+                                    : DesignTheme.textPrimary
+                            )
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel(
+                        viewModel.isSeasonFullyWatched
+                            ? "Mark season not watched"
+                            : "Mark season watched"
+                    )
+                    .accessibilityValue(
+                        viewModel.isSeasonFullyWatched ? "Watched" : "Not watched"
+                    )
 
-                        ListMembershipButton(
-                            draft: seriesDraft(
-                                named: content.seriesName,
-                                seasonPosterPath: content.posterPath
-                            ),
-                            lists: lists,
-                            index: listsIndex
-                        ) {
-                            viewModel.noteListSaveFailed()
-                        }
+                    ListMembershipButton(
+                        draft: seriesDraft(
+                            named: content.seriesName,
+                            seasonPosterPath: content.posterPath
+                        ),
+                        lists: lists,
+                        index: listsIndex
+                    ) {
+                        viewModel.noteListSaveFailed()
                     }
                 }
             }
@@ -530,6 +528,7 @@ struct TVSeasonView: View {
                         ) {
                             Task { await toggleEpisodeWatch(episode) }
                         }
+                        .buttonStyle(.borderless)
                     }
                     .padding(.horizontal, DesignSpacing.lg)
                 }
