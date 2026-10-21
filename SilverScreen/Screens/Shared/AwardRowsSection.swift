@@ -67,6 +67,8 @@ struct AwardRowsSection: View {
             Text(AwardRowsDisplay.toggleTitle(isExpanded: isExpanded))
                 .font(DesignTypography.chip.weight(.semibold))
                 .foregroundStyle(DesignTheme.accent)
+                // Lines up with where the card's corner starts to round, not its outer edge.
+                .padding(.trailing, DesignRadius.card)
                 .frame(maxWidth: .infinity, minHeight: 44, alignment: .trailing)
                 .contentShape(Rectangle())
         }

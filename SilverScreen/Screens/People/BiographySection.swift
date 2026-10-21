@@ -48,6 +48,8 @@ struct BiographySection: View {
                     Text(expanded ? "Show Less" : "Show More")
                         .font(DesignTypography.chip.weight(.semibold))
                         .foregroundStyle(DesignTheme.accent)
+                        // Lines up with where the card's corner starts to round, not its outer edge.
+                        .padding(.leading, DesignRadius.card)
                         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                         .contentShape(Rectangle())
                 }
