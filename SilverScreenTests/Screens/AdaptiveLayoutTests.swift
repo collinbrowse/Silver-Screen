@@ -145,6 +145,33 @@ final class AdaptiveLayoutTests: XCTestCase {
         XCTAssertEqual(DetailLayoutMetrics.heroAspectRatio(twoColumns: true), 21.0 / 9.0)
     }
 
+    // MARK: - Carousels
+
+    func test_carouselPreview_iPhonePortrait_keepsFive() {
+        XCTAssertEqual(CarouselMetrics.previewCount(forWidth: 402, cardWidth: 140), 5)
+    }
+
+    func test_carouselPreview_iPhoneDuoInnerLandscape_isTwiceVisibleCards() {
+        // (866 - 32 + 12) / (140 + 12) = 5 whole cards visible.
+        XCTAssertEqual(CarouselMetrics.visibleCardCount(forWidth: 866, cardWidth: 140), 5)
+        XCTAssertEqual(CarouselMetrics.previewCount(forWidth: 866, cardWidth: 140), 10)
+    }
+
+    func test_carouselPreview_wideIPad_isTwiceVisibleCards() {
+        // (1180 - 32 + 12) / 152 = 7 whole cards visible.
+        XCTAssertEqual(CarouselMetrics.previewCount(forWidth: 1180, cardWidth: 140), 14)
+    }
+
+    func test_carouselViewAll_phone_keepsTenItemThreshold() {
+        XCTAssertFalse(CarouselMetrics.showsViewAll(totalCount: 10, previewCount: 5))
+        XCTAssertTrue(CarouselMetrics.showsViewAll(totalCount: 11, previewCount: 5))
+    }
+
+    func test_carouselViewAll_widePage_onlyBeyondPreview() {
+        XCTAssertFalse(CarouselMetrics.showsViewAll(totalCount: 14, previewCount: 14))
+        XCTAssertTrue(CarouselMetrics.showsViewAll(totalCount: 15, previewCount: 14))
+    }
+
     // MARK: - Grid rows
 
     func test_rows_oneColumn_yieldsOneRowPerItem() {

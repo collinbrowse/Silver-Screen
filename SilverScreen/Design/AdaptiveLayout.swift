@@ -49,6 +49,36 @@ enum ShelfGridMetrics {
     }
 }
 
+/// How many items a capped horizontal carousel (a person's credit rows) shows before
+/// View All. Phones keep five; wider pages show about twice the cards that fit on
+/// screen, so a wide carousel is not done after a single swipe.
+enum CarouselMetrics {
+    /// The phone preview: what every carousel showed before wide layouts.
+    static let compactPreviewCount = 5
+    /// View All never appears for this many items or fewer.
+    static let viewAllMinimumCount = 10
+    /// Matches `DetailCarousel`'s card spacing and side inset.
+    static let cardSpacing: CGFloat = DesignSpacing.md
+    static let sideInset: CGFloat = DesignSpacing.lg
+
+    /// Cards wholly visible in a carousel `width` points wide.
+    static func visibleCardCount(forWidth width: CGFloat, cardWidth: CGFloat) -> Int {
+        let available = width - sideInset * 2
+        guard available > 0, cardWidth > 0 else { return 0 }
+        return Int((available + cardSpacing) / (cardWidth + cardSpacing))
+    }
+
+    /// Items to show before View All: twice the visible cards, never fewer than the phone's five.
+    static func previewCount(forWidth width: CGFloat, cardWidth: CGFloat) -> Int {
+        max(compactPreviewCount, visibleCardCount(forWidth: width, cardWidth: cardWidth) * 2)
+    }
+
+    /// View All appears once the items outnumber both the preview and the minimum.
+    static func showsViewAll(totalCount: Int, previewCount: Int) -> Bool {
+        totalCount > max(viewAllMinimumCount, previewCount)
+    }
+}
+
 /// The widest a text-heavy column grows, so lines stay readable on wide screens.
 enum ReadableWidth {
     /// Matches the cap Movie and Person detail already used.

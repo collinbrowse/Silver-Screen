@@ -101,6 +101,10 @@ struct PersonDetailView: View {
                 isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
             )
             let contentWidth = DetailLayoutMetrics.contentWidth(forWidth: width, twoColumns: twoColumns)
+            let creditPreviewCount = CarouselMetrics.previewCount(
+                forWidth: contentWidth,
+                cardWidth: portraitCardWidth
+            )
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignSpacing.xl) {
                     metadataBlock(content, twoColumns: twoColumns, contentWidth: contentWidth)
@@ -111,6 +115,7 @@ struct PersonDetailView: View {
                         creditsCarousel(
                             title: section.title,
                             section: section,
+                            previewCount: creditPreviewCount,
                             personID: content.detail.id,
                             personName: content.detail.name
                         )
@@ -341,16 +346,19 @@ struct PersonDetailView: View {
         .padding(.bottom, DesignSpacing.xl)
     }
 
+    /// One credit slice: `previewCount` items (more on wide pages), then View All.
     private func creditsCarousel(
         title: String,
         section: PersonDetailContent.CreditsSection,
+        previewCount: Int,
         personID: Int,
         personName: String
     ) -> some View {
-        DetailCarousel(
+        let showsViewAll = section.showsViewAll(previewCount: previewCount)
+        return DetailCarousel(
             title: title,
-            viewAllTitle: section.showsViewAll ? "View All" : nil,
-            onViewAll: section.showsViewAll
+            viewAllTitle: showsViewAll ? "View All" : nil,
+            onViewAll: showsViewAll
                 ? {
                     router?.push(
                         .personCredits(
@@ -362,7 +370,7 @@ struct PersonDetailView: View {
                 }
                 : nil
         ) {
-            ForEach(section.preview) { credit in
+            ForEach(section.preview(count: previewCount)) { credit in
                 creditCell(credit)
             }
         }

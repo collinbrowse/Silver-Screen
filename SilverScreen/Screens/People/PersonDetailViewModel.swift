@@ -15,12 +15,31 @@ struct PersonDetailContent: Sendable, Equatable {
         let department: CreditDepartment
         /// Heading such as Directing, Acting, or Crew.
         let title: String
-        /// First five credits shown in the carousel.
-        let preview: [PersonCredit]
-        let totalCount: Int
+        /// Every credit in this slice, in display order. The carousel shows a
+        /// width-dependent prefix; see `CarouselMetrics`.
+        let credits: [PersonCredit]
+        var totalCount: Int { credits.count }
         var id: CreditDepartment { department }
-        /// True when totalCount > 10 (requirement threshold for View All).
-        var showsViewAll: Bool { totalCount > 10 }
+
+        /// The first `count` credits, for the carousel.
+        func preview(count: Int) -> [PersonCredit] {
+            Array(credits.prefix(count))
+        }
+
+        /// Whether View All leads to more than a carousel showing `previewCount` holds.
+        func showsViewAll(previewCount: Int) -> Bool {
+            CarouselMetrics.showsViewAll(totalCount: totalCount, previewCount: previewCount)
+        }
+
+        /// The phone carousel: the first `CarouselMetrics.compactPreviewCount` credits.
+        var preview: [PersonCredit] {
+            preview(count: CarouselMetrics.compactPreviewCount)
+        }
+
+        /// View All on a phone, where the carousel shows `preview`.
+        var showsViewAll: Bool {
+            showsViewAll(previewCount: CarouselMetrics.compactPreviewCount)
+        }
     }
 
     let detail: PersonDetail
@@ -91,7 +110,7 @@ final class PersonDetailViewModel {
         let scores = await annotations.formattedScores()
         var mapped: [String: String] = [:]
         for section in content.creditSections {
-            for credit in section.preview {
+            for credit in section.credits {
                 let key: AnnotationKey = switch credit.mediaType {
                     case .movie: .movie(credit.mediaID)
                     case .tv: .series(credit.mediaID)
@@ -150,8 +169,7 @@ final class PersonDetailViewModel {
             PersonDetailContent.CreditsSection(
                 department: group.department,
                 title: group.title,
-                preview: Array(group.credits.prefix(5)),
-                totalCount: group.credits.count
+                credits: group.credits
             )
         }
 
