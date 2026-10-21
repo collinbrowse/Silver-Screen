@@ -79,7 +79,8 @@ struct TVEpisodeView: View {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     EpisodeWatchButton(
                         isCompleted: viewModel.isEpisodeCompleted,
-                        accessibilityTitle: navigationTitle.isEmpty ? "episode" : navigationTitle
+                        accessibilityTitle: navigationTitle.isEmpty ? "episode" : navigationTitle,
+                        idleColor: DesignTheme.textPrimary
                     ) {
                         Task {
                             let wasCompleted = viewModel.isEpisodeCompleted
