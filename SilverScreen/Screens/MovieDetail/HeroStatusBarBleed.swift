@@ -8,7 +8,10 @@ import UIKit
 
 extension View {
     /// Draws the backdrop under the status icons, with a short fade that is darker at the top.
-    /// The fade and the dark status-bar treatment lift once the inline title has moved into the bar.
+    /// The fade lifts once the inline title has moved into the bar. Toolbar buttons keep the
+    /// system's own contrast, which follows what is behind them like the status icons do;
+    /// forcing a scheme until the title moved made a side toolbar (iPhone Duo) flip at a
+    /// different scroll point than the status icons.
     func heroStatusBarBleed(enabled: Bool) -> some View {
         modifier(HeroStatusBarBleed(enabled: enabled))
     }
@@ -36,7 +39,6 @@ struct HeroStatusBarBleed: ViewModifier {
                 }
             }
             .ignoresSafeArea(edges: enabled ? .top : [])
-            .toolbarColorScheme(keepsStatusBarClear ? .dark : nil, for: .navigationBar)
             .background {
                 WindowTopInsetReader { top in
                     if top != statusBarHeight {
