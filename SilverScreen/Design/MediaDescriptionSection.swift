@@ -3,8 +3,9 @@
 //  SilverScreen
 //
 //  TMDB overview and the viewer's review for one title. A saved note is the page
-//  that shows first. Headers sit outside the surface card; the review body matches
-//  the Reviews card (name, date, text, Show More). The card opens the editor.
+//  that shows first. The card labels itself (see `CardLabel`), with the page switch
+//  on the same row; the review body matches the Reviews card (name, date, text,
+//  Show More). The card opens the editor.
 //
 
 import SwiftUI
@@ -43,14 +44,14 @@ struct MediaDescriptionSection: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSpacing.sm) {
-            header
-            SurfaceCard {
+        SurfaceCard {
+            VStack(alignment: .leading, spacing: DesignSpacing.sm) {
+                header
                 cardBody
             }
-            .id(Self.noteCardID)
-            .animation(.smooth(duration: 0.35), value: page)
         }
+        .id(Self.noteCardID)
+        .animation(.smooth(duration: 0.35), value: page)
         .onAppear(perform: resetPage)
         .onChange(of: note) { _, _ in
             resetPage()
@@ -60,29 +61,22 @@ struct MediaDescriptionSection: View {
     private var header: some View {
         HStack(alignment: .center, spacing: DesignSpacing.sm) {
             if note == nil {
-                sectionTitle("Storyline")
+                CardLabel(title: "Storyline")
                 Spacer(minLength: 0)
             } else if page == .notes {
-                sectionTitle("Your review")
+                CardLabel(title: "Your review")
                 Spacer(minLength: 0)
                 pageSwitch(title: "Storyline", arrow: "arrow.right", arrowFirst: false, label: "Show storyline") {
                     showStoryline()
                 }
             } else {
-                sectionTitle("Storyline")
+                CardLabel(title: "Storyline")
                 Spacer(minLength: 0)
                 pageSwitch(title: "Your review", arrow: "arrow.left", arrowFirst: true, label: "Show your review") {
                     showNotes()
                 }
             }
         }
-    }
-
-    private func sectionTitle(_ title: String) -> some View {
-        Text(title)
-            .font(DesignTypography.section)
-            .foregroundStyle(DesignTheme.textPrimary)
-            .accessibilityAddTraits(.isHeader)
     }
 
     private func pageSwitch(
@@ -104,11 +98,14 @@ struct MediaDescriptionSection: View {
                         .accessibilityHidden(true)
                 }
             }
-            .font(DesignTypography.metadata.weight(.semibold))
+            .font(DesignTypography.chip.weight(.semibold))
             .foregroundStyle(DesignTheme.accent)
             .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        // Keeps a 44 pt target without making the label row 44 pt tall.
+        .padding(.vertical, -DesignSpacing.md)
         .accessibilityLabel(label)
     }
 
@@ -165,9 +162,7 @@ struct MediaDescriptionSection: View {
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .textSelection(.enabled)
-            .accessibilityLabel(
-                overview.isEmpty ? "Storyline. No description available." : "Storyline. \(overview)"
-            )
+            .accessibilityLabel(overview.isEmpty ? "No description available." : overview)
     }
 
     private func noteAccessibilityLabel(_ note: String) -> String {

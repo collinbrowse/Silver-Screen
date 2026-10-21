@@ -2,7 +2,8 @@
 //  BiographySection.swift
 //  SilverScreen
 //
-//  Collapsed biography that expands in place via Show More / Show Less.
+//  Collapsed biography that expands in place via Show More / Show Less, in a card
+//  that labels itself like the storyline on title pages.
 //
 
 import SwiftUI
@@ -24,12 +25,16 @@ struct BiographySection: View {
         !biography.isEmpty && biography.count > expandsWhenCharacterCountExceeds
     }
 
+    /// A labeled card, like the storyline on title pages.
     var body: some View {
+        SurfaceCard {
+            content
+        }
+    }
+
+    private var content: some View {
         VStack(alignment: .leading, spacing: DesignSpacing.sm) {
-            Text("Biography")
-                .font(DesignTypography.section)
-                .foregroundStyle(DesignTheme.textPrimary)
-                .accessibilityAddTraits(.isHeader)
+            CardLabel(title: "Biography")
 
             Text(displayText)
                 .font(DesignTypography.body)

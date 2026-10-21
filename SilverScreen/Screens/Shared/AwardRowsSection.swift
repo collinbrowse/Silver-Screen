@@ -36,43 +36,45 @@ struct AwardRowsSection: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var trophyHeight: CGFloat = 36
 
+    /// The card labels itself (see `CardLabel`) and ends with Show more / Show less.
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSpacing.sm) {
-            Text("Awards")
-                .font(DesignTypography.section)
-                .foregroundStyle(DesignTheme.textPrimary)
-                .accessibilityAddTraits(.isHeader)
-
-            SurfaceCard {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(visibleRows.enumerated()), id: \.element.id) { index, row in
-                        if index > 0 {
-                            Divider()
-                                .padding(.vertical, DesignSpacing.md)
-                        }
-                        awardRow(row)
+        SurfaceCard {
+            VStack(alignment: .leading, spacing: 0) {
+                CardLabel(title: "Awards")
+                    .padding(.bottom, DesignSpacing.md)
+                ForEach(Array(visibleRows.enumerated()), id: \.element.id) { index, row in
+                    if index > 0 {
+                        Divider()
+                            .padding(.vertical, DesignSpacing.md)
                     }
+                    awardRow(row)
                 }
-            }
-
-            if AwardRowsDisplay.showsToggle(total: rows.count) {
-                // The whole row under the card is the button, not just the short label,
-                // so Show more is easy to hit.
-                Button {
-                    isExpanded.toggle()
-                } label: {
-                    Text(AwardRowsDisplay.toggleTitle(isExpanded: isExpanded))
-                        .font(DesignTypography.chip.weight(.semibold))
-                        .foregroundStyle(DesignTheme.accent)
-                        .padding(.horizontal, DesignSpacing.sm)
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .trailing)
-                        .contentShape(Rectangle())
+                if AwardRowsDisplay.showsToggle(total: rows.count) {
+                    Divider()
+                        .padding(.top, DesignSpacing.md)
+                    toggleButton
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(AwardRowsDisplay.toggleTitle(isExpanded: isExpanded))
-                .accessibilityAddTraits(.isButton)
             }
         }
+    }
+
+    /// The whole last row of the card is the button, not just the short label, so
+    /// Show more is easy to hit.
+    private var toggleButton: some View {
+        Button {
+            isExpanded.toggle()
+        } label: {
+            Text(AwardRowsDisplay.toggleTitle(isExpanded: isExpanded))
+                .font(DesignTypography.chip.weight(.semibold))
+                .foregroundStyle(DesignTheme.accent)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .trailing)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(AwardRowsDisplay.toggleTitle(isExpanded: isExpanded))
+        .accessibilityAddTraits(.isButton)
+        // The card's bottom padding already spaces the row; let the target use it.
+        .padding(.bottom, -DesignSpacing.sm)
     }
 
     private var visibleRows: [AwardRow] {
