@@ -237,15 +237,17 @@ struct MovieDetailView: View {
         }
     }
 
-    /// Rating and storyline, then facts and awards: one column on a phone, the two
-    /// groups side by side on a wide page.
+    /// Rating, storyline, facts, and awards, in that order on a phone. On a wide page
+    /// awards take the side column and facts join the main one, since a long awards
+    /// card already outweighs the rest; with no awards, facts take the side column.
     private func metadataBlock(
         _ content: MovieDetailContent,
         scrollTo: @escaping (String) -> Void,
         twoColumns: Bool,
         contentWidth: CGFloat
     ) -> some View {
-        DetailColumns(twoColumns: twoColumns, contentWidth: contentWidth) {
+        let hasAwards = !viewModel.awardRows.isEmpty
+        return DetailColumns(twoColumns: twoColumns, contentWidth: contentWidth) {
             TMDBRatingCard(
                 formattedRating: content.formattedRating,
                 accessibilityLabel: content.ratingAccessibilityLabel,
@@ -260,10 +262,14 @@ struct MovieDetailView: View {
                 onEdit: { viewModel.openAnnotationEditor() },
                 scrollTo: scrollTo
             )
+            if hasAwards {
+                factsCard(content)
+            }
         } secondary: {
-            factsCard(content)
-            if !viewModel.awardRows.isEmpty {
+            if hasAwards {
                 AwardRowsSection(rows: viewModel.awardRows)
+            } else {
+                factsCard(content)
             }
         }
         .padding(.horizontal, DesignSpacing.lg)
