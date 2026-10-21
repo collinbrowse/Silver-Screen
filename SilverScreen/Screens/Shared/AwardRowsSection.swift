@@ -36,29 +36,29 @@ struct AwardRowsSection: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var trophyHeight: CGFloat = 36
 
-    /// The card labels itself (see `CardLabel`) and ends with Show more / Show less.
+    /// The card labels itself (see `CardLabel`); Show more / Show less sits below it.
     var body: some View {
-        SurfaceCard {
-            VStack(alignment: .leading, spacing: 0) {
-                CardLabel(title: "Awards")
-                    .padding(.bottom, DesignSpacing.md)
-                ForEach(Array(visibleRows.enumerated()), id: \.element.id) { index, row in
-                    if index > 0 {
-                        Divider()
-                            .padding(.vertical, DesignSpacing.md)
+        VStack(alignment: .leading, spacing: 0) {
+            SurfaceCard {
+                VStack(alignment: .leading, spacing: 0) {
+                    CardLabel(title: "Awards")
+                        .padding(.bottom, DesignSpacing.md)
+                    ForEach(Array(visibleRows.enumerated()), id: \.element.id) { index, row in
+                        if index > 0 {
+                            Divider()
+                                .padding(.vertical, DesignSpacing.md)
+                        }
+                        awardRow(row)
                     }
-                    awardRow(row)
                 }
-                if AwardRowsDisplay.showsToggle(total: rows.count) {
-                    Divider()
-                        .padding(.top, DesignSpacing.md)
-                    toggleButton
-                }
+            }
+            if AwardRowsDisplay.showsToggle(total: rows.count) {
+                toggleButton
             }
         }
     }
 
-    /// The whole last row of the card is the button, not just the short label, so
+    /// The whole row under the card is the button, not just the short label, so
     /// Show more is easy to hit.
     private var toggleButton: some View {
         Button {
@@ -73,8 +73,6 @@ struct AwardRowsSection: View {
         .buttonStyle(.plain)
         .accessibilityLabel(AwardRowsDisplay.toggleTitle(isExpanded: isExpanded))
         .accessibilityAddTraits(.isButton)
-        // The card's bottom padding already spaces the row; let the target use it.
-        .padding(.bottom, -DesignSpacing.sm)
     }
 
     private var visibleRows: [AwardRow] {
