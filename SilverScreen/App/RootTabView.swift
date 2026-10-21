@@ -89,14 +89,8 @@ struct RootTabView: View {
         // Read `message` here so RootTabView observes ListChangeNotice. The overlay
         // alone (child @Bindable) can miss updates when only the notice changes.
         let bannerMessage = listChanges.message
-        tabs
+        tabs(showsBanner: bannerMessage != nil)
             .environment(listChanges)
-            .overlay(alignment: .bottom) {
-                if bannerMessage != nil {
-                    ListChangeBanner(notice: listChanges)
-                        .id(listChanges.presentationID)
-                }
-            }
             .sheet(item: toastAnnotationEditorBinding) { session in
                 AnnotationEditorSheet(
                     title: session.title,
@@ -119,19 +113,21 @@ struct RootTabView: View {
     /// a wide foldable screen) can open them as a sidebar, and a compact one keeps the
     /// bottom tab bar. Each tab keeps its own `NavigationStack` either way.
     @ViewBuilder
-    private var tabs: some View {
+    private func tabs(showsBanner: Bool) -> some View {
         if ProcessInfo.processInfo.isiOSAppOnMac {
-            tabView
+            tabView(showsBanner: showsBanner)
                 .tabViewStyle(.tabBarOnly)
                 .tabBarMinimizeBehavior(.never)
         } else {
-            tabView
+            tabView(showsBanner: showsBanner)
                 .tabViewStyle(.sidebarAdaptable)
         }
     }
 
-    private var tabView: some View {
-        TabView(selection: $router.selectedTab) {
+    /// Each tab hosts the list-change banner itself; see `ListChangeBannerHost`.
+    private func tabView(showsBanner: Bool) -> some View {
+        let banner = ListChangeBannerHost(notice: listChanges, isShowing: showsBanner)
+        return TabView(selection: $router.selectedTab) {
             Tab("Browse", systemImage: "square.grid.2x2", value: AppTab.browse) {
                 BrowseTabRoot(
                     router: router.browse,
@@ -146,6 +142,7 @@ struct RootTabView: View {
                     tvWatch: tvWatch,
                     awards: awards
                 )
+                .modifier(banner)
             }
 
             Tab("Search", systemImage: "magnifyingglass", value: AppTab.search) {
@@ -162,6 +159,7 @@ struct RootTabView: View {
                     tvWatch: tvWatch,
                     awards: awards
                 )
+                .modifier(banner)
             }
 
             Tab("Library", systemImage: "books.vertical", value: AppTab.library) {
@@ -179,6 +177,7 @@ struct RootTabView: View {
                     people: people,
                     settings: settings
                 )
+                .modifier(banner)
             }
         }
     }
