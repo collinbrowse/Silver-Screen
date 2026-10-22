@@ -134,6 +134,7 @@ struct MovieDetailView: View {
             loadedScroll(content: content, activity: activity, scrollTo: { id in
                 proxy.scrollTo(id, anchor: .top)
                 })
+            .tourScrolls(with: proxy)
         }
     }
 
@@ -245,6 +246,8 @@ struct MovieDetailView: View {
                 userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
                 onEdit: { viewModel.openAnnotationEditor() }
             )
+            .id(TourAnchor.ratingCard.scrollID)
+            .tourAnchor(.ratingCard)
             LogWatchButton(title: LogWatchTitle(movie: content.detail), currentScore: content.userScore)
             MediaDescriptionSection(
                 overview: content.detail.overview,

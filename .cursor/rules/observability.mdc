@@ -10,6 +10,8 @@ alwaysApply: false
 
 The app has **one** third-party SDK: **Sentry** (Cocoa, via SPM only). No Crashlytics, Firebase, Amplitude, or other analytics/crash SDKs.
 
+Product analytics go to TelemetryDeck through first-party `URLSession` code (`AnalyticsClient`, `TelemetryDeckClient`), not its SDK. Events are bare counts from `AnalyticsEvent`. Payloads carry only app, OS, and device context (model identifier, orientation, screen size) and retention counts, under TelemetryDeck's SDK keys: never user content. Analytics failures log at `.debug`, not `.error`, so a TelemetryDeck outage does not flood Sentry. See [`OBSERVABILITY.md`](OBSERVABILITY.md#product-analytics).
+
 - Add or upgrade Sentry only through the Xcode project’s package reference (`sentry-cocoa`). Do not add CocoaPods or Carthage.
 - [`scripts/validate-rules.py`](scripts/validate-rules.py) fails if `project.pbxproj` references any other remote Swift package.
 - The beforeShellExecution hook still blocks CocoaPods, Carthage, and ad-hoc `Package.swift` / `Podfile` manifests.

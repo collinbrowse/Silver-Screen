@@ -1,6 +1,7 @@
 # Observability
 
-Sentry is the only third-party SDK. Agent rules live in
+Sentry is the only third-party SDK. Product analytics go to TelemetryDeck
+through first-party code, with no SDK. Agent rules live in
 [`.cursor/rules/observability.mdc`](.cursor/rules/observability.mdc).
 
 ## Release health
@@ -58,6 +59,100 @@ Repository secrets:
 `GITHUB_TOKEN` comes from Actions; each workflow asks for `issues: write`.
 The average rating comes from the public iTunes lookup API (US storefront),
 because the App Store Connect API has reviews but no aggregate rating.
+
+## Product analytics
+
+[TelemetryDeck](https://telemetrydeck.com/) counts sessions and four anonymous
+events. The app
+posts them to the [v2 ingest API](https://telemetrydeck.com/docs/ingest/v2) with
+`URLSession` in
+[`TelemetryDeckClient.swift`](SilverScreen/Data/Networking/TelemetryDeckClient.swift);
+the events and the opt-out are in [`Analytics.swift`](SilverScreen/Support/Analytics.swift).
+
+| Signal type | Sent when | Sent from |
+| --- | --- | --- |
+| `TelemetryDeck.Session.started` | Launch, and returning after more than 5 minutes in the background (the SDK's rule) | `AnalyticsSessionTracker`, called by `SceneDelegate` |
+| `TelemetryDeck.Acquisition.newInstallDetected` | Just before the first session (again after turning sharing back on) | `TelemetryDeckClient` |
+| `Onboarding.finished` | Onboarding's last step is finished (not skipped) | `OnboardingGate.finish()` |
+| `Library.firstRatingSaved` | A score is saved and no other title had one | `AnnotationsRepository.save` / `saveScore` |
+| `Library.listCreated` | A custom list is created | `ListsRepository.createList` |
+| `Library.titleAddedToWatchlist` | A title is newly put on Watchlist | `ListsRepository` add and toggle |
+
+The two `TelemetryDeck.` types use the SDK's names, so the dashboard's built-in
+session, active-user, and retention charts work without the SDK. The repositories
+send the `Library.*` events after the write is saved, so every screen that saves
+reports the same way and a failed save sends nothing.
+
+Each signal carries the app ID, a SHA-256 of a random per-install UUID
+(`clientUser`), the session ID (new each session), the type, and these fields,
+named as the SDK names them:
+
+| Fields | Values |
+| --- | --- |
+| `TelemetryDeck.AppInfo.*` | Version and build |
+| `TelemetryDeck.Device.*` | Model identifier (`iPhone17,3`; a simulator reports the model it simulates), iOS version, platform, orientation (`Portrait` / `Landscape` / `Unknown`), screen size in points |
+| `TelemetryDeck.Acquisition.firstSessionDate` | Day of the first session, `yyyy-MM-dd` |
+| `TelemetryDeck.Retention.*` | Total sessions, distinct days used, distinct days in the last 30 |
+
+Never a title, list name, rating, note, or search. A model identifier is shared by
+every device of that model, so it does not single anyone out. TelemetryDeck salts
+and hashes `clientUser` again on arrival. `SceneDelegate` reports orientation and
+screen size (UIKit stays in the delegates); signals sent before it first reports
+leave those fields out. Session and day counts live in UserDefaults. Settings →
+Share Anonymous Usage turns it all off and forgets the install UUID and the counts,
+so turning it back on looks like a new install. Events wait about 5 seconds in memory and
+go up as one request. Offline or 5xx uploads retry with backoff (30 s doubling
+to 15 min); a 4xx is dropped. Nothing is written to disk, so events queued when
+the app is killed are lost — fine for counts.
+
+Debug builds (simulator, Xcode runs, unit tests) send in TelemetryDeck's **test
+mode**, so they never reach production charts. Release builds (TestFlight and
+App Store) send production signals. Demo launches for marketing screenshots send
+nothing. With no app ID, analytics is off and sends nothing.
+
+### Setup
+
+1. In the [TelemetryDeck dashboard](https://dashboard.telemetrydeck.com/), create
+   the app "Silver Screen" and copy its **App ID** (a UUID) from the app's settings.
+2. Locally, add it to the gitignored `Secrets.xcconfig`:
+   `TELEMETRYDECK_APP_ID = <the UUID>` (template:
+   [`Secrets.example.xcconfig`](Secrets.example.xcconfig)).
+3. For TestFlight and App Store builds, add the repository secret
+   `TELEMETRYDECK_APP_ID`. [`release.yml`](.github/workflows/release.yml) writes it
+   into `Secrets.xcconfig` and warns when it is missing.
+   `scripts/release.py archive` fails if the archived ID is set but is not a UUID.
+
+The app ID is not a credential (it ships in the binary), but it lives with the
+other per-environment values so a fresh clone sends nothing.
+
+### Verify signals arrive
+
+1. Build and run a Debug build with the app ID set.
+2. Create a list, add a title to Watchlist, and rate a title in a library that has no ratings.
+3. Within a few seconds, open TelemetryDeck, turn on **Test Mode** in the dashboard,
+   and check Explore → Recent Signals for `TelemetryDeck.Session.started`,
+   `TelemetryDeck.Acquisition.newInstallDetected`, and the `Library.*` types. Open
+   one and check its payload has the model, orientation, and retention fields.
+4. After the first TestFlight build, turn Test Mode off and check the same signals
+   arrive from a TestFlight install.
+
+### Onboarding event
+
+`OnboardingGate` takes `analytics: any AnalyticsClient` (`SceneDelegate` passes
+`dependencies.analytics`). `finish()` sends `.onboardingFinished` right after it
+writes `onboardingCompletedAt`; `skip()` sends nothing. `OnboardingGateTests`
+covers both with `SpyAnalyticsClient`.
+
+### Adding an event
+
+Add a case to `AnalyticsEvent` with a `Scope.eventName` raw value (leave the
+`TelemetryDeck.` scope to the SDK names above), send it where the action is saved,
+add a test with `SpyAnalyticsClient`, and add it to the table above. Keep it a
+bare count: no payload from user content. A new device or app field goes in
+`TelemetryDeckSignalFactory.defaultPayload` (fixed per launch) or
+`AnalyticsDisplay` (changes during a launch), under the SDK's key when it has one. If it measures a
+new kind of data, update `PrivacyInfo.xcprivacy`, the privacy policy in
+[`docs/privacy.md`](docs/privacy.md), and the App Store privacy label.
 
 ## Alerts (configure in Sentry UI)
 

@@ -41,8 +41,9 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 - [ ] Add a support email address to `docs/support.md` (Apple expects contact details on the support URL)
 - [ ] Sentry project settings: turn on "Prevent Storing of IP Addresses", so crash reports stay unlinked to a person
 - [x] Add the official TMDB logo to Settings → Data Sources (TMDB's attribution rules ask for it)
-- [ ] App Store Connect privacy label, matching `PrivacyInfo.xcprivacy`:
-      - Not linked to you: Crash Data, Performance Data, Other Diagnostic Data (App Functionality)
+- [x] App Store Connect privacy label, matching `PrivacyInfo.xcprivacy`:
+      - Not linked to you: Crash Data, Performance Data (App Functionality); Other Diagnostic Data
+        (App Functionality, Analytics); Product Interaction and Device ID (Analytics)
       - Linked to you: Email Address and Customer Support, only when someone sends feedback with an email (App Functionality)
       - Tracking: none
 - [ ] App Store Connect: privacy policy URL, support URL, Entertainment category, copyright, age rating questionnaire
@@ -54,13 +55,16 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 
 ### Product
 
-- [ ] Onboarding: a first-launch flow that gets someone to a non-empty library (rate a few
+- [x] Onboarding: a first-launch flow that gets someone to a non-empty library (rate a few
       titles they've seen, start a watchlist) instead of an empty Library tab
 - [x] Review prompt: SwiftUI `requestReview` after a good moment, such as the 5th saved rating, at most once per version, never after an error.
       Ratings saved during onboarding (before `onboardingCompletedAt`) do not count.
 - [ ] Analytics: pick the tool (see the decision below), then send a handful of anonymous
       events: onboarding finished, first rating, list created, title added to watchlist.
       Declare them on the privacy label as Product Interaction, not linked.
+      TelemetryDeck client, events, Settings toggle, and privacy manifest are built. Left:
+      create the TelemetryDeck app, set `TELEMETRYDECK_APP_ID` (OBSERVABILITY.md → Product
+      analytics), and check signals arrive. The onboarding event is wired (#43).
 
 ### Infrastructure and automation
 
@@ -84,6 +88,11 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 - [ ] No pre-order and no press kit (decided)
 
 ### Decision needed: analytics
+
+**Decided (October 16, 2026): TelemetryDeck, through a few lines of `URLSession` against its
+v2 ingest API, so Sentry stays the only dependency.** App Store Connect Analytics keeps
+covering downloads, conversion, and retention at no cost. Setup and verification are in
+[`OBSERVABILITY.md`](OBSERVABILITY.md) under Product analytics.
 
 Sentry reports crashes, errors, and performance. It doesn't do product analytics (funnels,
 retention, feature use). Options:

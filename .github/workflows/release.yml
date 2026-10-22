@@ -64,6 +64,8 @@ jobs:
           # A repository variable, not a secret: the URL ships in the app either way.
           TMDB_PROXY_URL: ${{ vars.TMDB_PROXY_URL }}
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          # Optional. Without it the build sends no product analytics (OBSERVABILITY.md).
+          TELEMETRYDECK_APP_ID: ${{ secrets.TELEMETRYDECK_APP_ID }}
           ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
         run: |
           if [ -z "$SENTRY_DSN" ] || [ -z "$ASC_API_KEY_P8" ]; then
@@ -85,9 +87,13 @@ jobs:
             echo "::error::Set repository variable TMDB_PROXY_URL (see worker/README.md) or repository secret TMDB_ACCESS_TOKEN"
             exit 1
           fi
+          if [ -z "$TELEMETRYDECK_APP_ID" ]; then
+            echo "::warning::Repository secret TELEMETRYDECK_APP_ID is not set, so this build sends no product analytics. See OBSERVABILITY.md."
+          fi
           cat > Secrets.xcconfig <<EOF
           ${tmdb_lines}
           SENTRY_DSN = ${dsn}
+          TELEMETRYDECK_APP_ID = ${TELEMETRYDECK_APP_ID}
           EOF
           # runner.temp is not available in a job-level env block, so the path
           # is set here and exported for archive, TestFlight notes, and dSYM upload.
