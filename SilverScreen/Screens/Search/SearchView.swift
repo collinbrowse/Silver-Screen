@@ -87,8 +87,7 @@ struct SearchView: View {
     private var searchBody: some View {
         switch viewModel.state {
             case .idle, .loading:
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                LoadingStateView()
             case .empty:
                 if viewModel.showsFocusedPlaceholder {
                     Button {

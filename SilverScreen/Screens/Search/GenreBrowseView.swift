@@ -100,8 +100,7 @@ struct GenreBrowseView: View {
     private var content: some View {
         switch viewModel.state {
             case .idle, .loading:
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                LoadingStateView()
             case .empty:
                 EmptyStateView(
                     title: "Nothing to Browse",

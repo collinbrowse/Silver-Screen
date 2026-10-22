@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		06F9BBE77CE538BE8E380F74 /* LoadingStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B7DA6FEA32086ED39144056 /* LoadingStateView.swift */; };
 		3761473B23F30F75A1180842 /* ReelMorph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11778598015C5FB177DF8EA8 /* ReelMorph.swift */; };
 		2D16E64FA87048F1BFDF684E /* ReelHelix.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE3E5D3977FF6E7FBEA549D3 /* ReelHelix.swift */; };
 		76C8B361912AA8368FD7E6B4 /* ReelLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25BE0856C94DC04AB2131E91 /* ReelLoaderTests.swift */; };
@@ -272,6 +273,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		7B7DA6FEA32086ED39144056 /* LoadingStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingStateView.swift; sourceTree = "<group>"; };
 		11778598015C5FB177DF8EA8 /* ReelMorph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelMorph.swift; sourceTree = "<group>"; };
 		BE3E5D3977FF6E7FBEA549D3 /* ReelHelix.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelHelix.swift; sourceTree = "<group>"; };
 		25BE0856C94DC04AB2131E91 /* ReelLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelLoaderTests.swift; sourceTree = "<group>"; };
@@ -641,6 +643,7 @@
 				C3A100052788B823003D8011 /* TrailerPlayerView.swift */,
 				E2A0002A2788B823003D8011 /* ReviewCard.swift */,
 				B100012D2788B823003D8011 /* EmptyStateView.swift */,
+				7B7DA6FEA32086ED39144056 /* LoadingStateView.swift */,
 				M1C5E4A12F6D4A0E9B7C1D02 /* MacSearchField.swift */,
 				A1B000012788B823003D8011 /* AwardRowsSection.swift */,
 				L1B000102788B823003D8011 /* ListMembershipButton.swift */,
@@ -1244,6 +1247,7 @@
 				G1E000042788B823003D8011 /* GenreBrowseViewModel.swift in Sources */,
 				B100012E2788B823003D8011 /* ErrorStateView.swift in Sources */,
 				B100012C2788B823003D8011 /* EmptyStateView.swift in Sources */,
+				06F9BBE77CE538BE8E380F74 /* LoadingStateView.swift in Sources */,
 				M1C5E4A12F6D4A0E9B7C1D01 /* MacSearchField.swift in Sources */,
 				A1B000022788B823003D8011 /* AwardRowsSection.swift in Sources */,
 				B10001282788B823003D8011 /* RootTabView.swift in Sources */,
@@ -1759,7 +1763,6 @@
 	};
 	rootObject = C77D45262788B821003D8011 /* Project object */;
 }
-
 
 
 
