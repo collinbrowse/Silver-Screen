@@ -54,6 +54,7 @@ struct DetailColumns<Primary: View, Secondary: View>: View {
             }
         }
         .environment(\.carouselStaysInPane, foldPanes != nil)
+        .foldTransitionIdentity(isSplit: foldPanes != nil)
         .onFoldSplitChange { fold = $0 }
     }
 

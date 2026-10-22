@@ -52,8 +52,53 @@ enum FoldPane: Sendable {
     case trailing
 }
 
+/// When a change in the fold should animate. The system animates opening, closing,
+/// and rotating the Duo, which change the window's size; bending the hinge does not
+/// change the window, so the crease appearing or going away is ours to animate.
+enum FoldTransition {
+    /// Slides content to its new pane. About as long as a system resize.
+    static let animation = Animation.smooth(duration: 0.35)
+    /// Under Reduce Motion: a short cross-fade instead of moving content.
+    static let reducedMotionAnimation = Animation.easeInOut(duration: 0.25)
+
+    /// The animation for a new fold reading, or nil to apply it as is. `previous` is
+    /// nil before the first reading, so a screen's first layout never animates, and a
+    /// split that only moves (rotation, resizing) is left to the system's own animation.
+    static func animation(previous: FoldSplit??, next: FoldSplit?, reduceMotion: Bool) -> Animation? {
+        guard let previous else { return nil }
+        guard (previous == nil) != (next == nil) else { return nil }
+        return reduceMotion ? reducedMotionAnimation : animation
+    }
+}
+
+extension View {
+    /// Under Reduce Motion, replaces this view with a cross-fade when a fold appears
+    /// or goes away, instead of sliding its parts to new panes. No effect otherwise.
+    func foldTransitionIdentity(isSplit: Bool) -> some View {
+        modifier(FoldTransitionIdentity(isSplit: isSplit))
+    }
+}
+
+private struct FoldTransitionIdentity: ViewModifier {
+    let isSplit: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        if reduceMotion {
+            content
+                .id(isSplit)
+                .transition(.opacity)
+        } else {
+            content
+        }
+    }
+}
+
 private struct FoldSplitObserver: ViewModifier {
     let action: (FoldSplit?) -> Void
+    /// The last reading reported, or nil before the first one.
+    @State private var lastReported: FoldSplit??
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
         #if FOLD_SDK
@@ -73,7 +118,7 @@ private struct FoldSplitObserver: ViewModifier {
                     divisions: divisions
                 )
             } action: { split in
-                action(split)
+                report(split)
             }
         } else {
             content
@@ -81,6 +126,18 @@ private struct FoldSplitObserver: ViewModifier {
         #else
         content
         #endif
+    }
+
+    private func report(_ split: FoldSplit?) {
+        let animation = FoldTransition.animation(previous: lastReported, next: split, reduceMotion: reduceMotion)
+        lastReported = .some(split)
+        if let animation {
+            withAnimation(animation) {
+                action(split)
+            }
+        } else {
+            action(split)
+        }
     }
 }
 
@@ -93,6 +150,7 @@ private struct FoldPaneModifier: ViewModifier {
         SinglePaneLayout(paneRect: paneRect, alignment: alignment) {
             content
         }
+        .foldTransitionIdentity(isSplit: split != nil)
         .onFoldSplitChange { split = $0 }
     }
 

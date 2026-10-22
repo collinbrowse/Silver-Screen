@@ -36,6 +36,7 @@ struct CatalogColumnsRow<Item, ID: Hashable, Cell: View>: View {
                 }
             }
             .accessibilityElement(children: .contain)
+            .foldTransitionIdentity(isSplit: fold != nil)
             // A separator would run across the crease; the panes' spacing separates rows.
             .listRowSeparator(fold == nil ? .automatic : .hidden)
             .onFoldSplitChange { fold = $0 }

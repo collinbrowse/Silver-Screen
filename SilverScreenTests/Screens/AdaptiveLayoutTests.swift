@@ -8,6 +8,7 @@
 //  The Duo's inner screen in landscape is about 866 pt once its side toolbar is excluded.
 //
 
+import SwiftUI
 import XCTest
 @testable import SilverScreen
 
@@ -241,6 +242,64 @@ final class AdaptiveLayoutTests: XCTestCase {
 
         XCTAssertEqual(panes.leading, [1, 2, 5, 6])
         XCTAssertEqual(panes.trailing, [3, 4, 7])
+    }
+
+    // MARK: - Fold transitions
+
+    private var bentSplit: FoldSplit {
+        FoldSplit(
+            leading: CGRect(x: 0, y: 0, width: 435.5, height: 669),
+            gutter: CGRect(x: 435.5, y: 0, width: 80, height: 669),
+            trailing: CGRect(x: 515.5, y: 0, width: 351.5, height: 669)
+        )
+    }
+
+    func test_foldTransition_firstReading_doesNotAnimate() {
+        XCTAssertNil(FoldTransition.animation(previous: nil, next: bentSplit, reduceMotion: false))
+    }
+
+    func test_foldTransition_hingeBends_animates() {
+        let previous: FoldSplit?? = .some(nil)
+
+        XCTAssertEqual(
+            FoldTransition.animation(previous: previous, next: bentSplit, reduceMotion: false),
+            FoldTransition.animation
+        )
+    }
+
+    func test_foldTransition_hingeFlattens_animates() {
+        let previous: FoldSplit?? = .some(bentSplit)
+
+        XCTAssertEqual(
+            FoldTransition.animation(previous: previous, next: nil, reduceMotion: false),
+            FoldTransition.animation
+        )
+    }
+
+    func test_foldTransition_splitOnlyMoves_leftToSystem() {
+        let previous: FoldSplit?? = .some(bentSplit)
+        let moved = FoldSplit(
+            leading: CGRect(x: 0, y: 0, width: 419.5, height: 669),
+            gutter: CGRect(x: 419.5, y: 0, width: 80, height: 669),
+            trailing: CGRect(x: 499.5, y: 0, width: 335.5, height: 669)
+        )
+
+        XCTAssertNil(FoldTransition.animation(previous: previous, next: moved, reduceMotion: false))
+    }
+
+    func test_foldTransition_noFoldEitherWay_doesNotAnimate() {
+        let previous: FoldSplit?? = .some(nil)
+
+        XCTAssertNil(FoldTransition.animation(previous: previous, next: nil, reduceMotion: false))
+    }
+
+    func test_foldTransition_reduceMotion_crossFades() {
+        let previous: FoldSplit?? = .some(nil)
+
+        XCTAssertEqual(
+            FoldTransition.animation(previous: previous, next: bentSplit, reduceMotion: true),
+            FoldTransition.reducedMotionAnimation
+        )
     }
 
     // MARK: - Hinge page title alignment
