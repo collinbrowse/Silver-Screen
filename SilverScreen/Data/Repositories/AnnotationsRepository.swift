@@ -13,13 +13,19 @@ import Foundation
 actor AnnotationsRepository {
     private let store: any AnnotationsStore
     private let logger: any AppLogging
+    private let analytics: any AnalyticsClient
     private var cached: [MediaAnnotation]?
     private var loadTask: Task<[MediaAnnotation], Error>?
     private var writeBarrier: Task<Void, Never>?
 
-    init(store: any AnnotationsStore, logger: any AppLogging) {
+    init(
+        store: any AnnotationsStore,
+        logger: any AppLogging,
+        analytics: any AnalyticsClient = DisabledAnalytics()
+    ) {
         self.store = store
         self.logger = logger
+        self.analytics = analytics
     }
 
     /// Formatted scores for every saved title, with the day each score was chosen.
@@ -64,7 +70,7 @@ actor AnnotationsRepository {
         let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
         let cleanNote = trimmed.isEmpty ? nil : trimmed
         return try await serializeWrite { [self] in
-            try await upsert(key: key) { record in
+            try await upsertScore(key: key) { record in
                 record.score = score
                 record.note = cleanNote
                 if record.watchedAt == nil {
@@ -84,7 +90,7 @@ actor AnnotationsRepository {
             throw AppError.persistence
         }
         return try await serializeWrite { [self] in
-            try await upsert(key: key) { record in
+            try await upsertScore(key: key) { record in
                 record.score = score
                 if record.watchedAt == nil {
                     record.watchedAt = watchedAt
@@ -146,6 +152,20 @@ actor AnnotationsRepository {
         }
         records[index] = record
         try await persist(records)
+        return record
+    }
+
+    /// `upsert` for a write that sets a score. Reports `firstRating` when no other
+    /// title had a score before this save.
+    private func upsertScore(
+        key: AnnotationKey,
+        mutate: (inout MediaAnnotation) -> Void
+    ) async throws -> MediaAnnotation {
+        let hadRating = try await loadCache().contains { $0.score != nil }
+        let record = try await upsert(key: key, mutate: mutate)
+        if !hadRating {
+            analytics.send(.firstRating)
+        }
         return record
     }
 

@@ -13,6 +13,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     private let routerStateStore = RouterStateStore()
     /// Held so navigation state can be persisted when the scene backgrounds.
     private var appRouter: AppRouter?
+    /// Held so foreground and background transitions reach analytics.
+    private var analyticsSession: AnalyticsSessionTracker?
+    private var analyticsDevice: AnalyticsDeviceContext?
 
     func scene(
         _ scene: UIScene,
@@ -26,6 +29,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         do {
             let demo = DemoMode.current()
             let dependencies = try AppDependencies.live(demo: demo)
+            analyticsSession = dependencies.analyticsSession
+            analyticsDevice = dependencies.analyticsDevice
             // Restore the selected tab and pushed screens before the view tree is built.
             // A demo launch opens where the capture asks and never saves its navigation.
             if let demo {
@@ -121,8 +126,40 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         }
     }
 
+    func sceneWillEnterForeground(_ scene: UIScene) {
+        // Called at launch too. Report the screen first so the session signal carries it.
+        if let windowScene = scene as? UIWindowScene {
+            reportDisplay(of: windowScene)
+        }
+        analyticsSession?.sceneWillEnterForeground()
+    }
+
     func sceneDidEnterBackground(_ scene: UIScene) {
+        analyticsSession?.sceneDidEnterBackground()
         guard let appRouter else { return }
         routerStateStore.save(appRouter.snapshot)
+    }
+
+    func windowScene(
+        _ windowScene: UIWindowScene,
+        didUpdateEffectiveGeometry previousEffectiveGeometry: UIWindowScene.Geometry
+    ) {
+        reportDisplay(of: windowScene)
+    }
+
+    /// Orientation and screen size for analytics. Read here because UIKit stays in the delegates.
+    private func reportDisplay(of windowScene: UIWindowScene) {
+        let interfaceOrientation = windowScene.effectiveGeometry.interfaceOrientation
+        let orientation: AnalyticsDisplay.Orientation = interfaceOrientation.isPortrait
+            ? .portrait
+            : interfaceOrientation.isLandscape ? .landscape : .unknown
+        let bounds = windowScene.screen.bounds
+        analyticsDevice?.update(
+            AnalyticsDisplay(
+                orientation: orientation,
+                screenWidth: Int(bounds.width.rounded()),
+                screenHeight: Int(bounds.height.rounded())
+            )
+        )
     }
 }

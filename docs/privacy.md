@@ -5,7 +5,7 @@ permalink: /privacy/
 
 # Privacy Policy
 
-_Last updated: October 15, 2026_
+_Last updated: October 21, 2026_
 
 Silver Screen is built so your library stays yours. There is no account and no sign-up, no advertising, and no tracking across other apps or websites. Nothing about you is sold or shared for marketing.
 
@@ -23,11 +23,13 @@ Your lists, ratings, notes, and TV progress are stored only on your iPhone or iP
 
 **Crash reports and performance.** If the app crashes or runs into an error, it sends a diagnostic report to [Sentry](https://sentry.io/), the developer's crash-reporting service. A report holds the app version, device model, iOS version, and technical details about the error. A sample of app sessions also sends performance timings. These reports don't include your name, your library, or an account, and they are used only to find and fix bugs.
 
+**Anonymous usage counts.** The app counts a few moments, so the developer can tell whether it is working for people: opening the app, finishing onboarding, saving a first rating, creating a list, and adding a title to Watchlist. Each count goes to [TelemetryDeck](https://telemetrydeck.com/), a privacy-focused analytics service, with the app and iOS version, the device model (such as "iPhone 17"; every phone of that model reports the same), screen size and orientation, and how many days and times the app has been opened. It never includes which title, the list's name, a rating, a note, or anything you typed. Counts are tied to a random number made when the app is installed, not to you, your Apple Account, or your device's identifiers, and TelemetryDeck scrambles that number again on arrival. Turn this off in Settings → Share Anonymous Usage; that also throws away the random number and the counts. See [TelemetryDeck's privacy policy](https://telemetrydeck.com/privacy/).
+
 **Feedback you send.** If you use Send Feedback, your message is sent to Sentry for the developer to read. You can add an email address if you'd like a reply; it is used only to answer you.
 
 ## Data used for
 
-App functionality only: showing information, fixing crashes, and answering feedback. Nothing is used for advertising or sold.
+Showing information, fixing crashes, answering feedback, and the anonymous usage counts above, which help decide what to improve. Nothing is used for advertising or sold.
 
 ## Deleting your data
 

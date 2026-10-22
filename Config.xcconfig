@@ -13,6 +13,7 @@ TMDB_BASE_URL = https:/$()/api.themoviedb.org/3
 TMDBAccessToken = $(TMDB_ACCESS_TOKEN)
 TMDBBaseURL = $(TMDB_BASE_URL)
 SentryDSN = $(SENTRY_DSN)
+TelemetryDeckAppID = $(TELEMETRYDECK_APP_ID)
 
 // iPhone Duo fold APIs (ReservedRegion, onHingeChange) arrive in the iOS 27.1 SDK.
 // FOLD_SDK gates that code at compile time so older Xcodes (CI runs Xcode 26) still
