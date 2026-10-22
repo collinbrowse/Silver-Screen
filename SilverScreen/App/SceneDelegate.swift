@@ -55,7 +55,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 library: libraryHomeViewModel,
                 tour: tour
             )
-            Task { await onboarding.evaluate() }
             Task { try? await dependencies.libraryStore.bootstrap() }
             Task { try? await dependencies.lists.loadIndex() }
             Task { await dependencies.awards.prepare() }
@@ -110,6 +109,17 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                     }
                     window.rootViewController = UIHostingController(rootView: root)
                 }
+            } else if onboarding.needsLaunchCheck {
+                // No finish or skip yet: hold the first frame until the library read
+                // decides onboarding, so the cover is up from the first frame instead
+                // of sliding over Browse. Capped so a slow read never stalls launch.
+                let placeholder = UIViewController()
+                placeholder.view.backgroundColor = .systemBackground
+                window.rootViewController = placeholder
+                Task { @MainActor in
+                    await onboarding.evaluate(waitingAtMost: Self.onboardingCheckLimit)
+                    window.rootViewController = UIHostingController(rootView: root)
+                }
             } else {
                 window.rootViewController = UIHostingController(rootView: root)
             }
@@ -128,6 +138,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         self.window = window
         window.makeKeyAndVisible()
     }
+
+    /// Longest a first launch holds its first frame for the onboarding check.
+    private static let onboardingCheckLimit: TimeInterval = 0.5
 
     /// Fills a demo launch's empty library through the real repositories.
     @MainActor
