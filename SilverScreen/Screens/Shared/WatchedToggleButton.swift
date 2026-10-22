@@ -45,12 +45,13 @@ struct WatchedToggleButton: View {
     }
 
     var body: some View {
-        Button {
-            Task { await toggle() }
-        } label: {
-            label
-        }
-        .buttonStyle(.borderless)
+        styled(
+            Button {
+                Task { await toggle() }
+            } label: {
+                label
+            }
+        )
         .accessibilityLabel(isWatched ? "Mark \(draft.title) not watched" : "Mark \(draft.title) watched")
         .accessibilityValue(isWatched ? "Watched" : "Not watched")
         .alert(TVWatchConfirm.seriesTitle, isPresented: $isMarkConfirmPresented) {
@@ -77,6 +78,18 @@ struct WatchedToggleButton: View {
             if let count = clearConfirmCount {
                 Text(TVWatchConfirm.clearMessage(episodeCount: count))
             }
+        }
+    }
+
+    /// Rows (`chrome`) need `.borderless` so tapping the eye does not also open the row.
+    /// A toolbar button keeps the toolbar's own style: `.borderless` there pulls it out
+    /// of the vertical toolbar the iPhone Duo uses, instead of grouping it with the + button.
+    @ViewBuilder
+    private func styled(_ button: some View) -> some View {
+        if chrome {
+            button.buttonStyle(.borderless)
+        } else {
+            button
         }
     }
 

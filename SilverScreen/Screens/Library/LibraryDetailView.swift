@@ -86,35 +86,21 @@ struct LibraryDetailView: View {
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List {
-                    Section {
-                        ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-                            entryLink(entry)
-                                .listRowSeparatorBetweenCells(
-                                    isFirst: index == 0,
-                                    isLast: index == entries.count - 1
-                                )
-                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    Button("Remove", role: .destructive) {
-                                        Task { await remove(entry) }
-                                    }
-                                    .accessibilityLabel("Remove \(entry.title)")
-                                }
-                                .contextMenu {
-                                    Button("Remove", role: .destructive) {
-                                        Task { await remove(entry) }
-                                    }
-                                    .accessibilityLabel("Remove \(entry.title)")
-                                }
+                // Reordering drags whole rows, so edit mode is always one column.
+                CatalogColumnsReader(singleColumn: editMode.isEditing) { columns in
+                    List {
+                        Section {
+                            if columns == 1 {
+                                singleColumnRows(entries)
+                            } else {
+                                multiColumnRows(entries, columns: columns)
+                            }
                         }
-                        .onMove(perform: viewModel.allowsReorder ? { source, destination in
-                            Task { await viewModel.moveEntries(from: source, to: destination) }
-                            } : nil)
+                        .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
                     }
-                    .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
+                    .listStyle(.plain)
+                    .environment(\.editMode, viewModel.allowsReorder ? $editMode : .constant(.inactive))
                 }
-                .listStyle(.plain)
-                .environment(\.editMode, viewModel.allowsReorder ? $editMode : .constant(.inactive))
             }
         }
         .safeAreaInset(edge: .top, spacing: 0) {
@@ -128,6 +114,52 @@ struct LibraryDetailView: View {
         }
     }
 
+    /// One title per row, with swipe to remove and drag to reorder.
+    private func singleColumnRows(_ entries: [ListEntry]) -> some View {
+        ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+            entryLink(entry)
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                .listRowSeparatorBetweenCells(
+                    isFirst: index == 0,
+                    isLast: index == entries.count - 1
+                )
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    removeButton(entry)
+                }
+                .contextMenu {
+                    removeButton(entry)
+                }
+        }
+        .onMove(perform: viewModel.allowsReorder ? { source, destination in
+            Task { await viewModel.moveEntries(from: source, to: destination) }
+            } : nil)
+    }
+
+    /// Two or three titles per row on a wide screen. A swipe would act on the whole
+    /// row, so each title offers Remove from its context menu and as a VoiceOver action.
+    private func multiColumnRows(_ entries: [ListEntry], columns: Int) -> some View {
+        ForEach(CatalogGrid.rows(entries, columns: columns, id: \.id)) { row in
+            CatalogColumnsRow(row: row, columns: columns, id: \.id) { entry in
+                entryLink(entry)
+                    .contextMenu {
+                        removeButton(entry)
+                    }
+                    .accessibilityAction(named: "Remove") {
+                        Task { await remove(entry) }
+                    }
+            }
+            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+            .listRowSeparatorBetweenCells(isFirst: row.isFirst, isLast: row.isLast)
+        }
+    }
+
+    private func removeButton(_ entry: ListEntry) -> some View {
+        Button("Remove", role: .destructive) {
+            Task { await remove(entry) }
+        }
+        .accessibilityLabel("Remove \(entry.title)")
+    }
+
     private var mediaFilter: some View {
         Picker("Filter titles", selection: $viewModel.mediaFilter) {
             ForEach(TitleMediaFilter.allCases, id: \.self) { filter in
@@ -137,6 +169,8 @@ struct LibraryDetailView: View {
         .pickerStyle(.segmented)
         .padding(.horizontal, DesignSpacing.lg)
         .padding(.vertical, DesignSpacing.sm)
+        .readableColumn()
+        .foldPane()
         .accessibilityLabel("Filter titles")
     }
 
@@ -175,7 +209,6 @@ struct LibraryDetailView: View {
             )
         }
         .buttonStyle(.plain)
-        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
     }
 
     private func nextUp(for entry: ListEntry) -> String? {

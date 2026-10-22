@@ -10,6 +10,7 @@ struct CreditsListView: View {
     let imageLoader: ImageLoader
     var router: NavigationRouter?
 
+
     init(
         personID: Int,
         personName: String,
@@ -43,20 +44,7 @@ struct CreditsListView: View {
                         systemImage: "film"
                     )
                 case .loaded(let content, _):
-                    List {
-                    Section {
-                        ForEach(Array(content.items.enumerated()), id: \.element.id) { index, item in
-                            creditRow(item)
-                                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-                                .listRowSeparatorBetweenCells(
-                                    isFirst: index == 0,
-                                    isLast: index == content.items.count - 1
-                                )
-                        }
-                    }
-                    .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
-                    }
-                    .listStyle(.plain)
+                    list(content.items)
                 case .failed(let error):
                     ErrorStateView(error: error) {
                     await viewModel.retry()
@@ -70,6 +58,25 @@ struct CreditsListView: View {
             if case .idle = viewModel.state {
                 await viewModel.load()
             }
+        }
+    }
+
+    /// One credit per row on a phone; two or three side by side on wider screens.
+    private func list(_ items: [CreditsListItem]) -> some View {
+        CatalogColumnsReader { columns in
+            List {
+                Section {
+                    ForEach(CatalogGrid.rows(items, columns: columns, id: \.id)) { gridRow in
+                        CatalogColumnsRow(row: gridRow, columns: columns, id: \.id) { item in
+                            creditRow(item)
+                        }
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                        .listRowSeparatorBetweenCells(isFirst: gridRow.isFirst, isLast: gridRow.isLast)
+                    }
+                }
+                .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
+            }
+            .listStyle(.plain)
         }
     }
 

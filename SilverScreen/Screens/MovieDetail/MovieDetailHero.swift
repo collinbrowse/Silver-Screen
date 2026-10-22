@@ -20,6 +20,26 @@ enum MovieHeroSelection {
     }
 }
 
+/// Which parts of `DetailHero` to draw. A page in the iPhone Duo's hinge panes draws
+/// `.backdrop` across the top and `.identity` (with `images` still set, so the poster
+/// overlap matches) at the top of its leading pane, directly below the backdrop. The
+/// title column sets `VerticalAlignment.detailTitleTop`, so the trailing pane starts
+/// level with it.
+enum DetailHeroPart: Sendable {
+    case all
+    case backdrop
+    case identity
+}
+
+/// Rules for `DetailHero`.
+enum DetailHeroLayout {
+    /// A blank or whitespace path means there is no poster.
+    static func hasPoster(_ posterPath: String?) -> Bool {
+        guard let posterPath else { return false }
+        return !posterPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+}
+
 /// Full-width backdrop stage. A poster overlaps the bottom when `posterPath` is set.
 struct DetailHero<Metadata: View>: View {
     let title: String
@@ -35,6 +55,10 @@ struct DetailHero<Metadata: View>: View {
     var genreNames: [String] = []
     /// Streaming logos share the genre-row inset and top spacing.
     var streamingProviders: [StreamingProvider] = []
+    /// Backdrop shape. Wide pages pass `DetailLayoutMetrics.wideHeroAspectRatio`.
+    var aspectRatio: CGFloat = DetailLayoutMetrics.compactHeroAspectRatio
+    /// Which parts to draw; see `DetailHeroPart`.
+    var part: DetailHeroPart = .all
     @ViewBuilder let metadata: () -> Metadata
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -53,9 +77,36 @@ struct DetailHero<Metadata: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if !images.isEmpty {
+            if part != .identity, !images.isEmpty {
                 backdropStage
             }
+            switch part {
+                case .all:
+                    // The backdrop may run across the iPhone Duo's crease, as a photo; the
+                    // poster, title, and rows below it stay in the leading pane.
+                    identityBlock
+                        .foldPane(.leading, alignment: .leading)
+                case .identity:
+                    identityBlock
+                case .backdrop:
+                    EmptyView()
+            }
+        }
+        .onAppear(perform: reconcileSelection)
+        .onChange(of: images.map(\.id)) { _, _ in
+            reconcileSelection()
+        }
+    }
+
+    /// The backdrop keeps its `aspectRatio` slot in the layout but draws under the side safe area
+    /// when the slot reaches the screen edge, so a side toolbar (the iPhone Duo's outer
+    /// screen) floats over the image instead of a blank strip. A slot centered in a
+    /// readable column does not reach the edge and stays as it is. The page count sits
+    /// in the fade at the bottom trailing corner, inside the safe area, clear of the
+    /// poster and of the title artwork higher up.
+    /// Poster, title, metadata, genre chips, and streaming logos.
+    private var identityBlock: some View {
+        VStack(alignment: .leading, spacing: 0) {
             identity
                 .padding(.horizontal, DesignSpacing.lg)
                 .padding(.top, hasPoster && !images.isEmpty ? DesignSpacing.sm : 0)
@@ -70,16 +121,26 @@ struct DetailHero<Metadata: View>: View {
                     .padding(.top, DesignSpacing.md)
             }
         }
-        .onAppear(perform: reconcileSelection)
-        .onChange(of: images.map(\.id)) { _, _ in
-            reconcileSelection()
-        }
     }
 
     private var backdropStage: some View {
+        Color.clear
+            .aspectRatio(aspectRatio, contentMode: .fit)
+            .overlay {
+                backdropPager
+                    .ignoresSafeArea(.container, edges: .horizontal)
+            }
+            .overlay(alignment: .bottomTrailing) {
+                pageCapsule
+                    .padding(.trailing, DesignSpacing.lg)
+                    .padding(.bottom, DesignSpacing.md)
+            }
+    }
+
+    private var backdropPager: some View {
         GeometryReader { proxy in
             let width = proxy.size.width
-            let height = width * 9 / 16
+            let height = proxy.size.height
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 0) {
                     ForEach(Array(images.enumerated()), id: \.element.id) { index, image in
@@ -105,14 +166,8 @@ struct DetailHero<Metadata: View>: View {
                 .frame(height: height * 0.42)
                 .allowsHitTesting(false)
             }
-            .overlay(alignment: .bottomTrailing) {
-                pageCapsule
-                    .padding(.trailing, DesignSpacing.lg)
-                    .padding(.bottom, posterOverlap + DesignSpacing.md)
-            }
             .clipped()
         }
-        .aspectRatio(16.0 / 9.0, contentMode: .fit)
     }
 
     private func backdropPage(_ image: MovieImage, index: Int, width: CGFloat, height: CGFloat) -> some View {
@@ -120,7 +175,7 @@ struct DetailHero<Metadata: View>: View {
             path: image.filePath,
             kind: .backdrop,
             width: width,
-            aspectRatio: 16.0 / 9.0,
+            aspectRatio: height > 0 ? width / height : 16.0 / 9.0,
             imageLoader: imageLoader,
             placeholderSystemImage: "photo",
             cornerRadius: 0
@@ -198,6 +253,7 @@ struct DetailHero<Metadata: View>: View {
             titleText
             metadata()
         }
+        .alignmentGuide(.detailTitleTop) { $0[.top] }
         .padding(.top, hasPoster ? DesignSpacing.xs : 0)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -236,8 +292,7 @@ struct DetailHero<Metadata: View>: View {
     }
 
     private var hasPoster: Bool {
-        guard let posterPath else { return false }
-        return !posterPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        DetailHeroLayout.hasPoster(posterPath)
     }
 
     private func reconcileSelection() {

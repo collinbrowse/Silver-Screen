@@ -40,5 +40,7 @@ struct EmptyStateView: View {
                     .foregroundStyle(DesignTheme.accentOnFill)
             }
         }
+        // Centered text would sit on the iPhone Duo's crease; keep it in one pane.
+        .foldPane()
     }
 }

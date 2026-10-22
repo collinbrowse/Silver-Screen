@@ -32,6 +32,8 @@ struct ErrorStateView: View {
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Centered text and Retry would sit on the iPhone Duo's crease; keep them in one pane.
+        .foldPane()
         .accessibilityElement(children: .combine)
     }
 }

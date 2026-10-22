@@ -133,6 +133,13 @@
 		B100030A2788B823003D8011 /* PersonDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100030B2788B823003D8011 /* PersonDetailView.swift */; };
 		B100030C2788B823003D8011 /* CreditsListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100030D2788B823003D8011 /* CreditsListViewModel.swift */; };
 		B100030E2788B823003D8011 /* CreditsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100030F2788B823003D8011 /* CreditsListView.swift */; };
+		1A5CCD0EB71DE7414B95F5A7 /* AdaptiveLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5C16E4C3A456227A5F59B4 /* AdaptiveLayout.swift */; };
+		1A5CD83CCF2485C8E923B7CD /* CatalogColumnsRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5C5147B1C9C154DC7B329E /* CatalogColumnsRow.swift */; };
+		1A5C9423F46F65AE88ACE759 /* ContentWidthReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5CCB70AFDBC900957ECA88 /* ContentWidthReader.swift */; };
+		1A5C8FAF15EDBD9E5069EFF1 /* DetailColumns.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5CAF7BDC5B50241FFE9605 /* DetailColumns.swift */; };
+		1A5C61C6C2B6AC28F10DDB3F /* CardLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5C555B9A63D87EF3BDD01F /* CardLabel.swift */; };
+		1A5C2C7633E4FA001C55885A /* FoldLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5C49C6C3B059AFA58855C1 /* FoldLayout.swift */; };
+		1A5C7AC40C0A9D886361B444 /* FoldPanes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5CCDA56597C07C444B1636 /* FoldPanes.swift */; };
 		B10003122788B823003D8011 /* SectionHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10003132788B823003D8011 /* SectionHeader.swift */; };
 		B10003162788B823003D8011 /* PersonRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10003172788B823003D8011 /* PersonRepositoryTests.swift */; };
 		B10003182788B823003D8011 /* PersonDetailViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10003192788B823003D8011 /* PersonDetailViewModelTests.swift */; };
@@ -209,6 +216,7 @@
 		F20000012788B823003D8011 /* TMDBRating.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000022788B823003D8011 /* TMDBRating.swift */; };
 		F20000032788B823003D8011 /* TMDBRatingCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000042788B823003D8011 /* TMDBRatingCard.swift */; };
 		F3A000012788B823003D8011 /* FuzzyTextMatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3A000022788B823003D8011 /* FuzzyTextMatch.swift */; };
+		1A5CCEDE858714DBC5D333B6 /* AdaptiveLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5C768F578694846B333D5C /* AdaptiveLayoutTests.swift */; };
 		F3A000032788B823003D8011 /* FuzzyTextMatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3A000042788B823003D8011 /* FuzzyTextMatchTests.swift */; };
 		F71702A956F84E8D97E2BB4D /* MovieDetailContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89ABB0334A4D44C38AAA317A /* MovieDetailContent.swift */; };
 		F94C0AA241A949C3A113994D /* WindowTopInsetReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99395DA12FAA44A7B6CB3A97 /* WindowTopInsetReader.swift */; };
@@ -445,6 +453,13 @@
 		B100030B2788B823003D8011 /* PersonDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonDetailView.swift; sourceTree = "<group>"; };
 		B100030D2788B823003D8011 /* CreditsListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditsListViewModel.swift; sourceTree = "<group>"; };
 		B100030F2788B823003D8011 /* CreditsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditsListView.swift; sourceTree = "<group>"; };
+		1A5C16E4C3A456227A5F59B4 /* AdaptiveLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveLayout.swift; sourceTree = "<group>"; };
+		1A5C5147B1C9C154DC7B329E /* CatalogColumnsRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogColumnsRow.swift; sourceTree = "<group>"; };
+		1A5CCB70AFDBC900957ECA88 /* ContentWidthReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentWidthReader.swift; sourceTree = "<group>"; };
+		1A5CAF7BDC5B50241FFE9605 /* DetailColumns.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailColumns.swift; sourceTree = "<group>"; };
+		1A5C555B9A63D87EF3BDD01F /* CardLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardLabel.swift; sourceTree = "<group>"; };
+		1A5C49C6C3B059AFA58855C1 /* FoldLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoldLayout.swift; sourceTree = "<group>"; };
+		1A5CCDA56597C07C444B1636 /* FoldPanes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoldPanes.swift; sourceTree = "<group>"; };
 		B10003132788B823003D8011 /* SectionHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionHeader.swift; sourceTree = "<group>"; };
 		B10003172788B823003D8011 /* PersonRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonRepositoryTests.swift; sourceTree = "<group>"; };
 		B10003192788B823003D8011 /* PersonDetailViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonDetailViewModelTests.swift; sourceTree = "<group>"; };
@@ -525,6 +540,7 @@
 		F20000022788B823003D8011 /* TMDBRating.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TMDBRating.swift; sourceTree = "<group>"; };
 		F20000042788B823003D8011 /* TMDBRatingCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TMDBRatingCard.swift; sourceTree = "<group>"; };
 		F3A000022788B823003D8011 /* FuzzyTextMatch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FuzzyTextMatch.swift; sourceTree = "<group>"; };
+		1A5C768F578694846B333D5C /* AdaptiveLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveLayoutTests.swift; sourceTree = "<group>"; };
 		F3A000042788B823003D8011 /* FuzzyTextMatchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FuzzyTextMatchTests.swift; sourceTree = "<group>"; };
 		G1E000112788B823003D8011 /* MergedGenre.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MergedGenre.swift; sourceTree = "<group>"; };
 		G1E000122788B823003D8011 /* GenreShelfCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenreShelfCard.swift; sourceTree = "<group>"; };
@@ -858,6 +874,13 @@
 				C20000092788B823003D8011 /* MediaDescriptionSection.swift */,
 				B10002212788B823003D8011 /* FlowLayout.swift */,
 				B10003132788B823003D8011 /* SectionHeader.swift */,
+				1A5CCDA56597C07C444B1636 /* FoldPanes.swift */,
+				1A5C49C6C3B059AFA58855C1 /* FoldLayout.swift */,
+				1A5C555B9A63D87EF3BDD01F /* CardLabel.swift */,
+				1A5CAF7BDC5B50241FFE9605 /* DetailColumns.swift */,
+				1A5CCB70AFDBC900957ECA88 /* ContentWidthReader.swift */,
+				1A5C5147B1C9C154DC7B329E /* CatalogColumnsRow.swift */,
+				1A5C16E4C3A456227A5F59B4 /* AdaptiveLayout.swift */,
 			);
 			path = Design;
 			sourceTree = "<group>";
@@ -1088,6 +1111,7 @@
 				G1E000162788B823003D8011 /* GenreBrowseViewModelTests.swift */,
 				E2A0002E2788B823003D8011 /* SearchViewModelTests.swift */,
 				F3A000042788B823003D8011 /* FuzzyTextMatchTests.swift */,
+				1A5C768F578694846B333D5C /* AdaptiveLayoutTests.swift */,
 				A1A000122788B823003D8011 /* AwardTitlesViewModelTests.swift */,
 				A1A000142788B823003D8011 /* AwardDetailLabelTests.swift */,
 				A1A000182788B823003D8011 /* AwardRowsDisplayTests.swift */,
@@ -1497,6 +1521,13 @@
 				B100030C2788B823003D8011 /* CreditsListViewModel.swift in Sources */,
 				B100030E2788B823003D8011 /* CreditsListView.swift in Sources */,
 				B10003122788B823003D8011 /* SectionHeader.swift in Sources */,
+				1A5C7AC40C0A9D886361B444 /* FoldPanes.swift in Sources */,
+				1A5C2C7633E4FA001C55885A /* FoldLayout.swift in Sources */,
+				1A5C61C6C2B6AC28F10DDB3F /* CardLabel.swift in Sources */,
+				1A5C8FAF15EDBD9E5069EFF1 /* DetailColumns.swift in Sources */,
+				1A5C9423F46F65AE88ACE759 /* ContentWidthReader.swift in Sources */,
+				1A5CD83CCF2485C8E923B7CD /* CatalogColumnsRow.swift in Sources */,
+				1A5CCD0EB71DE7414B95F5A7 /* AdaptiveLayout.swift in Sources */,
 				B10000202788B823003D8011 /* ImageLoader.swift in Sources */,
 				C77D45322788B821003D8011 /* AppDelegate.swift in Sources */,
 				L1B000012788B823003D8011 /* LibraryList.swift in Sources */,
@@ -1563,6 +1594,7 @@
 				G1E000062788B823003D8011 /* GenreBrowseViewModelTests.swift in Sources */,
 				E2A0002D2788B823003D8011 /* SearchViewModelTests.swift in Sources */,
 				F3A000032788B823003D8011 /* FuzzyTextMatchTests.swift in Sources */,
+				1A5CCEDE858714DBC5D333B6 /* AdaptiveLayoutTests.swift in Sources */,
 				A1A0000F2788B823003D8011 /* AwardsRepositoryTests.swift in Sources */,
 				A1A000112788B823003D8011 /* AwardTitlesViewModelTests.swift in Sources */,
 				A1A000132788B823003D8011 /* AwardDetailLabelTests.swift in Sources */,

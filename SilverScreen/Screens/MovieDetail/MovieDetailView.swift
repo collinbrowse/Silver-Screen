@@ -71,23 +71,21 @@ struct MovieDetailView: View {
         .background(DesignTheme.canvas)
         .toolbar {
             if showsToolbarFavorite, case .loaded(let content, _) = viewModel.state {
-                ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: 4) {
-                        WatchedToggleButton(
-                            draft: content.detail.listItem(),
-                            lists: lists,
-                            index: listsIndex,
-                            chrome: false
-                        ) {
-                            viewModel.noteListSaveFailed()
-                        }
-                        ListMembershipButton(
-                            draft: content.detail.listItem(),
-                            lists: lists,
-                            index: listsIndex
-                        ) {
-                            viewModel.noteListSaveFailed()
-                        }
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    WatchedToggleButton(
+                        draft: content.detail.listItem(),
+                        lists: lists,
+                        index: listsIndex,
+                        chrome: false
+                    ) {
+                        viewModel.noteListSaveFailed()
+                    }
+                    ListMembershipButton(
+                        draft: content.detail.listItem(),
+                        lists: lists,
+                        index: listsIndex
+                    ) {
+                        viewModel.noteListSaveFailed()
                     }
                 }
             }
@@ -144,124 +142,148 @@ struct MovieDetailView: View {
         scrollTo: @escaping (String) -> Void
     ) -> some View {
         let bleedsToTop = content.images?.items.isEmpty == false
-        return GeometryReader { proxy in
-            detailScroll(
-                content: content,
-                activity: activity,
-                scrollTo: scrollTo,
-                width: proxy.size.width
-            )
-            .frame(width: proxy.size.width, height: proxy.size.height)
+        return DetailPageReader { page in
+            ScrollView {
+                DetailPageSections(
+                    page: page,
+                    plan: MovieDetailLayout.plan(for: page.layout, showing: shownSections(content))
+                ) { section, slot in
+                    sectionView(section, in: slot, layout: page.layout, content: content, scrollTo: scrollTo)
+                }
+                .padding(.bottom, DesignSpacing.lg)
+                .readableColumn(maxWidth: page.layout.columnCap)
+                .coordinateSpace(.named("detailScroll"))
+            }
+            .overlay(alignment: .top) {
+                if case .failed(let error) = activity {
+                    Text("\(error.title): \(error.message)")
+                        .font(.footnote)
+                        .foregroundStyle(.white)
+                        .padding(DesignSpacing.sm)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.red)
+                        .accessibilityLabel("\(error.title). \(error.message)")
+                }
+            }
         }
         .heroStatusBarBleed(enabled: bleedsToTop)
         .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
     }
 
-    private func detailScroll(
+    private func shownSections(_ content: MovieDetailContent) -> Set<MovieDetailLayout.Section> {
+        var shown: Set<MovieDetailLayout.Section> = [
+            .hero(.all), .hero(.backdrop), .hero(.identity), .rating, .logWatch, .storyline, .facts,
+        ]
+        if !viewModel.awardRows.isEmpty { shown.insert(.awards) }
+        if content.cast != nil { shown.insert(.cast) }
+        if content.crew != nil { shown.insert(.crew) }
+        if content.similar != nil { shown.insert(.similar) }
+        if content.collection != nil { shown.insert(.collection) }
+        if content.reviews != nil { shown.insert(.reviews) }
+        if !content.detail.streamingProviders.isEmpty { shown.insert(.attribution) }
+        return shown
+    }
+
+    @ViewBuilder
+    private func sectionView(
+        _ section: MovieDetailLayout.Section,
+        in slot: DetailSlot,
+        layout: DetailPageLayout,
         content: MovieDetailContent,
-        activity: LoadActivity,
-        scrollTo: @escaping (String) -> Void,
-        width: CGFloat
+        scrollTo: @escaping (String) -> Void
     ) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DesignSpacing.xl) {
-                DetailHero(
-                    title: content.detail.title,
-                    posterPath: content.detail.posterPath,
-                    images: content.images?.items ?? [],
-                    selectedImageID: $selectedBackdropID,
-                    imageLoader: imageLoader,
-                    transitionNamespace: heroTransition,
-                    onOpenPoster: { viewModel.openPoster() },
-                    onOpenImage: { viewModel.openImages(initialID: $0) },
-                    streamingProviders: content.detail.streamingProviders
-                ) {
-                    VStack(alignment: .leading, spacing: DesignSpacing.lg) {
-                        if !content.heroMetadataLine.isEmpty {
-                            Text(content.heroMetadataLine)
-                                .font(DesignTypography.metadata)
-                                .foregroundStyle(DesignTheme.textSecondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .accessibilityLabel(content.heroMetadataAccessibilityLabel)
-                        }
-                        if !content.detail.trailers.isEmpty {
-                            MediaMetadataPills(
-                                trailers: content.detail.trailers,
-                                loadingTrailerID: loadingTrailerID,
-                                playTrailer: { presentTrailer($0, loadingID: $loadingTrailerID, selection: $playingTrailer) }
-                            )
-                        }
-                    }
-                }
-
-                metadataBlock(content, scrollTo: scrollTo)
-
+        switch section {
+            case .hero(let part):
+                hero(content, layout: layout, part: part)
+            case .rating:
+                ratingCard(content)
+            case .logWatch:
+                LogWatchButton(title: LogWatchTitle(movie: content.detail), currentScore: content.userScore)
+            case .storyline:
+                storyline(content, scrollTo: scrollTo)
+            case .facts:
+                factsCard(content)
+            case .awards:
+                AwardRowsSection(rows: viewModel.awardRows)
+            case .cast:
                 if let cast = content.cast {
                     castCarousel(cast)
                 }
+            case .crew:
                 if let crew = content.crew {
                     crewCarousel(crew)
                 }
+            case .similar:
                 if let similar = content.similar {
                     similarCarousel(similar)
                 }
+            case .collection:
                 if let collection = content.collection {
                     collectionCarousel(collection)
                 }
+            case .reviews:
                 if let reviews = content.reviews {
-                    reviewsSection(reviews, scrollTo: scrollTo)
+                    reviewsSection(reviews, scrollTo: scrollTo, columns: layout.gridColumns(in: slot))
                 }
-                if !content.detail.streamingProviders.isEmpty {
-                    JustWatchAttributionFooter()
-                        .padding(.horizontal, DesignSpacing.lg)
-                }
-            }
-            .padding(.bottom, DesignSpacing.lg)
-            .frame(width: min(width, 700))
-            .frame(maxWidth: .infinity)
-            .coordinateSpace(.named("detailScroll"))
+            case .attribution:
+                JustWatchAttributionFooter()
         }
-        .overlay(alignment: .top) {
-            if case .failed(let error) = activity {
-                Text("\(error.title): \(error.message)")
-                    .font(.footnote)
-                    .foregroundStyle(.white)
-                    .padding(DesignSpacing.sm)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.red)
-                    .accessibilityLabel("\(error.title). \(error.message)")
+    }
+
+    private func hero(_ content: MovieDetailContent, layout: DetailPageLayout, part: DetailHeroPart) -> some View {
+        DetailHero(
+            title: content.detail.title,
+            posterPath: content.detail.posterPath,
+            images: content.images?.items ?? [],
+            selectedImageID: $selectedBackdropID,
+            imageLoader: imageLoader,
+            transitionNamespace: heroTransition,
+            onOpenPoster: { viewModel.openPoster() },
+            onOpenImage: { viewModel.openImages(initialID: $0) },
+            streamingProviders: content.detail.streamingProviders,
+            aspectRatio: layout.heroAspectRatio,
+            part: part
+        ) {
+            VStack(alignment: .leading, spacing: DesignSpacing.lg) {
+                if !content.heroMetadataLine.isEmpty {
+                    Text(content.heroMetadataLine)
+                        .font(DesignTypography.metadata)
+                        .foregroundStyle(DesignTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityLabel(content.heroMetadataAccessibilityLabel)
+                }
+                if !content.detail.trailers.isEmpty {
+                    MediaMetadataPills(
+                        trailers: content.detail.trailers,
+                        loadingTrailerID: loadingTrailerID,
+                        playTrailer: { presentTrailer($0, loadingID: $loadingTrailerID, selection: $playingTrailer) }
+                    )
+                }
             }
         }
     }
 
-    private func metadataBlock(
-        _ content: MovieDetailContent,
-        scrollTo: @escaping (String) -> Void
-    ) -> some View {
-        VStack(alignment: .leading, spacing: DesignSpacing.xl) {
-            TMDBRatingCard(
-                formattedRating: content.formattedRating,
-                accessibilityLabel: content.ratingAccessibilityLabel,
-                formattedUserScore: content.formattedUserScore,
-                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
-                onEdit: { viewModel.openAnnotationEditor() }
-            )
-            .id(TourAnchor.ratingCard.scrollID)
-            .tourAnchor(.ratingCard)
-            LogWatchButton(title: LogWatchTitle(movie: content.detail), currentScore: content.userScore)
-            MediaDescriptionSection(
-                overview: content.detail.overview,
-                note: content.userNote,
-                notedOn: content.formattedNotedOn,
-                onEdit: { viewModel.openAnnotationEditor() },
-                scrollTo: scrollTo
-            )
-            factsCard(content)
-            if !viewModel.awardRows.isEmpty {
-                AwardRowsSection(rows: viewModel.awardRows)
-            }
-        }
-        .padding(.horizontal, DesignSpacing.lg)
+    /// The rating card, which the feature tour points at and scrolls to.
+    private func ratingCard(_ content: MovieDetailContent) -> some View {
+        TMDBRatingCard(
+            formattedRating: content.formattedRating,
+            accessibilityLabel: content.ratingAccessibilityLabel,
+            formattedUserScore: content.formattedUserScore,
+            userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+            onEdit: { viewModel.openAnnotationEditor() }
+        )
+        .id(TourAnchor.ratingCard.scrollID)
+        .tourAnchor(.ratingCard)
+    }
+
+    private func storyline(_ content: MovieDetailContent, scrollTo: @escaping (String) -> Void) -> some View {
+        MediaDescriptionSection(
+            overview: content.detail.overview,
+            note: content.userNote,
+            notedOn: content.formattedNotedOn,
+            onEdit: { viewModel.openAnnotationEditor() },
+            scrollTo: scrollTo
+        )
     }
 
     // MARK: - Carousels
@@ -474,7 +496,8 @@ struct MovieDetailView: View {
 
     private func reviewsSection(
         _ section: MovieDetailContent.ReviewsSection,
-        scrollTo: @escaping (String) -> Void
+        scrollTo: @escaping (String) -> Void,
+        columns: Int
     ) -> some View {
         ReviewPageList(
             items: section.items,
@@ -483,7 +506,8 @@ struct MovieDetailView: View {
             isLoadingPage: section.isLoadingPage,
             pageError: section.pageError,
             loadMore: { await viewModel.loadMoreReviews() },
-            scrollTo: scrollTo
+            scrollTo: scrollTo,
+            columns: columns
         )
     }
 
@@ -555,5 +579,62 @@ struct MovieDetailView: View {
             parts.append(item.formattedReleaseDate)
         }
         return parts.joined(separator: ", ")
+    }
+}
+
+/// Where each section of a movie page goes.
+enum MovieDetailLayout {
+    enum Section: DetailPageSection {
+        case hero(DetailHeroPart)
+        case rating
+        /// The diary's Log watch button, under the rating card.
+        case logWatch
+        case storyline
+        case facts
+        case awards
+        case cast
+        case crew
+        case similar
+        case collection
+        case reviews
+        case attribution
+
+        var carriesOwnInset: Bool {
+            switch self {
+                case .hero, .cast, .crew, .similar, .collection, .reviews:
+                    true
+                case .rating, .logWatch, .storyline, .facts, .awards, .attribution:
+                    false
+            }
+        }
+    }
+
+    /// The sections in `shown`, placed for `layout`.
+    ///
+    /// - Phone and wide page: rating, Log watch, storyline, then facts and awards. A wide page puts
+    ///   awards in the side column with facts in the main one, since a long awards card
+    ///   already outweighs the rest; with no awards, facts take the side column.
+    ///   Carousels and reviews run full width below.
+    /// - Across a fold: the leading pane has the title, facts, rating, Log watch,
+    ///   storyline, and reviews; the trailing pane has awards and the carousels.
+    static func plan(for layout: DetailPageLayout, showing shown: Set<Section>) -> DetailPagePlan<Section> {
+        let hasAwards = shown.contains(.awards)
+        let plan = switch layout {
+            case .stacked, .columns:
+                DetailPagePlan<Section>(
+                    top: [.hero(.all)],
+                    main: hasAwards ? [.rating, .logWatch, .storyline, .facts] : [.rating, .logWatch, .storyline],
+                    side: hasAwards ? [.awards] : [.facts],
+                    below: [.cast, .crew, .similar, .collection, .reviews, .attribution]
+                )
+            case .panes:
+                DetailPagePlan<Section>(
+                    top: [.hero(.backdrop)],
+                    main: [.hero(.identity), .facts, .rating, .logWatch, .storyline, .reviews],
+                    side: [.awards, .cast, .crew, .similar, .collection],
+                    below: [.attribution]
+                )
+        }
+        return plan.keeping(shown.contains)
     }
 }
