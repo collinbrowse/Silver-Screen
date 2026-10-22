@@ -18,6 +18,11 @@ actor InMemoryAnnotationsStore: AnnotationsStore {
         self.records = records
     }
 
+    /// Makes every later `load` throw `error`, as an unreadable store would.
+    func setLoadError(_ error: Error?) {
+        loadError = error
+    }
+
     func load() async throws -> [MediaAnnotation] {
         if let loadError {
             throw loadError

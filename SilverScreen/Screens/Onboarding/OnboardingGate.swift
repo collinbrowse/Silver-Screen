@@ -64,7 +64,7 @@ final class OnboardingGate {
     func evaluate() async {
         guard !isDemo, marker.completedAt() == nil else { return }
         guard let snapshot = try? await lists.snapshot() else { return }
-        let saved = await annotations.saved()
+        guard let saved = try? await annotations.saved() else { return }
         isPresented = Self.shouldPresent(
             snapshot: snapshot,
             annotations: saved,
