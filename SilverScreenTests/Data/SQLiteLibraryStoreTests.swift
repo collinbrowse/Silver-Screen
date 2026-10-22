@@ -469,7 +469,10 @@ final class SQLiteLibraryStoreTests: XCTestCase {
 
         let db = try SQLiteDatabase(fileURL: databaseURL())
         defer { db.close() }
-        XCTAssertEqual(try db.scalarInt("SELECT MAX(version) FROM schema_migrations;"), 3)
+        XCTAssertEqual(
+            try db.scalarInt("SELECT MAX(version) FROM schema_migrations;"),
+            LibrarySchema.currentVersion
+        )
         XCTAssertEqual(try db.scalarInt("SELECT COUNT(*) FROM library_list;"), 2)
         XCTAssertEqual(try db.scalarInt("SELECT COUNT(*) FROM media_item;"), 2)
         XCTAssertEqual(try db.scalarInt("SELECT COUNT(*) FROM list_membership;"), 2)

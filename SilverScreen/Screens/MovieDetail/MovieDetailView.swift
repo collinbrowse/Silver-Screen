@@ -248,6 +248,7 @@ struct MovieDetailView: View {
             )
             .id(TourAnchor.ratingCard.scrollID)
             .tourAnchor(.ratingCard)
+            LogWatchButton(title: LogWatchTitle(movie: content.detail), currentScore: content.userScore)
             MediaDescriptionSection(
                 overview: content.detail.overview,
                 note: content.userNote,

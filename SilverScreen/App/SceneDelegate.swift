@@ -94,6 +94,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 tour: tour,
                 reviewPrompter: dependencies.reviewPrompter
             )
+            .environment(dependencies.diary)
             if let seedURL = demo?.seedURL {
                 // A demo launch holds the first frame until the seed is written, so
                 // screens never read an empty library and miss the seeded rows.
@@ -148,6 +149,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         do {
             let seed = try DemoLibrarySeed.load(from: url)
             try await seed.apply(lists: dependencies.lists, annotations: dependencies.annotations)
+            try await dependencies.libraryStore.backfillDiaryFromWatchedNow()
         } catch {
             dependencies.logger.error("Demo library seed failed: \(error)", category: .persistence)
         }

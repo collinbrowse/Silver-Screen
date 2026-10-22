@@ -9,7 +9,7 @@
 import Foundation
 
 enum LibrarySchema {
-    static let currentVersion = 3
+    static let currentVersion = 4
 
     static let v1Statements: [String] = [
         """
@@ -181,12 +181,42 @@ enum LibrarySchema {
         "UPDATE tv_episode_completed SET updated_at = completed_at;",
     ]
 
+    /// Diary: one row per logged watch, many per title, with the same sync metadata as
+    /// every other table. `watched_on` is a `yyyy-MM-dd` calendar day. The backfill (one
+    /// entry per title on Watched) runs in Swift inside the same migration transaction,
+    /// because its ids come from `LibraryStableID`; see `SQLiteLibraryStore+Diary.swift`.
+    static let v4Statements: [String] = [
+        """
+        CREATE TABLE diary_entry (
+          id TEXT PRIMARY KEY,
+          kind TEXT NOT NULL,
+          tmdb_id INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          release_year INTEGER,
+          image_path TEXT,
+          watched_on TEXT NOT NULL,
+          score REAL,
+          review TEXT,
+          is_rewatch INTEGER NOT NULL DEFAULT 0,
+          tags_json TEXT NOT NULL DEFAULT '[]',
+          logged_at TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          revision INTEGER NOT NULL DEFAULT 1,
+          deleted_at TEXT
+        );
+        """,
+        "CREATE INDEX diary_entry_watched_on ON diary_entry(watched_on);",
+        "CREATE INDEX diary_entry_subject ON diary_entry(kind, tmdb_id);",
+    ]
+
     /// SQL for a single schema version. Unknown versions fail instead of no-op.
     static func statements(for version: Int) throws -> [String] {
         switch version {
             case 1: return v1Statements
             case 2: return v2Statements
             case 3: return v3Statements
+            case 4: return v4Statements
             default:
                 throw SQLiteDatabaseError.executionFailed(
                     message: "unknown library schema version \(version)"

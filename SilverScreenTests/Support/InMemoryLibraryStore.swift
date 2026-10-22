@@ -13,6 +13,7 @@ actor InMemoryLibraryStore: LibraryStore {
     private var snapshot: LibrarySnapshot
     private var annotations: [MediaAnnotation]
     private var tvWatch: [TVSeriesWatchState]
+    private var diary: [DiaryEntry] = []
     private var bootstrapped = false
 
     init(
@@ -41,6 +42,10 @@ actor InMemoryLibraryStore: LibraryStore {
         tvWatch
     }
 
+    func fetchDiaryEntries() async throws -> [DiaryEntry] {
+        diary
+    }
+
     func apply(_ mutation: LibraryStoreMutation) async throws {
         switch mutation {
             case .replaceLists(let snapshot):
@@ -49,6 +54,8 @@ actor InMemoryLibraryStore: LibraryStore {
                 annotations = records
             case .replaceTVWatch(let states):
                 tvWatch = states
+            case .replaceDiary(let entries):
+                diary = entries
         }
     }
 }
