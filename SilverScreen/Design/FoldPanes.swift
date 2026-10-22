@@ -2,10 +2,10 @@
 //  FoldPanes.swift
 //  SilverScreen
 //
-//  Reads the iPhone Duo's crease and keeps content off it. The crease is read with
-//  `.includeInactive`, so a layout splits the same way lying flat as folded and does
-//  not jump as the hinge bends. Everything here is a no-op on devices without a fold
-//  and on SDKs before iOS 27.1.
+//  Reads the iPhone Duo's crease and keeps content off it while the hinge is bent
+//  (book posture). Only the active crease counts: a fully open Duo is one flat screen
+//  and gets the normal wide layout, with no gap left for the crease. Everything here
+//  is a no-op on devices without a fold and on SDKs before iOS 27.1.
 //
 
 import SwiftUI
@@ -35,6 +35,17 @@ extension View {
     }
 }
 
+extension View {
+    /// The page's side padding for its `DetailColumns`. As the iPhone Duo's hinge
+    /// panes directly under a `.backdrop`-only hero, the page stack's spacing is also
+    /// taken back, so the `.identity` hero at the top of the leading pane sits where it
+    /// would under a full hero.
+    func detailColumnsInset(hingePanes: Bool) -> some View {
+        padding(.horizontal, DesignSpacing.lg)
+            .padding(.top, hingePanes ? -DesignSpacing.xl : 0)
+    }
+}
+
 /// One side of a fold.
 enum FoldPane: Sendable {
     case leading
@@ -49,7 +60,7 @@ private struct FoldSplitObserver: ViewModifier {
         if #available(iOS 27.1, *) {
             content.onGeometryChange(for: FoldSplit?.self) { proxy in
                 let divisions = proxy
-                    .reservedRegions(kind: .division, options: .includeInactive)
+                    .reservedRegions(kind: .division)
                     .map { region in
                         FoldDivision(
                             frame: region.frame,
