@@ -786,6 +786,9 @@ def _upload_command(ipa: Path) -> tuple[list[str], dict[str, str]]:
     return command, env
 
 
+UUID_PATTERN = re.compile(r"[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}")
+
+
 def embedded_config_problems(info: dict) -> list[str]:
     """Secrets the Release binary reads at launch. Empty or truncated values ship a broken app.
 
@@ -822,6 +825,13 @@ def embedded_config_problems(info: dict) -> list[str]:
         problems.append(
             "The archive has no usable SentryDSN. In Secrets.xcconfig write "
             "SENTRY_DSN = https:/$()/KEY@HOST/PROJECT, because xcconfig treats // as a comment."
+        )
+    # Analytics is optional, but a value that is set and not a UUID would silently send nothing.
+    app_id = str(info.get("TelemetryDeckAppID", "")).strip()
+    if app_id and not app_id.startswith("$(") and not UUID_PATTERN.fullmatch(app_id):
+        problems.append(
+            "The archive's TelemetryDeckAppID is not a UUID, so analytics would stay off. "
+            "Copy the App ID from TelemetryDeck into TELEMETRYDECK_APP_ID, or leave it empty."
         )
     return problems
 
