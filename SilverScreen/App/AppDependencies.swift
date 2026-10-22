@@ -15,6 +15,7 @@ struct AppDependencies {
     let listChanges: ListChangeNotice
     let annotations: AnnotationsRepository
     let tvWatch: TVWatchRepository
+    let diary: DiaryContext
     let awards: AwardsRepository
     let imageLoader: ImageLoader
     let libraryStore: SQLiteLibraryStore
@@ -22,12 +23,32 @@ struct AppDependencies {
     let logger: any AppLogging
     let settings: SettingsContext
     let reviewPrompter: ReviewPrompter
+    /// Anonymous product events. Disabled without a TelemetryDeck app ID and for demo launches.
+    let analytics: any AnalyticsClient
+    /// Screen details for analytics, reported by `SceneDelegate`.
+    let analyticsDevice: AnalyticsDeviceContext
+    /// Starts analytics sessions on launch and on returning to the app.
+    let analyticsSession: AnalyticsSessionTracker
 
     /// Builds the app's dependency graph. A demo launch swaps in a throwaway library.
     static func live(demo: DemoMode? = nil) throws -> AppDependencies {
         let logger = OSAppLogger()
         let connection = try TMDBConnection.fromBundle()
         let httpClient = URLSessionHTTPClient()
+        let appInfo = AppInfo.live()
+        let analyticsPreferences = AnalyticsPreferences()
+        let analyticsDevice = AnalyticsDeviceContext()
+        // Demo launches write a seeded library for screenshots; those writes are not real use.
+        let analytics: any AnalyticsClient = demo == nil
+            ? TelemetryDeckClient.live(
+                infoDictionary: Bundle.main.infoDictionary ?? [:],
+                client: httpClient,
+                preferences: analyticsPreferences,
+                appInfo: appInfo,
+                device: analyticsDevice,
+                logger: logger
+            )
+            : DisabledAnalytics()
         let movies = MovieRepository(
             client: httpClient,
             connection: connection,
@@ -48,15 +69,22 @@ struct AppDependencies {
         let lists = ListsRepository(
             store: LibraryListsStoreAdapter(library: libraryStore),
             logger: logger,
-            index: listsIndex
+            index: listsIndex,
+            analytics: analytics
         )
         let annotations = AnnotationsRepository(
             store: LibraryAnnotationsStoreAdapter(library: libraryStore),
-            logger: logger
+            logger: logger,
+            analytics: analytics
         )
         let listChanges = ListChangeNotice(annotations: annotations)
         let tvWatch = TVWatchRepository(
             store: LibraryTVWatchStoreAdapter(library: libraryStore),
+            lists: lists,
+            logger: logger
+        )
+        let diary = DiaryContext(
+            diary: DiaryRepository(store: LibraryDiaryStoreAdapter(library: libraryStore), logger: logger),
             lists: lists,
             logger: logger
         )
@@ -68,14 +96,16 @@ struct AppDependencies {
             logger: logger
         )
         let router = AppRouter()
-        let appInfo = AppInfo.live()
         let reviewPrompter = ReviewPrompter(
             appVersion: appInfo.marketingVersion,
             defaults: .standard
         ) { cutoff in
             try await libraryStore.countRatings(createdAfter: cutoff)
         }
-        let settings = SettingsContext(appInfo: appInfo) { submission in
+        let settings = SettingsContext(
+            appInfo: appInfo,
+            analyticsSharing: AnalyticsSharing(preferences: analyticsPreferences)
+        ) { submission in
             SentryBootstrap.sendFeedback(message: submission.message, email: submission.email)
         }
         return AppDependencies(
@@ -87,13 +117,17 @@ struct AppDependencies {
             listChanges: listChanges,
             annotations: annotations,
             tvWatch: tvWatch,
+            diary: diary,
             awards: awards,
             imageLoader: imageLoader,
             libraryStore: libraryStore,
             router: router,
             logger: logger,
             settings: settings,
-            reviewPrompter: reviewPrompter
+            reviewPrompter: reviewPrompter,
+            analytics: analytics,
+            analyticsDevice: analyticsDevice,
+            analyticsSession: AnalyticsSessionTracker(analytics: analytics)
         )
     }
 }

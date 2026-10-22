@@ -3,7 +3,7 @@
 //  SilverScreen
 //
 //  Combined rating and note editor. A new rating must be chosen before Save.
-//  X discards the draft. Trash clears rating and note together. A failed save
+//  X discards the draft. Delete clears rating and note together. A failed save
 //  stays on this sheet. Cancelled writes do not show a persistence banner. The
 //  view model owns dismissal after success. The note field fills leftover height
 //  above the keyboard as the sheet resizes. Focus is resigned before any dismiss
@@ -29,6 +29,8 @@ struct AnnotationEditorSheet: View {
     @State private var sliderValue: Double
     @State private var note: String
     @State private var confirmClear = false
+    /// The sheet's safe-area insets, read so the side margins can be balanced.
+    @State private var safeAreaInsets = EdgeInsets()
     @State private var saveError: AppError?
     @State private var isSaving = false
     @FocusState private var noteFocused: Bool
@@ -49,6 +51,15 @@ struct AnnotationEditorSheet: View {
         _score = State(initialValue: initial)
         _sliderValue = State(initialValue: initial ?? 5.5)
         _note = State(initialValue: note)
+    }
+
+    /// Side margin that honors only the inset both edges share. The iPhone Duo's
+    /// outer screen has a sensor strip on one side, so its sheet's safe area is much
+    /// deeper on that edge; following it left a wide empty gutter beside the slider
+    /// and note while the toolbar's X sat in that space. A symmetric inset (iPhone
+    /// landscape) keeps the margin it had.
+    private var horizontalMargin: CGFloat {
+        DesignSpacing.lg + min(safeAreaInsets.leading, safeAreaInsets.trailing)
     }
 
     private var canSave: Bool {
@@ -129,10 +140,30 @@ struct AnnotationEditorSheet: View {
                         .accessibilityLabel("Note")
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+                // In the sheet, not the toolbar: a third toolbar button wraps onto a second
+                // row on the iPhone Duo's outer screen, over the rating.
+                if canClear {
+                    Button(role: .destructive) {
+                        confirmClear = true
+                    } label: {
+                        Label("Delete Rating and Review", systemImage: "trash")
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(isSaving)
+                }
             }
-            .padding(DesignSpacing.lg)
+            .padding(.vertical, DesignSpacing.lg)
+            .padding(.horizontal, horizontalMargin)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(DesignTheme.canvas)
+            .onGeometryChange(for: EdgeInsets.self) { proxy in
+                proxy.safeAreaInsets
+            } action: { insets in
+                safeAreaInsets = insets
+            }
+            .ignoresSafeArea(.container, edges: .horizontal)
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -144,19 +175,6 @@ struct AnnotationEditorSheet: View {
                     }
                     .disabled(isSaving)
                     .accessibilityLabel("Cancel")
-                }
-                if canClear {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button {
-                            confirmClear = true
-                        } label: {
-                            Image(systemName: "trash")
-                                .foregroundStyle(Color.red)
-                        }
-                        .disabled(isSaving)
-                        .accessibilityLabel("Delete rating and review")
-                    }
-                    ToolbarSpacer(.fixed, placement: .confirmationAction)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {

@@ -303,6 +303,20 @@ struct AwardsCatalog: Codable, Equatable, Sendable {
     }
 }
 
+extension AwardsCatalog {
+    private enum CodingKeys: String, CodingKey {
+        case generatedAt, credits
+    }
+
+    /// Credits decode one at a time. The weekly catalog on `main` can gain a prize body or
+    /// work kind this build does not know; that credit is skipped so the rest still updates.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        generatedAt = try container.decode(Date.self, forKey: .generatedAt)
+        credits = try container.decodeLossyArrayIfPresent(AwardCredit.self, forKey: .credits) ?? []
+    }
+}
+
 /// Which credits a title list shows. A nil category is every category in the family.
 struct AwardTitleRequest: Hashable, Codable, Sendable, Equatable {
     var family: AwardFamily?

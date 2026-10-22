@@ -9,6 +9,7 @@ struct AwardFamilyView: View {
     @State private var viewModel: AwardFamilyViewModel
     var router: NavigationRouter?
 
+
     init(family: AwardFamily, awards: AwardsRepository, router: NavigationRouter?) {
         _viewModel = State(initialValue: AwardFamilyViewModel(family: family, awards: awards))
         self.router = router
@@ -26,42 +27,7 @@ struct AwardFamilyView: View {
                         systemImage: "trophy"
                     )
                 case .loaded(let categories, _):
-                    List {
-                    Section {
-                        ForEach(Array(categories.enumerated()), id: \.element.id) { index, category in
-                            Button {
-                                router?.push(
-                                    .awardTitles(
-                                        AwardTitleRequest(family: viewModel.family, category: category.name)
-                                    )
-                                )
-                            } label: {
-                                HStack {
-                                    Text(category.name)
-                                        .font(DesignTypography.body)
-                                        .foregroundStyle(DesignTheme.textPrimary)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                    Spacer(minLength: DesignSpacing.sm)
-                                    Image(systemName: "chevron.right")
-                                        .font(DesignTypography.chip.weight(.semibold))
-                                        .foregroundStyle(DesignTheme.textSecondary)
-                                        .accessibilityHidden(true)
-                                }
-                                .contentShape(Rectangle())
-                                .frame(minHeight: 44)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(category.name)
-                            .accessibilityHint("Shows winners and nominees")
-                            .listRowSeparatorBetweenCells(
-                                isFirst: index == 0,
-                                isLast: index == categories.count - 1
-                            )
-                        }
-                    }
-                    .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
-                    }
-                    .listStyle(.plain)
+                    list(categories)
                 case .failed(let error):
                     ErrorStateView(error: error) {
                     await viewModel.load()
@@ -77,5 +43,49 @@ struct AwardFamilyView: View {
             }
         }
     }
-}
 
+    /// One category per row on a phone, two or three side by side on a wide screen.
+    private func list(_ categories: [AwardCategory]) -> some View {
+        CatalogColumnsReader { columns in
+            List {
+                Section {
+                    ForEach(CatalogGrid.rows(categories, columns: columns, id: \.id)) { row in
+                        CatalogColumnsRow(row: row, columns: columns, id: \.id) { category in
+                            categoryButton(category)
+                        }
+                        .listRowSeparatorBetweenCells(isFirst: row.isFirst, isLast: row.isLast)
+                    }
+                }
+                .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
+            }
+            .listStyle(.plain)
+        }
+    }
+
+    private func categoryButton(_ category: AwardCategory) -> some View {
+        Button {
+            router?.push(
+                .awardTitles(
+                    AwardTitleRequest(family: viewModel.family, category: category.name)
+                )
+            )
+        } label: {
+            HStack {
+                Text(category.name)
+                    .font(DesignTypography.body)
+                    .foregroundStyle(DesignTheme.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: DesignSpacing.sm)
+                Image(systemName: "chevron.right")
+                    .font(DesignTypography.chip.weight(.semibold))
+                    .foregroundStyle(DesignTheme.textSecondary)
+                    .accessibilityHidden(true)
+            }
+            .contentShape(Rectangle())
+            .frame(minHeight: 44)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(category.name)
+        .accessibilityHint("Shows winners and nominees")
+    }
+}

@@ -19,6 +19,8 @@ struct RootTabView: View {
     let imageLoader: ImageLoader
     let libraryHomeViewModel: LibraryHomeViewModel
     let settings: SettingsContext
+    @Bindable var onboarding: OnboardingGate
+    let tour: TourController
     let reviewPrompter: ReviewPrompter
 
     @State private var browseViewModel: BrowseListViewModel
@@ -38,6 +40,8 @@ struct RootTabView: View {
         imageLoader: ImageLoader,
         libraryHomeViewModel: LibraryHomeViewModel,
         settings: SettingsContext,
+        onboarding: OnboardingGate,
+        tour: TourController,
         reviewPrompter: ReviewPrompter
     ) {
         self.router = router
@@ -53,6 +57,8 @@ struct RootTabView: View {
         self.imageLoader = imageLoader
         self.libraryHomeViewModel = libraryHomeViewModel
         self.settings = settings
+        self.onboarding = onboarding
+        self.tour = tour
         self.reviewPrompter = reviewPrompter
         _browseViewModel = State(
             initialValue: BrowseListViewModel(
@@ -89,12 +95,14 @@ struct RootTabView: View {
         // Read `message` here so RootTabView observes ListChangeNotice. The overlay
         // alone (child @Bindable) can miss updates when only the notice changes.
         let bannerMessage = listChanges.message
-        tabs
+        tabs(showsBanner: bannerMessage != nil)
             .environment(listChanges)
-            .overlay(alignment: .bottom) {
-                if bannerMessage != nil {
-                    ListChangeBanner(notice: listChanges)
-                        .id(listChanges.presentationID)
+            .environment(tour)
+            // The list-change banner is hosted by each tab; see `ListChangeBannerHost`.
+            // Over the tab bar and any pushed screen, under sheets.
+            .overlay {
+                if tour.isActive {
+                    TourOverlay(tour: tour)
                 }
             }
             .sheet(item: toastAnnotationEditorBinding) { session in
@@ -108,25 +116,60 @@ struct RootTabView: View {
                 )
             }
             .modifier(ReviewPromptPresenter(prompter: reviewPrompter))
+            // Outside the review prompter's environment: ratings made during onboarding
+            // must not ask for a review, since no completion date exists yet to exclude them.
+            .fullScreenCover(isPresented: $onboarding.isPresented) {
+                OnboardingView(
+                    viewModel: OnboardingViewModel(
+                        movies: movies,
+                        shows: shows,
+                        lists: lists,
+                        annotations: annotations,
+                        tvWatch: tvWatch,
+                        awards: awards,
+                        gate: onboarding
+                    ),
+                    imageLoader: imageLoader
+                )
+                .onAppear(perform: onboarding.launchCoverDidAppear)
+            }
+            // First launch: blank until the onboarding cover is up, then present it
+            // without the slide so the tabs never flash first.
+            .overlay {
+                if onboarding.isLaunchCoverPending {
+                    Color(.systemBackground)
+                        .ignoresSafeArea()
+                }
+            }
+            .onChange(of: onboarding.isLaunchCoverPending, initial: true) {
+                onboarding.presentLaunchCover()
+            }
     }
 
     /// On Mac this iOS app keeps a tab bar and does not minimize it. Hiding that
     /// bar during search lays the system search field out through `UIScreen`
     /// focus, which UIKit rejects and terminates the process. The search field
     /// itself is a text field on Mac; see `MacSearchField`.
+    ///
+    /// Elsewhere the tabs adapt to the window's width: a regular-width window (iPad,
+    /// a wide foldable screen) can open them as a sidebar, and a compact one keeps the
+    /// bottom tab bar. Each tab keeps its own `NavigationStack` either way.
     @ViewBuilder
-    private var tabs: some View {
+    private func tabs(showsBanner: Bool) -> some View {
         if ProcessInfo.processInfo.isiOSAppOnMac {
-            tabView
+            tabView(showsBanner: showsBanner)
                 .tabViewStyle(.tabBarOnly)
                 .tabBarMinimizeBehavior(.never)
         } else {
-            tabView
+            tabView(showsBanner: showsBanner)
+                .tabViewStyle(.sidebarAdaptable)
         }
     }
 
-    private var tabView: some View {
-        TabView(selection: $router.selectedTab) {
+    /// Each tab hosts the list-change banner itself; see `ListChangeBannerHost`.
+    private func tabView(showsBanner: Bool) -> some View {
+        let banner = ListChangeBannerHost(notice: listChanges, isShowing: showsBanner)
+        return TabView(selection: $router.selectedTab) {
             Tab("Browse", systemImage: "square.grid.2x2", value: AppTab.browse) {
                 BrowseTabRoot(
                     router: router.browse,
@@ -141,6 +184,7 @@ struct RootTabView: View {
                     tvWatch: tvWatch,
                     awards: awards
                 )
+                .modifier(banner)
             }
 
             Tab("Search", systemImage: "magnifyingglass", value: AppTab.search) {
@@ -157,6 +201,7 @@ struct RootTabView: View {
                     tvWatch: tvWatch,
                     awards: awards
                 )
+                .modifier(banner)
             }
 
             Tab("Library", systemImage: "books.vertical", value: AppTab.library) {
@@ -172,8 +217,10 @@ struct RootTabView: View {
                     movies: movies,
                     shows: shows,
                     people: people,
-                    settings: settings
+                    settings: settings,
+                    onGetStarted: onboarding.reopen
                 )
+                .modifier(banner)
             }
         }
     }

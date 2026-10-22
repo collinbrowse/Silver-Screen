@@ -94,54 +94,84 @@ struct PersonDetailView: View {
     }
 
     private func loadedBody(content: PersonDetailContent, activity: LoadActivity) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DesignSpacing.xl) {
-                metadataBlock(content)
-                if let images = content.images {
-                    imagesCarousel(images)
+        DetailPageReader { page in
+            ScrollView {
+                DetailPageSections(
+                    page: page,
+                    plan: PersonDetailLayout.plan(for: page.layout, showing: shownSections(content))
+                ) { section, _ in
+                    sectionView(section, page: page, content: content)
                 }
-                ForEach(content.creditSections) { section in
-                    creditsCarousel(
-                        title: section.title,
-                        section: section,
-                        personID: content.detail.id,
-                        personName: content.detail.name
-                    )
-                }
+                .padding(.vertical, DesignSpacing.lg)
+                .readableColumn(maxWidth: page.layout.columnCap)
+                .coordinateSpace(.named("detailScroll"))
             }
-            .padding(.vertical, DesignSpacing.lg)
-            .frame(maxWidth: 700)
-            .frame(maxWidth: .infinity)
-            .coordinateSpace(.named("detailScroll"))
-        }
-        .scrollingInlineTitle(navigationTitle)
-        .overlay(alignment: .top) {
-            if case .failed(let error) = activity {
-                Text("\(error.title): \(error.message)")
-                    .font(.footnote)
-                    .foregroundStyle(.white)
-                    .padding(8)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.red)
-                    .accessibilityLabel("\(error.title). \(error.message)")
+            .scrollingInlineTitle(navigationTitle)
+            .overlay(alignment: .top) {
+                if case .failed(let error) = activity {
+                    Text("\(error.title): \(error.message)")
+                        .font(.footnote)
+                        .foregroundStyle(.white)
+                        .padding(8)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.red)
+                        .accessibilityLabel("\(error.title). \(error.message)")
+                }
             }
         }
     }
 
-    private func metadataBlock(_ content: PersonDetailContent) -> some View {
-        VStack(alignment: .leading, spacing: DesignSpacing.xl) {
-            header(content)
-            biographySection(content.detail.biography)
-            if hasFacts(content) {
+    private func shownSections(_ content: PersonDetailContent) -> Set<PersonDetailLayout.Section> {
+        var shown: Set<PersonDetailLayout.Section> = [.header, .biography]
+        if hasFacts(content) { shown.insert(.facts) }
+        if !content.awards.isEmpty { shown.insert(.awards) }
+        if content.images != nil { shown.insert(.images) }
+        if !content.creditSections.isEmpty { shown.insert(.credits) }
+        return shown
+    }
+
+    @ViewBuilder
+    private func sectionView(
+        _ section: PersonDetailLayout.Section,
+        page: DetailPageGeometry,
+        content: PersonDetailContent
+    ) -> some View {
+        switch section {
+            case .header:
+                header(content)
+            case .biography:
+                biographySection(content.detail.biography)
+            case .facts:
                 factsCard(content)
-            }
-            if !content.awards.isEmpty {
+            case .awards:
                 AwardRowsSection(rows: content.awards.map(\.row)) { route in
                     router?.push(route)
                 }
-            }
+            case .images:
+                if let images = content.images {
+                    imagesCarousel(images)
+                }
+            case .credits:
+                // A carousel in one pane of a fold is phone-width, so it gets the phone preview.
+                creditCarousels(
+                    content,
+                    previewCount: page.layout == .panes
+                        ? CarouselMetrics.compactPreviewCount
+                        : CarouselMetrics.previewCount(forWidth: page.contentWidth, cardWidth: portraitCardWidth)
+                )
         }
-        .padding(.horizontal, DesignSpacing.lg)
+    }
+
+    private func creditCarousels(_ content: PersonDetailContent, previewCount: Int) -> some View {
+        ForEach(content.creditSections) { section in
+            creditsCarousel(
+                title: section.title,
+                section: section,
+                previewCount: previewCount,
+                personID: content.detail.id,
+                personName: content.detail.name
+            )
+        }
     }
 
     private func header(_ content: PersonDetailContent) -> some View {
@@ -323,16 +353,19 @@ struct PersonDetailView: View {
         .padding(.bottom, DesignSpacing.xl)
     }
 
+    /// One credit slice: `previewCount` items (more on wide pages), then View All.
     private func creditsCarousel(
         title: String,
         section: PersonDetailContent.CreditsSection,
+        previewCount: Int,
         personID: Int,
         personName: String
     ) -> some View {
-        DetailCarousel(
+        let showsViewAll = section.showsViewAll(previewCount: previewCount)
+        return DetailCarousel(
             title: title,
-            viewAllTitle: section.showsViewAll ? "View All" : nil,
-            onViewAll: section.showsViewAll
+            viewAllTitle: showsViewAll ? "View All" : nil,
+            onViewAll: showsViewAll
                 ? {
                     router?.push(
                         .personCredits(
@@ -344,7 +377,7 @@ struct PersonDetailView: View {
                 }
                 : nil
         ) {
-            ForEach(section.preview) { credit in
+            ForEach(section.preview(count: previewCount)) { credit in
                 creditCell(credit)
             }
         }
@@ -405,3 +438,49 @@ struct PersonDetailView: View {
     }
 }
 
+
+/// Where each section of a person page goes.
+enum PersonDetailLayout {
+    enum Section: DetailPageSection {
+        /// Profile photo, name, and IMDb link.
+        case header
+        case biography
+        case facts
+        case awards
+        case images
+        /// One carousel per department.
+        case credits
+
+        var carriesOwnInset: Bool {
+            switch self {
+                case .images, .credits:
+                    true
+                case .header, .biography, .facts, .awards:
+                    false
+            }
+        }
+    }
+
+    /// The sections in `shown`, placed for `layout`.
+    ///
+    /// - Phone and wide page: name and biography, with facts and awards beside them on
+    ///   a wide page; the images and credit carousels run full width below.
+    /// - Across a fold: the leading pane has the name, biography, facts, and awards;
+    ///   the trailing pane has the images and credit carousels.
+    static func plan(for layout: DetailPageLayout, showing shown: Set<Section>) -> DetailPagePlan<Section> {
+        let plan = switch layout {
+            case .stacked, .columns:
+                DetailPagePlan<Section>(
+                    main: [.header, .biography],
+                    side: [.facts, .awards],
+                    below: [.images, .credits]
+                )
+            case .panes:
+                DetailPagePlan<Section>(
+                    main: [.header, .biography, .facts, .awards],
+                    side: [.images, .credits]
+                )
+        }
+        return plan.keeping(shown.contains)
+    }
+}

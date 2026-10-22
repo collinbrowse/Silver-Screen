@@ -15,7 +15,6 @@ struct FullscreenImageViewer: View {
 
     @State private var selection: String?
     @State private var isZoomed = false
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     init(
         images: [MovieImage],
@@ -37,7 +36,33 @@ struct FullscreenImageViewer: View {
         return images.firstIndex(where: { $0.id == selection }) ?? 0
     }
 
+    /// The page count and Close share a bottom toolbar (count leading, Close trailing),
+    /// within thumb reach and off the top of the image. As toolbar items, the system
+    /// places them for each screen, including the iPhone Duo's outer screen.
     var body: some View {
+        NavigationStack {
+            viewer
+                .toolbar {
+                    if images.count > 1 {
+                        ToolbarItem(placement: .bottomBar) {
+                            Text("\(currentIndex + 1) of \(images.count)")
+                                .font(DesignTypography.metadata)
+                                .foregroundStyle(DesignTheme.textPrimary)
+                                .padding(.horizontal, DesignSpacing.sm)
+                                .accessibilityLabel("Image \(currentIndex + 1) of \(images.count)")
+                        }
+                    }
+                    ToolbarSpacer(.flexible, placement: .bottomBar)
+                    ToolbarItem(placement: .bottomBar) {
+                        Button("Close", systemImage: "xmark", action: onDismiss)
+                    }
+                }
+                .toolbar(.hidden, for: .navigationBar)
+                .toolbarBackground(.hidden, for: .bottomBar)
+        }
+    }
+
+    private var viewer: some View {
         ZStack {
             DesignTheme.canvas.ignoresSafeArea()
 
@@ -64,28 +89,6 @@ struct FullscreenImageViewer: View {
             .scrollPosition(id: $selection)
             .scrollDisabled(isZoomed)
             .ignoresSafeArea()
-
-            VStack {
-                HStack {
-                    Spacer()
-                    closeButton
-                }
-                .padding(.horizontal, DesignSpacing.lg)
-                .padding(.top, DesignSpacing.sm)
-
-                Spacer()
-
-                if images.count > 1 {
-                    Text("\(currentIndex + 1) of \(images.count)")
-                        .font(DesignTypography.metadata)
-                        .foregroundStyle(DesignTheme.textPrimary)
-                        .padding(.horizontal, DesignSpacing.md)
-                        .padding(.vertical, DesignSpacing.sm)
-                        .background { chromeBackground }
-                        .padding(.bottom, DesignSpacing.lg)
-                        .accessibilityLabel("Image \(currentIndex + 1) of \(images.count)")
-                }
-            }
         }
         .onChange(of: selection) { _, _ in
             isZoomed = false
@@ -101,27 +104,5 @@ struct FullscreenImageViewer: View {
                     }
                 }
         )
-    }
-
-    private var closeButton: some View {
-        Button(action: onDismiss) {
-            Image(systemName: "xmark")
-                .font(.body.weight(.semibold))
-                .foregroundStyle(DesignTheme.textPrimary)
-                .frame(width: 44, height: 44)
-                .background { chromeBackground }
-        }
-        .accessibilityLabel("Close")
-    }
-
-    @ViewBuilder
-    private var chromeBackground: some View {
-        if reduceTransparency {
-            Capsule()
-                .fill(DesignTheme.surface)
-        } else {
-            Capsule()
-                .glassEffect()
-        }
     }
 }

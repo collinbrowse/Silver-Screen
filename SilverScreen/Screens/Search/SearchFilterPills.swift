@@ -38,6 +38,8 @@ struct SearchFilterPills: View {
             .padding(.horizontal, DesignSpacing.lg)
             .padding(.vertical, DesignSpacing.sm)
         }
+        // Scrolling chips stay in the leading pane on the iPhone Duo's fold.
+        .foldPane(alignment: .leading)
         .background(DesignTheme.canvas)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Search filters")

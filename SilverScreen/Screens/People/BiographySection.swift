@@ -2,7 +2,8 @@
 //  BiographySection.swift
 //  SilverScreen
 //
-//  Collapsed biography that expands in place via Show More / Show Less.
+//  Collapsed biography that expands in place via Show More / Show Less, in a card
+//  that labels itself like the storyline on title pages.
 //
 
 import SwiftUI
@@ -24,26 +25,35 @@ struct BiographySection: View {
         !biography.isEmpty && biography.count > expandsWhenCharacterCountExceeds
     }
 
+    /// A labeled card, like the storyline on title pages, with Show More below it.
     var body: some View {
-        VStack(alignment: .leading, spacing: DesignSpacing.sm) {
-            Text("Biography")
-                .font(DesignTypography.section)
-                .foregroundStyle(DesignTheme.textPrimary)
-                .accessibilityAddTraits(.isHeader)
+        VStack(alignment: .leading, spacing: 0) {
+            SurfaceCard {
+                VStack(alignment: .leading, spacing: DesignSpacing.sm) {
+                    CardLabel(title: "Biography")
 
-            Text(displayText)
-                .font(DesignTypography.body)
-                .foregroundStyle(DesignTheme.textSecondary)
-                .lineLimit(canExpand && !expanded ? previewLineLimit : nil)
-                .fixedSize(horizontal: false, vertical: true)
+                    Text(displayText)
+                        .font(DesignTypography.body)
+                        .foregroundStyle(DesignTheme.textSecondary)
+                        .lineLimit(canExpand && !expanded ? previewLineLimit : nil)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
 
             if canExpand {
-                Button(expanded ? "Show Less" : "Show More") {
+                // The whole row under the card is the button, as with the awards card.
+                Button {
                     expanded.toggle()
+                } label: {
+                    Text(expanded ? "Show Less" : "Show More")
+                        .font(DesignTypography.chip.weight(.semibold))
+                        .foregroundStyle(DesignTheme.accent)
+                        // Lines up with where the card's corner starts to round, not its outer edge.
+                        .padding(.leading, DesignRadius.card)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        .contentShape(Rectangle())
                 }
-                .font(DesignTypography.chip.weight(.semibold))
-                .foregroundStyle(DesignTheme.accent)
-                .frame(minHeight: 44)
+                .buttonStyle(.plain)
                 .accessibilityHint(
                     expanded ? "Collapses the biography" : "Expands the full biography"
                 )

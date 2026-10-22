@@ -20,6 +20,8 @@ struct SearchView: View {
     var router: NavigationRouter?
 
     @State private var scrollID: String?
+    /// Where the iPhone Duo's fold crosses the shelf page, or nil.
+    @State private var shelfFold: FoldSplit?
     /// Mirrors the system search field's focus. Not passed into `.searchable`,
     /// because binding `isPresented` clears the visible query after a pop.
     @State private var fieldPresented = false
@@ -109,54 +111,102 @@ struct SearchView: View {
         }
     }
 
+    /// Two cards a row on a phone, more as the width allows; see `ShelfGridMetrics`.
+    /// The three award cards never leave empty slots beside them. Across the iPhone
+    /// Duo's fold each section becomes one grid per pane, so no card sits on the crease.
     private var shelfGrid: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DesignSpacing.lg) {
-                shelfSection {
-                    ForEach(viewModel.shelves) { shelf in
-                        Button {
-                            openShelf(shelf)
-                        } label: {
-                            AwardShelfCard(shelf: shelf)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("\(shelf.title), \(shelf.subtitle)")
-                        .accessibilityHint("Opens this award list")
-                    }
-                }
+        ContentWidthReader { width in
+            let columns = ShelfGridMetrics.columnCount(forWidth: width)
+            ScrollView {
+                VStack(alignment: .leading, spacing: DesignSpacing.lg) {
+                    shelves(
+                        viewModel.shelves,
+                        id: \.id,
+                        columns: min(columns, viewModel.shelves.count),
+                        cell: awardShelfButton
+                    )
+                    .tourAnchor(.awardShelves)
 
-                Text("Genre")
-                    .font(DesignTypography.section)
-                    .foregroundStyle(DesignTheme.textPrimary)
-                    .padding(.horizontal, DesignSpacing.lg)
+                    Text("Genre")
+                        .font(DesignTypography.section)
+                        .foregroundStyle(DesignTheme.textPrimary)
+                        .padding(.horizontal, DesignSpacing.lg)
 
-                shelfSection {
-                    ForEach(MergedGenre.searchShelf, id: \.self) { genre in
-                        Button {
-                            open(.genreBrowse(genre))
-                        } label: {
-                            GenreShelfCard(genre: genre)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("Opens this genre list")
-                    }
+                    shelves(MergedGenre.searchShelf, id: \.self, columns: columns, cell: genreShelfButton)
+                        .padding(.vertical, DesignSpacing.lg)
                 }
-                .padding(.vertical, DesignSpacing.lg)
             }
+            .onFoldSplitChange { shelfFold = $0 }
         }
     }
 
-    private func shelfSection<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        LazyVGrid(
-            columns: [
-                GridItem(.flexible(), spacing: DesignSpacing.md),
-                GridItem(.flexible(), spacing: DesignSpacing.md),
-            ],
-            spacing: DesignSpacing.md
-        ) {
-            content()
+    private func awardShelfButton(_ shelf: AwardShelf) -> some View {
+        Button {
+            openShelf(shelf)
+        } label: {
+            AwardShelfCard(shelf: shelf)
         }
-        .padding(.horizontal, DesignSpacing.lg)
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(shelf.title), \(shelf.subtitle)")
+        .accessibilityHint("Opens this award list")
+    }
+
+    private func genreShelfButton(_ genre: MergedGenre) -> some View {
+        Button {
+            open(.genreBrowse(genre))
+        } label: {
+            GenreShelfCard(genre: genre)
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Opens this genre list")
+    }
+
+    /// One shelf section: a single grid, or one grid per pane across a fold with the
+    /// cards dealt row by row so reading order holds.
+    @ViewBuilder
+    private func shelves<Item, ID: Hashable, Cell: View>(
+        _ items: [Item],
+        id: KeyPath<Item, ID>,
+        columns: Int,
+        cell: @escaping (Item) -> Cell
+    ) -> some View {
+        if let shelfFold {
+            let perPane = FoldLayout.columnsPerPane(
+                split: shelfFold,
+                minimumCardWidth: ShelfGridMetrics.minimumCardWidth,
+                spacing: ShelfGridMetrics.cardSpacing,
+                sideInset: ShelfGridMetrics.sideInset
+            )
+            let panes = FoldLayout.distribute(items, perPane: perPane)
+            FoldPanesLayout(split: shelfFold) {
+                shelfGridSection(panes.leading, id: id, columns: perPane, cell: cell)
+                    .padding(.leading, ShelfGridMetrics.sideInset)
+                shelfGridSection(panes.trailing, id: id, columns: perPane, cell: cell)
+                    .padding(.trailing, ShelfGridMetrics.sideInset)
+            }
+        } else {
+            shelfGridSection(items, id: id, columns: columns, cell: cell)
+                .padding(.horizontal, ShelfGridMetrics.sideInset)
+        }
+    }
+
+    private func shelfGridSection<Item, ID: Hashable, Cell: View>(
+        _ items: [Item],
+        id: KeyPath<Item, ID>,
+        columns: Int,
+        cell: @escaping (Item) -> Cell
+    ) -> some View {
+        LazyVGrid(
+            columns: Array(
+                repeating: GridItem(.flexible(), spacing: ShelfGridMetrics.cardSpacing),
+                count: max(columns, 1)
+            ),
+            spacing: ShelfGridMetrics.cardSpacing
+        ) {
+            ForEach(items, id: id) { item in
+                cell(item)
+            }
+        }
     }
 
     private func openShelf(_ shelf: AwardShelf) {
@@ -187,51 +237,52 @@ struct SearchView: View {
     }
 
     private func previewList(_ sections: SearchPreviewSections, activity: LoadActivity) -> some View {
-        List {
-            switch sections.emphasis {
-                case .titlesFirst:
-                    previewMoviesSection(sections.movies)
-                    previewTVSection(sections.tv)
-                    previewPeopleSection(sections.people)
-                case .peopleFirst:
-                    previewPeopleSection(sections.people)
-                    previewMoviesSection(sections.movies)
-                    previewTVSection(sections.tv)
-            }
-
-            Section {
-                SearchViewAllRow(query: viewModel.committedQuery) {
-                    viewModel.openAllResults()
+        CatalogColumnsReader { columns in
+            List {
+                switch sections.emphasis {
+                    case .titlesFirst:
+                        previewMoviesSection(sections.movies, columns: columns)
+                        previewTVSection(sections.tv, columns: columns)
+                        previewPeopleSection(sections.people, columns: columns)
+                    case .peopleFirst:
+                        previewPeopleSection(sections.people, columns: columns)
+                        previewMoviesSection(sections.movies, columns: columns)
+                        previewTVSection(sections.tv, columns: columns)
                 }
-                .listRowInsets(EdgeInsets(
-                    top: DesignSpacing.sm,
-                    leading: DesignSpacing.lg,
-                    bottom: DesignSpacing.md,
-                    trailing: DesignSpacing.lg
-                ))
-                .listRowSeparator(.hidden)
+
+                Section {
+                    SearchViewAllRow(query: viewModel.committedQuery) {
+                        viewModel.openAllResults()
+                    }
+                    .listRowInsets(EdgeInsets(
+                        top: DesignSpacing.sm,
+                        leading: DesignSpacing.lg,
+                        bottom: DesignSpacing.md,
+                        trailing: DesignSpacing.lg
+                    ))
+                    .listRowSeparator(.hidden)
+                }
             }
-        }
-        .listStyle(.plain)
-        .scrollPosition(id: $scrollID)
-        .overlay(alignment: .top) {
-            LoadActivityBanner(activity: activity)
+            .listStyle(.plain)
+            .scrollPosition(id: $scrollID)
+            .overlay(alignment: .top) {
+                LoadActivityBanner(activity: activity)
+            }
         }
     }
 
     @ViewBuilder
-    private func previewMoviesSection(_ rows: [CatalogMovieRow]) -> some View {
+    private func previewMoviesSection(_ rows: [CatalogMovieRow], columns: Int) -> some View {
         if !rows.isEmpty {
             Section {
-                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                    resultButton(
-                        index: index,
-                        count: rows.count,
-                        showsLoadingRow: false,
-                        rowID: "m-\(row.id)",
-                        loadsMore: false,
-                        density: .compact
-                    ) {
+                resultRows(
+                    rows,
+                    columns: columns,
+                    scrollPrefix: "m-",
+                    loadsMore: false,
+                    showsLoadingRow: false
+                ) { row in
+                    resultCell(density: .compact) {
                         open(.movieDetail(id: row.id))
                     } label: {
                         movieRowLabel(row)
@@ -246,18 +297,17 @@ struct SearchView: View {
     }
 
     @ViewBuilder
-    private func previewTVSection(_ rows: [CatalogTVRow]) -> some View {
+    private func previewTVSection(_ rows: [CatalogTVRow], columns: Int) -> some View {
         if !rows.isEmpty {
             Section {
-                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                    resultButton(
-                        index: index,
-                        count: rows.count,
-                        showsLoadingRow: false,
-                        rowID: "t-\(row.id)",
-                        loadsMore: false,
-                        density: .compact
-                    ) {
+                resultRows(
+                    rows,
+                    columns: columns,
+                    scrollPrefix: "t-",
+                    loadsMore: false,
+                    showsLoadingRow: false
+                ) { row in
+                    resultCell(density: .compact) {
                         open(.tvSeries(id: row.id))
                     } label: {
                         tvRowLabel(row)
@@ -272,18 +322,17 @@ struct SearchView: View {
     }
 
     @ViewBuilder
-    private func previewPeopleSection(_ rows: [CatalogPersonRow]) -> some View {
+    private func previewPeopleSection(_ rows: [CatalogPersonRow], columns: Int) -> some View {
         if !rows.isEmpty {
             Section {
-                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                    resultButton(
-                        index: index,
-                        count: rows.count,
-                        showsLoadingRow: false,
-                        rowID: "p-\(row.id)",
-                        loadsMore: false,
-                        density: .compact
-                    ) {
+                resultRows(
+                    rows,
+                    columns: columns,
+                    scrollPrefix: "p-",
+                    loadsMore: false,
+                    showsLoadingRow: false
+                ) { row in
+                    resultCell(density: .compact) {
                         open(.person(id: row.id))
                     } label: {
                         personRowLabel(row)
@@ -298,37 +347,38 @@ struct SearchView: View {
     }
 
     private func allResultsList(_ items: [SearchResultItem], activity: LoadActivity) -> some View {
-        List {
-            Section {
-                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                    resultButton(
-                        index: index,
-                        count: items.count,
-                        showsLoadingRow: activity == .loadingMore,
-                        rowID: item.id,
+        CatalogColumnsReader { columns in
+            List {
+                Section {
+                    resultRows(
+                        items,
+                        columns: columns,
+                        scrollPrefix: "",
                         loadsMore: true,
-                        density: .standard
-                    ) {
-                        open(route(for: item))
-                    } label: {
-                        itemLabel(item)
-                    } star: {
-                        listControl(listItem(for: item))
+                        showsLoadingRow: activity == .loadingMore
+                    ) { item in
+                        resultCell(density: .standard) {
+                            open(route(for: item))
+                        } label: {
+                            itemLabel(item)
+                        } star: {
+                            listControl(listItem(for: item))
+                        }
+                    }
+
+                    if activity == .loadingMore {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .listRowSeparator(.hidden)
                     }
                 }
-
-                if activity == .loadingMore {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .listRowSeparator(.hidden)
-                }
+                .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
             }
-            .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
-        }
-        .listStyle(.plain)
-        .scrollPosition(id: $scrollID)
-        .overlay(alignment: .top) {
-            LoadActivityBanner(activity: activity)
+            .listStyle(.plain)
+            .scrollPosition(id: $scrollID)
+            .overlay(alignment: .top) {
+                LoadActivityBanner(activity: activity)
+            }
         }
     }
 
@@ -432,12 +482,35 @@ struct SearchView: View {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 
-    private func resultButton<Label: View, Star: View>(
-        index: Int,
-        count: Int,
-        showsLoadingRow: Bool,
-        rowID: String,
+    /// List rows of `columns` results each. `scrollPrefix` keeps scroll ids unique
+    /// when a movie and a show share a TMDB id; `loadsMore` pages when the last row appears.
+    private func resultRows<Item: Identifiable, Cell: View>(
+        _ items: [Item],
+        columns: Int,
+        scrollPrefix: String,
         loadsMore: Bool,
+        showsLoadingRow: Bool,
+        @ViewBuilder cell: @escaping (Item) -> Cell
+    ) -> some View {
+        ForEach(CatalogGrid.rows(items, columns: columns, id: \.id)) { gridRow in
+            CatalogColumnsRow(row: gridRow, columns: columns, id: \.id, cell: cell)
+                .id("\(scrollPrefix)\(gridRow.id)")
+                .listRowInsets(EdgeInsets(
+                    top: loadsMore ? 8 : 4,
+                    leading: 16,
+                    bottom: loadsMore ? 8 : 4,
+                    trailing: 8
+                ))
+                .listRowSeparatorBetweenCells(isFirst: gridRow.isFirst, isLast: gridRow.isLast && !showsLoadingRow)
+                .onAppear {
+                    if loadsMore, gridRow.isLast {
+                        Task { await viewModel.loadMore() }
+                    }
+                }
+        }
+    }
+
+    private func resultCell<Label: View, Star: View>(
         density: CatalogRowView.Density,
         action: @escaping () -> Void,
         @ViewBuilder label: () -> Label,
@@ -450,19 +523,6 @@ struct SearchView: View {
             .buttonStyle(.plain)
         } control: {
             star()
-        }
-        .id(rowID)
-        .listRowInsets(EdgeInsets(
-            top: loadsMore ? 8 : 4,
-            leading: 16,
-            bottom: loadsMore ? 8 : 4,
-            trailing: 8
-        ))
-        .listRowSeparatorBetweenCells(isFirst: index == 0, isLast: index == count - 1 && !showsLoadingRow)
-        .onAppear {
-            if loadsMore, index == count - 1 {
-                Task { await viewModel.loadMore() }
-            }
         }
     }
 

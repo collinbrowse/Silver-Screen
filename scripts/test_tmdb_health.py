@@ -92,6 +92,32 @@ class RunCheckTests(unittest.TestCase):
         self.assertNotIn("secret", url)
         self.assertIn("/3/movie/now_playing?region=US", url)
 
+    def test_proxy_check_sends_no_token_and_needs_a_movie_id(self) -> None:
+        seen = []
+
+        def fetch(url, headers):
+            seen.append((url, headers))
+            return 200, b'{"id": 550, "title": "Fight Club"}'
+
+        result = tmdb_health.run_proxy_check("https://proxy.example.workers.dev/3/", fetch=fetch, sleep=lambda _: None)
+        self.assertTrue(result.ok, result.errors)
+        url, headers = seen[0]
+        self.assertEqual(url, "https://proxy.example.workers.dev/3/movie/550")
+        self.assertNotIn("Authorization", headers)
+
+    def test_proxy_check_fails_without_an_id_or_on_an_error_status(self) -> None:
+        no_id = tmdb_health.run_proxy_check(
+            "https://proxy.example/3", fetch=lambda url, headers: (200, b'{"status_message":"x"}'), sleep=lambda _: None
+        )
+        self.assertFalse(no_id.ok)
+        self.assertIn("$.id: missing or null", no_id.errors)
+
+        denied = tmdb_health.run_proxy_check(
+            "https://proxy.example/3", fetch=lambda url, headers: (500, b'{"status_message":"no token"}'), sleep=lambda _: None
+        )
+        self.assertFalse(denied.ok)
+        self.assertIn("HTTP 500", denied.errors[0])
+
     def test_retries_once_on_server_error(self) -> None:
         responses = [(503, b"down"), (200, self.page_payload([movie_summary()]))]
         sleeps = []

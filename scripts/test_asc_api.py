@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import gzip
 import unittest
+import urllib.error
 from pathlib import Path
+from unittest import mock
 
 import asc_api
 
@@ -185,6 +187,47 @@ class ASCReportTests(unittest.TestCase):
         self.assertEqual(reviews, [{"id": "r1", "rating": 5, "title": "Great", "createdDate": "2026-10-12T10:00:00Z"}])
         self.assertIn("/v1/apps/app-1/customerReviews", seen[0])
         self.assertIn("sort=-createdDate", seen[0])
+
+
+class SlowResponse:
+    """urlopen() result whose read() times out, like a stalled ASC report download."""
+
+    status = 200
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def read(self):
+        raise TimeoutError("The read operation timed out")
+
+
+class ASCTransportTests(unittest.TestCase):
+    def test_default_http_turns_a_network_failure_into_asc_error(self) -> None:
+        refused = urllib.error.URLError(ConnectionRefusedError(61, "Connection refused"))
+        with mock.patch("urllib.request.urlopen", side_effect=refused):
+            with self.assertRaises(asc_api.ASCError) as caught:
+                asc_api.default_http("GET", "https://api.appstoreconnect.apple.com/v1/apps?filter=x", {}, None)
+        self.assertIn("/v1/apps", str(caught.exception))
+        self.assertNotIn("filter=x", str(caught.exception))
+
+    def test_default_http_turns_a_read_timeout_into_asc_error(self) -> None:
+        with mock.patch("urllib.request.urlopen", return_value=SlowResponse()):
+            with self.assertRaises(asc_api.ASCError):
+                asc_api.default_http("GET", "https://api.appstoreconnect.apple.com/v1/apps", {}, None)
+
+    def test_default_download_turns_timeouts_and_os_errors_into_asc_error(self) -> None:
+        url = "https://api.appstoreconnect.apple.com/v1/salesReports"
+        for failure in (TimeoutError("timed out"), ConnectionResetError(54, "reset"), OSError("unreachable")):
+            with self.subTest(failure=failure):
+                with mock.patch("urllib.request.urlopen", side_effect=failure):
+                    with self.assertRaises(asc_api.ASCError):
+                        asc_api.default_download("GET", url, {}, None)
+        with mock.patch("urllib.request.urlopen", return_value=SlowResponse()):
+            with self.assertRaises(asc_api.ASCError):
+                asc_api.default_download("GET", url, {}, None)
 
 
 if __name__ == "__main__":

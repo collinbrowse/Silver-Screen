@@ -293,6 +293,30 @@ final class AwardsRepositoryTests: XCTestCase {
         XCTAssertFalse(encoded.contains("recipients"))
     }
 
+    func test_decode_skipsACreditFromAPrizeBodyThisBuildDoesNotKnow() throws {
+        let json = """
+        {
+          "generatedAt": "2024-03-10T10:00:00Z",
+          "credits": [
+            {
+              "key": "future", "family": "goldenGlobe", "category": "Best Drama",
+              "categoryID": "Q1", "won": true, "year": 2025, "title": "New Film",
+              "work": {"kind": "movie", "movieID": 1}
+            },
+            {
+              "key": "godfather", "family": "academy", "category": "Best Picture",
+              "categoryID": "Q102427", "won": true, "year": 1973, "title": "The Godfather",
+              "work": {"kind": "movie", "movieID": 238}
+            }
+          ]
+        }
+        """
+
+        let catalog = try AwardsCatalog.decode(from: Data(json.utf8))
+
+        XCTAssertEqual(catalog.credits.map(\.key), ["godfather"])
+    }
+
     func test_movieAwards_listsEveryNominationWhenThereAreNoWins() async {
         let repository = AwardsRepository(catalog: Self.sampleCatalog)
         let rows = await repository.movieAwards(movieID: 278)

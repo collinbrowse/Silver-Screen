@@ -14,6 +14,7 @@ struct TVSeriesSummaryDTO: Decodable, Sendable {
     let firstAirDate: String?
     let genreIDs: [Int]?
     let voteAverage: Double?
+    let voteCount: Int?
     let popularity: Double?
 
     enum CodingKeys: String, CodingKey {
@@ -23,6 +24,7 @@ struct TVSeriesSummaryDTO: Decodable, Sendable {
         case firstAirDate = "first_air_date"
         case genreIDs = "genre_ids"
         case voteAverage = "vote_average"
+        case voteCount = "vote_count"
         case popularity
     }
 }
@@ -220,9 +222,9 @@ struct TVSeriesDetailDTO: Decodable, Sendable {
         posterPath = try container.decodeIfPresent(String.self, forKey: .posterPath)
         firstAirDate = try container.decodeIfPresent(String.self, forKey: .firstAirDate)
         lastAirDate = try container.decodeIfPresent(String.self, forKey: .lastAirDate)
-        genres = try container.decodeIfPresent([MovieGenreDTO].self, forKey: .genres)
-        createdBy = try container.decodeIfPresent([TVCreatorDTO].self, forKey: .createdBy)
-        seasons = try container.decodeIfPresent([TVSeasonSummaryDTO].self, forKey: .seasons)
+        genres = try container.decodeLossyArrayIfPresent(MovieGenreDTO.self, forKey: .genres)
+        createdBy = try container.decodeLossyArrayIfPresent(TVCreatorDTO.self, forKey: .createdBy)
+        seasons = try container.decodeLossyArrayIfPresent(TVSeasonSummaryDTO.self, forKey: .seasons)
         voteAverage = try container.decodeIfPresent(Double.self, forKey: .voteAverage)
         popularity = try container.decodeIfPresent(Double.self, forKey: .popularity)
         var failures: [String] = []
@@ -302,7 +304,7 @@ struct TVSeasonDetailDTO: Decodable, Sendable {
         seasonNumber = try container.decode(Int.self, forKey: .seasonNumber)
         airDate = try container.decodeIfPresent(String.self, forKey: .airDate)
         posterPath = try container.decodeIfPresent(String.self, forKey: .posterPath)
-        episodes = try container.decodeIfPresent([TVEpisodeSummaryDTO].self, forKey: .episodes)
+        episodes = try container.decodeLossyArrayIfPresent(TVEpisodeSummaryDTO.self, forKey: .episodes)
         voteAverage = try container.decodeIfPresent(Double.self, forKey: .voteAverage)
         var failures: [String] = []
         images = Self.optionalSection(MovieImagesDTO.self, from: container, key: .images, failures: &failures)
@@ -375,8 +377,8 @@ struct TVEpisodeDetailDTO: Decodable, Sendable {
         airDate = try container.decodeIfPresent(String.self, forKey: .airDate)
         stillPath = try container.decodeIfPresent(String.self, forKey: .stillPath)
         voteAverage = try container.decodeIfPresent(Double.self, forKey: .voteAverage)
-        crew = try container.decodeIfPresent([CrewMemberDTO].self, forKey: .crew)
-        guestStars = try container.decodeIfPresent([CastMemberDTO].self, forKey: .guestStars)
+        crew = try container.decodeLossyArrayIfPresent(CrewMemberDTO.self, forKey: .crew)
+        guestStars = try container.decodeLossyArrayIfPresent(CastMemberDTO.self, forKey: .guestStars)
         var failures: [String] = []
         credits = Self.optionalSection(TVEpisodeCreditsDTO.self, from: container, key: .credits, failures: &failures)
         images = Self.optionalSection(MovieImagesDTO.self, from: container, key: .images, failures: &failures)

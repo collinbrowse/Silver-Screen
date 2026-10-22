@@ -12,6 +12,7 @@ struct CollectionView: View {
     let listsIndex: ListsIndex
     var router: NavigationRouter?
 
+
     var body: some View {
         Group {
             switch viewModel.state {
@@ -49,9 +50,17 @@ struct CollectionView: View {
         return ""
     }
 
+    /// The header keeps a readable line length on wide screens, and the movies sit
+    /// two or three to a row there; see `CatalogGridMetrics`.
     private func loaded(_ content: CollectionContent) -> some View {
         let showsHeader = hasPoster(content) || !content.overview.isEmpty || !content.name.isEmpty
-        return List {
+        return CatalogColumnsReader { columns in
+            parts(content, showsHeader: showsHeader, columns: columns)
+        }
+    }
+
+    private func parts(_ content: CollectionContent, showsHeader: Bool, columns: Int) -> some View {
+        List {
             if showsHeader {
                 Section {
                     VStack(alignment: .leading, spacing: DesignSpacing.md) {
@@ -76,6 +85,8 @@ struct CollectionView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
+                    .frame(maxWidth: ReadableWidth.maximum, alignment: .leading)
+                    .foldPane(alignment: .leading)
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel(headerLabel(content))
                     .coordinateSpace(.named("detailScroll"))
@@ -86,36 +97,13 @@ struct CollectionView: View {
 
             if !content.parts.isEmpty {
                 Section {
-                    ForEach(Array(content.parts.enumerated()), id: \.element.id) { index, row in
-                        CatalogRowLayout {
-                            Button {
-                                router?.push(.movieDetail(id: row.id))
-                            } label: {
-                                CatalogRowView(
-                                    title: row.title,
-                                    genre: row.genreNames.joined(separator: ", "),
-                                    metadata: row.formattedReleaseDate,
-                                    userScore: row.formattedUserScore,
-                                    kindLabel: "Movie",
-                                    imagePath: row.posterPath,
-                                    imageKind: .poster,
-                                    placeholderSystemImage: "film",
-                                    imageLoader: imageLoader
-                                )
-                            }
-                            .buttonStyle(.plain)
-                        } control: {
-                            WatchedToggleButton(
-                                draft: row.listItem(),
-                                lists: lists,
-                                index: listsIndex
-                            ) {
-                                viewModel.noteListSaveFailed()
-                            }
+                    ForEach(CatalogGrid.rows(content.parts, columns: columns, id: \.id)) { gridRow in
+                        CatalogColumnsRow(row: gridRow, columns: columns, id: \.id) { row in
+                            partCell(row)
                         }
                         .listRowSeparatorBetweenCells(
-                            isFirst: !showsHeader && index == 0,
-                            isLast: index == content.parts.count - 1
+                            isFirst: !showsHeader && gridRow.isFirst,
+                            isLast: gridRow.isLast
                         )
                     }
                 }
@@ -124,6 +112,35 @@ struct CollectionView: View {
         }
         .listStyle(.plain)
         .scrollingInlineTitle(navigationTitle)
+    }
+
+    private func partCell(_ row: CatalogMovieRow) -> some View {
+        CatalogRowLayout {
+            Button {
+                router?.push(.movieDetail(id: row.id))
+            } label: {
+                CatalogRowView(
+                    title: row.title,
+                    genre: row.genreNames.joined(separator: ", "),
+                    metadata: row.formattedReleaseDate,
+                    userScore: row.formattedUserScore,
+                    kindLabel: "Movie",
+                    imagePath: row.posterPath,
+                    imageKind: .poster,
+                    placeholderSystemImage: "film",
+                    imageLoader: imageLoader
+                )
+            }
+            .buttonStyle(.plain)
+        } control: {
+            WatchedToggleButton(
+                draft: row.listItem(),
+                lists: lists,
+                index: listsIndex
+            ) {
+                viewModel.noteListSaveFailed()
+            }
+        }
     }
 
     private func hasPoster(_ content: CollectionContent) -> Bool {

@@ -5,7 +5,12 @@ A Cloudflare Worker that keeps the TMDB token off the device. The app calls
 `https://api.themoviedb.org/3/...` with the bearer token from a Worker secret.
 To rotate the token, change the secret. No app update is needed.
 
-- Forwards `GET /3/*` only. Other methods get 405, and other paths get 404.
+- Forwards `GET` only, and only the TMDB paths the app uses: `/3/movie/…`,
+  `/3/tv/…`, `/3/person/…`, `/3/collection/…`, `/3/search/{movie,tv,person}`,
+  and `/3/discover/{movie,tv}` (`ALLOWED_RESOURCES` and `ALLOWED_ENDPOINTS` in
+  `src/index.js`). Other methods get 405, and other paths get 404. A path with
+  an encoded `/`, `\`, or `.` (`%2F`, `%5C`, `%2E`) gets 400. When the app starts
+  calling a new TMDB path, add it to the allow-list and deploy the Worker first.
 - Sends TMDB only `Accept` and the Worker's own `Authorization`. Nothing from the
   client is forwarded.
 - Caches 200 responses for 4 hours (`CACHE_SECONDS` in `src/index.js`), keyed by
@@ -73,7 +78,9 @@ anywhere other than `api.themoviedb.org`, the app sends no token.
   ```
 
   Keep the `TMDB_ACCESS_TOKEN` repository secret. The daily TMDB health check
-  and the awards catalog job still call TMDB directly with it.
+  and the awards catalog job still call TMDB directly with it. Once this
+  variable is set, the health check also calls `TMDB_PROXY_URL/movie/550` with
+  no token and fails if the Worker does not return the movie.
 
 - **Local builds.** Optional. Add this to `Secrets.xcconfig`, writing `//` as
   `/$()/` because xcconfig treats `//` as a comment:
@@ -95,8 +102,8 @@ Worker with step 3 and in the `TMDB_ACCESS_TOKEN` repository secret.
 
 Cloudflare's Cache API stores nothing on a `workers.dev` hostname. It works on a
 custom domain. On `workers.dev`, the Worker also asks Cloudflare to cache the
-TMDB fetch (`cf.cacheTtl`), but the cached copy is not guaranteed. To make
-caching reliable, add a custom domain under **Workers & Pages →
+TMDB fetch for 2xx responses only (`cf.cacheTtlByStatus`), but the cached copy
+is not guaranteed. To make caching reliable, add a custom domain under **Workers & Pages →
 silverscreen-tmdb → Settings → Domains & Routes**, then use that domain in
 `TMDB_PROXY_URL`.
 

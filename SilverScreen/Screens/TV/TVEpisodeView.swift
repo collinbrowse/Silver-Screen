@@ -16,6 +16,7 @@ struct TVEpisodeView: View {
     let seasonNumber: Int
     let episodeNumber: Int
     var router: NavigationRouter?
+
     @Environment(ListChangeNotice.self) private var notice
     @State private var playingTrailer: MediaTrailer?
     @State private var loadingTrailerID: String?
@@ -75,50 +76,49 @@ struct TVEpisodeView: View {
         .background(DesignTheme.canvas)
         .toolbar {
             if case .loaded = viewModel.state {
-                ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: 4) {
-                        EpisodeWatchButton(
-                            isCompleted: viewModel.isEpisodeCompleted,
-                            accessibilityTitle: navigationTitle.isEmpty ? "episode" : navigationTitle
-                        ) {
-                            Task {
-                                let wasCompleted = viewModel.isEpisodeCompleted
-                                let ratingKey = AnnotationKey.episode(
-                                    seriesID: seriesID,
-                                    seasonNumber: seasonNumber,
-                                    episodeNumber: episodeNumber
-                                )
-                                guard let outcome = await viewModel.toggleEpisodeWatched(
-                                    seriesTitle: seriesName
-                                ) else { return }
-                                if wasCompleted {
-                                    if let change = outcome.membershipChange, change.confirmation != nil {
-                                        notice.show(
-                                            change,
-                                            using: lists,
-                                            tvWatch: tvWatch,
-                                            watchUndo: outcome.watchUndo
-                                        )
-                                    }
-                                } else {
-                                    notice.presentWatch(
-                                        outcome,
-                                        ratingKey: ratingKey,
-                                        fallbackMessage: "Episode watched",
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    EpisodeWatchButton(
+                        isCompleted: viewModel.isEpisodeCompleted,
+                        accessibilityTitle: navigationTitle.isEmpty ? "episode" : navigationTitle,
+                        idleColor: DesignTheme.textPrimary
+                    ) {
+                        Task {
+                            let wasCompleted = viewModel.isEpisodeCompleted
+                            let ratingKey = AnnotationKey.episode(
+                                seriesID: seriesID,
+                                seasonNumber: seasonNumber,
+                                episodeNumber: episodeNumber
+                            )
+                            guard let outcome = await viewModel.toggleEpisodeWatched(
+                                seriesTitle: seriesName
+                            ) else { return }
+                            if wasCompleted {
+                                if let change = outcome.membershipChange, change.confirmation != nil {
+                                    notice.show(
+                                        change,
                                         using: lists,
-                                        tvWatch: tvWatch
+                                        tvWatch: tvWatch,
+                                        watchUndo: outcome.watchUndo
                                     )
                                 }
+                            } else {
+                                notice.presentWatch(
+                                    outcome,
+                                    ratingKey: ratingKey,
+                                    fallbackMessage: "Episode watched",
+                                    using: lists,
+                                    tvWatch: tvWatch
+                                )
                             }
                         }
+                    }
 
-                        ListMembershipButton(
-                            draft: viewModel.seriesSnapshot.listItem(id: seriesID, title: seriesName),
-                            lists: lists,
-                            index: listsIndex
-                        ) {
-                            viewModel.noteListSaveFailed()
-                        }
+                    ListMembershipButton(
+                        draft: viewModel.seriesSnapshot.listItem(id: seriesID, title: seriesName),
+                        lists: lists,
+                        index: listsIndex
+                    ) {
+                        viewModel.noteListSaveFailed()
                     }
                 }
             }
@@ -168,59 +168,85 @@ struct TVEpisodeView: View {
     }
 
     private func loaded(_ content: TVEpisodeContent) -> some View {
-        let images = content.heroImages
-        let bleedsToTop = !images.isEmpty
-        return ScrollViewReader { proxy in
-            ScrollView {
-            VStack(alignment: .leading, spacing: DesignSpacing.xl) {
-                episodeHero(content, images: images)
-                episodeFacts(content, scrollTo: { id in
-                    proxy.scrollTo(id, anchor: .top)
-                })
-                if !viewModel.awardRows.isEmpty {
-                    AwardRowsSection(rows: viewModel.awardRows)
-                        .padding(.horizontal, DesignSpacing.lg)
-                }
-                if !content.otherEpisodes.isEmpty {
-                    otherEpisodes(content.otherEpisodes)
-                }
-                if !content.cast.isEmpty {
-                    TVCreditCarousel(title: "Cast", people: content.cast, imageLoader: imageLoader) { person in
-                        router?.push(.person(id: person.id))
+        let bleedsToTop = !content.heroImages.isEmpty
+        return DetailPageReader { page in
+            ScrollViewReader { proxy in
+                ScrollView {
+                    DetailPageSections(
+                        page: page,
+                        plan: TVEpisodeLayout.plan(for: page.layout, showing: shownSections(content))
+                    ) { section, _ in
+                        sectionView(section, layout: page.layout, content: content) { id in
+                            proxy.scrollTo(id, anchor: .top)
+                        }
                     }
-                }
-                if !content.guestStars.isEmpty {
-                    TVCreditCarousel(
-                        title: "Guest Stars",
-                        people: content.guestStars,
-                        imageLoader: imageLoader
-                    ) { person in
-                        router?.push(.person(id: person.id))
-                    }
-                }
-                if !content.directorsAndWriters.isEmpty {
-                    TVCreditCarousel(
-                        title: "Directors & Writers",
-                        people: content.directorsAndWriters,
-                        imageLoader: imageLoader
-                    ) { person in
-                        router?.push(.person(id: person.id))
-                    }
-                }
-                if !content.streamingProviders.isEmpty {
-                    JustWatchAttributionFooter()
-                        .padding(.horizontal, DesignSpacing.lg)
+                    .padding(.bottom, DesignSpacing.lg)
+                    .readableColumn(maxWidth: page.layout.columnCap)
+                    .coordinateSpace(.named("detailScroll"))
                 }
             }
-            .padding(.bottom, DesignSpacing.lg)
-            .coordinateSpace(.named("detailScroll"))
-            }
+            .heroStatusBarBleed(enabled: bleedsToTop)
+            .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
         }
-        .heroStatusBarBleed(enabled: bleedsToTop)
-        .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
     }
 
-    private func episodeHero(_ content: TVEpisodeContent, images: [MovieImage]) -> some View {
+    private func shownSections(_ content: TVEpisodeContent) -> Set<TVEpisodeLayout.Section> {
+        var shown: Set<TVEpisodeLayout.Section> = [
+            .hero(.all), .hero(.backdrop), .hero(.identity), .ratingAndOverview,
+        ]
+        if !viewModel.awardRows.isEmpty { shown.insert(.awards) }
+        if !content.otherEpisodes.isEmpty { shown.insert(.otherEpisodes) }
+        if !content.cast.isEmpty || !content.guestStars.isEmpty || !content.directorsAndWriters.isEmpty {
+            shown.insert(.credits)
+        }
+        if !content.streamingProviders.isEmpty { shown.insert(.attribution) }
+        return shown
+    }
+
+    @ViewBuilder
+    private func sectionView(
+        _ section: TVEpisodeLayout.Section,
+        layout: DetailPageLayout,
+        content: TVEpisodeContent,
+        scrollTo: @escaping (String) -> Void
+    ) -> some View {
+        switch section {
+            case .hero(let part):
+                episodeHero(content, images: content.heroImages, layout: layout, part: part)
+            case .ratingAndOverview:
+                VStack(alignment: .leading, spacing: DesignSpacing.md) {
+                    TMDBRatingCard(
+                        formattedRating: content.formattedRating,
+                        accessibilityLabel: content.ratingAccessibilityLabel,
+                        formattedUserScore: content.formattedUserScore,
+                        userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+                        onEdit: { viewModel.openAnnotationEditor() }
+                    )
+                    MediaDescriptionSection(
+                        overview: content.overview,
+                        note: content.userNote,
+                        notedOn: content.formattedNotedOn,
+                        onEdit: { viewModel.openAnnotationEditor() },
+                        scrollTo: scrollTo
+                    )
+                }
+            case .awards:
+                AwardRowsSection(rows: viewModel.awardRows)
+            case .otherEpisodes:
+                otherEpisodes(content.otherEpisodes)
+            case .credits:
+                credits(content)
+            case .attribution:
+                JustWatchAttributionFooter()
+        }
+    }
+
+    private func episodeHero(
+        _ content: TVEpisodeContent,
+        images: [MovieImage],
+        layout: DetailPageLayout,
+        part: DetailHeroPart
+    ) -> some View {
         DetailHero(
             title: content.title,
             eyebrow: seriesName,
@@ -231,7 +257,9 @@ struct TVEpisodeView: View {
             transitionNamespace: heroTransition,
             onOpenPoster: {},
             onOpenImage: { viewModel.openImages(initialID: $0) },
-            streamingProviders: content.streamingProviders
+            streamingProviders: content.streamingProviders,
+            aspectRatio: layout.heroAspectRatio,
+            part: part
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.sm) {
                 Text(content.episodeNumberText)
@@ -250,27 +278,31 @@ struct TVEpisodeView: View {
         }
     }
 
-    private func episodeFacts(
-        _ content: TVEpisodeContent,
-        scrollTo: @escaping (String) -> Void
-    ) -> some View {
-        VStack(alignment: .leading, spacing: DesignSpacing.md) {
-            TMDBRatingCard(
-                formattedRating: content.formattedRating,
-                accessibilityLabel: content.ratingAccessibilityLabel,
-                formattedUserScore: content.formattedUserScore,
-                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
-                onEdit: { viewModel.openAnnotationEditor() }
-            )
-            MediaDescriptionSection(
-                overview: content.overview,
-                note: content.userNote,
-                notedOn: content.formattedNotedOn,
-                onEdit: { viewModel.openAnnotationEditor() },
-                scrollTo: scrollTo
-            )
+    @ViewBuilder
+    private func credits(_ content: TVEpisodeContent) -> some View {
+        if !content.cast.isEmpty {
+            TVCreditCarousel(title: "Cast", people: content.cast, imageLoader: imageLoader) { person in
+                router?.push(.person(id: person.id))
+            }
         }
-        .padding(.horizontal, DesignSpacing.lg)
+        if !content.guestStars.isEmpty {
+            TVCreditCarousel(
+                title: "Guest Stars",
+                people: content.guestStars,
+                imageLoader: imageLoader
+            ) { person in
+                router?.push(.person(id: person.id))
+            }
+        }
+        if !content.directorsAndWriters.isEmpty {
+            TVCreditCarousel(
+                title: "Directors & Writers",
+                people: content.directorsAndWriters,
+                imageLoader: imageLoader
+            ) { person in
+                router?.push(.person(id: person.id))
+            }
+        }
     }
 
     private func otherEpisodes(_ episodes: [TVEpisodeSummary]) -> some View {
@@ -315,5 +347,54 @@ struct TVEpisodeView: View {
                 .accessibilityAddTraits(.isButton)
             }
         }
+    }
+}
+
+/// Where each section of an episode page goes.
+enum TVEpisodeLayout {
+    enum Section: DetailPageSection {
+        case hero(DetailHeroPart)
+        case ratingAndOverview
+        case awards
+        /// The season's other episodes.
+        case otherEpisodes
+        /// Cast, guest stars, and directors and writers.
+        case credits
+        case attribution
+
+        var carriesOwnInset: Bool {
+            switch self {
+                case .hero, .otherEpisodes, .credits:
+                    true
+                case .ratingAndOverview, .awards, .attribution:
+                    false
+            }
+        }
+    }
+
+    /// The sections in `shown`, placed for `layout`.
+    ///
+    /// - Phone and wide page: rating and overview, with awards beside them on a wide
+    ///   page; More Episodes and the credits run full width below.
+    /// - Across a fold: the leading pane has the title, rating, and overview; the
+    ///   trailing pane has More Episodes, awards, and the credits.
+    static func plan(for layout: DetailPageLayout, showing shown: Set<Section>) -> DetailPagePlan<Section> {
+        let plan = switch layout {
+            case .stacked, .columns:
+                DetailPagePlan<Section>(
+                    top: [.hero(.all)],
+                    main: [.ratingAndOverview],
+                    side: [.awards],
+                    below: [.otherEpisodes, .credits, .attribution]
+                )
+            case .panes:
+                DetailPagePlan<Section>(
+                    top: [.hero(.backdrop)],
+                    main: [.hero(.identity), .ratingAndOverview],
+                    side: [.otherEpisodes, .awards, .credits],
+                    below: [.attribution]
+                )
+        }
+        return plan.keeping(shown.contains)
     }
 }

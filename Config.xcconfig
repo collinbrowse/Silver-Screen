@@ -13,3 +13,16 @@ TMDB_BASE_URL = https:/$()/api.themoviedb.org/3
 TMDBAccessToken = $(TMDB_ACCESS_TOKEN)
 TMDBBaseURL = $(TMDB_BASE_URL)
 SentryDSN = $(SENTRY_DSN)
+TelemetryDeckAppID = $(TELEMETRYDECK_APP_ID)
+
+// iPhone Duo fold APIs (ReservedRegion, onHingeChange) arrive in the iOS 27.1 SDK.
+// FOLD_SDK gates that code at compile time so older Xcodes (CI runs Xcode 26) still
+// build; `#available(iOS 27.1, *)` gates it at run time. Clear it for any SDK
+// before 27.1.
+FOLD_SDK_CONDITION = FOLD_SDK
+FOLD_SDK_CONDITION[sdk=iphonesimulator26*] =
+FOLD_SDK_CONDITION[sdk=iphoneos26*] =
+FOLD_SDK_CONDITION[sdk=iphonesimulator27.0*] =
+FOLD_SDK_CONDITION[sdk=iphoneos27.0*] =
+FOLD_SDK_CONDITION[sdk=macosx*] =
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) $(FOLD_SDK_CONDITION)

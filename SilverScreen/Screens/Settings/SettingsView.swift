@@ -2,7 +2,7 @@
 //  SettingsView.swift
 //  SilverScreen
 //
-//  Feedback, support and privacy links, data credits with TMDB's logo, and the app version.
+//  Feedback, support and privacy links, the anonymous-usage toggle, data credits with TMDB's logo, and the app version.
 //  Opens as a sheet from Library.
 //
 
@@ -11,6 +11,8 @@ import SwiftUI
 /// What Settings needs from the composition root.
 struct SettingsContext {
     let appInfo: AppInfo
+    /// The "Share Anonymous Usage" toggle.
+    let analyticsSharing: AnalyticsSharing
     let sendFeedback: @MainActor (FeedbackSubmission) -> Bool
 }
 
@@ -22,7 +24,13 @@ enum SettingsDestination: Hashable {
 
 struct SettingsView: View {
     let context: SettingsContext
+    @Bindable private var analyticsSharing: AnalyticsSharing
     @Environment(\.dismiss) private var dismiss
+
+    init(context: SettingsContext) {
+        self.context = context
+        self.analyticsSharing = context.analyticsSharing
+    }
 
     var body: some View {
         NavigationStack {
@@ -40,10 +48,13 @@ struct SettingsView: View {
                     Link(destination: AppLinks.privacyPolicy) {
                         Label("Privacy Policy", systemImage: "hand.raised")
                     }
+                    Toggle(isOn: $analyticsSharing.isEnabled) {
+                        Label("Share Anonymous Usage", systemImage: "chart.bar")
+                    }
                 } header: {
                     Text("Privacy")
                 } footer: {
-                    Text("Your lists, ratings, and notes stay on this device. Crash reports and feedback you send go to the developer without your name.")
+                    Text("Your lists, ratings, and notes stay on this device. Crash reports and feedback you send go to the developer without your name. Anonymous usage counts, such as \"a list was created,\" never include titles, ratings, or notes.")
                 }
 
                 Section {

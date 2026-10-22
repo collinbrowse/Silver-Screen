@@ -63,6 +63,8 @@ struct BrowseListView: View {
         )
         .padding(.horizontal, DesignSpacing.lg)
         .padding(.vertical, DesignSpacing.sm)
+        .readableColumn()
+        .foldPane()
     }
 
     /// Window and sort, in the trailing navigation-bar slot.
@@ -123,64 +125,76 @@ struct BrowseListView: View {
         }
     }
 
+    /// One row per title on a phone. Wider screens put two or three titles in each
+    /// list row; see `CatalogGridMetrics`.
     private func list(_ rows: [BrowseRow], activity: LoadActivity) -> some View {
-        List {
-            Section {
-                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                    CatalogRowLayout {
-                        Button {
-                            open(row)
-                        } label: {
-                            CatalogRowView(
-                                title: row.title,
-                                nextUp: row.nextUp,
-                                genre: row.genreLine,
-                                metadata: row.formattedDate,
-                                userScore: row.formattedUserScore,
-                                kindLabel: row.media == .movie ? "Movie" : "TV",
-                                imagePath: row.posterPath,
-                                imageKind: .poster,
-                                placeholderSystemImage: row.media == .movie ? "film" : "tv",
-                                imageLoader: imageLoader
-                            )
+        CatalogColumnsReader { columns in
+            List {
+                Section {
+                    ForEach(CatalogGrid.rows(rows, columns: columns, id: \.id)) { gridRow in
+                        CatalogColumnsRow(row: gridRow, columns: columns, id: \.id) { row in
+                            rowCell(row, isFirst: row.id == rows.first?.id)
                         }
-                        .buttonStyle(.plain)
-                    } control: {
-                        WatchedToggleButton(
-                            draft: row.listItem(),
-                            lists: lists,
-                            index: listsIndex,
-                            tvWatch: tvWatch,
-                            shows: shows
-                        ) {
-                            viewModel.noteListSaveFailed()
+                        .id(gridRow.id)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 8))
+                        .listRowSeparatorBetweenCells(
+                            isFirst: gridRow.isFirst,
+                            isLast: gridRow.isLast && activity != .loadingMore
+                        )
+                        .onAppear {
+                            if gridRow.isLast {
+                                Task { await viewModel.loadMore() }
+                            }
                         }
                     }
-                    .id(row.id)
-                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 8))
-                    .listRowSeparatorBetweenCells(
-                        isFirst: index == 0,
-                        isLast: index == rows.count - 1 && activity != .loadingMore
-                    )
-                    .onAppear {
-                        if index == rows.count - 1 {
-                            Task { await viewModel.loadMore() }
-                        }
-                    }
-                }
 
-                if activity == .loadingMore {
-                    ProgressView()
-                        .frame(maxWidth: .infinity)
-                        .listRowSeparator(.hidden)
+                    if activity == .loadingMore {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .listRowSeparator(.hidden)
+                    }
                 }
+                .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
             }
-            .listSectionSeparatorBetweenCells(isFirstSection: true, isLastSection: true)
+            .listStyle(.plain)
+            .scrollPosition(id: $scrolledID)
+            .overlay(alignment: .top) {
+                LoadActivityBanner(activity: activity)
+            }
         }
-        .listStyle(.plain)
-        .scrollPosition(id: $scrolledID)
-        .overlay(alignment: .top) {
-            LoadActivityBanner(activity: activity)
+    }
+
+    /// One title. The first title's watched eye is the feature tour's Browse stop.
+    private func rowCell(_ row: BrowseRow, isFirst: Bool) -> some View {
+        CatalogRowLayout {
+            Button {
+                open(row)
+            } label: {
+                CatalogRowView(
+                    title: row.title,
+                    nextUp: row.nextUp,
+                    genre: row.genreLine,
+                    metadata: row.formattedDate,
+                    userScore: row.formattedUserScore,
+                    kindLabel: row.media == .movie ? "Movie" : "TV",
+                    imagePath: row.posterPath,
+                    imageKind: .poster,
+                    placeholderSystemImage: row.media == .movie ? "film" : "tv",
+                    imageLoader: imageLoader
+                )
+            }
+            .buttonStyle(.plain)
+        } control: {
+            WatchedToggleButton(
+                draft: row.listItem(),
+                lists: lists,
+                index: listsIndex,
+                tvWatch: tvWatch,
+                shows: shows
+            ) {
+                viewModel.noteListSaveFailed()
+            }
+            .tourAnchor(isFirst ? .browseEye : nil)
         }
     }
 

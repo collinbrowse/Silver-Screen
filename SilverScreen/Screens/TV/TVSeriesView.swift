@@ -72,28 +72,26 @@ struct TVSeriesView: View {
         .background(DesignTheme.canvas)
         .toolbar {
             if case .loaded(let content, _) = viewModel.state {
-                ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: 4) {
-                        WatchedToggleButton(
-                            draft: content.detail.listItem(),
-                            lists: lists,
-                            index: listsIndex,
-                            tvWatch: tvWatch,
-                            shows: shows,
-                            seasons: content.detail.seasons,
-                            chrome: false,
-                            isWatchedOverride: viewModel.isSeriesFullyWatched,
-                            onToggleComplete: { Task { await viewModel.reloadNextUp() } },
-                            onFailure: { viewModel.noteListSaveFailed() }
-                        )
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    WatchedToggleButton(
+                        draft: content.detail.listItem(),
+                        lists: lists,
+                        index: listsIndex,
+                        tvWatch: tvWatch,
+                        shows: shows,
+                        seasons: content.detail.seasons,
+                        chrome: false,
+                        isWatchedOverride: viewModel.isSeriesFullyWatched,
+                        onToggleComplete: { Task { await viewModel.reloadNextUp() } },
+                        onFailure: { viewModel.noteListSaveFailed() }
+                    )
 
-                        ListMembershipButton(
-                            draft: content.detail.listItem(),
-                            lists: lists,
-                            index: listsIndex
-                        ) {
-                            viewModel.noteListSaveFailed()
-                        }
+                    ListMembershipButton(
+                        draft: content.detail.listItem(),
+                        lists: lists,
+                        index: listsIndex
+                    ) {
+                        viewModel.noteListSaveFailed()
                     }
                 }
             }
@@ -151,70 +149,86 @@ struct TVSeriesView: View {
             seriesScroll(content, scrollTo: { id in
                 proxy.scrollTo(id, anchor: .top)
                 })
+            .tourScrolls(with: proxy)
         }
     }
 
     private func seriesScroll(_ content: TVSeriesContent, scrollTo: @escaping (String) -> Void) -> some View {
         let bleedsToTop = !content.detail.images.isEmpty
-        return ScrollView {
-            VStack(alignment: .leading, spacing: DesignSpacing.xl) {
-                seriesHero(content)
-                seriesFacts(content, scrollTo: scrollTo)
-                if !viewModel.awardRows.isEmpty {
-                    AwardRowsSection(rows: viewModel.awardRows)
-                        .padding(.horizontal, DesignSpacing.lg)
+        return DetailPageReader { page in
+            ScrollView {
+                DetailPageSections(
+                    page: page,
+                    plan: TVSeriesLayout.plan(for: page.layout, showing: shownSections(content))
+                ) { section, slot in
+                    sectionView(section, in: slot, layout: page.layout, content: content, scrollTo: scrollTo)
                 }
-                if !content.seasons.isEmpty {
-                    seasonsCarousel(content)
-                }
-                if !content.recommendations.isEmpty {
-                    recommendationsCarousel(content)
-                }
-                if !content.detail.cast.isEmpty {
-                    TVCreditCarousel(
-                        title: "Cast",
-                        people: content.detail.cast,
-                        imageLoader: imageLoader
-                    ) { person in
-                        router?.push(.person(id: person.id))
-                    }
-                }
-                if !content.detail.directorsAndWriters.isEmpty {
-                    TVCreditCarousel(
-                        title: "Directors & Writers",
-                        people: content.detail.directorsAndWriters,
-                        imageLoader: imageLoader
-                    ) { person in
-                        router?.push(.person(id: person.id))
-                    }
-                }
-                if let reviews = content.reviews {
-                    ReviewPageList(
-                        items: reviews.items,
-                        hasMore: reviews.hasMore,
-                        totalCount: reviews.totalCount,
-                        isLoadingPage: reviews.isLoadingPage,
-                        pageError: reviews.pageError,
-                        loadMore: { await viewModel.loadMoreReviews() },
-                        scrollTo: scrollTo
-                    )
-                }
-                if !content.detail.streamingProviders.isEmpty {
-                    JustWatchAttributionFooter()
-                        .padding(.horizontal, DesignSpacing.lg)
-                }
+                .padding(.bottom, DesignSpacing.lg)
+                .readableColumn(maxWidth: page.layout.columnCap)
+                .coordinateSpace(.named("detailScroll"))
             }
-            .padding(.bottom, DesignSpacing.lg)
-            .coordinateSpace(.named("detailScroll"))
-        }
-        .heroStatusBarBleed(enabled: bleedsToTop)
-        .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
-        .refreshable {
-            await viewModel.refresh()
+            .heroStatusBarBleed(enabled: bleedsToTop)
+            .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
+            .refreshable {
+                await viewModel.refresh()
+            }
         }
     }
 
-    private func seriesHero(_ content: TVSeriesContent) -> some View {
+    private func shownSections(_ content: TVSeriesContent) -> Set<TVSeriesLayout.Section> {
+        var shown: Set<TVSeriesLayout.Section> = [
+            .hero(.all), .hero(.backdrop), .hero(.identity), .ratingAndStoryline,
+        ]
+        if !viewModel.awardRows.isEmpty { shown.insert(.awards) }
+        if !content.seasons.isEmpty || !content.recommendations.isEmpty
+            || !content.detail.cast.isEmpty || !content.detail.directorsAndWriters.isEmpty {
+            shown.insert(.carousels)
+        }
+        if content.reviews != nil { shown.insert(.reviews) }
+        if !content.detail.streamingProviders.isEmpty { shown.insert(.attribution) }
+        return shown
+    }
+
+    @ViewBuilder
+    private func sectionView(
+        _ section: TVSeriesLayout.Section,
+        in slot: DetailSlot,
+        layout: DetailPageLayout,
+        content: TVSeriesContent,
+        scrollTo: @escaping (String) -> Void
+    ) -> some View {
+        switch section {
+            case .hero(let part):
+                seriesHero(content, layout: layout, part: part)
+            case .ratingAndStoryline:
+                VStack(alignment: .leading, spacing: DesignSpacing.md) {
+                    TMDBRatingCard(
+                        formattedRating: content.formattedRating,
+                        accessibilityLabel: content.ratingAccessibilityLabel,
+                        formattedUserScore: content.formattedUserScore,
+                        userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+                        onEdit: { viewModel.openAnnotationEditor() }
+                    )
+                    MediaDescriptionSection(
+                        overview: content.detail.overview,
+                        note: content.userNote,
+                        notedOn: content.formattedNotedOn,
+                        onEdit: { viewModel.openAnnotationEditor() },
+                        scrollTo: scrollTo
+                    )
+                }
+            case .awards:
+                AwardRowsSection(rows: viewModel.awardRows)
+            case .carousels:
+                carousels(content)
+            case .reviews:
+                reviews(content, scrollTo: scrollTo, columns: layout.gridColumns(in: slot))
+            case .attribution:
+                JustWatchAttributionFooter()
+        }
+    }
+
+    private func seriesHero(_ content: TVSeriesContent, layout: DetailPageLayout, part: DetailHeroPart) -> some View {
         DetailHero(
             title: content.detail.name,
             posterPath: content.detail.posterPath,
@@ -224,7 +238,9 @@ struct TVSeriesView: View {
             transitionNamespace: heroTransition,
             onOpenPoster: { viewModel.openPoster() },
             onOpenImage: { viewModel.openImages(initialID: $0) },
-            streamingProviders: content.detail.streamingProviders
+            streamingProviders: content.detail.streamingProviders,
+            aspectRatio: layout.heroAspectRatio,
+            part: part
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.lg) {
                 VStack(alignment: .leading, spacing: DesignSpacing.sm) {
@@ -250,27 +266,50 @@ struct TVSeriesView: View {
         }
     }
 
-    private func seriesFacts(
-        _ content: TVSeriesContent,
-        scrollTo: @escaping (String) -> Void
-    ) -> some View {
-        VStack(alignment: .leading, spacing: DesignSpacing.md) {
-            TMDBRatingCard(
-                formattedRating: content.formattedRating,
-                accessibilityLabel: content.ratingAccessibilityLabel,
-                formattedUserScore: content.formattedUserScore,
-                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
-                onEdit: { viewModel.openAnnotationEditor() }
-            )
-            MediaDescriptionSection(
-                overview: content.detail.overview,
-                note: content.userNote,
-                notedOn: content.formattedNotedOn,
-                onEdit: { viewModel.openAnnotationEditor() },
-                scrollTo: scrollTo
+    @ViewBuilder
+    private func carousels(_ content: TVSeriesContent) -> some View {
+        if !content.seasons.isEmpty {
+            seasonsCarousel(content)
+                .id(TourAnchor.seasons.scrollID)
+                .tourAnchor(.seasons)
+        }
+        if !content.recommendations.isEmpty {
+            recommendationsCarousel(content)
+        }
+        if !content.detail.cast.isEmpty {
+            TVCreditCarousel(
+                title: "Cast",
+                people: content.detail.cast,
+                imageLoader: imageLoader
+            ) { person in
+                router?.push(.person(id: person.id))
+            }
+        }
+        if !content.detail.directorsAndWriters.isEmpty {
+            TVCreditCarousel(
+                title: "Directors & Writers",
+                people: content.detail.directorsAndWriters,
+                imageLoader: imageLoader
+            ) { person in
+                router?.push(.person(id: person.id))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func reviews(_ content: TVSeriesContent, scrollTo: @escaping (String) -> Void, columns: Int) -> some View {
+        if let reviews = content.reviews {
+            ReviewPageList(
+                items: reviews.items,
+                hasMore: reviews.hasMore,
+                totalCount: reviews.totalCount,
+                isLoadingPage: reviews.isLoadingPage,
+                pageError: reviews.pageError,
+                loadMore: { await viewModel.loadMoreReviews() },
+                scrollTo: scrollTo,
+                columns: columns
             )
         }
-        .padding(.horizontal, DesignSpacing.lg)
     }
 
     private func seasonsCarousel(_ content: TVSeriesContent) -> some View {
@@ -381,5 +420,53 @@ struct TVSeriesView: View {
             parts.append("Watched")
         }
         return parts.joined(separator: ", ")
+    }
+}
+
+/// Where each section of a series page goes.
+enum TVSeriesLayout {
+    enum Section: DetailPageSection {
+        case hero(DetailHeroPart)
+        case ratingAndStoryline
+        case awards
+        /// Seasons, recommendations, cast, and crew.
+        case carousels
+        case reviews
+        case attribution
+
+        var carriesOwnInset: Bool {
+            switch self {
+                case .hero, .carousels, .reviews:
+                    true
+                case .ratingAndStoryline, .awards, .attribution:
+                    false
+            }
+        }
+    }
+
+    /// The sections in `shown`, placed for `layout`.
+    ///
+    /// - Phone and wide page: rating and storyline, with awards beside them on a wide
+    ///   page; carousels and reviews run full width below.
+    /// - Across a fold: the leading pane has the title, rating, storyline, and reviews;
+    ///   the trailing pane has awards and the carousels.
+    static func plan(for layout: DetailPageLayout, showing shown: Set<Section>) -> DetailPagePlan<Section> {
+        let plan = switch layout {
+            case .stacked, .columns:
+                DetailPagePlan<Section>(
+                    top: [.hero(.all)],
+                    main: [.ratingAndStoryline],
+                    side: [.awards],
+                    below: [.carousels, .reviews, .attribution]
+                )
+            case .panes:
+                DetailPagePlan<Section>(
+                    top: [.hero(.backdrop)],
+                    main: [.hero(.identity), .ratingAndStoryline, .reviews],
+                    side: [.awards, .carousels],
+                    below: [.attribution]
+                )
+        }
+        return plan.keeping(shown.contains)
     }
 }
