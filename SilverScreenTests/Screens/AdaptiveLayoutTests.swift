@@ -302,18 +302,124 @@ final class AdaptiveLayoutTests: XCTestCase {
         )
     }
 
-    // MARK: - Hinge page title alignment
+    // MARK: - Detail page layout
 
-    func test_titleTopOffset_posterOverBackdrop_matchesTitleInset() {
-        XCTAssertEqual(DetailHeroPart.titleTopOffset(posterPath: "/p.jpg", hasImages: true), 12)
+    func test_detailPageLayout_iPhonePortrait_isStacked() {
+        XCTAssertEqual(DetailPageLayout.resolve(width: 402, fold: nil, isAccessibilitySize: false), .stacked)
     }
 
-    func test_titleTopOffset_noPosterWithBackdrop_matchesTitleInset() {
-        XCTAssertEqual(DetailHeroPart.titleTopOffset(posterPath: nil, hasImages: true), 12)
+    func test_detailPageLayout_iPhoneDuoInnerPortrait_isStacked() {
+        XCTAssertEqual(DetailPageLayout.resolve(width: 669, fold: nil, isAccessibilitySize: false), .stacked)
     }
 
-    func test_titleTopOffset_blankPosterPath_countsAsNoPoster() {
-        XCTAssertEqual(DetailHeroPart.titleTopOffset(posterPath: "  ", hasImages: false), 0)
+    func test_detailPageLayout_iPhoneDuoInnerLandscape_isColumns() {
+        XCTAssertEqual(DetailPageLayout.resolve(width: 866, fold: nil, isAccessibilitySize: false), .columns)
+    }
+
+    func test_detailPageLayout_accessibilityTextOnIPad_isStacked() {
+        XCTAssertEqual(DetailPageLayout.resolve(width: 1194, fold: nil, isAccessibilitySize: true), .stacked)
+    }
+
+    func test_detailPageLayout_largerTextRaisesBreakpoint_iPadPortraitStacks() {
+        // 760 pt scaled for a larger text size.
+        let layout = DetailPageLayout.resolve(
+            width: 834,
+            fold: nil,
+            isAccessibilitySize: false,
+            twoColumnMinimumWidth: 900
+        )
+
+        XCTAssertEqual(layout, .stacked)
+    }
+
+    func test_detailPageLayout_hingeBent_isPanes() {
+        XCTAssertEqual(DetailPageLayout.resolve(width: 867, fold: bentSplit, isAccessibilitySize: false), .panes)
+    }
+
+    func test_detailPageLayout_hingeBentAtAccessibilitySize_isStillPanes() {
+        XCTAssertEqual(DetailPageLayout.resolve(width: 867, fold: bentSplit, isAccessibilitySize: true), .panes)
+    }
+
+    func test_detailPageLayout_hingeBentBelowTwoColumnWidth_isStillPanes() {
+        let fold = FoldSplit(
+            leading: CGRect(x: 0, y: 0, width: 320, height: 669),
+            gutter: CGRect(x: 320, y: 0, width: 60, height: 669),
+            trailing: CGRect(x: 380, y: 0, width: 320, height: 669)
+        )
+
+        XCTAssertEqual(DetailPageLayout.resolve(width: 700, fold: fold, isAccessibilitySize: false), .panes)
+    }
+
+    func test_detailPageLayout_foldPaneNarrowerThanAColumn_fallsBackToWidth() {
+        let fold = FoldSplit(
+            leading: CGRect(x: 0, y: 0, width: 627, height: 669),
+            gutter: CGRect(x: 627, y: 0, width: 40, height: 669),
+            trailing: CGRect(x: 667, y: 0, width: 200, height: 669)
+        )
+
+        XCTAssertEqual(DetailPageLayout.resolve(width: 867, fold: fold, isAccessibilitySize: false), .columns)
+    }
+
+    func test_detailPageLayout_panes_useWideHeroAndCap() {
+        XCTAssertEqual(DetailPageLayout.panes.heroAspectRatio, DetailLayoutMetrics.wideHeroAspectRatio)
+        XCTAssertEqual(DetailPageLayout.panes.columnCap, DetailLayoutMetrics.maximumContentWidth)
+        XCTAssertEqual(DetailPageLayout.stacked.columnCap, ReadableWidth.maximum)
+    }
+
+    func test_detailGridColumns_belowTwoColumnPage_isTwo() {
+        XCTAssertEqual(DetailPageLayout.columns.gridColumns(in: .below), 2)
+    }
+
+    func test_detailGridColumns_inAColumnOrOnAPhone_isOne() {
+        XCTAssertEqual(DetailPageLayout.columns.gridColumns(in: .main), 1)
+        XCTAssertEqual(DetailPageLayout.panes.gridColumns(in: .main), 1)
+        XCTAssertEqual(DetailPageLayout.stacked.gridColumns(in: .below), 1)
+    }
+
+    func test_detailPagePlan_keeping_dropsHiddenSectionsInOrder() {
+        let plan = DetailPagePlan(top: [0], main: [1, 2, 3], side: [4], below: [5, 6])
+
+        let kept = plan.keeping { $0 != 2 && $0 != 4 }
+
+        XCTAssertEqual(kept, DetailPagePlan(top: [0], main: [1, 3], side: [], below: [5, 6]))
+    }
+
+    func test_detailPageHasPoster_blankPath_isFalse() {
+        XCTAssertFalse(DetailHeroLayout.hasPoster("  "))
+    }
+
+    @MainActor
+    func test_foldPanes_trailingPaneStartsLevelWithLeadingTitle() {
+        // The title sits 40 pt down the leading pane, inside a stack and padding as in
+        // the hero; the 100 pt trailing pane starts level with it, so the row is 140 tall.
+        let panes = FoldPanesLayout(split: bentSplit) {
+            VStack(spacing: 0) {
+                Color.clear.frame(height: 40)
+                HStack(alignment: .top) {
+                    Color.clear.frame(width: 10, height: 10)
+                    Color.clear.frame(height: 60)
+                        .alignmentGuide(.detailTitleTop) { $0[.top] }
+                }
+            }
+            .padding(.horizontal, -DesignSpacing.lg)
+            Color.clear.frame(height: 100)
+        }
+
+        let size = UIHostingController(rootView: panes).sizeThatFits(in: CGSize(width: 867, height: 2000))
+
+        XCTAssertEqual(size.height, 140, accuracy: 0.5)
+    }
+
+    @MainActor
+    func test_foldPanes_noTitleGuide_bothPanesStartAtTop() {
+        let panes = FoldPanesLayout(split: bentSplit) {
+            Color.clear.frame(height: 60)
+            Color.clear.frame(height: 100)
+        }
+
+        let size = UIHostingController(rootView: panes).sizeThatFits(in: CGSize(width: 867, height: 2000))
+
+        XCTAssertEqual(size.height, 100, accuracy: 0.5)
     }
 
     // MARK: - Grid rows
@@ -361,5 +467,190 @@ final class AdaptiveLayoutTests: XCTestCase {
         let rows = CatalogGrid.rows([1, 2], columns: 0, id: \.self)
 
         XCTAssertEqual(rows.map(\.items), [[1], [2]])
+    }
+}
+
+/// Each detail page's section plan: what goes where in each layout, and that every
+/// section the page has is placed exactly once.
+final class DetailPagePlanTests: XCTestCase {
+    private let layouts: [DetailPageLayout] = [.stacked, .columns, .panes]
+
+    /// What goes wrong placing `shown` in each layout: a section placed twice, a hidden
+    /// one placed, or a shown one left out. The hero is drawn whole on top, or split into
+    /// backdrop and identity across a fold, so only those parts count as shown.
+    private func placementProblems<Section>(
+        _ plan: (DetailPageLayout, Set<Section>) -> DetailPagePlan<Section>,
+        shown: Set<Section>,
+        heroParts: (all: Section, backdrop: Section, identity: Section)? = nil
+    ) -> [String] {
+        layouts.flatMap { layout -> [String] in
+            let placed = plan(layout, shown).sections
+            var expected = shown
+            if let heroParts {
+                expected.subtract(layout == .panes ? [heroParts.all] : [heroParts.backdrop, heroParts.identity])
+            }
+            var problems: [String] = []
+            if placed.count != Set(placed).count { problems.append("\(layout) places a section twice") }
+            if !Set(placed).isSubset(of: expected) { problems.append("\(layout) places a hidden section") }
+            if !expected.isSubset(of: Set(placed)) { problems.append("\(layout) leaves a section out") }
+            return problems
+        }
+    }
+
+    // MARK: - Movie
+
+    private let allMovie: Set<MovieDetailLayout.Section> = [
+        .hero(.all), .hero(.backdrop), .hero(.identity), .rating, .storyline, .facts, .awards,
+        .cast, .crew, .similar, .collection, .reviews, .attribution,
+    ]
+
+    func test_moviePlan_everyLayout_placesEachSectionOnce() {
+        let problems = placementProblems(
+            MovieDetailLayout.plan,
+            shown: allMovie,
+            heroParts: (.hero(.all), .hero(.backdrop), .hero(.identity))
+        )
+
+        XCTAssertEqual(problems, [])
+    }
+
+    func test_moviePlan_wideWithAwards_awardsBesideFactsInMain() {
+        let plan = MovieDetailLayout.plan(for: .columns, showing: allMovie)
+
+        XCTAssertEqual(plan.main, [.rating, .storyline, .facts])
+        XCTAssertEqual(plan.side, [.awards])
+    }
+
+    func test_moviePlan_wideWithoutAwards_factsTakeSideColumn() {
+        let plan = MovieDetailLayout.plan(for: .columns, showing: allMovie.subtracting([.awards]))
+
+        XCTAssertEqual(plan.main, [.rating, .storyline])
+        XCTAssertEqual(plan.side, [.facts])
+    }
+
+    func test_moviePlan_phone_keepsPhoneOrder() {
+        let plan = MovieDetailLayout.plan(for: .stacked, showing: allMovie)
+
+        XCTAssertEqual(
+            plan.sections,
+            [.hero(.all), .rating, .storyline, .facts, .awards, .cast, .crew, .similar, .collection, .reviews, .attribution]
+        )
+    }
+
+    func test_moviePlan_panes_titleFactsAndStoryLeadAwardsAndCarouselsTrail() {
+        let plan = MovieDetailLayout.plan(for: .panes, showing: allMovie)
+
+        XCTAssertEqual(plan.top, [.hero(.backdrop)])
+        XCTAssertEqual(plan.main, [.hero(.identity), .facts, .rating, .storyline, .reviews])
+        XCTAssertEqual(plan.side, [.awards, .cast, .crew, .similar, .collection])
+    }
+
+    // MARK: - TV series
+
+    private let allSeries: Set<TVSeriesLayout.Section> = [
+        .hero(.all), .hero(.backdrop), .hero(.identity), .ratingAndStoryline, .awards, .carousels, .reviews,
+        .attribution,
+    ]
+
+    func test_seriesPlan_everyLayout_placesEachSectionOnce() {
+        let problems = placementProblems(
+            TVSeriesLayout.plan,
+            shown: allSeries,
+            heroParts: (.hero(.all), .hero(.backdrop), .hero(.identity))
+        )
+
+        XCTAssertEqual(problems, [])
+    }
+
+    func test_seriesPlan_wideWithoutAwards_hasNoSideColumn() {
+        let plan = TVSeriesLayout.plan(for: .columns, showing: allSeries.subtracting([.awards]))
+
+        XCTAssertTrue(plan.side.isEmpty)
+    }
+
+    func test_seriesPlan_panes_reviewsLeadCarouselsTrail() {
+        let plan = TVSeriesLayout.plan(for: .panes, showing: allSeries)
+
+        XCTAssertEqual(plan.slot(of: .reviews), .main)
+        XCTAssertEqual(plan.slot(of: .carousels), .side)
+    }
+
+    // MARK: - TV season
+
+    private let allSeason: Set<TVSeasonLayout.Section> = [
+        .hero(.all), .hero(.backdrop), .hero(.identity), .ratingAndOverview, .awards, .credits, .episodes,
+        .attribution,
+    ]
+
+    func test_seasonPlan_everyLayout_placesEachSectionOnce() {
+        let problems = placementProblems(
+            TVSeasonLayout.plan,
+            shown: allSeason,
+            heroParts: (.hero(.all), .hero(.backdrop), .hero(.identity))
+        )
+
+        XCTAssertEqual(problems, [])
+    }
+
+    func test_seasonPlan_wide_episodesRunFullWidthBelow() {
+        let plan = TVSeasonLayout.plan(for: .columns, showing: allSeason)
+
+        XCTAssertEqual(plan.slot(of: .episodes), .below)
+    }
+
+    func test_seasonPlan_panes_episodesLeadEverythingElseTrails() {
+        let plan = TVSeasonLayout.plan(for: .panes, showing: allSeason)
+
+        XCTAssertEqual(plan.main, [.hero(.identity), .episodes])
+        XCTAssertEqual(plan.side, [.ratingAndOverview, .awards, .credits])
+    }
+
+    // MARK: - TV episode
+
+    private let allEpisode: Set<TVEpisodeLayout.Section> = [
+        .hero(.all), .hero(.backdrop), .hero(.identity), .ratingAndOverview, .awards, .otherEpisodes, .credits,
+        .attribution,
+    ]
+
+    func test_episodePlan_everyLayout_placesEachSectionOnce() {
+        let problems = placementProblems(
+            TVEpisodeLayout.plan,
+            shown: allEpisode,
+            heroParts: (.hero(.all), .hero(.backdrop), .hero(.identity))
+        )
+
+        XCTAssertEqual(problems, [])
+    }
+
+    func test_episodePlan_panes_moreEpisodesOpenTrailingPane() {
+        let plan = TVEpisodeLayout.plan(for: .panes, showing: allEpisode)
+
+        XCTAssertEqual(plan.side.first, .otherEpisodes)
+    }
+
+    // MARK: - Person
+
+    private let allPerson: Set<PersonDetailLayout.Section> = [
+        .header, .biography, .facts, .awards, .images, .credits,
+    ]
+
+    func test_personPlan_everyLayout_placesEachSectionOnce() {
+        let problems = placementProblems(PersonDetailLayout.plan, shown: allPerson)
+
+        XCTAssertEqual(problems, [])
+    }
+
+    func test_personPlan_wideWithoutFactsOrAwards_hasNoSideColumn() {
+        let plan = PersonDetailLayout.plan(for: .columns, showing: [.header, .biography, .credits])
+
+        XCTAssertTrue(plan.side.isEmpty)
+        XCTAssertEqual(plan.below, [.credits])
+    }
+
+    func test_personPlan_panes_carouselsTrail() {
+        let plan = PersonDetailLayout.plan(for: .panes, showing: allPerson)
+
+        XCTAssertEqual(plan.main, [.header, .biography, .facts, .awards])
+        XCTAssertEqual(plan.side, [.images, .credits])
     }
 }

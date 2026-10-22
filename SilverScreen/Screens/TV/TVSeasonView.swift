@@ -31,12 +31,9 @@ struct TVSeasonView: View {
     let tvWatch: TVWatchRepository
     var router: NavigationRouter?
 
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(ListChangeNotice.self) private var notice
     @State private var playingTrailer: MediaTrailer?
     @State private var loadingTrailerID: String?
-    /// True while the iPhone Duo's fold crosses the page; see `seasonFacts`.
-    @State private var isFolded = false
     let seriesID: Int
     let seasonNumber: Int
     /// When set (In Progress continue), scroll so this episode sits at the top after load.
@@ -219,45 +216,21 @@ struct TVSeasonView: View {
 
     private func loaded(_ content: TVSeasonContent) -> some View {
         let bleedsToTop = !content.images.isEmpty
-        // Read here, in the view's own body, so a fold change re-renders the page; a
-        // state read only inside the width reader's closure would not.
-        let pageIsFolded = isFolded
-        return ContentWidthReader { width in
-            let twoColumns = DetailLayoutMetrics.usesTwoColumns(
-                forWidth: width,
-                isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
-            )
-            let contentWidth = DetailLayoutMetrics.contentWidth(forWidth: width, twoColumns: twoColumns)
-            let sectionsInPanes = twoColumns && pageIsFolded
+        return DetailPageReader { page in
             ScrollViewReader { proxy in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: DesignSpacing.xl) {
-                        seasonHero(content, twoColumns: twoColumns, part: sectionsInPanes ? .backdrop : .all)
-                        seasonFacts(
-                            content,
-                            scrollTo: { id in
-                                proxy.scrollTo(id, anchor: .top)
-                            },
-                            twoColumns: twoColumns,
-                            contentWidth: contentWidth,
-                            sectionsInPanes: sectionsInPanes
-                        )
-                        if !sectionsInPanes {
-                            credits(content)
-                            if !content.episodes.isEmpty {
-                                episodes(content.episodes, seriesName: content.seriesName, columns: twoColumns ? 2 : 1)
-                            }
-                        }
-                        if !content.streamingProviders.isEmpty {
-                            JustWatchAttributionFooter()
-                                .padding(.horizontal, DesignSpacing.lg)
+                    DetailPageSections(
+                        page: page,
+                        plan: TVSeasonLayout.plan(for: page.layout, showing: shownSections(content))
+                    ) { section, slot in
+                        sectionView(section, in: slot, layout: page.layout, content: content) { id in
+                            proxy.scrollTo(id, anchor: .top)
                         }
                     }
                     .padding(.bottom, DesignSpacing.lg)
-                    .readableColumn(maxWidth: DetailLayoutMetrics.columnCap(twoColumns: twoColumns))
+                    .readableColumn(maxWidth: page.layout.columnCap)
                     .coordinateSpace(.named("detailScroll"))
                 }
-                .onFoldSplitChange { isFolded = $0 != nil }
                 .heroStatusBarBleed(enabled: bleedsToTop)
                 .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
                 .background {
@@ -278,6 +251,43 @@ struct TVSeasonView: View {
                     }
                 }
             }
+        }
+    }
+
+    private func shownSections(_ content: TVSeasonContent) -> Set<TVSeasonLayout.Section> {
+        var shown: Set<TVSeasonLayout.Section> = [
+            .hero(.all), .hero(.backdrop), .hero(.identity), .ratingAndOverview,
+        ]
+        if !viewModel.awardRows.isEmpty { shown.insert(.awards) }
+        if !content.cast.isEmpty || !content.directorsAndWriters.isEmpty { shown.insert(.credits) }
+        if !content.episodes.isEmpty { shown.insert(.episodes) }
+        if !content.streamingProviders.isEmpty { shown.insert(.attribution) }
+        return shown
+    }
+
+    @ViewBuilder
+    private func sectionView(
+        _ section: TVSeasonLayout.Section,
+        in slot: DetailSlot,
+        layout: DetailPageLayout,
+        content: TVSeasonContent,
+        scrollTo: @escaping (String) -> Void
+    ) -> some View {
+        switch section {
+            case .hero(let part):
+                seasonHero(content, layout: layout, part: part)
+            case .ratingAndOverview:
+                VStack(alignment: .leading, spacing: DesignSpacing.md) {
+                    ratingAndOverview(content, scrollTo: scrollTo)
+                }
+            case .awards:
+                AwardRowsSection(rows: viewModel.awardRows)
+            case .credits:
+                credits(content)
+            case .episodes:
+                episodes(content.episodes, seriesName: content.seriesName, columns: layout.gridColumns(in: slot))
+            case .attribution:
+                JustWatchAttributionFooter()
         }
     }
 
@@ -321,7 +331,7 @@ struct TVSeasonView: View {
         "season-episode-\(episodeNumber)"
     }
 
-    private func seasonHero(_ content: TVSeasonContent, twoColumns: Bool, part: DetailHeroPart) -> some View {
+    private func seasonHero(_ content: TVSeasonContent, layout: DetailPageLayout, part: DetailHeroPart) -> some View {
         DetailHero(
             title: content.displayName,
             eyebrow: content.seriesName,
@@ -333,7 +343,7 @@ struct TVSeasonView: View {
             onOpenPoster: { viewModel.openPoster() },
             onOpenImage: { viewModel.openImages(initialID: $0) },
             streamingProviders: content.streamingProviders,
-            aspectRatio: DetailLayoutMetrics.heroAspectRatio(twoColumns: twoColumns),
+            aspectRatio: layout.heroAspectRatio,
             part: part
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.lg) {
@@ -358,53 +368,6 @@ struct TVSeasonView: View {
                 }
             }
         }
-    }
-
-    /// Rating and overview, with awards beside them on a wide page and below them on
-    /// a phone. With `sectionsInPanes` (the iPhone Duo's hinge is bent) the leading pane
-    /// holds the title and the episodes, one per row, and the trailing pane holds the
-    /// rating and overview, awards, and cast and crew, starting beside the title.
-    private func seasonFacts(
-        _ content: TVSeasonContent,
-        scrollTo: @escaping (String) -> Void,
-        twoColumns: Bool,
-        contentWidth: CGFloat,
-        sectionsInPanes: Bool
-    ) -> some View {
-        DetailColumns(
-            twoColumns: twoColumns,
-            contentWidth: contentWidth,
-            showsSecondary: sectionsInPanes || !viewModel.awardRows.isEmpty,
-            itemSpacing: sectionsInPanes ? DesignSpacing.xl : DesignSpacing.md,
-            secondaryTopInset: sectionsInPanes
-                ? DetailHeroPart.titleTopOffset(posterPath: content.posterPath, hasImages: !content.images.isEmpty)
-                : 0
-        ) {
-            if sectionsInPanes {
-                seasonHero(content, twoColumns: true, part: .identity)
-                    .inPane()
-                if !content.episodes.isEmpty {
-                    episodes(content.episodes, seriesName: content.seriesName, columns: 1)
-                        .inPane()
-                }
-            } else {
-                ratingAndOverview(content, scrollTo: scrollTo)
-            }
-        } secondary: {
-            if sectionsInPanes {
-                VStack(alignment: .leading, spacing: DesignSpacing.md) {
-                    ratingAndOverview(content, scrollTo: scrollTo)
-                }
-            }
-            if !viewModel.awardRows.isEmpty {
-                AwardRowsSection(rows: viewModel.awardRows)
-            }
-            if sectionsInPanes {
-                credits(content)
-                    .inPane()
-            }
-        }
-        .detailColumnsInset(hingePanes: sectionsInPanes)
     }
 
     @ViewBuilder
@@ -678,5 +641,54 @@ struct TVSeasonView: View {
             parts.append("Your rating \(score)")
         }
         return parts.joined(separator: ", ")
+    }
+}
+
+/// Where each section of a season page goes.
+enum TVSeasonLayout {
+    enum Section: DetailPageSection {
+        case hero(DetailHeroPart)
+        case ratingAndOverview
+        case awards
+        /// Cast, and directors and writers.
+        case credits
+        case episodes
+        case attribution
+
+        var carriesOwnInset: Bool {
+            switch self {
+                case .hero, .credits, .episodes:
+                    true
+                case .ratingAndOverview, .awards, .attribution:
+                    false
+            }
+        }
+    }
+
+    /// The sections in `shown`, placed for `layout`.
+    ///
+    /// - Phone and wide page: rating and overview, with awards beside them on a wide
+    ///   page; the credits and episodes run full width below, episodes two to a row on
+    ///   a wide page.
+    /// - Across a fold: the leading pane has the title and the episodes, one per row;
+    ///   the trailing pane has the rating and overview, awards, and the credits.
+    static func plan(for layout: DetailPageLayout, showing shown: Set<Section>) -> DetailPagePlan<Section> {
+        let plan = switch layout {
+            case .stacked, .columns:
+                DetailPagePlan<Section>(
+                    top: [.hero(.all)],
+                    main: [.ratingAndOverview],
+                    side: [.awards],
+                    below: [.credits, .episodes, .attribution]
+                )
+            case .panes:
+                DetailPagePlan<Section>(
+                    top: [.hero(.backdrop)],
+                    main: [.hero(.identity), .episodes],
+                    side: [.ratingAndOverview, .awards, .credits],
+                    below: [.attribution]
+                )
+        }
+        return plan.keeping(shown.contains)
     }
 }

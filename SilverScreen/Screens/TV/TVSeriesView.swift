@@ -14,15 +14,11 @@ struct TVSeriesView: View {
     let tvWatch: TVWatchRepository
     var router: NavigationRouter?
 
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
     @Environment(ListChangeNotice.self) private var notice
     @Namespace private var heroTransition
     @State private var selectedBackdropID: String?
     @State private var playingTrailer: MediaTrailer?
     @State private var loadingTrailerID: String?
-    /// True while the iPhone Duo's fold crosses the page; see `seriesFacts`.
-    @State private var isFolded = false
 
     private var fullscreenBinding: Binding<FullscreenImages?> {
         Binding(
@@ -160,40 +156,18 @@ struct TVSeriesView: View {
 
     private func seriesScroll(_ content: TVSeriesContent, scrollTo: @escaping (String) -> Void) -> some View {
         let bleedsToTop = !content.detail.images.isEmpty
-        // Read here, in the view's own body, so a fold change re-renders the page; a
-        // state read only inside the width reader's closure would not.
-        let pageIsFolded = isFolded
-        return ContentWidthReader { width in
-            let twoColumns = DetailLayoutMetrics.usesTwoColumns(
-                forWidth: width,
-                isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
-            )
-            let contentWidth = DetailLayoutMetrics.contentWidth(forWidth: width, twoColumns: twoColumns)
-            let sectionsInPanes = twoColumns && pageIsFolded
+        return DetailPageReader { page in
             ScrollView {
-                VStack(alignment: .leading, spacing: DesignSpacing.xl) {
-                    seriesHero(content, twoColumns: twoColumns, part: sectionsInPanes ? .backdrop : .all)
-                    seriesFacts(
-                        content,
-                        scrollTo: scrollTo,
-                        twoColumns: twoColumns,
-                        contentWidth: contentWidth,
-                        sectionsInPanes: sectionsInPanes
-                    )
-                    if !sectionsInPanes {
-                        carousels(content)
-                        reviews(content, scrollTo: scrollTo, columns: twoColumns ? 2 : 1)
-                    }
-                    if !content.detail.streamingProviders.isEmpty {
-                        JustWatchAttributionFooter()
-                            .padding(.horizontal, DesignSpacing.lg)
-                    }
+                DetailPageSections(
+                    page: page,
+                    plan: TVSeriesLayout.plan(for: page.layout, showing: shownSections(content))
+                ) { section, slot in
+                    sectionView(section, in: slot, layout: page.layout, content: content, scrollTo: scrollTo)
                 }
                 .padding(.bottom, DesignSpacing.lg)
-                .readableColumn(maxWidth: DetailLayoutMetrics.columnCap(twoColumns: twoColumns))
+                .readableColumn(maxWidth: page.layout.columnCap)
                 .coordinateSpace(.named("detailScroll"))
             }
-            .onFoldSplitChange { isFolded = $0 != nil }
             .heroStatusBarBleed(enabled: bleedsToTop)
             .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
             .refreshable {
@@ -202,7 +176,60 @@ struct TVSeriesView: View {
         }
     }
 
-    private func seriesHero(_ content: TVSeriesContent, twoColumns: Bool, part: DetailHeroPart) -> some View {
+    private func shownSections(_ content: TVSeriesContent) -> Set<TVSeriesLayout.Section> {
+        var shown: Set<TVSeriesLayout.Section> = [
+            .hero(.all), .hero(.backdrop), .hero(.identity), .ratingAndStoryline,
+        ]
+        if !viewModel.awardRows.isEmpty { shown.insert(.awards) }
+        if !content.seasons.isEmpty || !content.recommendations.isEmpty
+            || !content.detail.cast.isEmpty || !content.detail.directorsAndWriters.isEmpty {
+            shown.insert(.carousels)
+        }
+        if content.reviews != nil { shown.insert(.reviews) }
+        if !content.detail.streamingProviders.isEmpty { shown.insert(.attribution) }
+        return shown
+    }
+
+    @ViewBuilder
+    private func sectionView(
+        _ section: TVSeriesLayout.Section,
+        in slot: DetailSlot,
+        layout: DetailPageLayout,
+        content: TVSeriesContent,
+        scrollTo: @escaping (String) -> Void
+    ) -> some View {
+        switch section {
+            case .hero(let part):
+                seriesHero(content, layout: layout, part: part)
+            case .ratingAndStoryline:
+                VStack(alignment: .leading, spacing: DesignSpacing.md) {
+                    TMDBRatingCard(
+                        formattedRating: content.formattedRating,
+                        accessibilityLabel: content.ratingAccessibilityLabel,
+                        formattedUserScore: content.formattedUserScore,
+                        userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+                        onEdit: { viewModel.openAnnotationEditor() }
+                    )
+                    MediaDescriptionSection(
+                        overview: content.detail.overview,
+                        note: content.userNote,
+                        notedOn: content.formattedNotedOn,
+                        onEdit: { viewModel.openAnnotationEditor() },
+                        scrollTo: scrollTo
+                    )
+                }
+            case .awards:
+                AwardRowsSection(rows: viewModel.awardRows)
+            case .carousels:
+                carousels(content)
+            case .reviews:
+                reviews(content, scrollTo: scrollTo, columns: layout.gridColumns(in: slot))
+            case .attribution:
+                JustWatchAttributionFooter()
+        }
+    }
+
+    private func seriesHero(_ content: TVSeriesContent, layout: DetailPageLayout, part: DetailHeroPart) -> some View {
         DetailHero(
             title: content.detail.name,
             posterPath: content.detail.posterPath,
@@ -213,7 +240,7 @@ struct TVSeriesView: View {
             onOpenPoster: { viewModel.openPoster() },
             onOpenImage: { viewModel.openImages(initialID: $0) },
             streamingProviders: content.detail.streamingProviders,
-            aspectRatio: DetailLayoutMetrics.heroAspectRatio(twoColumns: twoColumns),
+            aspectRatio: layout.heroAspectRatio,
             part: part
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.lg) {
@@ -238,64 +265,6 @@ struct TVSeriesView: View {
                 }
             }
         }
-    }
-
-    /// Rating and storyline, with awards beside them on a wide page and below them on
-    /// a phone. With `sectionsInPanes` (the iPhone Duo's hinge is bent) the leading pane
-    /// holds the title, rating, storyline, and reviews, and the trailing pane holds
-    /// awards and the carousels, starting beside the title.
-    private func seriesFacts(
-        _ content: TVSeriesContent,
-        scrollTo: @escaping (String) -> Void,
-        twoColumns: Bool,
-        contentWidth: CGFloat,
-        sectionsInPanes: Bool
-    ) -> some View {
-        DetailColumns(
-            twoColumns: twoColumns,
-            contentWidth: contentWidth,
-            showsSecondary: sectionsInPanes || !viewModel.awardRows.isEmpty,
-            itemSpacing: DesignSpacing.md,
-            secondaryTopInset: sectionsInPanes
-                ? DetailHeroPart.titleTopOffset(
-                    posterPath: content.detail.posterPath,
-                    hasImages: !content.detail.images.isEmpty
-                )
-                : 0
-        ) {
-            if sectionsInPanes {
-                seriesHero(content, twoColumns: true, part: .identity)
-                    .inPane()
-                    .padding(.bottom, DesignSpacing.xl - DesignSpacing.md)
-            }
-            TMDBRatingCard(
-                formattedRating: content.formattedRating,
-                accessibilityLabel: content.ratingAccessibilityLabel,
-                formattedUserScore: content.formattedUserScore,
-                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
-                onEdit: { viewModel.openAnnotationEditor() }
-            )
-            MediaDescriptionSection(
-                overview: content.detail.overview,
-                note: content.userNote,
-                notedOn: content.formattedNotedOn,
-                onEdit: { viewModel.openAnnotationEditor() },
-                scrollTo: scrollTo
-            )
-            if sectionsInPanes {
-                reviews(content, scrollTo: scrollTo, columns: 1)
-                    .inPane()
-            }
-        } secondary: {
-            if !viewModel.awardRows.isEmpty {
-                AwardRowsSection(rows: viewModel.awardRows)
-            }
-            if sectionsInPanes {
-                carousels(content)
-                    .inPane()
-            }
-        }
-        .detailColumnsInset(hingePanes: sectionsInPanes)
     }
 
     @ViewBuilder
@@ -452,5 +421,53 @@ struct TVSeriesView: View {
             parts.append("Watched")
         }
         return parts.joined(separator: ", ")
+    }
+}
+
+/// Where each section of a series page goes.
+enum TVSeriesLayout {
+    enum Section: DetailPageSection {
+        case hero(DetailHeroPart)
+        case ratingAndStoryline
+        case awards
+        /// Seasons, recommendations, cast, and crew.
+        case carousels
+        case reviews
+        case attribution
+
+        var carriesOwnInset: Bool {
+            switch self {
+                case .hero, .carousels, .reviews:
+                    true
+                case .ratingAndStoryline, .awards, .attribution:
+                    false
+            }
+        }
+    }
+
+    /// The sections in `shown`, placed for `layout`.
+    ///
+    /// - Phone and wide page: rating and storyline, with awards beside them on a wide
+    ///   page; carousels and reviews run full width below.
+    /// - Across a fold: the leading pane has the title, rating, storyline, and reviews;
+    ///   the trailing pane has awards and the carousels.
+    static func plan(for layout: DetailPageLayout, showing shown: Set<Section>) -> DetailPagePlan<Section> {
+        let plan = switch layout {
+            case .stacked, .columns:
+                DetailPagePlan<Section>(
+                    top: [.hero(.all)],
+                    main: [.ratingAndStoryline],
+                    side: [.awards],
+                    below: [.carousels, .reviews, .attribution]
+                )
+            case .panes:
+                DetailPagePlan<Section>(
+                    top: [.hero(.backdrop)],
+                    main: [.hero(.identity), .ratingAndStoryline, .reviews],
+                    side: [.awards, .carousels],
+                    below: [.attribution]
+                )
+        }
+        return plan.keeping(shown.contains)
     }
 }

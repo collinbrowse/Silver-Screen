@@ -104,10 +104,19 @@ enum DetailLayoutMetrics {
     /// Wide hero shape: a full-width 16:9 backdrop would fill most of a landscape screen.
     static let wideHeroAspectRatio: CGFloat = 21.0 / 9.0
 
+    /// Narrowest fold pane a detail page lays a column into: about a phone's width,
+    /// which is what every section is built for. A narrower pane keeps the page whole.
+    static let minimumPaneWidth: CGFloat = 300
+
     /// Whether a page `width` points wide (inside the safe area) uses two columns.
     /// Accessibility text sizes keep one column so long labels have the full width.
-    static func usesTwoColumns(forWidth width: CGFloat, isAccessibilitySize: Bool) -> Bool {
-        !isAccessibilitySize && width >= twoColumnMinimumWidth
+    /// `minimumWidth` is `twoColumnMinimumWidth` scaled with the text size.
+    static func usesTwoColumns(
+        forWidth width: CGFloat,
+        isAccessibilitySize: Bool,
+        minimumWidth: CGFloat = twoColumnMinimumWidth
+    ) -> Bool {
+        !isAccessibilitySize && width >= minimumWidth
     }
 
     /// Width of the page's content column: the readable cap on one column, the wider
@@ -115,7 +124,7 @@ enum DetailLayoutMetrics {
     /// so the first frame lays out as a phone page rather than collapsing.
     static func contentWidth(forWidth width: CGFloat, twoColumns: Bool) -> CGFloat {
         guard width > 0 else { return ReadableWidth.maximum }
-        return min(width, twoColumns ? maximumContentWidth : ReadableWidth.maximum)
+        return min(width, columnCap(twoColumns: twoColumns))
     }
 
     /// The cap to apply to a scroll view's content column. A scroll view offers its
@@ -145,6 +154,109 @@ enum DetailLayoutMetrics {
 
     static func heroAspectRatio(twoColumns: Bool) -> CGFloat {
         twoColumns ? wideHeroAspectRatio : compactHeroAspectRatio
+    }
+}
+
+/// How a detail page (movie, series, season, episode, person) uses its space. The
+/// page decides this once, from its width, the text size, and whether a fold crosses
+/// it; where each section goes then comes from the page's `DetailPagePlan`.
+enum DetailPageLayout: Equatable, Sendable {
+    /// One column: phones, narrow windows, accessibility text sizes.
+    case stacked
+    /// A main column and a narrower side column, with wide sections (carousels,
+    /// reviews) full width below them: iPad, and the iPhone Duo's inner screen in landscape.
+    case columns
+    /// The iPhone Duo's hinge is bent: one column in each pane, with the crease as the gutter.
+    case panes
+
+    /// A fold wins whenever both panes are wide enough for a column, at any width or
+    /// text size, since nothing may sit on the crease. Otherwise the width decides.
+    static func resolve(
+        width: CGFloat,
+        fold: FoldSplit?,
+        isAccessibilitySize: Bool,
+        twoColumnMinimumWidth: CGFloat = DetailLayoutMetrics.twoColumnMinimumWidth
+    ) -> DetailPageLayout {
+        if let fold, min(fold.leading.width, fold.trailing.width) >= DetailLayoutMetrics.minimumPaneWidth {
+            return .panes
+        }
+        let twoColumns = DetailLayoutMetrics.usesTwoColumns(
+            forWidth: width,
+            isAccessibilitySize: isAccessibilitySize,
+            minimumWidth: twoColumnMinimumWidth
+        )
+        return twoColumns ? .columns : .stacked
+    }
+
+    /// True when the page has two columns side by side.
+    var isSideBySide: Bool {
+        self != .stacked
+    }
+
+    var heroAspectRatio: CGFloat {
+        DetailLayoutMetrics.heroAspectRatio(twoColumns: isSideBySide)
+    }
+
+    /// See `DetailLayoutMetrics.columnCap(twoColumns:)`.
+    var columnCap: CGFloat {
+        DetailLayoutMetrics.columnCap(twoColumns: isSideBySide)
+    }
+
+    func contentWidth(forWidth width: CGFloat) -> CGFloat {
+        DetailLayoutMetrics.contentWidth(forWidth: width, twoColumns: isSideBySide)
+    }
+
+    /// Items per row for a grid section (reviews, episodes) placed in `slot`: two
+    /// across the full width of a two-column page, one in a column or on a phone.
+    func gridColumns(in slot: DetailSlot) -> Int {
+        self == .columns && slot == .below ? 2 : 1
+    }
+}
+
+/// Where a section of a detail page sits.
+enum DetailSlot: Equatable, Sendable {
+    /// Full width above the columns: the hero.
+    case top
+    /// The main column (the leading pane across a fold).
+    case main
+    /// The side column (the trailing pane across a fold). On a stacked page it follows the main column.
+    case side
+    /// Full width below the columns.
+    case below
+}
+
+/// Where each section of a detail page goes for one `DetailPageLayout`, in order.
+/// Pages build their plan as a pure function of the layout, so placements are unit
+/// tested instead of living in view branches. A stacked page reads the slots top to
+/// bottom, so one plan serves both `.stacked` and `.columns`.
+struct DetailPagePlan<Section: Hashable>: Equatable {
+    var top: [Section] = []
+    var main: [Section] = []
+    var side: [Section] = []
+    var below: [Section] = []
+
+    /// Every placed section, in reading order.
+    var sections: [Section] {
+        top + main + side + below
+    }
+
+    /// The slot `section` is placed in, or nil when it is not placed.
+    func slot(of section: Section) -> DetailSlot? {
+        if top.contains(section) { return .top }
+        if main.contains(section) { return .main }
+        if side.contains(section) { return .side }
+        if below.contains(section) { return .below }
+        return nil
+    }
+
+    /// The plan without the sections the page has nothing to show for, order kept.
+    func keeping(_ isShown: (Section) -> Bool) -> DetailPagePlan {
+        DetailPagePlan(
+            top: top.filter(isShown),
+            main: main.filter(isShown),
+            side: side.filter(isShown),
+            below: below.filter(isShown)
+        )
     }
 }
 

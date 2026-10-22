@@ -22,24 +22,16 @@ enum MovieHeroSelection {
 
 /// Which parts of `DetailHero` to draw. A page in the iPhone Duo's hinge panes draws
 /// `.backdrop` across the top and `.identity` (with `images` still set, so the poster
-/// overlap matches) at the top of its leading pane, directly below the backdrop.
+/// overlap matches) at the top of its leading pane, directly below the backdrop. The
+/// title column sets `VerticalAlignment.detailTitleTop`, so the trailing pane starts
+/// level with it.
 enum DetailHeroPart: Sendable {
     case all
     case backdrop
     case identity
-
-    /// How far below the top of the `.identity` part its title column starts. A hinge
-    /// page pads its trailing pane by this, so that pane's first item lines up with
-    /// the title. `DetailHero` uses the same values to place the title.
-    static func titleTopOffset(posterPath: String?, hasImages: Bool) -> CGFloat {
-        if DetailHeroLayout.hasPoster(posterPath) {
-            return (hasImages ? DesignSpacing.sm : 0) + DesignSpacing.xs
-        }
-        return hasImages ? DesignSpacing.md : 0
-    }
 }
 
-/// Rules shared by `DetailHero` and `DetailHeroPart`.
+/// Rules for `DetailHero`.
 enum DetailHeroLayout {
     /// A blank or whitespace path means there is no poster.
     static func hasPoster(_ posterPath: String?) -> Bool {
@@ -261,6 +253,7 @@ struct DetailHero<Metadata: View>: View {
             titleText
             metadata()
         }
+        .alignmentGuide(.detailTitleTop) { $0[.top] }
         .padding(.top, hasPoster ? DesignSpacing.xs : 0)
         .frame(maxWidth: .infinity, alignment: .leading)
     }

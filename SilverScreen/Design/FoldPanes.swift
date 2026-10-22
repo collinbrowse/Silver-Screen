@@ -25,27 +25,6 @@ extension View {
     }
 }
 
-extension View {
-    /// For a full-width section (a carousel or the reviews, which carry their own
-    /// side padding) moved into a pane of `DetailColumns`: cancels the page's side
-    /// padding so the section lines up with the pane's cards. The pane's margin from
-    /// the crease is wider than that padding, so the section still stays off it.
-    func inPane() -> some View {
-        padding(.horizontal, -DesignSpacing.lg)
-    }
-}
-
-extension View {
-    /// The page's side padding for its `DetailColumns`. As the iPhone Duo's hinge
-    /// panes directly under a `.backdrop`-only hero, the page stack's spacing is also
-    /// taken back, so the `.identity` hero at the top of the leading pane sits where it
-    /// would under a full hero.
-    func detailColumnsInset(hingePanes: Bool) -> some View {
-        padding(.horizontal, DesignSpacing.lg)
-            .padding(.top, hingePanes ? -DesignSpacing.xl : 0)
-    }
-}
-
 /// One side of a fold.
 enum FoldPane: Sendable {
     case leading
@@ -193,26 +172,33 @@ private struct SinglePaneLayout: Layout {
     }
 }
 
-/// Two subviews in the two panes of `split`, top-aligned, each measured once at its
-/// pane's width and natural height. Nothing is placed in the gutter.
+/// Two subviews in the two panes of `split`, each measured once at its pane's width
+/// and natural height. Nothing is placed in the gutter. Both start at the top, except
+/// that the trailing one starts level with the leading one's `detailTitleTop` when it
+/// has one (a detail page whose leading pane opens with the title).
 struct FoldPanesLayout: Layout {
     let split: FoldSplit
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let width = proposal.width ?? split.trailing.maxX
+        let tops = paneTops(subviews)
         let heights = zip(subviews, [split.leading.width, split.trailing.width]).map { subview, paneWidth in
             subview.sizeThatFits(ProposedViewSize(width: paneWidth, height: nil)).height
         }
-        return CGSize(width: width, height: heights.max() ?? 0)
+        return CGSize(width: width, height: zip(heights, tops).map(+).max() ?? 0)
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        for (subview, pane) in zip(subviews, [split.leading, split.trailing]) {
+        for (subview, (pane, top)) in zip(subviews, zip([split.leading, split.trailing], paneTops(subviews))) {
             subview.place(
-                at: CGPoint(x: bounds.minX + pane.minX, y: bounds.minY),
+                at: CGPoint(x: bounds.minX + pane.minX, y: bounds.minY + top),
                 anchor: .topLeading,
                 proposal: ProposedViewSize(width: pane.width, height: nil)
             )
         }
+    }
+
+    private func paneTops(_ subviews: Subviews) -> [CGFloat] {
+        [0, subviews.first?.detailTitleTop(atWidth: split.leading.width) ?? 0]
     }
 }

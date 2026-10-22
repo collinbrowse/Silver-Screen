@@ -18,8 +18,6 @@ struct MovieDetailView: View {
     @State private var selectedBackdropID: String?
     @State private var playingTrailer: MediaTrailer?
     @State private var loadingTrailerID: String?
-    /// True while the iPhone Duo's fold crosses the page; see `metadataBlock`.
-    @State private var isFolded = false
 
     private let portraitCardWidth: CGFloat = 140
 
@@ -144,140 +142,93 @@ struct MovieDetailView: View {
         scrollTo: @escaping (String) -> Void
     ) -> some View {
         let bleedsToTop = content.images?.items.isEmpty == false
-        // Read here, in the view's own body, so a fold change re-renders the page; a
-        // state read only inside the width reader's closure would not.
-        let pageIsFolded = isFolded
-        return GeometryReader { proxy in
-            detailScroll(
-                content: content,
-                activity: activity,
-                scrollTo: scrollTo,
-                width: proxy.size.width,
-                pageIsFolded: pageIsFolded
-            )
-            .frame(width: proxy.size.width, height: proxy.size.height)
+        return DetailPageReader { page in
+            ScrollView {
+                DetailPageSections(
+                    page: page,
+                    plan: MovieDetailLayout.plan(for: page.layout, showing: shownSections(content))
+                ) { section, slot in
+                    sectionView(section, in: slot, layout: page.layout, content: content, scrollTo: scrollTo)
+                }
+                .padding(.bottom, DesignSpacing.lg)
+                .readableColumn(maxWidth: page.layout.columnCap)
+                .coordinateSpace(.named("detailScroll"))
+            }
+            .overlay(alignment: .top) {
+                if case .failed(let error) = activity {
+                    Text("\(error.title): \(error.message)")
+                        .font(.footnote)
+                        .foregroundStyle(.white)
+                        .padding(DesignSpacing.sm)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.red)
+                        .accessibilityLabel("\(error.title). \(error.message)")
+                }
+            }
         }
         .heroStatusBarBleed(enabled: bleedsToTop)
         .scrollingInlineTitle(navigationTitle, showsToolbarBackground: !bleedsToTop)
     }
 
-    private func detailScroll(
+    private func shownSections(_ content: MovieDetailContent) -> Set<MovieDetailLayout.Section> {
+        var shown: Set<MovieDetailLayout.Section> = [
+            .hero(.all), .hero(.backdrop), .hero(.identity), .rating, .storyline, .facts,
+        ]
+        if !viewModel.awardRows.isEmpty { shown.insert(.awards) }
+        if content.cast != nil { shown.insert(.cast) }
+        if content.crew != nil { shown.insert(.crew) }
+        if content.similar != nil { shown.insert(.similar) }
+        if content.collection != nil { shown.insert(.collection) }
+        if content.reviews != nil { shown.insert(.reviews) }
+        if !content.detail.streamingProviders.isEmpty { shown.insert(.attribution) }
+        return shown
+    }
+
+    @ViewBuilder
+    private func sectionView(
+        _ section: MovieDetailLayout.Section,
+        in slot: DetailSlot,
+        layout: DetailPageLayout,
         content: MovieDetailContent,
-        activity: LoadActivity,
-        scrollTo: @escaping (String) -> Void,
-        width: CGFloat,
-        pageIsFolded: Bool
+        scrollTo: @escaping (String) -> Void
     ) -> some View {
-        let twoColumns = DetailLayoutMetrics.usesTwoColumns(
-            forWidth: width,
-            isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
-        )
-        let contentWidth = DetailLayoutMetrics.contentWidth(forWidth: width, twoColumns: twoColumns)
-        let sectionsInPanes = twoColumns && pageIsFolded
-        return ScrollView {
-            VStack(alignment: .leading, spacing: DesignSpacing.xl) {
-                if sectionsInPanes {
-                    hero(content, twoColumns: twoColumns, part: .backdrop)
-                    hingePanes(content, scrollTo: scrollTo, contentWidth: contentWidth)
-                } else {
-                    hero(content, twoColumns: twoColumns, part: .all)
-                    metadataBlock(
-                        content,
-                        scrollTo: scrollTo,
-                        twoColumns: twoColumns,
-                        contentWidth: contentWidth
-                    )
-                    carousels(content)
-                    if let reviews = content.reviews {
-                        reviewsSection(reviews, scrollTo: scrollTo, columns: twoColumns ? 2 : 1)
-                    }
-                }
-                if !content.detail.streamingProviders.isEmpty {
-                    JustWatchAttributionFooter()
-                        .padding(.horizontal, DesignSpacing.lg)
-                }
-            }
-            .padding(.bottom, DesignSpacing.lg)
-            .frame(width: contentWidth)
-            .frame(maxWidth: .infinity)
-            .coordinateSpace(.named("detailScroll"))
-        }
-        .onFoldSplitChange { isFolded = $0 != nil }
-        .overlay(alignment: .top) {
-            if case .failed(let error) = activity {
-                Text("\(error.title): \(error.message)")
-                    .font(.footnote)
-                    .foregroundStyle(.white)
-                    .padding(DesignSpacing.sm)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.red)
-                    .accessibilityLabel("\(error.title). \(error.message)")
-            }
-        }
-    }
-
-    /// Rating, storyline, facts, and awards, in that order on a phone. On a wide page
-    /// awards take the side column and facts join the main one, since a long awards
-    /// card already outweighs the rest; with no awards, facts take the side column.
-    private func metadataBlock(
-        _ content: MovieDetailContent,
-        scrollTo: @escaping (String) -> Void,
-        twoColumns: Bool,
-        contentWidth: CGFloat
-    ) -> some View {
-        let hasAwards = !viewModel.awardRows.isEmpty
-        return DetailColumns(twoColumns: twoColumns, contentWidth: contentWidth) {
-            ratingCard(content)
-            storyline(content, scrollTo: scrollTo)
-            if hasAwards {
+        switch section {
+            case .hero(let part):
+                hero(content, layout: layout, part: part)
+            case .rating:
+                ratingCard(content)
+            case .storyline:
+                storyline(content, scrollTo: scrollTo)
+            case .facts:
                 factsCard(content)
-            }
-        } secondary: {
-            if hasAwards {
+            case .awards:
                 AwardRowsSection(rows: viewModel.awardRows)
-            } else {
-                factsCard(content)
-            }
+            case .cast:
+                if let cast = content.cast {
+                    castCarousel(cast)
+                }
+            case .crew:
+                if let crew = content.crew {
+                    crewCarousel(crew)
+                }
+            case .similar:
+                if let similar = content.similar {
+                    similarCarousel(similar)
+                }
+            case .collection:
+                if let collection = content.collection {
+                    collectionCarousel(collection)
+                }
+            case .reviews:
+                if let reviews = content.reviews {
+                    reviewsSection(reviews, scrollTo: scrollTo, columns: layout.gridColumns(in: slot))
+                }
+            case .attribution:
+                JustWatchAttributionFooter()
         }
-        .padding(.horizontal, DesignSpacing.lg)
     }
 
-    /// The page below the backdrop while the iPhone Duo's hinge is bent: the leading
-    /// pane holds the title, facts, rating, storyline, and reviews; the trailing pane
-    /// holds awards and the carousels, starting beside the title.
-    private func hingePanes(
-        _ content: MovieDetailContent,
-        scrollTo: @escaping (String) -> Void,
-        contentWidth: CGFloat
-    ) -> some View {
-        DetailColumns(
-            twoColumns: true,
-            contentWidth: contentWidth,
-            secondaryTopInset: DetailHeroPart.titleTopOffset(
-                posterPath: content.detail.posterPath,
-                hasImages: content.images?.items.isEmpty == false
-            )
-        ) {
-            hero(content, twoColumns: true, part: .identity)
-                .inPane()
-            factsCard(content)
-            ratingCard(content)
-            storyline(content, scrollTo: scrollTo)
-            if let reviews = content.reviews {
-                reviewsSection(reviews, scrollTo: scrollTo, columns: 1)
-                    .inPane()
-            }
-        } secondary: {
-            if !viewModel.awardRows.isEmpty {
-                AwardRowsSection(rows: viewModel.awardRows)
-            }
-            carousels(content)
-                .inPane()
-        }
-        .detailColumnsInset(hingePanes: true)
-    }
-
-    private func hero(_ content: MovieDetailContent, twoColumns: Bool, part: DetailHeroPart) -> some View {
+    private func hero(_ content: MovieDetailContent, layout: DetailPageLayout, part: DetailHeroPart) -> some View {
         DetailHero(
             title: content.detail.title,
             posterPath: content.detail.posterPath,
@@ -288,7 +239,7 @@ struct MovieDetailView: View {
             onOpenPoster: { viewModel.openPoster() },
             onOpenImage: { viewModel.openImages(initialID: $0) },
             streamingProviders: content.detail.streamingProviders,
-            aspectRatio: DetailLayoutMetrics.heroAspectRatio(twoColumns: twoColumns),
+            aspectRatio: layout.heroAspectRatio,
             part: part
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.lg) {
@@ -331,22 +282,6 @@ struct MovieDetailView: View {
             onEdit: { viewModel.openAnnotationEditor() },
             scrollTo: scrollTo
         )
-    }
-
-    @ViewBuilder
-    private func carousels(_ content: MovieDetailContent) -> some View {
-        if let cast = content.cast {
-            castCarousel(cast)
-        }
-        if let crew = content.crew {
-            crewCarousel(crew)
-        }
-        if let similar = content.similar {
-            similarCarousel(similar)
-        }
-        if let collection = content.collection {
-            collectionCarousel(collection)
-        }
     }
 
     // MARK: - Carousels
@@ -642,5 +577,60 @@ struct MovieDetailView: View {
             parts.append(item.formattedReleaseDate)
         }
         return parts.joined(separator: ", ")
+    }
+}
+
+/// Where each section of a movie page goes.
+enum MovieDetailLayout {
+    enum Section: DetailPageSection {
+        case hero(DetailHeroPart)
+        case rating
+        case storyline
+        case facts
+        case awards
+        case cast
+        case crew
+        case similar
+        case collection
+        case reviews
+        case attribution
+
+        var carriesOwnInset: Bool {
+            switch self {
+                case .hero, .cast, .crew, .similar, .collection, .reviews:
+                    true
+                case .rating, .storyline, .facts, .awards, .attribution:
+                    false
+            }
+        }
+    }
+
+    /// The sections in `shown`, placed for `layout`.
+    ///
+    /// - Phone and wide page: rating, storyline, then facts and awards. A wide page puts
+    ///   awards in the side column with facts in the main one, since a long awards card
+    ///   already outweighs the rest; with no awards, facts take the side column.
+    ///   Carousels and reviews run full width below.
+    /// - Across a fold: the leading pane has the title, facts, rating, storyline, and
+    ///   reviews; the trailing pane has awards and the carousels.
+    static func plan(for layout: DetailPageLayout, showing shown: Set<Section>) -> DetailPagePlan<Section> {
+        let hasAwards = shown.contains(.awards)
+        let plan = switch layout {
+            case .stacked, .columns:
+                DetailPagePlan<Section>(
+                    top: [.hero(.all)],
+                    main: hasAwards ? [.rating, .storyline, .facts] : [.rating, .storyline],
+                    side: hasAwards ? [.awards] : [.facts],
+                    below: [.cast, .crew, .similar, .collection, .reviews, .attribution]
+                )
+            case .panes:
+                DetailPagePlan<Section>(
+                    top: [.hero(.backdrop)],
+                    main: [.hero(.identity), .facts, .rating, .storyline, .reviews],
+                    side: [.awards, .cast, .crew, .similar, .collection],
+                    below: [.attribution]
+                )
+        }
+        return plan.keeping(shown.contains)
     }
 }
