@@ -19,6 +19,7 @@ actor ListsRepository {
     private let store: any ListsStore
     private let logger: any AppLogging
     private let index: ListsIndex
+    private let analytics: any AnalyticsClient
     private var cached: LibrarySnapshot?
     private var loadTask: Task<LibrarySnapshot, Error>?
     /// Tail of the serialized write chain. See `serializeWrite`.
@@ -28,11 +29,13 @@ actor ListsRepository {
     init(
         store: any ListsStore,
         logger: any AppLogging,
-        index: ListsIndex = ListsIndex()
+        index: ListsIndex = ListsIndex(),
+        analytics: any AnalyticsClient = DisabledAnalytics()
     ) {
         self.store = store
         self.logger = logger
         self.index = index
+        self.analytics = analytics
     }
 
     /// Reads persistence into the shared index. Call once at launch; later calls hit the cache.
@@ -311,6 +314,9 @@ actor ListsRepository {
 
         snapshot.entries = Self.prepending(draft, listID: list.id, at: date, to: snapshot.entries)
         try await persist(snapshot)
+        if list.system == .watchlist {
+            analytics.send(.titleAddedToWatchlist)
+        }
         return MembershipChange(
             action: .added,
             listID: list.id,
@@ -425,6 +431,7 @@ actor ListsRepository {
             )
         }
         try await persist(snapshot)
+        analytics.send(.listCreated)
         return ListCreation(list: list, change: change)
     }
 
