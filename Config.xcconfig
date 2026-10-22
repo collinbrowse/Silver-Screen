@@ -13,3 +13,4 @@ TMDB_BASE_URL = https:/$()/api.themoviedb.org/3
 TMDBAccessToken = $(TMDB_ACCESS_TOKEN)
 TMDBBaseURL = $(TMDB_BASE_URL)
 SentryDSN = $(SENTRY_DSN)
+TelemetryDeckAppID = $(TELEMETRYDECK_APP_ID)
