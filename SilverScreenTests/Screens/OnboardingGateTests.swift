@@ -84,12 +84,41 @@ final class OnboardingGateTests: XCTestCase {
         )
     }
 
-    func test_evaluate_emptyLibrary_presents() async {
+    func test_evaluate_emptyLibrary_holdsLaunchCover() async {
         let gate = makeGate()
 
         await gate.evaluate()
 
+        XCTAssertTrue(gate.isLaunchCoverPending)
+    }
+
+    func test_presentLaunchCover_afterEvaluate_presents() async {
+        let gate = makeGate()
+        await gate.evaluate()
+
+        gate.presentLaunchCover()
+
         XCTAssertTrue(gate.isPresented)
+        XCTAssertTrue(gate.isLaunchCoverPending)
+    }
+
+    func test_launchCoverDidAppear_releasesTabs() async {
+        let gate = makeGate()
+        await gate.evaluate()
+        gate.presentLaunchCover()
+
+        gate.launchCoverDidAppear()
+
+        XCTAssertFalse(gate.isLaunchCoverPending)
+        XCTAssertTrue(gate.isPresented)
+    }
+
+    func test_presentLaunchCover_withoutLaunchDecision_doesNothing() {
+        let gate = makeGate()
+
+        gate.presentLaunchCover()
+
+        XCTAssertFalse(gate.isPresented)
     }
 
     func test_evaluate_whenRatingsCannotBeRead_doesNotPresent() async {
@@ -109,7 +138,7 @@ final class OnboardingGateTests: XCTestCase {
 
         await gate.evaluate()
 
-        XCTAssertFalse(gate.isPresented)
+        XCTAssertFalse(gate.isLaunchCoverPending)
     }
 
     func test_evaluate_afterMarker_doesNotPresent() async {
@@ -118,7 +147,7 @@ final class OnboardingGateTests: XCTestCase {
 
         await gate.evaluate()
 
-        XCTAssertFalse(gate.isPresented)
+        XCTAssertFalse(gate.isLaunchCoverPending)
     }
 
     func test_evaluate_demoMode_doesNotPresent() async {
@@ -126,7 +155,41 @@ final class OnboardingGateTests: XCTestCase {
 
         await gate.evaluate()
 
-        XCTAssertFalse(gate.isPresented)
+        XCTAssertFalse(gate.isLaunchCoverPending)
+    }
+
+    // MARK: - Launch hold
+
+    func test_needsLaunchCheck_beforeAnyFinishOrSkip_isTrue() {
+        XCTAssertTrue(makeGate().needsLaunchCheck)
+    }
+
+    func test_needsLaunchCheck_afterMarker_isFalse() {
+        OnboardingMarkerStore(defaults: defaults).markCompleted()
+
+        XCTAssertFalse(makeGate().needsLaunchCheck)
+    }
+
+    func test_needsLaunchCheck_demoMode_isFalse() {
+        XCTAssertFalse(makeGate(isDemo: true).needsLaunchCheck)
+    }
+
+    func test_evaluateWaiting_emptyLibrary_presentsBeforeReturning() async {
+        let gate = makeGate()
+
+        await gate.evaluate(waitingAtMost: 5)
+
+        XCTAssertTrue(gate.isLaunchCoverPending)
+    }
+
+    func test_evaluateWaiting_existingLibrary_doesNotPresent() async throws {
+        let lists = ListsRepository.empty()
+        _ = try await lists.addToWatched(OnboardingFixtures.movieDraft(id: 1))
+        let gate = makeGate(lists: lists)
+
+        await gate.evaluate(waitingAtMost: 5)
+
+        XCTAssertFalse(gate.isLaunchCoverPending)
     }
 
     // MARK: - Closing

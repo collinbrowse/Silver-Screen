@@ -84,6 +84,35 @@ enum OnboardingCatalog {
         series.filter { genres.isDisjoint(with: $0.genreIDs) }
     }
 
+    /// TMDB ratings a title needs before the seen grid offers it. Regional dramas
+    /// and soaps on TMDB's global TV lists have a few hundred; titles most people
+    /// have seen have thousands.
+    static let seenVoteFloor = 1_000
+
+    /// Ratings a series needs before the watchlist grid offers it. Lower than the
+    /// seen floor so newer shows still make it.
+    static let watchlistVoteFloor = 300
+
+    /// Movies at or above `minimumVotes`, most rated first, so the seen grid opens
+    /// on films people have actually watched.
+    static func widelySeen(_ movies: [Movie], minimumVotes: Int = seenVoteFloor) -> [Movie] {
+        movies
+            .filter { $0.voteCount >= minimumVotes }
+            .sorted { $0.voteCount > $1.voteCount }
+    }
+
+    /// Series at or above `minimumVotes`, most rated first.
+    static func widelySeen(_ series: [TVSeriesSummary], minimumVotes: Int = seenVoteFloor) -> [TVSeriesSummary] {
+        series
+            .filter { $0.voteCount >= minimumVotes }
+            .sorted { $0.voteCount > $1.voteCount }
+    }
+
+    /// Series at or above `minimumVotes`, in TMDB's order. The watchlist grid keeps
+    /// "popular now" ordering and only drops the long regional tail.
+    static func series(_ series: [TVSeriesSummary], withAtLeast minimumVotes: Int) -> [TVSeriesSummary] {
+        series.filter { $0.voteCount >= minimumVotes }
+    }
 }
 
 extension OnboardingCatalog {

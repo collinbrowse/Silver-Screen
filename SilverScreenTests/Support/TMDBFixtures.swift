@@ -573,7 +573,8 @@ enum TMDBFixtures {
               "name": "Breaking Bad",
               "poster_path": "/bb.jpg",
               "first_air_date": "2008-01-20",
-              "genre_ids": [18, 80]
+              "genre_ids": [18, 80],
+              "vote_count": 18900
             }
           ]
         }

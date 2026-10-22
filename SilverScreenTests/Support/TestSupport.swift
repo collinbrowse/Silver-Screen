@@ -103,7 +103,8 @@ enum TestMovies {
         releaseDate: Date? = nil,
         voteAverage: Double = 8.0,
         genreIDs: [Int] = [],
-        popularity: Double = 0
+        popularity: Double = 0,
+        voteCount: Int = 0
     ) -> Movie {
         Movie(
             id: id,
@@ -112,7 +113,8 @@ enum TestMovies {
             releaseDate: releaseDate,
             voteAverage: voteAverage,
             genreIDs: genreIDs,
-            popularity: popularity
+            popularity: popularity,
+            voteCount: voteCount
         )
     }
 

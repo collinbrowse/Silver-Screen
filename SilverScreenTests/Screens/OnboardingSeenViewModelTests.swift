@@ -189,6 +189,21 @@ final class OnboardingSeenViewModelTests: XCTestCase {
         XCTAssertTrue(titles.contains { $0.id == "movie-278" })
     }
 
+    func test_load_dropsSeriesWithFewRatings() async {
+        let client = RoutingHTTPClient(routes: [
+            "/tv/popular": .success(Self.regionalAndWidelySeenTV),
+            "/discover/tv": .success(TMDBFixtures.popularTVPage),
+        ])
+        let viewModel = makeViewModel(client: client)
+
+        await viewModel.load()
+
+        guard case .loaded(let titles, _) = viewModel.suggestions else {
+            return XCTFail("Expected loaded, got \(viewModel.suggestions)")
+        }
+        XCTAssertEqual(titles.map(\.id), ["tv-1396", "tv-1399"])
+    }
+
     func test_load_everySourceOffline_fails() async {
         let viewModel = makeViewModel()
 
@@ -256,6 +271,21 @@ final class OnboardingSeenViewModelTests: XCTestCase {
         let watched = try XCTUnwrap(snapshot.list(.watched))
         return Set(snapshot.entries.filter { $0.listID == watched.id }.map(\.itemKey))
     }
+
+    /// Popular TV with a soap of 48 ratings ahead of two widely seen shows.
+    private static let regionalAndWidelySeenTV = Data(
+        """
+        {
+          "page": 1,
+          "total_pages": 1,
+          "results": [
+            { "id": 9001, "name": "Come Home Love", "genre_ids": [35], "vote_count": 48 },
+            { "id": 1396, "name": "Breaking Bad", "genre_ids": [18], "vote_count": 18900 },
+            { "id": 1399, "name": "Game of Thrones", "genre_ids": [18], "vote_count": 27997 }
+          ]
+        }
+        """.utf8
+    )
 
     private static func bestPictureAwards() -> AwardsRepository {
         AwardsRepository(

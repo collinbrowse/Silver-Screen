@@ -22,8 +22,18 @@ final class MovieRepositoryTests: XCTestCase {
         XCTAssertEqual(page.movies[0].releaseDate, TestMovies.date("1994-09-23"))
         XCTAssertEqual(page.movies[0].voteAverage, 8.7, accuracy: 0.01)
         XCTAssertEqual(page.movies[0].genreIDs, [18, 80])
+        XCTAssertEqual(page.movies[0].voteCount, 25000)
         XCTAssertTrue(page.hasMore)
         XCTAssertEqual(page.page, 1)
+    }
+
+    func test_map_missingVoteCount_isZero() throws {
+        let dto = try JSONDecoder().decode(
+            MovieSummaryDTO.self,
+            from: Data(#"{"id": 1, "title": "Untitled", "vote_average": 5.0}"#.utf8)
+        )
+
+        XCTAssertEqual(MovieRepository.map(dto).voteCount, 0)
     }
 
     func test_topMovies_emptyReleaseDate_mapsToNilAndKeepsMovie() async throws {
