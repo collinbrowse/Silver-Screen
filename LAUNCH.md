@@ -38,7 +38,7 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 - [x] Privacy policy and support pages in `docs/`
 - [ ] Turn on GitHub Pages: repo Settings → Pages → Deploy from a branch → `main`, `/docs`.
       Then check that `https://collinbrowse.github.io/Silver-Screen/privacy/` and `/support/` load.
-- [ ] Add a support email address to `docs/support.md` (Apple expects contact details on the support URL)
+- [x] Add a support email address to `docs/support.md` (Apple expects contact details on the support URL)
 - [ ] Sentry project settings: turn on "Prevent Storing of IP Addresses", so crash reports stay unlinked to a person
 - [x] Add the official TMDB logo to Settings → Data Sources (TMDB's attribution rules ask for it)
 - [x] App Store Connect privacy label, matching `PrivacyInfo.xcprivacy`:
