@@ -187,7 +187,12 @@ struct TVEpisodeView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: DesignSpacing.xl) {
-                        episodeHero(content, images: images, twoColumns: twoColumns)
+                        episodeHero(
+                            content,
+                            images: images,
+                            twoColumns: twoColumns,
+                            part: sectionsInPanes ? .backdrop : .all
+                        )
                         episodeFacts(
                             content,
                             scrollTo: { id in
@@ -219,7 +224,12 @@ struct TVEpisodeView: View {
         }
     }
 
-    private func episodeHero(_ content: TVEpisodeContent, images: [MovieImage], twoColumns: Bool) -> some View {
+    private func episodeHero(
+        _ content: TVEpisodeContent,
+        images: [MovieImage],
+        twoColumns: Bool,
+        part: DetailHeroPart
+    ) -> some View {
         DetailHero(
             title: content.title,
             eyebrow: seriesName,
@@ -231,7 +241,8 @@ struct TVEpisodeView: View {
             onOpenPoster: {},
             onOpenImage: { viewModel.openImages(initialID: $0) },
             streamingProviders: content.streamingProviders,
-            aspectRatio: DetailLayoutMetrics.heroAspectRatio(twoColumns: twoColumns)
+            aspectRatio: DetailLayoutMetrics.heroAspectRatio(twoColumns: twoColumns),
+            part: part
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.sm) {
                 Text(content.episodeNumberText)
@@ -251,9 +262,9 @@ struct TVEpisodeView: View {
     }
 
     /// Rating and overview, with awards beside them on a wide page and below them on
-    /// a phone. With `sectionsInPanes` (the iPhone Duo's fold crosses the page) More
-    /// Episodes joins the leading pane and the credits the trailing one, so nothing
-    /// below the hero spans the crease.
+    /// a phone. With `sectionsInPanes` (the iPhone Duo's hinge is bent) the leading pane
+    /// holds the title, rating, and overview, and the trailing pane holds More Episodes,
+    /// awards, and the credits, starting beside the title.
     private func episodeFacts(
         _ content: TVEpisodeContent,
         scrollTo: @escaping (String) -> Void,
@@ -267,6 +278,11 @@ struct TVEpisodeView: View {
             showsSecondary: sectionsInPanes || !viewModel.awardRows.isEmpty,
             itemSpacing: DesignSpacing.md
         ) {
+            if sectionsInPanes {
+                episodeHero(content, images: content.heroImages, twoColumns: true, part: .identity)
+                    .inPane()
+                    .padding(.bottom, DesignSpacing.xl - DesignSpacing.md)
+            }
             TMDBRatingCard(
                 formattedRating: content.formattedRating,
                 accessibilityLabel: content.ratingAccessibilityLabel,
@@ -281,11 +297,12 @@ struct TVEpisodeView: View {
                 onEdit: { viewModel.openAnnotationEditor() },
                 scrollTo: scrollTo
             )
+        } secondary: {
             if sectionsInPanes, !content.otherEpisodes.isEmpty {
                 otherEpisodes(content.otherEpisodes)
                     .inPane()
+                    .padding(.bottom, DesignSpacing.xl - DesignSpacing.md)
             }
-        } secondary: {
             if !viewModel.awardRows.isEmpty {
                 AwardRowsSection(rows: viewModel.awardRows)
             }
@@ -294,7 +311,7 @@ struct TVEpisodeView: View {
                     .inPane()
             }
         }
-        .padding(.horizontal, DesignSpacing.lg)
+        .detailColumnsInset(hingePanes: sectionsInPanes)
     }
 
     @ViewBuilder

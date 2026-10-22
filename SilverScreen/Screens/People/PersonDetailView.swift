@@ -148,9 +148,9 @@ struct PersonDetailView: View {
     }
 
     /// Name and biography, then facts and awards: one column on a phone, the two
-    /// groups side by side on a wide page. With `sectionsInPanes` (the iPhone Duo's fold
-    /// crosses the page) the images join the leading pane and the credit carousels the
-    /// trailing one, so nothing spans the crease.
+    /// groups side by side on a wide page. With `sectionsInPanes` (the iPhone Duo's
+    /// hinge is bent) everything but the carousels goes in the leading pane and the
+    /// images and credit carousels in the trailing one, so nothing spans the crease.
     private func metadataBlock(
         _ content: PersonDetailContent,
         twoColumns: Bool,
@@ -165,25 +165,34 @@ struct PersonDetailView: View {
         ) {
             header(content)
             biographySection(content.detail.biography)
-            if sectionsInPanes, let images = content.images {
-                imagesCarousel(images)
-                    .inPane()
+            if sectionsInPanes {
+                factsAndAwards(content)
             }
         } secondary: {
-            if hasFacts(content) {
-                factsCard(content)
-            }
-            if !content.awards.isEmpty {
-                AwardRowsSection(rows: content.awards.map(\.row)) { route in
-                    router?.push(route)
-                }
-            }
             if sectionsInPanes {
+                if let images = content.images {
+                    imagesCarousel(images)
+                        .inPane()
+                }
                 creditCarousels(content, previewCount: creditPreviewCount)
                     .inPane()
+            } else {
+                factsAndAwards(content)
             }
         }
         .padding(.horizontal, DesignSpacing.lg)
+    }
+
+    @ViewBuilder
+    private func factsAndAwards(_ content: PersonDetailContent) -> some View {
+        if hasFacts(content) {
+            factsCard(content)
+        }
+        if !content.awards.isEmpty {
+            AwardRowsSection(rows: content.awards.map(\.row)) { route in
+                router?.push(route)
+            }
+        }
     }
 
     private func creditCarousels(_ content: PersonDetailContent, previewCount: Int) -> some View {

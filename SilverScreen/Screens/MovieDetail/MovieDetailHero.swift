@@ -20,6 +20,15 @@ enum MovieHeroSelection {
     }
 }
 
+/// Which parts of `DetailHero` to draw. A page in the iPhone Duo's hinge panes draws
+/// `.backdrop` across the top and `.identity` (with `images` still set, so the poster
+/// overlap matches) at the top of its leading pane, directly below the backdrop.
+enum DetailHeroPart: Sendable {
+    case all
+    case backdrop
+    case identity
+}
+
 /// Full-width backdrop stage. A poster overlaps the bottom when `posterPath` is set.
 struct DetailHero<Metadata: View>: View {
     let title: String
@@ -37,6 +46,8 @@ struct DetailHero<Metadata: View>: View {
     var streamingProviders: [StreamingProvider] = []
     /// Backdrop shape. Wide pages pass `DetailLayoutMetrics.wideHeroAspectRatio`.
     var aspectRatio: CGFloat = DetailLayoutMetrics.compactHeroAspectRatio
+    /// Which parts to draw; see `DetailHeroPart`.
+    var part: DetailHeroPart = .all
     @ViewBuilder let metadata: () -> Metadata
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -55,27 +66,20 @@ struct DetailHero<Metadata: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if !images.isEmpty {
+            if part != .identity, !images.isEmpty {
                 backdropStage
             }
-            // The backdrop may run across the iPhone Duo's crease, as a photo; the poster,
-            // title, and rows below it stay in the leading pane.
-            VStack(alignment: .leading, spacing: 0) {
-                identity
-                    .padding(.horizontal, DesignSpacing.lg)
-                    .padding(.top, hasPoster && !images.isEmpty ? DesignSpacing.sm : 0)
-                if !genreNames.isEmpty {
-                    GenreChipRow(names: genreNames)
-                        .padding(.horizontal, DesignSpacing.lg)
-                        .padding(.top, DesignSpacing.md)
-                }
-                if !streamingProviders.isEmpty {
-                    StreamingProviderLogoRow(providers: streamingProviders, imageLoader: imageLoader)
-                        .padding(.horizontal, DesignSpacing.lg)
-                        .padding(.top, DesignSpacing.md)
-                }
+            switch part {
+                case .all:
+                    // The backdrop may run across the iPhone Duo's crease, as a photo; the
+                    // poster, title, and rows below it stay in the leading pane.
+                    identityBlock
+                        .foldPane(.leading, alignment: .leading)
+                case .identity:
+                    identityBlock
+                case .backdrop:
+                    EmptyView()
             }
-            .foldPane(.leading, alignment: .leading)
         }
         .onAppear(perform: reconcileSelection)
         .onChange(of: images.map(\.id)) { _, _ in
@@ -89,6 +93,25 @@ struct DetailHero<Metadata: View>: View {
     /// readable column does not reach the edge and stays as it is. The page count sits
     /// in the fade at the bottom trailing corner, inside the safe area, clear of the
     /// poster and of the title artwork higher up.
+    /// Poster, title, metadata, genre chips, and streaming logos.
+    private var identityBlock: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            identity
+                .padding(.horizontal, DesignSpacing.lg)
+                .padding(.top, hasPoster && !images.isEmpty ? DesignSpacing.sm : 0)
+            if !genreNames.isEmpty {
+                GenreChipRow(names: genreNames)
+                    .padding(.horizontal, DesignSpacing.lg)
+                    .padding(.top, DesignSpacing.md)
+            }
+            if !streamingProviders.isEmpty {
+                StreamingProviderLogoRow(providers: streamingProviders, imageLoader: imageLoader)
+                    .padding(.horizontal, DesignSpacing.lg)
+                    .padding(.top, DesignSpacing.md)
+            }
+        }
+    }
+
     private var backdropStage: some View {
         Color.clear
             .aspectRatio(aspectRatio, contentMode: .fit)

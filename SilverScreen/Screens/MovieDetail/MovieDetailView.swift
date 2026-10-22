@@ -175,45 +175,17 @@ struct MovieDetailView: View {
         let sectionsInPanes = twoColumns && pageIsFolded
         return ScrollView {
             VStack(alignment: .leading, spacing: DesignSpacing.xl) {
-                DetailHero(
-                    title: content.detail.title,
-                    posterPath: content.detail.posterPath,
-                    images: content.images?.items ?? [],
-                    selectedImageID: $selectedBackdropID,
-                    imageLoader: imageLoader,
-                    transitionNamespace: heroTransition,
-                    onOpenPoster: { viewModel.openPoster() },
-                    onOpenImage: { viewModel.openImages(initialID: $0) },
-                    streamingProviders: content.detail.streamingProviders,
-                    aspectRatio: DetailLayoutMetrics.heroAspectRatio(twoColumns: twoColumns)
-                ) {
-                    VStack(alignment: .leading, spacing: DesignSpacing.lg) {
-                        if !content.heroMetadataLine.isEmpty {
-                            Text(content.heroMetadataLine)
-                                .font(DesignTypography.metadata)
-                                .foregroundStyle(DesignTheme.textSecondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .accessibilityLabel(content.heroMetadataAccessibilityLabel)
-                        }
-                        if !content.detail.trailers.isEmpty {
-                            MediaMetadataPills(
-                                trailers: content.detail.trailers,
-                                loadingTrailerID: loadingTrailerID,
-                                playTrailer: { presentTrailer($0, loadingID: $loadingTrailerID, selection: $playingTrailer) }
-                            )
-                        }
-                    }
-                }
-
-                metadataBlock(
-                    content,
-                    scrollTo: scrollTo,
-                    twoColumns: twoColumns,
-                    contentWidth: contentWidth,
-                    sectionsInPanes: sectionsInPanes
-                )
-
-                if !sectionsInPanes {
+                if sectionsInPanes {
+                    hero(content, twoColumns: twoColumns, part: .backdrop)
+                    hingePanes(content, scrollTo: scrollTo, contentWidth: contentWidth)
+                } else {
+                    hero(content, twoColumns: twoColumns, part: .all)
+                    metadataBlock(
+                        content,
+                        scrollTo: scrollTo,
+                        twoColumns: twoColumns,
+                        contentWidth: contentWidth
+                    )
                     carousels(content)
                     if let reviews = content.reviews {
                         reviewsSection(reviews, scrollTo: scrollTo, columns: twoColumns ? 2 : 1)
@@ -246,38 +218,18 @@ struct MovieDetailView: View {
     /// Rating, storyline, facts, and awards, in that order on a phone. On a wide page
     /// awards take the side column and facts join the main one, since a long awards
     /// card already outweighs the rest; with no awards, facts take the side column.
-    /// With `sectionsInPanes` (the iPhone Duo's fold crosses the page) the carousels
-    /// and reviews join the two columns too, so nothing below the hero spans the crease:
-    /// reading goes in the leading pane, carousels in the trailing one.
     private func metadataBlock(
         _ content: MovieDetailContent,
         scrollTo: @escaping (String) -> Void,
         twoColumns: Bool,
-        contentWidth: CGFloat,
-        sectionsInPanes: Bool
+        contentWidth: CGFloat
     ) -> some View {
         let hasAwards = !viewModel.awardRows.isEmpty
         return DetailColumns(twoColumns: twoColumns, contentWidth: contentWidth) {
-            TMDBRatingCard(
-                formattedRating: content.formattedRating,
-                accessibilityLabel: content.ratingAccessibilityLabel,
-                formattedUserScore: content.formattedUserScore,
-                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
-                onEdit: { viewModel.openAnnotationEditor() }
-            )
-            MediaDescriptionSection(
-                overview: content.detail.overview,
-                note: content.userNote,
-                notedOn: content.formattedNotedOn,
-                onEdit: { viewModel.openAnnotationEditor() },
-                scrollTo: scrollTo
-            )
+            ratingCard(content)
+            storyline(content, scrollTo: scrollTo)
             if hasAwards {
                 factsCard(content)
-            }
-            if sectionsInPanes, let reviews = content.reviews {
-                reviewsSection(reviews, scrollTo: scrollTo, columns: 1)
-                    .inPane()
             }
         } secondary: {
             if hasAwards {
@@ -285,12 +237,89 @@ struct MovieDetailView: View {
             } else {
                 factsCard(content)
             }
-            if sectionsInPanes {
-                carousels(content)
-                    .inPane()
-            }
         }
         .padding(.horizontal, DesignSpacing.lg)
+    }
+
+    /// The page below the backdrop while the iPhone Duo's hinge is bent: the leading
+    /// pane holds the title, facts, rating, storyline, and reviews; the trailing pane
+    /// holds awards and the carousels, starting beside the title.
+    private func hingePanes(
+        _ content: MovieDetailContent,
+        scrollTo: @escaping (String) -> Void,
+        contentWidth: CGFloat
+    ) -> some View {
+        DetailColumns(twoColumns: true, contentWidth: contentWidth) {
+            hero(content, twoColumns: true, part: .identity)
+                .inPane()
+            factsCard(content)
+            ratingCard(content)
+            storyline(content, scrollTo: scrollTo)
+            if let reviews = content.reviews {
+                reviewsSection(reviews, scrollTo: scrollTo, columns: 1)
+                    .inPane()
+            }
+        } secondary: {
+            if !viewModel.awardRows.isEmpty {
+                AwardRowsSection(rows: viewModel.awardRows)
+            }
+            carousels(content)
+                .inPane()
+        }
+        .detailColumnsInset(hingePanes: true)
+    }
+
+    private func hero(_ content: MovieDetailContent, twoColumns: Bool, part: DetailHeroPart) -> some View {
+        DetailHero(
+            title: content.detail.title,
+            posterPath: content.detail.posterPath,
+            images: content.images?.items ?? [],
+            selectedImageID: $selectedBackdropID,
+            imageLoader: imageLoader,
+            transitionNamespace: heroTransition,
+            onOpenPoster: { viewModel.openPoster() },
+            onOpenImage: { viewModel.openImages(initialID: $0) },
+            streamingProviders: content.detail.streamingProviders,
+            aspectRatio: DetailLayoutMetrics.heroAspectRatio(twoColumns: twoColumns),
+            part: part
+        ) {
+            VStack(alignment: .leading, spacing: DesignSpacing.lg) {
+                if !content.heroMetadataLine.isEmpty {
+                    Text(content.heroMetadataLine)
+                        .font(DesignTypography.metadata)
+                        .foregroundStyle(DesignTheme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityLabel(content.heroMetadataAccessibilityLabel)
+                }
+                if !content.detail.trailers.isEmpty {
+                    MediaMetadataPills(
+                        trailers: content.detail.trailers,
+                        loadingTrailerID: loadingTrailerID,
+                        playTrailer: { presentTrailer($0, loadingID: $loadingTrailerID, selection: $playingTrailer) }
+                    )
+                }
+            }
+        }
+    }
+
+    private func ratingCard(_ content: MovieDetailContent) -> some View {
+        TMDBRatingCard(
+            formattedRating: content.formattedRating,
+            accessibilityLabel: content.ratingAccessibilityLabel,
+            formattedUserScore: content.formattedUserScore,
+            userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+            onEdit: { viewModel.openAnnotationEditor() }
+        )
+    }
+
+    private func storyline(_ content: MovieDetailContent, scrollTo: @escaping (String) -> Void) -> some View {
+        MediaDescriptionSection(
+            overview: content.detail.overview,
+            note: content.userNote,
+            notedOn: content.formattedNotedOn,
+            onEdit: { viewModel.openAnnotationEditor() },
+            scrollTo: scrollTo
+        )
     }
 
     @ViewBuilder

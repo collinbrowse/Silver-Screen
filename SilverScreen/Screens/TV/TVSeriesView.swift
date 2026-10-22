@@ -171,7 +171,7 @@ struct TVSeriesView: View {
             let sectionsInPanes = twoColumns && pageIsFolded
             ScrollView {
                 VStack(alignment: .leading, spacing: DesignSpacing.xl) {
-                    seriesHero(content, twoColumns: twoColumns)
+                    seriesHero(content, twoColumns: twoColumns, part: sectionsInPanes ? .backdrop : .all)
                     seriesFacts(
                         content,
                         scrollTo: scrollTo,
@@ -201,7 +201,7 @@ struct TVSeriesView: View {
         }
     }
 
-    private func seriesHero(_ content: TVSeriesContent, twoColumns: Bool) -> some View {
+    private func seriesHero(_ content: TVSeriesContent, twoColumns: Bool, part: DetailHeroPart) -> some View {
         DetailHero(
             title: content.detail.name,
             posterPath: content.detail.posterPath,
@@ -212,7 +212,8 @@ struct TVSeriesView: View {
             onOpenPoster: { viewModel.openPoster() },
             onOpenImage: { viewModel.openImages(initialID: $0) },
             streamingProviders: content.detail.streamingProviders,
-            aspectRatio: DetailLayoutMetrics.heroAspectRatio(twoColumns: twoColumns)
+            aspectRatio: DetailLayoutMetrics.heroAspectRatio(twoColumns: twoColumns),
+            part: part
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.lg) {
                 VStack(alignment: .leading, spacing: DesignSpacing.sm) {
@@ -239,9 +240,9 @@ struct TVSeriesView: View {
     }
 
     /// Rating and storyline, with awards beside them on a wide page and below them on
-    /// a phone. With `sectionsInPanes` (the iPhone Duo's fold crosses the page) the
-    /// reviews join the leading pane and the carousels the trailing one, so nothing
-    /// below the hero spans the crease.
+    /// a phone. With `sectionsInPanes` (the iPhone Duo's hinge is bent) the leading pane
+    /// holds the title, rating, storyline, and reviews, and the trailing pane holds
+    /// awards and the carousels, starting beside the title.
     private func seriesFacts(
         _ content: TVSeriesContent,
         scrollTo: @escaping (String) -> Void,
@@ -255,6 +256,11 @@ struct TVSeriesView: View {
             showsSecondary: sectionsInPanes || !viewModel.awardRows.isEmpty,
             itemSpacing: DesignSpacing.md
         ) {
+            if sectionsInPanes {
+                seriesHero(content, twoColumns: true, part: .identity)
+                    .inPane()
+                    .padding(.bottom, DesignSpacing.xl - DesignSpacing.md)
+            }
             TMDBRatingCard(
                 formattedRating: content.formattedRating,
                 accessibilityLabel: content.ratingAccessibilityLabel,
@@ -282,7 +288,7 @@ struct TVSeriesView: View {
                     .inPane()
             }
         }
-        .padding(.horizontal, DesignSpacing.lg)
+        .detailColumnsInset(hingePanes: sectionsInPanes)
     }
 
     @ViewBuilder

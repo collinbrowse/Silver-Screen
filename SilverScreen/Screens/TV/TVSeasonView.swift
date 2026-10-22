@@ -232,7 +232,7 @@ struct TVSeasonView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: DesignSpacing.xl) {
-                        seasonHero(content, twoColumns: twoColumns)
+                        seasonHero(content, twoColumns: twoColumns, part: sectionsInPanes ? .backdrop : .all)
                         seasonFacts(
                             content,
                             scrollTo: { id in
@@ -321,7 +321,7 @@ struct TVSeasonView: View {
         "season-episode-\(episodeNumber)"
     }
 
-    private func seasonHero(_ content: TVSeasonContent, twoColumns: Bool) -> some View {
+    private func seasonHero(_ content: TVSeasonContent, twoColumns: Bool, part: DetailHeroPart) -> some View {
         DetailHero(
             title: content.displayName,
             eyebrow: content.seriesName,
@@ -333,7 +333,8 @@ struct TVSeasonView: View {
             onOpenPoster: { viewModel.openPoster() },
             onOpenImage: { viewModel.openImages(initialID: $0) },
             streamingProviders: content.streamingProviders,
-            aspectRatio: DetailLayoutMetrics.heroAspectRatio(twoColumns: twoColumns)
+            aspectRatio: DetailLayoutMetrics.heroAspectRatio(twoColumns: twoColumns),
+            part: part
         ) {
             VStack(alignment: .leading, spacing: DesignSpacing.lg) {
                 VStack(alignment: .leading, spacing: DesignSpacing.sm) {
@@ -360,9 +361,9 @@ struct TVSeasonView: View {
     }
 
     /// Rating and overview, with awards beside them on a wide page and below them on
-    /// a phone. With `sectionsInPanes` (the iPhone Duo's fold crosses the page) the
-    /// episodes join the leading pane, one per row, and cast and crew the trailing one,
-    /// so nothing below the hero spans the crease.
+    /// a phone. With `sectionsInPanes` (the iPhone Duo's hinge is bent) the leading pane
+    /// holds the title and the episodes, one per row, and the trailing pane holds the
+    /// rating and overview, awards, and cast and crew, starting beside the title.
     private func seasonFacts(
         _ content: TVSeasonContent,
         scrollTo: @escaping (String) -> Void,
@@ -374,27 +375,24 @@ struct TVSeasonView: View {
             twoColumns: twoColumns,
             contentWidth: contentWidth,
             showsSecondary: sectionsInPanes || !viewModel.awardRows.isEmpty,
-            itemSpacing: DesignSpacing.md
+            itemSpacing: sectionsInPanes ? DesignSpacing.xl : DesignSpacing.md
         ) {
-            TMDBRatingCard(
-                formattedRating: content.formattedRating,
-                accessibilityLabel: content.ratingAccessibilityLabel,
-                formattedUserScore: content.formattedUserScore,
-                userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
-                onEdit: { viewModel.openAnnotationEditor() }
-            )
-            MediaDescriptionSection(
-                overview: content.overview,
-                note: content.userNote,
-                notedOn: content.formattedNotedOn,
-                onEdit: { viewModel.openAnnotationEditor() },
-                scrollTo: scrollTo
-            )
-            if sectionsInPanes, !content.episodes.isEmpty {
-                episodes(content.episodes, seriesName: content.seriesName, columns: 1)
+            if sectionsInPanes {
+                seasonHero(content, twoColumns: true, part: .identity)
                     .inPane()
+                if !content.episodes.isEmpty {
+                    episodes(content.episodes, seriesName: content.seriesName, columns: 1)
+                        .inPane()
+                }
+            } else {
+                ratingAndOverview(content, scrollTo: scrollTo)
             }
         } secondary: {
+            if sectionsInPanes {
+                VStack(alignment: .leading, spacing: DesignSpacing.md) {
+                    ratingAndOverview(content, scrollTo: scrollTo)
+                }
+            }
             if !viewModel.awardRows.isEmpty {
                 AwardRowsSection(rows: viewModel.awardRows)
             }
@@ -403,7 +401,25 @@ struct TVSeasonView: View {
                     .inPane()
             }
         }
-        .padding(.horizontal, DesignSpacing.lg)
+        .detailColumnsInset(hingePanes: sectionsInPanes)
+    }
+
+    @ViewBuilder
+    private func ratingAndOverview(_ content: TVSeasonContent, scrollTo: @escaping (String) -> Void) -> some View {
+        TMDBRatingCard(
+            formattedRating: content.formattedRating,
+            accessibilityLabel: content.ratingAccessibilityLabel,
+            formattedUserScore: content.formattedUserScore,
+            userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+            onEdit: { viewModel.openAnnotationEditor() }
+        )
+        MediaDescriptionSection(
+            overview: content.overview,
+            note: content.userNote,
+            notedOn: content.formattedNotedOn,
+            onEdit: { viewModel.openAnnotationEditor() },
+            scrollTo: scrollTo
+        )
     }
 
     @ViewBuilder
