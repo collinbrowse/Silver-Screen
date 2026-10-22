@@ -151,6 +151,7 @@ final class TourControllerTests: XCTestCase {
             annotations: .empty(),
             isDemo: false,
             router: router,
+            analytics: DisabledAnalytics(),
             tour: tour
         )
 
@@ -172,6 +173,7 @@ final class TourControllerTests: XCTestCase {
             annotations: .empty(),
             isDemo: false,
             router: router,
+            analytics: DisabledAnalytics(),
             tour: tour
         )
 

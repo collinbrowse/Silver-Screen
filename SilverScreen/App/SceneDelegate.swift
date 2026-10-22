@@ -51,6 +51,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 annotations: dependencies.annotations,
                 isDemo: demo != nil,
                 router: dependencies.router,
+                analytics: dependencies.analytics,
                 library: libraryHomeViewModel,
                 tour: tour
             )

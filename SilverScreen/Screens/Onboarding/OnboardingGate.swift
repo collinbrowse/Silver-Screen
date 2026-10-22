@@ -20,6 +20,8 @@ final class OnboardingGate {
     private let annotations: AnnotationsRepository
     private let isDemo: Bool
     private let router: AppRouter
+    /// Counts finishes (not skips) as `Onboarding.finished`.
+    private let analytics: any AnalyticsClient
     private let library: LibraryHomeViewModel?
     /// The feature tour that picks up on the Library after a finish (not a skip).
     private let tour: TourController?
@@ -30,6 +32,7 @@ final class OnboardingGate {
         annotations: AnnotationsRepository,
         isDemo: Bool,
         router: AppRouter,
+        analytics: any AnalyticsClient,
         library: LibraryHomeViewModel? = nil,
         tour: TourController? = nil
     ) {
@@ -38,6 +41,7 @@ final class OnboardingGate {
         self.annotations = annotations
         self.isDemo = isDemo
         self.router = router
+        self.analytics = analytics
         self.library = library
         self.tour = tour
     }
@@ -84,6 +88,7 @@ final class OnboardingGate {
     /// start the feature tour there.
     func finish() async {
         marker.markCompleted()
+        analytics.send(.onboardingFinished)
         router.favorites.popToRoot()
         router.openLibrary()
         isPresented = false

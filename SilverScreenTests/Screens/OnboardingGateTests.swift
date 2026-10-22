@@ -173,17 +173,37 @@ final class OnboardingGateTests: XCTestCase {
         XCTAssertEqual(viewModel.step, .seen)
     }
 
+    func test_finish_sendsOnboardingFinished() async {
+        let analytics = SpyAnalyticsClient()
+        let gate = makeGate(analytics: analytics)
+
+        await gate.finish()
+
+        XCTAssertEqual(analytics.events, [.onboardingFinished])
+    }
+
+    func test_skip_sendsNothing() {
+        let analytics = SpyAnalyticsClient()
+        let gate = makeGate(analytics: analytics)
+
+        gate.skip()
+
+        XCTAssertEqual(analytics.events, [])
+    }
+
     private func makeGate(
         lists: ListsRepository = .empty(),
         isDemo: Bool = false,
-        router: AppRouter = AppRouter()
+        router: AppRouter = AppRouter(),
+        analytics: any AnalyticsClient = DisabledAnalytics()
     ) -> OnboardingGate {
         OnboardingGate(
             marker: OnboardingMarkerStore(defaults: defaults),
             lists: lists,
             annotations: .empty(),
             isDemo: isDemo,
-            router: router
+            router: router,
+            analytics: analytics
         )
     }
 }
