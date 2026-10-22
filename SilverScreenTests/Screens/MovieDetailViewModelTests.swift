@@ -274,6 +274,16 @@ final class MovieDetailViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.state, .failed(.offline))
     }
 
+    func test_load_whenCancelled_returnsToIdleSoTheNextAppearanceLoadsAgain() async {
+        let viewModel = makeViewModel(result: .failure(CancellationError()))
+
+        await viewModel.load()
+
+        guard case .idle = viewModel.state else {
+            return XCTFail("Expected idle, got \(viewModel.state)")
+        }
+    }
+
     func test_retry_afterFailure_loadsDetail() async {
         let switchable = SwitchableDetailHTTPClient(initial: .failure(URLError(.notConnectedToInternet)))
         let viewModel = MovieDetailViewModel(

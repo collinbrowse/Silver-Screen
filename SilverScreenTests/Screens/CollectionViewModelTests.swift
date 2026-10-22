@@ -72,6 +72,20 @@ final class CollectionViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.state, .failed(.offline))
     }
 
+    func test_load_whenCancelled_returnsToIdleSoTheNextAppearanceLoadsAgain() async {
+        let viewModel = CollectionViewModel(
+            collectionID: 230,
+            movies: MovieRepository.test(client: FakeHTTPClient(stub: .failure(CancellationError()))),
+            annotations: AnnotationsRepository.empty()
+        )
+
+        await viewModel.load()
+
+        guard case .idle = viewModel.state else {
+            return XCTFail("Expected idle, got \(viewModel.state)")
+        }
+    }
+
     private static let unsortedParts = Data(
         """
         {

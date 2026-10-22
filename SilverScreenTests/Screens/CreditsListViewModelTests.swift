@@ -107,6 +107,21 @@ final class CreditsListViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.state, .empty)
     }
 
+    func test_load_whenCancelled_returnsToIdleSoTheNextAppearanceLoadsAgain() async {
+        let viewModel = CreditsListViewModel(
+            personID: 1,
+            personName: "Unknown",
+            department: .cast,
+            people: PersonRepository.test(client: FakeHTTPClient(stub: .failure(CancellationError())))
+        )
+
+        await viewModel.load()
+
+        guard case .idle = viewModel.state else {
+            return XCTFail("Expected idle, got \(viewModel.state)")
+        }
+    }
+
     func test_load_whenOffline_setsFailed() async {
         let viewModel = CreditsListViewModel(
             personID: 1,
