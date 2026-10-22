@@ -38,6 +38,35 @@ final class OnboardingWatchlistViewModelTests: XCTestCase {
         XCTAssertFalse(ids(viewModel.state).contains("tv-1396"))
     }
 
+    func test_load_dropsSeriesBelowVoteFloorAndSkipsUpcomingTV() async {
+        let client = RoutingHTTPClient(routes: [
+            "/tv/popular": .success(Data(
+                """
+                {
+                  "page": 1,
+                  "total_pages": 1,
+                  "results": [
+                    { "id": 9001, "name": "Come Home Love", "genre_ids": [35], "vote_count": 48 },
+                    { "id": 1396, "name": "Breaking Bad", "genre_ids": [18], "vote_count": 18900 }
+                  ]
+                }
+                """.utf8
+            )),
+            "/discover/tv": .success(TMDBFixtures.popularTVPage),
+        ])
+        let viewModel = OnboardingWatchlistViewModel(
+            movies: .test(client: client),
+            shows: .test(client: client),
+            lists: .empty()
+        )
+
+        await viewModel.load(excluding: [])
+
+        XCTAssertEqual(ids(viewModel.state), ["tv-1396"])
+        let paths = await client.requests.compactMap { $0.url?.path }
+        XCTAssertFalse(paths.contains { $0.hasSuffix("/discover/tv") })
+    }
+
     func test_load_everySourceOffline_failsWithoutBlocking() async {
         let client = FakeHTTPClient(stub: .failure(URLError(.notConnectedToInternet)))
         let viewModel = OnboardingWatchlistViewModel(
