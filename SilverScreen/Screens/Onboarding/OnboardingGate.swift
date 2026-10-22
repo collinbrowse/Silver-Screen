@@ -6,7 +6,7 @@
 //  once in `SceneDelegate`; the Library's empty state reopens it.
 //
 
-import Foundation
+import SwiftUI
 
 /// Presentation state for the onboarding full-screen cover.
 @Observable
@@ -14,6 +14,9 @@ import Foundation
 final class OnboardingGate {
     /// Bound to the full-screen cover over `RootTabView`.
     var isPresented = false
+    /// True from the launch check's decision until its cover is on screen. The tabs
+    /// stay hidden meanwhile, so Browse never shows under a cover on its way up.
+    private(set) var isLaunchCoverPending = false
 
     private let marker: OnboardingMarkerStore
     private let lists: ListsRepository
@@ -59,18 +62,55 @@ final class OnboardingGate {
         return !annotations.contains { $0.score != nil }
     }
 
+    /// True when launch has to read the library to decide: no finish or skip yet, and
+    /// not a capture. Anyone who has finished or skipped once launches without waiting.
+    var needsLaunchCheck: Bool {
+        !isDemo && marker.completedAt() == nil
+    }
+
+    /// Runs `evaluate()` but returns after `limit` seconds even if the read is still
+    /// going. Launch holds its first frame on this; a slow read then lets the tabs
+    /// show and the cover follows when the read finishes.
+    func evaluate(waitingAtMost limit: TimeInterval, sleeper: any Sleeper = TaskSleeper()) async {
+        let check = Task { await evaluate() }
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { await check.value }
+            group.addTask { try? await sleeper.sleep(seconds: limit) }
+            await group.next()
+            group.cancelAll()
+        }
+    }
+
     /// Reads the library and ratings once at launch. An unreadable library is
     /// treated as not new, so a disk error never pushes someone into onboarding.
     func evaluate() async {
         guard !isDemo, marker.completedAt() == nil else { return }
         guard let snapshot = try? await lists.snapshot() else { return }
-        let saved = await annotations.saved()
-        isPresented = Self.shouldPresent(
+        guard let saved = try? await annotations.saved() else { return }
+        guard Self.shouldPresent(
             snapshot: snapshot,
             annotations: saved,
             completedAt: marker.completedAt(),
             isDemo: isDemo
-        )
+        ) else { return }
+        isLaunchCoverPending = true
+    }
+
+    /// Puts the launch check's cover up without the slide, once the tabs exist. A
+    /// cover bound to `true` before its first render always slides, so this waits
+    /// for `RootTabView` to appear.
+    func presentLaunchCover() {
+        guard isLaunchCoverPending, !isPresented else { return }
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            isPresented = true
+        }
+    }
+
+    /// The launch cover is on screen, so the tabs can show under it.
+    func launchCoverDidAppear() {
+        isLaunchCoverPending = false
     }
 
     /// The Library's "Get started" button. Works after a skip or finish too.

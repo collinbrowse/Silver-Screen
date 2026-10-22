@@ -95,7 +95,7 @@ enum TVWatchReconcile {
     ) async {
         if Task.isCancelled { return }
         do {
-            let detail = try await shows.series(id: state.seriesID)
+            let detail = try await shows.seriesCatalog(id: state.seriesID)
             let outcome = try await tvWatch.reconcileCatalog(
                 seriesID: state.seriesID,
                 seasons: detail.seasons,

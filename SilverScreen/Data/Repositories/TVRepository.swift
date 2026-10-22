@@ -121,6 +121,18 @@ final class TVRepository: Sendable {
         )
     }
 
+    /// Series with the most TMDB ratings (`discover/tv`, `vote_count.desc`). Onboarding
+    /// uses it for shows most people have heard of, since TMDB's TV lists are global.
+    func mostVoted(page: Int, locale: Locale = .current) async throws -> TVSeriesPage {
+        try await fetchSeriesPage(
+            path: "discover/tv",
+            context: "Most voted TV",
+            page: page,
+            extra: [URLQueryItem(name: "sort_by", value: "vote_count.desc")],
+            locale: locale
+        )
+    }
+
     func search(query: String, page: Int, locale: Locale = .current) async throws -> TVSeriesPage {
         try await fetchSeriesPage(
             path: "search/tv",
@@ -159,6 +171,21 @@ final class TVRepository: Sendable {
                 URLQueryItem(name: "language", value: TMDBLocale.languageTag(for: locale)),
                 URLQueryItem(name: "append_to_response", value: "images,aggregate_credits,recommendations,videos,watch/providers"),
                 URLQueryItem(name: "include_image_language", value: TMDBLocale.imageLanguages(for: locale)),
+            ]
+        ) { data in
+            try Self.decodeSeries(data, locale: locale, logger: logger)
+        }
+    }
+
+    /// Series detail with no appended sections: the season list and the fields a list row
+    /// needs. The cold-launch catalog check calls this for every finished show, so it must
+    /// not download images, credits, and recommendations it never reads.
+    func seriesCatalog(id: Int, locale: Locale = .current) async throws -> TVSeriesDetail {
+        try await fetch(
+            path: "tv/\(id)",
+            context: "TV series catalog",
+            queryItems: [
+                URLQueryItem(name: "language", value: TMDBLocale.languageTag(for: locale)),
             ]
         ) { data in
             try Self.decodeSeries(data, locale: locale, logger: logger)
@@ -407,7 +434,8 @@ final class TVRepository: Sendable {
             firstAirDate: MovieRepository.parseReleaseDate(dto.firstAirDate ?? ""),
             genreIDs: dto.genreIDs ?? [],
             voteAverage: dto.voteAverage ?? 0,
-            popularity: dto.popularity ?? 0
+            popularity: dto.popularity ?? 0,
+            voteCount: max(dto.voteCount ?? 0, 0)
         )
     }
 

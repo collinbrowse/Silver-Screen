@@ -172,7 +172,7 @@ struct MovieDetailView: View {
 
     private func shownSections(_ content: MovieDetailContent) -> Set<MovieDetailLayout.Section> {
         var shown: Set<MovieDetailLayout.Section> = [
-            .hero(.all), .hero(.backdrop), .hero(.identity), .rating, .storyline, .facts,
+            .hero(.all), .hero(.backdrop), .hero(.identity), .rating, .logWatch, .storyline, .facts,
         ]
         if !viewModel.awardRows.isEmpty { shown.insert(.awards) }
         if content.cast != nil { shown.insert(.cast) }
@@ -197,6 +197,8 @@ struct MovieDetailView: View {
                 hero(content, layout: layout, part: part)
             case .rating:
                 ratingCard(content)
+            case .logWatch:
+                LogWatchButton(title: LogWatchTitle(movie: content.detail), currentScore: content.userScore)
             case .storyline:
                 storyline(content, scrollTo: scrollTo)
             case .facts:
@@ -585,6 +587,8 @@ enum MovieDetailLayout {
     enum Section: DetailPageSection {
         case hero(DetailHeroPart)
         case rating
+        /// The diary's Log watch button, under the rating card.
+        case logWatch
         case storyline
         case facts
         case awards
@@ -599,7 +603,7 @@ enum MovieDetailLayout {
             switch self {
                 case .hero, .cast, .crew, .similar, .collection, .reviews:
                     true
-                case .rating, .storyline, .facts, .awards, .attribution:
+                case .rating, .logWatch, .storyline, .facts, .awards, .attribution:
                     false
             }
         }
@@ -607,26 +611,26 @@ enum MovieDetailLayout {
 
     /// The sections in `shown`, placed for `layout`.
     ///
-    /// - Phone and wide page: rating, storyline, then facts and awards. A wide page puts
+    /// - Phone and wide page: rating, Log watch, storyline, then facts and awards. A wide page puts
     ///   awards in the side column with facts in the main one, since a long awards card
     ///   already outweighs the rest; with no awards, facts take the side column.
     ///   Carousels and reviews run full width below.
-    /// - Across a fold: the leading pane has the title, facts, rating, storyline, and
-    ///   reviews; the trailing pane has awards and the carousels.
+    /// - Across a fold: the leading pane has the title, facts, rating, Log watch,
+    ///   storyline, and reviews; the trailing pane has awards and the carousels.
     static func plan(for layout: DetailPageLayout, showing shown: Set<Section>) -> DetailPagePlan<Section> {
         let hasAwards = shown.contains(.awards)
         let plan = switch layout {
             case .stacked, .columns:
                 DetailPagePlan<Section>(
                     top: [.hero(.all)],
-                    main: hasAwards ? [.rating, .storyline, .facts] : [.rating, .storyline],
+                    main: hasAwards ? [.rating, .logWatch, .storyline, .facts] : [.rating, .logWatch, .storyline],
                     side: hasAwards ? [.awards] : [.facts],
                     below: [.cast, .crew, .similar, .collection, .reviews, .attribution]
                 )
             case .panes:
                 DetailPagePlan<Section>(
                     top: [.hero(.backdrop)],
-                    main: [.hero(.identity), .facts, .rating, .storyline, .reviews],
+                    main: [.hero(.identity), .facts, .rating, .logWatch, .storyline, .reviews],
                     side: [.awards, .cast, .crew, .similar, .collection],
                     below: [.attribution]
                 )

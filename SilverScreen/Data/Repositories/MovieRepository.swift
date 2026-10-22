@@ -296,7 +296,8 @@ final class MovieRepository: Sendable {
             releaseDate: parseReleaseDate(dto.releaseDate),
             voteAverage: dto.voteAverage,
             genreIDs: dto.genreIDs,
-            popularity: dto.popularity
+            popularity: dto.popularity,
+            voteCount: max(dto.voteCount, 0)
         )
     }
 
@@ -548,6 +549,12 @@ final class MovieRepository: Sendable {
         var skipped = 0
 
         for element in results {
+            // `JSONSerialization.data(withJSONObject:)` raises an Objective-C exception, which
+            // `catch` cannot handle, for a bare `null` or number. Skip those first.
+            guard JSONSerialization.isValidJSONObject(element) else {
+                skipped += 1
+                continue
+            }
             do {
                 let elementData = try JSONSerialization.data(withJSONObject: element)
                 let dto = try decoder.decode(MovieSummaryDTO.self, from: elementData)

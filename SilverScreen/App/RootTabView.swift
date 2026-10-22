@@ -131,6 +131,18 @@ struct RootTabView: View {
                     ),
                     imageLoader: imageLoader
                 )
+                .onAppear(perform: onboarding.launchCoverDidAppear)
+            }
+            // First launch: blank until the onboarding cover is up, then present it
+            // without the slide so the tabs never flash first.
+            .overlay {
+                if onboarding.isLaunchCoverPending {
+                    Color(.systemBackground)
+                        .ignoresSafeArea()
+                }
+            }
+            .onChange(of: onboarding.isLaunchCoverPending, initial: true) {
+                onboarding.presentLaunchCover()
             }
     }
 

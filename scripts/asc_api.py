@@ -10,6 +10,7 @@ from __future__ import annotations
 import base64
 import csv
 import gzip
+import http.client
 import io
 import json
 import os
@@ -112,15 +113,25 @@ def make_token(credentials: ASCCredentials, now=None):
 HttpFn = Callable[[str, str, Dict[str, str], Optional[bytes]], Tuple[int, Dict[str, Any]]]
 
 
-def default_http(method, url, headers, body):
+def _send(method, url, headers, body, timeout):
+    """(status, raw bytes) for one request. HTTP errors return their status and body.
+
+    A network failure (DNS, refused connection, timeout, dropped connection) is an
+    ASCError, so a caller that guards ASC calls does not crash on it.
+    """
     request = urllib.request.Request(url, data=body, headers=headers, method=method)
     try:
-        with urllib.request.urlopen(request, timeout=60) as response:
-            raw = response.read()
-            status = response.status
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return response.status, response.read()
     except urllib.error.HTTPError as error:
-        raw = error.read()
-        status = error.code
+        return error.code, error.read()
+    except (OSError, http.client.HTTPException) as error:
+        # URLError and TimeoutError are OSErrors. Log the path, never the query.
+        raise ASCError(f"{method} {url.split('?')[0]} failed: {error}") from error
+
+
+def default_http(method, url, headers, body):
+    status, raw = _send(method, url, headers, body, timeout=60)
     if not raw:
         return status, {}
     try:
@@ -131,12 +142,7 @@ def default_http(method, url, headers, body):
 
 def default_download(method, url, headers, body):
     """Like default_http, but returns raw bytes. Reports come back gzipped, not JSON."""
-    request = urllib.request.Request(url, data=body, headers=headers, method=method)
-    try:
-        with urllib.request.urlopen(request, timeout=120) as response:
-            return response.status, response.read()
-    except urllib.error.HTTPError as error:
-        return error.code, error.read()
+    return _send(method, url, headers, body, timeout=120)
 
 
 # Product Type Identifiers for a first-time app download (not an update or

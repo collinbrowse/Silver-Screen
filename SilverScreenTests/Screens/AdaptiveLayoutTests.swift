@@ -520,7 +520,7 @@ final class DetailPagePlanTests: XCTestCase {
     // MARK: - Movie
 
     private let allMovie: Set<MovieDetailLayout.Section> = [
-        .hero(.all), .hero(.backdrop), .hero(.identity), .rating, .storyline, .facts, .awards,
+        .hero(.all), .hero(.backdrop), .hero(.identity), .rating, .logWatch, .storyline, .facts, .awards,
         .cast, .crew, .similar, .collection, .reviews, .attribution,
     ]
 
@@ -537,14 +537,14 @@ final class DetailPagePlanTests: XCTestCase {
     func test_moviePlan_wideWithAwards_awardsBesideFactsInMain() {
         let plan = MovieDetailLayout.plan(for: .columns, showing: allMovie)
 
-        XCTAssertEqual(plan.main, [.rating, .storyline, .facts])
+        XCTAssertEqual(plan.main, [.rating, .logWatch, .storyline, .facts])
         XCTAssertEqual(plan.side, [.awards])
     }
 
     func test_moviePlan_wideWithoutAwards_factsTakeSideColumn() {
         let plan = MovieDetailLayout.plan(for: .columns, showing: allMovie.subtracting([.awards]))
 
-        XCTAssertEqual(plan.main, [.rating, .storyline])
+        XCTAssertEqual(plan.main, [.rating, .logWatch, .storyline])
         XCTAssertEqual(plan.side, [.facts])
     }
 
@@ -553,7 +553,10 @@ final class DetailPagePlanTests: XCTestCase {
 
         XCTAssertEqual(
             plan.sections,
-            [.hero(.all), .rating, .storyline, .facts, .awards, .cast, .crew, .similar, .collection, .reviews, .attribution]
+            [
+                .hero(.all), .rating, .logWatch, .storyline, .facts, .awards,
+                .cast, .crew, .similar, .collection, .reviews, .attribution,
+            ]
         )
     }
 
@@ -561,7 +564,7 @@ final class DetailPagePlanTests: XCTestCase {
         let plan = MovieDetailLayout.plan(for: .panes, showing: allMovie)
 
         XCTAssertEqual(plan.top, [.hero(.backdrop)])
-        XCTAssertEqual(plan.main, [.hero(.identity), .facts, .rating, .storyline, .reviews])
+        XCTAssertEqual(plan.main, [.hero(.identity), .facts, .rating, .logWatch, .storyline, .reviews])
         XCTAssertEqual(plan.side, [.awards, .cast, .crew, .similar, .collection])
     }
 

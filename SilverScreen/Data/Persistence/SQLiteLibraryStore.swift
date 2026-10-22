@@ -3,7 +3,8 @@
 //  SilverScreen
 //
 //  library.sqlite implementation of LibraryStore. Domain-scoped mutations keep list
-//  writes from touching annotations or TV progress (and vice versa), and each save is
+//  writes from touching annotations, TV progress, or the diary (and vice versa; the
+//  diary half lives in SQLiteLibraryStore+Diary.swift), and each save is
 //  diffed against stored rows so revision, dates, and tombstones stay meaningful.
 //
 
@@ -13,24 +14,38 @@ actor SQLiteLibraryStore: LibraryStore {
     static let databaseFileName = "library.sqlite"
     static let jsonImportStampKey = "json_import"
 
-    private let database: SQLiteDatabase
+    // `database`, `encoder`, `decoder`, `withTransaction`, `tombstoneRows`, and
+    // `ensureBootstrapped` are internal only so `SQLiteLibraryStore+Diary.swift` can use them.
+    let database: SQLiteDatabase
     private let listsJSONURL: URL
     private let annotationsJSONURL: URL
     private let tvWatchJSONURL: URL
-    private let encoder: JSONEncoder
-    private let decoder: JSONDecoder
+    private let legacyLists: any ListsStore
+    private let legacyAnnotations: any AnnotationsStore
+    private let legacyTVWatch: any TVWatchStore
+    let encoder: JSONEncoder
+    let decoder: JSONDecoder
     private var didBootstrap = false
+    private var bootstrapTask: Task<Void, any Error>?
 
+    /// The legacy stores default to the JSON files at the given URLs. Tests pass their own
+    /// to control when the one-time import's reads finish.
     init(
         databaseURL: URL,
         listsJSONURL: URL,
         annotationsJSONURL: URL,
-        tvWatchJSONURL: URL
+        tvWatchJSONURL: URL,
+        legacyLists: (any ListsStore)? = nil,
+        legacyAnnotations: (any AnnotationsStore)? = nil,
+        legacyTVWatch: (any TVWatchStore)? = nil
     ) throws {
         self.database = try SQLiteDatabase(fileURL: databaseURL)
         self.listsJSONURL = listsJSONURL
         self.annotationsJSONURL = annotationsJSONURL
         self.tvWatchJSONURL = tvWatchJSONURL
+        self.legacyLists = legacyLists ?? FileListsStore(fileURL: listsJSONURL)
+        self.legacyAnnotations = legacyAnnotations ?? FileAnnotationsStore(fileURL: annotationsJSONURL)
+        self.legacyTVWatch = legacyTVWatch ?? FileTVWatchStore(fileURL: tvWatchJSONURL)
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         // Stable key order, so an unchanged catalog snapshot compares equal on the next save.
@@ -54,11 +69,27 @@ actor SQLiteLibraryStore: LibraryStore {
         )
     }
 
+    /// Launch calls this and the first reads from several tasks at once. The JSON import
+    /// suspends while it reads the legacy files, so every caller awaits one shared run:
+    /// a second import reading after the first renamed the files would see empty JSON and
+    /// tombstone the rows just imported. A failed run is cleared so the next call retries.
     func bootstrap() async throws {
         guard !didBootstrap else { return }
-        try migrateSchema()
-        try await importLegacyJSONIfNeeded()
-        didBootstrap = true
+        if let bootstrapTask {
+            return try await bootstrapTask.value
+        }
+        let task = Task {
+            try migrateSchema()
+            try await importLegacyJSONIfNeeded()
+        }
+        bootstrapTask = task
+        do {
+            try await task.value
+            didBootstrap = true
+        } catch {
+            bootstrapTask = nil
+            throw error
+        }
     }
 
     func fetchSnapshot() async throws -> LibrarySnapshot {
@@ -315,12 +346,14 @@ actor SQLiteLibraryStore: LibraryStore {
                 try replaceAnnotations(records)
             case .replaceTVWatch(let states):
                 try replaceTVWatch(states)
+            case .replaceDiary(let entries):
+                try replaceDiary(entries)
         }
     }
 
     // MARK: - Bootstrap / import
 
-    private func ensureBootstrapped() async throws {
+    func ensureBootstrapped() async throws {
         if !didBootstrap {
             try await bootstrap()
         }
@@ -347,6 +380,9 @@ actor SQLiteLibraryStore: LibraryStore {
             try withTransaction {
                 for statement in try LibrarySchema.statements(for: version) {
                     try database.execute(statement)
+                }
+                if version == 4 {
+                    try backfillDiaryFromWatched()
                 }
                 try database.run(
                     "INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?);"
@@ -388,12 +424,9 @@ actor SQLiteLibraryStore: LibraryStore {
             return
         }
 
-        let listsStore = FileListsStore(fileURL: listsJSONURL)
-        let annotationsStore = FileAnnotationsStore(fileURL: annotationsJSONURL)
-        let tvStore = FileTVWatchStore(fileURL: tvWatchJSONURL)
-        let snapshot = try await listsStore.load()
-        let annotations = try await annotationsStore.load()
-        let tvStates = try await tvStore.load()
+        let snapshot = try await legacyLists.load()
+        let annotations = try await legacyAnnotations.load()
+        let tvStates = try await legacyTVWatch.load()
 
         try withTransaction {
             if listCount == 0 {
@@ -404,6 +437,11 @@ actor SQLiteLibraryStore: LibraryStore {
             }
             if tvCount == 0 {
                 try writeTVWatch(tvStates)
+            }
+            if listCount == 0 {
+                // Schema v4 ran before these lists existed, so give them their diary
+                // entries now, after annotations so each entry gets its rating.
+                try backfillDiaryFromWatched()
             }
             try setSyncState(
                 Self.jsonImportStampKey,
@@ -434,7 +472,7 @@ actor SQLiteLibraryStore: LibraryStore {
         }
     }
 
-    private func withTransaction(_ body: () throws -> Void) throws {
+    func withTransaction(_ body: () throws -> Void) throws {
         try database.execute("BEGIN IMMEDIATE;")
         do {
             try body()
@@ -726,8 +764,8 @@ actor SQLiteLibraryStore: LibraryStore {
     }
 
     /// Tombstones live rows whose key is not in `keeping`. `table` and `keyExpression`
-    /// are fixed SQL from this file, never user input.
-    private func tombstoneRows(
+    /// are fixed SQL from the store's own files, never user input.
+    func tombstoneRows(
         in table: String,
         keyExpression: String,
         keeping keys: Set<String>,

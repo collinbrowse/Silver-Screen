@@ -66,6 +66,10 @@ struct LibraryHomeView: View {
                 .accessibilityLabel("Settings")
             }
             ToolbarItemGroup(placement: .topBarTrailing) {
+                NavigationLink(value: Route.diary) {
+                    Image(systemName: "book.closed")
+                }
+                .accessibilityLabel("Diary")
                 if viewModel.canReorderLists {
                     EditButton()
                         .accessibilityLabel(editMode == .active ? "Done reordering" : "Reorder lists")

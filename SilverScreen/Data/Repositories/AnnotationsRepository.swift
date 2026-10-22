@@ -49,9 +49,10 @@ actor AnnotationsRepository {
         return records.first { $0.key == key }
     }
 
-    /// Every stored score and note. An unreadable file yields an empty list.
-    func saved() async -> [MediaAnnotation] {
-        (try? await loadCache()) ?? []
+    /// Every stored score and note. Throws when the store cannot be read, so a caller
+    /// cannot mistake an unreadable library for an empty one.
+    func saved() async throws -> [MediaAnnotation] {
+        try await loadCache()
     }
 
     /// Stores a half-point score and optional note in one write.

@@ -69,6 +69,39 @@ final class OnboardingCatalogTests: XCTestCase {
         XCTAssertEqual(kept.map(\.id), [1])
     }
 
+    func test_widelySeenSeries_dropsRegionalTailAndPutsMostRatedFirst() {
+        let shows = [
+            show(1, votes: 1_200),
+            show(2, votes: 230),
+            show(3, votes: 18_900),
+            show(4, votes: 1_000),
+        ]
+
+        let kept = OnboardingCatalog.widelySeen(shows)
+
+        XCTAssertEqual(kept.map(\.id), [3, 1, 4])
+    }
+
+    func test_widelySeenMovies_dropsLowVoteCountsAndPutsMostRatedFirst() {
+        let movies = [
+            TestMovies.make(id: 1, voteCount: 2_000),
+            TestMovies.make(id: 2, voteCount: 296),
+            TestMovies.make(id: 3, voteCount: 25_000),
+        ]
+
+        let kept = OnboardingCatalog.widelySeen(movies)
+
+        XCTAssertEqual(kept.map(\.id), [3, 1])
+    }
+
+    func test_seriesWithAtLeast_keepsTMDBOrder() {
+        let shows = [show(1, votes: 348), show(2, votes: 48), show(3, votes: 18_900)]
+
+        let kept = OnboardingCatalog.series(shows, withAtLeast: OnboardingCatalog.watchlistVoteFloor)
+
+        XCTAssertEqual(kept.map(\.id), [1, 3])
+    }
+
     func test_gridLayout_columnsFollowAvailableWidth() {
         let phone = OnboardingPosterGrid<EmptyView>.layout(availableWidth: 361, minimumPosterWidth: 104, spacing: 12)
         let wide = OnboardingPosterGrid<EmptyView>.layout(availableWidth: 800, minimumPosterWidth: 104, spacing: 12)
@@ -86,6 +119,10 @@ final class OnboardingCatalogTests: XCTestCase {
 
     private func movie(_ id: Int) -> OnboardingTitle {
         OnboardingTitle(draft: OnboardingFixtures.movieDraft(id: id))
+    }
+
+    private func show(_ id: Int, votes: Int) -> TVSeriesSummary {
+        TVSeriesSummary(id: id, name: "Show \(id)", posterPath: nil, firstAirDate: nil, genreIDs: [18], voteCount: votes)
     }
 
     private func series(_ id: Int) -> OnboardingTitle {

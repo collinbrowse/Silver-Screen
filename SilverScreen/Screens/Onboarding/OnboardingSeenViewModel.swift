@@ -99,36 +99,56 @@ final class OnboardingSeenViewModel {
 
         async let bestPicture = Self.capture { [self] in try await bestPictureWinners() }
         let today = now()
+        // TMDB's TV lists are global and lean regional, so every source keeps only
+        // titles with enough ratings and puts the most rated first.
         async let topMovies = Self.capture { [movies] in
             OnboardingCatalog.titles(
-                OnboardingCatalog.released(try await movies.topMovies(page: 1).movies, by: today)
+                OnboardingCatalog.widelySeen(
+                    OnboardingCatalog.released(try await movies.topMovies(page: 1).movies, by: today)
+                )
             )
         }
-        async let popularShows = Self.capture { [shows] in
+        async let mostVotedShows = Self.capture { [shows] in
             OnboardingCatalog.titles(
-                OnboardingCatalog.series(
-                    try await shows.popular(page: 1).series,
-                    dropping: OnboardingCatalog.dailyTVGenres
+                OnboardingCatalog.widelySeen(
+                    OnboardingCatalog.series(
+                        try await shows.mostVoted(page: 1).series,
+                        dropping: OnboardingCatalog.dailyTVGenres
+                    )
                 )
             )
         }
         async let popularMovies = Self.capture { [movies] in
             OnboardingCatalog.titles(
-                OnboardingCatalog.released(try await movies.popular(page: 1).movies, by: today)
+                OnboardingCatalog.widelySeen(
+                    OnboardingCatalog.released(try await movies.popular(page: 1).movies, by: today)
+                )
             )
         }
         async let topShows = Self.capture { [shows] in
             OnboardingCatalog.titles(
-                OnboardingCatalog.series(
-                    try await shows.topRated(page: 1).series,
-                    dropping: OnboardingCatalog.dailyTVGenres
+                OnboardingCatalog.widelySeen(
+                    OnboardingCatalog.series(
+                        try await shows.topRated(page: 1).series,
+                        dropping: OnboardingCatalog.dailyTVGenres
+                    )
+                )
+            )
+        }
+        async let popularShows = Self.capture { [shows] in
+            OnboardingCatalog.titles(
+                OnboardingCatalog.widelySeen(
+                    OnboardingCatalog.series(
+                        try await shows.popular(page: 1).series,
+                        dropping: OnboardingCatalog.dailyTVGenres
+                    )
                 )
             )
         }
 
         var results = OnboardingSourceResults()
-        // Popular TV is global and leans regional, so it takes the last turn in each round.
-        for result in await [bestPicture, topMovies, topShows, popularMovies, popularShows] {
+        let fetched = await [bestPicture, topMovies, mostVotedShows, popularMovies, topShows, popularShows]
+        for result in fetched {
             results.append(result)
         }
         if Task.isCancelled {
@@ -278,7 +298,7 @@ final class OnboardingSeenViewModel {
               let watched = snapshot.list(.watched) else { return }
         let keys = Set(snapshot.entries.filter { $0.listID == watched.id }.map(\.itemKey))
         pickedKeys.formUnion(keys)
-        for record in await annotations.saved() {
+        for record in (try? await annotations.saved()) ?? [] {
             guard let score = record.score else { continue }
             let itemKey: String
             switch record.key.kind {

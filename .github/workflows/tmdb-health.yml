@@ -32,5 +32,7 @@ jobs:
       - name: Check TMDB
         env:
           TMDB_ACCESS_TOKEN: ${{ secrets.TMDB_ACCESS_TOKEN }}
+          # Release builds call only the Worker proxy, so check it too when it is set.
+          TMDB_PROXY_URL: ${{ vars.TMDB_PROXY_URL }}
           GITHUB_TOKEN: ${{ github.token }}
         run: python3 scripts/tmdb_health.py --file-issue

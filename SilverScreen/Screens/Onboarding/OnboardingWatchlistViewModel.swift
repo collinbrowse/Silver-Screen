@@ -85,33 +85,26 @@ final class OnboardingWatchlistViewModel {
         }
         state = .loading
 
+        // Upcoming TV is left out: it is tomorrow's premieres worldwide, none with
+        // ratings yet. Series lists drop the regional tail below the vote floor.
         async let upcomingMovies = OnboardingSeenViewModel.capture { [movies] in
             OnboardingCatalog.titles(try await movies.upcoming(page: 1).movies)
-        }
-        async let upcomingShows = OnboardingSeenViewModel.capture { [shows] in
-            OnboardingCatalog.titles(
-                OnboardingCatalog.series(try await shows.upcoming(page: 1).series, dropping: OnboardingCatalog.dailyTVGenres)
-            )
         }
         async let nowPlaying = OnboardingSeenViewModel.capture { [movies] in
             OnboardingCatalog.titles(try await movies.nowPlaying(page: 1).movies)
         }
         async let onTheAir = OnboardingSeenViewModel.capture { [shows] in
-            OnboardingCatalog.titles(
-                OnboardingCatalog.series(try await shows.onTheAir(page: 1).series, dropping: OnboardingCatalog.dailyTVGenres)
-            )
+            OnboardingCatalog.titles(Self.knownSeries(try await shows.onTheAir(page: 1).series))
         }
         async let popularMovies = OnboardingSeenViewModel.capture { [movies] in
             OnboardingCatalog.titles(try await movies.popular(page: 1).movies)
         }
         async let popularShows = OnboardingSeenViewModel.capture { [shows] in
-            OnboardingCatalog.titles(
-                OnboardingCatalog.series(try await shows.popular(page: 1).series, dropping: OnboardingCatalog.dailyTVGenres)
-            )
+            OnboardingCatalog.titles(Self.knownSeries(try await shows.popular(page: 1).series))
         }
 
         var results = OnboardingSourceResults()
-        let fetched = await [upcomingMovies, upcomingShows, nowPlaying, onTheAir, popularMovies, popularShows]
+        let fetched = await [upcomingMovies, nowPlaying, onTheAir, popularMovies, popularShows]
         for result in fetched {
             results.append(result)
         }
@@ -124,6 +117,14 @@ final class OnboardingWatchlistViewModel {
             sources = results
         }
         state = results.state(excluding: excludedKeys)
+    }
+
+    /// No daily shows, and nothing below the watchlist vote floor.
+    private nonisolated static func knownSeries(_ series: [TVSeriesSummary]) -> [TVSeriesSummary] {
+        OnboardingCatalog.series(
+            OnboardingCatalog.series(series, dropping: OnboardingCatalog.dailyTVGenres),
+            withAtLeast: OnboardingCatalog.watchlistVoteFloor
+        )
     }
 
     /// Retry after a cold failure.

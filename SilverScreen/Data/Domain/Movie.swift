@@ -14,4 +14,6 @@ struct Movie: Sendable, Identifiable, Hashable {
     let genreIDs: [Int]
     /// TMDB popularity. Zero when the payload did not include it.
     var popularity: Double = 0
+    /// How many TMDB users rated it. Zero when the payload did not include it.
+    var voteCount: Int = 0
 }

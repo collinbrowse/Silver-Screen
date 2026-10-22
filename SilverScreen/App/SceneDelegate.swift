@@ -55,7 +55,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 library: libraryHomeViewModel,
                 tour: tour
             )
-            Task { await onboarding.evaluate() }
             Task { try? await dependencies.libraryStore.bootstrap() }
             Task { try? await dependencies.lists.loadIndex() }
             Task { await dependencies.awards.prepare() }
@@ -95,6 +94,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 tour: tour,
                 reviewPrompter: dependencies.reviewPrompter
             )
+            .environment(dependencies.diary)
             if let seedURL = demo?.seedURL {
                 // A demo launch holds the first frame until the seed is written, so
                 // screens never read an empty library and miss the seeded rows.
@@ -108,6 +108,17 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                        let route = demo?.startingRoute(in: library) {
                         dependencies.router.restore(route)
                     }
+                    window.rootViewController = UIHostingController(rootView: root)
+                }
+            } else if onboarding.needsLaunchCheck {
+                // No finish or skip yet: hold the first frame until the library read
+                // decides onboarding, so the cover is up from the first frame instead
+                // of sliding over Browse. Capped so a slow read never stalls launch.
+                let placeholder = UIViewController()
+                placeholder.view.backgroundColor = .systemBackground
+                window.rootViewController = placeholder
+                Task { @MainActor in
+                    await onboarding.evaluate(waitingAtMost: Self.onboardingCheckLimit)
                     window.rootViewController = UIHostingController(rootView: root)
                 }
             } else {
@@ -129,12 +140,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.makeKeyAndVisible()
     }
 
+    /// Longest a first launch holds its first frame for the onboarding check.
+    private static let onboardingCheckLimit: TimeInterval = 0.5
+
     /// Fills a demo launch's empty library through the real repositories.
     @MainActor
     private static func seedDemoLibrary(from url: URL, dependencies: AppDependencies) async {
         do {
             let seed = try DemoLibrarySeed.load(from: url)
             try await seed.apply(lists: dependencies.lists, annotations: dependencies.annotations)
+            try await dependencies.libraryStore.backfillDiaryFromWatchedNow()
         } catch {
             dependencies.logger.error("Demo library seed failed: \(error)", category: .persistence)
         }

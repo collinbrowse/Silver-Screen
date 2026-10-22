@@ -469,7 +469,10 @@ final class SQLiteLibraryStoreTests: XCTestCase {
 
         let db = try SQLiteDatabase(fileURL: databaseURL())
         defer { db.close() }
-        XCTAssertEqual(try db.scalarInt("SELECT MAX(version) FROM schema_migrations;"), 3)
+        XCTAssertEqual(
+            try db.scalarInt("SELECT MAX(version) FROM schema_migrations;"),
+            LibrarySchema.currentVersion
+        )
         XCTAssertEqual(try db.scalarInt("SELECT COUNT(*) FROM library_list;"), 2)
         XCTAssertEqual(try db.scalarInt("SELECT COUNT(*) FROM media_item;"), 2)
         XCTAssertEqual(try db.scalarInt("SELECT COUNT(*) FROM list_membership;"), 2)
@@ -736,6 +739,51 @@ final class SQLiteLibraryStoreTests: XCTestCase {
         XCTAssertEqual(count, 1, "Editing movie 1 keeps its old created_at; only movie 3 is new")
     }
 
+    /// Launch fires `bootstrap()` and the first reads from several tasks at once. Each one
+    /// must wait for the single JSON import rather than run its own: a second import whose
+    /// TV read lands after the first renamed the files sees no JSON and tombstones the TV
+    /// progress the first one just wrote.
+    func test_bootstrap_concurrentCallers_importLegacyJSONOnce() async throws {
+        let listsURL = directory.appendingPathComponent("lists.json")
+        let annotationsURL = directory.appendingPathComponent("annotations.json")
+        let tvURL = directory.appendingPathComponent("tv-progress.json")
+        let list = LibraryList.system(.watchlist)
+        try await FileListsStore(fileURL: listsURL).save(
+            LibrarySnapshot(lists: [list], entries: [entry(100, in: list)])
+        )
+        try await FileAnnotationsStore(fileURL: annotationsURL).save([
+            MediaAnnotation(key: .movie(100), score: 7, note: nil, watchedAt: nil)
+        ])
+        try await FileTVWatchStore(fileURL: tvURL).save([
+            TVSeriesWatchState(
+                seriesID: 42,
+                completed: [TVEpisodeRef(seasonNumber: 1, episodeNumber: 1)],
+                nextUp: nil,
+                nextUpTitle: nil,
+                catalogSnapshot: nil
+            )
+        ])
+        let tvReads = SecondReadWaitsForRenameTVStore(file: FileTVWatchStore(fileURL: tvURL), url: tvURL)
+        let store = try SQLiteLibraryStore(
+            databaseURL: databaseURL(),
+            listsJSONURL: listsURL,
+            annotationsJSONURL: annotationsURL,
+            tvWatchJSONURL: tvURL,
+            legacyTVWatch: tvReads
+        )
+
+        async let bootstrap: Void = store.bootstrap()
+        async let firstRead = store.fetchTVWatchStates()
+        _ = try await (bootstrap, firstRead)
+
+        let storedTV = try await store.fetchTVWatchStates()
+        let storedLists = try await store.fetchSnapshot()
+        XCTAssertEqual(storedTV.map(\.seriesID), [42])
+        XCTAssertEqual(storedLists.entries.map(\.itemID), [100])
+        let readCount = await tvReads.readCount
+        XCTAssertEqual(readCount, 1, "Only one import may read the legacy JSON")
+    }
+
     private static let oldDate = "2020-01-01T00:00:00.000Z"
 
     /// Moves every annotation's dates into the past, so a later write that touched a
@@ -777,5 +825,34 @@ final class SQLiteLibraryStoreTests: XCTestCase {
             annotationsJSONURL: directory.appendingPathComponent("annotations.json"),
             tvWatchJSONURL: directory.appendingPathComponent("tv-progress.json")
         )
+    }
+}
+
+/// Reads tv-progress.json, but holds a second read until the file has been renamed, which
+/// is the interleaving that lets an overlapping import read an empty file.
+private actor SecondReadWaitsForRenameTVStore: TVWatchStore {
+    private let file: FileTVWatchStore
+    private let url: URL
+    private(set) var readCount = 0
+
+    init(file: FileTVWatchStore, url: URL) {
+        self.file = file
+        self.url = url
+    }
+
+    func load() async throws -> [TVSeriesWatchState] {
+        readCount += 1
+        if readCount > 1 {
+            var spins = 0
+            while FileManager.default.fileExists(atPath: url.path), spins < 100_000 {
+                spins += 1
+                await Task.yield()
+            }
+        }
+        return try await file.load()
+    }
+
+    func save(_ states: [TVSeriesWatchState]) async throws {
+        try await file.save(states)
     }
 }

@@ -329,6 +329,7 @@ final class ListsRepositoryTests: XCTestCase {
         XCTAssertEqual(matches.first?.addedAt, rated)
     }
 
+    @MainActor
     func test_sync_movesAWatchlistMovieUsingTheStoredRow() async throws {
         let lists = makeRepository()
         let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
@@ -345,7 +346,8 @@ final class ListsRepositoryTests: XCTestCase {
             annotations: annotations,
             lists: lists,
             movies: movies,
-            logger: SilentLogger()
+            logger: SilentLogger(),
+            defaults: freshDefaults()
         )
 
         let snapshot = try await lists.snapshot()
@@ -358,6 +360,7 @@ final class ListsRepositoryTests: XCTestCase {
         XCTAssertFalse(snapshot.entries.contains { $0.listID == watchlist.id })
     }
 
+    @MainActor
     func test_sync_loadsAScoredMovieThatIsNotOnAList() async throws {
         let lists = makeRepository()
         let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
@@ -371,7 +374,8 @@ final class ListsRepositoryTests: XCTestCase {
             annotations: annotations,
             lists: lists,
             movies: movies,
-            logger: SilentLogger()
+            logger: SilentLogger(),
+            defaults: freshDefaults()
         )
 
         let snapshot = try await lists.snapshot()
@@ -382,6 +386,7 @@ final class ListsRepositoryTests: XCTestCase {
         XCTAssertEqual(entry.addedAt, rated)
     }
 
+    @MainActor
     func test_sync_ignoresNotesAndSeriesScores() async throws {
         let lists = makeRepository()
         let annotations = AnnotationsRepository(
@@ -404,7 +409,8 @@ final class ListsRepositoryTests: XCTestCase {
             annotations: annotations,
             lists: lists,
             movies: movies,
-            logger: SilentLogger()
+            logger: SilentLogger(),
+            defaults: freshDefaults()
         )
 
         let snapshot = try await lists.snapshot()
@@ -412,6 +418,7 @@ final class ListsRepositoryTests: XCTestCase {
         XCTAssertFalse(snapshot.entries.contains { $0.listID == watched.id })
     }
 
+    @MainActor
     func test_sync_leavesAnExistingWatchedDateAlone() async throws {
         let lists = makeRepository()
         let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
@@ -431,13 +438,76 @@ final class ListsRepositoryTests: XCTestCase {
             annotations: annotations,
             lists: lists,
             movies: movies,
-            logger: SilentLogger()
+            logger: SilentLogger(),
+            defaults: freshDefaults()
         )
 
         let snapshot = try await lists.snapshot()
         let matches = snapshot.entries.filter { $0.listID == watched.id && $0.itemID == 278 }
         XCTAssertEqual(matches.count, 1)
         XCTAssertEqual(matches.first?.addedAt, added)
+    }
+
+    @MainActor
+    func test_sync_afterUserRemovesRatedMovieFromWatched_doesNotAddItBack() async throws {
+        let lists = makeRepository()
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        _ = try await annotations.saveScore(8, for: .movie(278), at: TestMovies.date("2019-06-01"))
+        let movies = MovieRepository.test(
+            client: FakeHTTPClient(stub: .success(TMDBFixtures.movieDetailShawshank))
+        )
+        let defaults = freshDefaults()
+        await WatchedRatings.sync(
+            annotations: annotations,
+            lists: lists,
+            movies: movies,
+            logger: SilentLogger(),
+            defaults: defaults
+        )
+        let watched = try await systemList(.watched, repository: lists)
+        _ = try await lists.toggleWatched(movie(id: 278, title: "The Shawshank Redemption"))
+
+        await WatchedRatings.sync(
+            annotations: annotations,
+            lists: lists,
+            movies: movies,
+            logger: SilentLogger(),
+            defaults: defaults
+        )
+
+        let snapshot = try await lists.snapshot()
+        XCTAssertFalse(snapshot.entries.contains { $0.listID == watched.id && $0.itemID == 278 })
+    }
+
+    @MainActor
+    func test_sync_whenAMovieCannotBeLoaded_retriesOnTheNextLaunch() async throws {
+        let lists = makeRepository()
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        _ = try await annotations.saveScore(8, for: .movie(278), at: TestMovies.date("2019-06-01"))
+        let defaults = freshDefaults()
+        await WatchedRatings.sync(
+            annotations: annotations,
+            lists: lists,
+            movies: MovieRepository.test(
+                client: FakeHTTPClient(stub: .success(Data("{}".utf8), status: 404))
+            ),
+            logger: SilentLogger(),
+            defaults: defaults
+        )
+
+        await WatchedRatings.sync(
+            annotations: annotations,
+            lists: lists,
+            movies: MovieRepository.test(
+                client: FakeHTTPClient(stub: .success(TMDBFixtures.movieDetailShawshank))
+            ),
+            logger: SilentLogger(),
+            defaults: defaults
+        )
+
+        let snapshot = try await lists.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        XCTAssertTrue(snapshot.entries.contains { $0.listID == watched.id && $0.itemID == 278 })
     }
 
     func test_addToWatched_removesWatchlistEntryAndLeavesCustomList() async throws {
@@ -635,6 +705,14 @@ final class ListsRepositoryTests: XCTestCase {
 
     private func makeRepository() -> ListsRepository {
         ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+    }
+
+    /// A throwaway defaults domain, so one test's finished launch sync cannot skip another's.
+    private func freshDefaults() -> UserDefaults {
+        let suiteName = "ListsRepositoryTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        return defaults
     }
 
     private func systemList(_ kind: SystemListKind, repository: ListsRepository) async throws -> LibraryList {

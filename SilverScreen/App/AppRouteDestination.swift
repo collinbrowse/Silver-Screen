@@ -135,6 +135,8 @@ struct AppRouteDestination: View {
                     imageLoader: imageLoader,
                     router: router
                 )
+            case .diary:
+                DiaryRouteView(imageLoader: imageLoader, router: router)
             case .genreBrowse(let genre):
                 GenreBrowseView(
                     genre: genre,

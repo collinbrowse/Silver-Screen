@@ -68,4 +68,6 @@ enum Route: Hashable, Sendable, Codable {
     case awardFamily(AwardFamily)
     case awardTitles(AwardTitleRequest)
     case genreBrowse(MergedGenre)
+    /// Every logged watch, by month. Diary dependencies come from the environment.
+    case diary
 }
