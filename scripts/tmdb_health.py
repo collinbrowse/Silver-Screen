@@ -10,6 +10,10 @@ degradation is exactly what this check is for.
     TMDB_ACCESS_TOKEN=... python3 scripts/tmdb_health.py
     python3 scripts/tmdb_health.py --file-issue   # on CI: open or comment on an issue
 
+Release builds call only the Worker proxy (worker/). When TMDB_PROXY_URL is set
+(the Worker URL including /3), one more check calls it with no token and expects
+a movie back.
+
 Exit status is 1 when any check fails. No pip packages.
 """
 
@@ -494,9 +498,18 @@ def default_fetch(url, headers):
         return None, str(error).encode()
 
 
-def run_check(check, token, fetch=default_fetch, sleep=time.sleep):
-    url = f"{BASE_URL}/{check.path}?{urllib.parse.urlencode(check.query)}"
-    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+# The proxy check: the Worker must add the token itself and pass the movie through.
+PROXY_CHECK = Check("Worker proxy", f"movie/{MOVIE_ID}", {}, {"id": INT})
+
+
+def run_check(check, token, fetch=default_fetch, sleep=time.sleep, base_url=BASE_URL):
+    """Call one endpoint. With token None (the proxy), send no Authorization header."""
+    url = f"{base_url.rstrip('/')}/{check.path}"
+    if check.query:
+        url += f"?{urllib.parse.urlencode(check.query)}"
+    headers = {"Accept": "application/json"}
+    if token is not None:
+        headers["Authorization"] = f"Bearer {token}"
     status, raw = fetch(url, headers)
     # One retry for rate limits and blips, so a single hiccup doesn't file an issue.
     if status is None or status == 429 or status >= 500:
@@ -518,6 +531,11 @@ def run_check(check, token, fetch=default_fetch, sleep=time.sleep):
         errors = errors[:MAX_ERRORS_PER_CHECK] + [f"…and {extra} more"]
     result.errors = errors
     return result
+
+
+def run_proxy_check(proxy_url, fetch=default_fetch, sleep=time.sleep):
+    """GET <proxy>/movie/550 with no token. proxy_url includes /3, like TMDB_BASE_URL."""
+    return run_check(PROXY_CHECK, None, fetch=fetch, sleep=sleep, base_url=proxy_url)
 
 
 def run_url():
@@ -577,6 +595,14 @@ def main(argv=None):
     for check in CHECKS:
         result = run_check(check, token)
         print(("ok    " if result.ok else "FAIL  ") + check.name)
+        for error in result.errors:
+            print("      " + error)
+        results.append(result)
+
+    proxy_url = os.environ.get("TMDB_PROXY_URL", "").strip()
+    if proxy_url:
+        result = run_proxy_check(proxy_url)
+        print(("ok    " if result.ok else "FAIL  ") + PROXY_CHECK.name)
         for error in result.errors:
             print("      " + error)
         results.append(result)

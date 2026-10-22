@@ -22,11 +22,16 @@ enum HTTPTransport {
         var lastError: AppError = .unknown
 
         for attempt in 0..<maxAttempts {
+            try Task.checkCancellation()
             let data: Data
             let response: HTTPURLResponse
             do {
                 (data, response) = try await client.data(for: request)
             } catch is CancellationError {
+                throw CancellationError()
+            } catch let error as URLError where error.code == .cancelled {
+                // URLSession reports a cancelled task as URLError(.cancelled), not
+                // CancellationError. It is not a failure: no log, no Sentry event, no retry.
                 throw CancellationError()
             } catch let error as URLError {
                 logger.error(
@@ -35,7 +40,7 @@ enum HTTPTransport {
                 )
                 lastError = mapURLError(error)
                 if shouldAutomaticallyRetry(lastError), attempt < maxAttempts - 1 {
-                    try await sleeper.sleep(seconds: retryDelays[attempt])
+                    try await sleeper.sleep(seconds: retryDelay(after: attempt))
                     continue
                 }
                 throw lastError
@@ -57,7 +62,7 @@ enum HTTPTransport {
             } catch let error as AppError {
                 lastError = error
                 if shouldAutomaticallyRetry(error), attempt < maxAttempts - 1 {
-                    try await sleeper.sleep(seconds: retryDelays[attempt])
+                    try await sleeper.sleep(seconds: retryDelay(after: attempt))
                     continue
                 }
                 throw error
@@ -65,6 +70,12 @@ enum HTTPTransport {
         }
 
         throw lastError
+    }
+
+    /// The backoff before the next attempt. Holds at the last delay when a caller asks for
+    /// more attempts than `retryDelays` lists, instead of indexing past the end.
+    static func retryDelay(after attempt: Int) -> TimeInterval {
+        retryDelays[min(attempt, retryDelays.count - 1)]
     }
 
     /// Automatic retries are narrower than UI `isRetryable`: timeouts, 5xx, and unknown transport

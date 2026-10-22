@@ -278,7 +278,7 @@ final class OnboardingSeenViewModel {
               let watched = snapshot.list(.watched) else { return }
         let keys = Set(snapshot.entries.filter { $0.listID == watched.id }.map(\.itemKey))
         pickedKeys.formUnion(keys)
-        for record in await annotations.saved() {
+        for record in (try? await annotations.saved()) ?? [] {
             guard let score = record.score else { continue }
             let itemKey: String
             switch record.key.kind {

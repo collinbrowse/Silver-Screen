@@ -20,20 +20,32 @@ actor SQLiteLibraryStore: LibraryStore {
     private let listsJSONURL: URL
     private let annotationsJSONURL: URL
     private let tvWatchJSONURL: URL
+    private let legacyLists: any ListsStore
+    private let legacyAnnotations: any AnnotationsStore
+    private let legacyTVWatch: any TVWatchStore
     let encoder: JSONEncoder
     let decoder: JSONDecoder
     private var didBootstrap = false
+    private var bootstrapTask: Task<Void, any Error>?
 
+    /// The legacy stores default to the JSON files at the given URLs. Tests pass their own
+    /// to control when the one-time import's reads finish.
     init(
         databaseURL: URL,
         listsJSONURL: URL,
         annotationsJSONURL: URL,
-        tvWatchJSONURL: URL
+        tvWatchJSONURL: URL,
+        legacyLists: (any ListsStore)? = nil,
+        legacyAnnotations: (any AnnotationsStore)? = nil,
+        legacyTVWatch: (any TVWatchStore)? = nil
     ) throws {
         self.database = try SQLiteDatabase(fileURL: databaseURL)
         self.listsJSONURL = listsJSONURL
         self.annotationsJSONURL = annotationsJSONURL
         self.tvWatchJSONURL = tvWatchJSONURL
+        self.legacyLists = legacyLists ?? FileListsStore(fileURL: listsJSONURL)
+        self.legacyAnnotations = legacyAnnotations ?? FileAnnotationsStore(fileURL: annotationsJSONURL)
+        self.legacyTVWatch = legacyTVWatch ?? FileTVWatchStore(fileURL: tvWatchJSONURL)
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         // Stable key order, so an unchanged catalog snapshot compares equal on the next save.
@@ -57,11 +69,27 @@ actor SQLiteLibraryStore: LibraryStore {
         )
     }
 
+    /// Launch calls this and the first reads from several tasks at once. The JSON import
+    /// suspends while it reads the legacy files, so every caller awaits one shared run:
+    /// a second import reading after the first renamed the files would see empty JSON and
+    /// tombstone the rows just imported. A failed run is cleared so the next call retries.
     func bootstrap() async throws {
         guard !didBootstrap else { return }
-        try migrateSchema()
-        try await importLegacyJSONIfNeeded()
-        didBootstrap = true
+        if let bootstrapTask {
+            return try await bootstrapTask.value
+        }
+        let task = Task {
+            try migrateSchema()
+            try await importLegacyJSONIfNeeded()
+        }
+        bootstrapTask = task
+        do {
+            try await task.value
+            didBootstrap = true
+        } catch {
+            bootstrapTask = nil
+            throw error
+        }
     }
 
     func fetchSnapshot() async throws -> LibrarySnapshot {
@@ -396,12 +424,9 @@ actor SQLiteLibraryStore: LibraryStore {
             return
         }
 
-        let listsStore = FileListsStore(fileURL: listsJSONURL)
-        let annotationsStore = FileAnnotationsStore(fileURL: annotationsJSONURL)
-        let tvStore = FileTVWatchStore(fileURL: tvWatchJSONURL)
-        let snapshot = try await listsStore.load()
-        let annotations = try await annotationsStore.load()
-        let tvStates = try await tvStore.load()
+        let snapshot = try await legacyLists.load()
+        let annotations = try await legacyAnnotations.load()
+        let tvStates = try await legacyTVWatch.load()
 
         try withTransaction {
             if listCount == 0 {
