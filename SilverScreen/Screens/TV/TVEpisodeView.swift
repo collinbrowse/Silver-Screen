@@ -276,7 +276,10 @@ struct TVEpisodeView: View {
             twoColumns: twoColumns,
             contentWidth: contentWidth,
             showsSecondary: sectionsInPanes || !viewModel.awardRows.isEmpty,
-            itemSpacing: DesignSpacing.md
+            itemSpacing: DesignSpacing.md,
+            secondaryTopInset: sectionsInPanes
+                ? DetailHeroPart.titleTopOffset(posterPath: nil, hasImages: !content.heroImages.isEmpty)
+                : 0
         ) {
             if sectionsInPanes {
                 episodeHero(content, images: content.heroImages, twoColumns: true, part: .identity)

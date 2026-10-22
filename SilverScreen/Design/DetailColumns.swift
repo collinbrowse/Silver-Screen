@@ -21,6 +21,9 @@ struct DetailColumns<Primary: View, Secondary: View>: View {
     var spacing: CGFloat = DesignSpacing.xl
     /// Between the sections inside each group.
     var itemSpacing: CGFloat = DesignSpacing.xl
+    /// Space above the side column's first section, so it can line up with something
+    /// in the main column (the title, on a hinge page). Ignored when the columns stack.
+    var secondaryTopInset: CGFloat = 0
     @ViewBuilder let primary: Primary
     @ViewBuilder let secondary: Secondary
 
@@ -46,6 +49,7 @@ struct DetailColumns<Primary: View, Secondary: View>: View {
                 VStack(alignment: .leading, spacing: itemSpacing) {
                     secondary
                 }
+                .padding(.top, isSideBySide ? secondaryTopInset : 0)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }

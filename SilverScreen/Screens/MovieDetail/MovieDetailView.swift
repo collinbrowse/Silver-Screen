@@ -249,7 +249,14 @@ struct MovieDetailView: View {
         scrollTo: @escaping (String) -> Void,
         contentWidth: CGFloat
     ) -> some View {
-        DetailColumns(twoColumns: true, contentWidth: contentWidth) {
+        DetailColumns(
+            twoColumns: true,
+            contentWidth: contentWidth,
+            secondaryTopInset: DetailHeroPart.titleTopOffset(
+                posterPath: content.detail.posterPath,
+                hasImages: content.images?.items.isEmpty == false
+            )
+        ) {
             hero(content, twoColumns: true, part: .identity)
                 .inPane()
             factsCard(content)

@@ -27,6 +27,25 @@ enum DetailHeroPart: Sendable {
     case all
     case backdrop
     case identity
+
+    /// How far below the top of the `.identity` part its title column starts. A hinge
+    /// page pads its trailing pane by this, so that pane's first item lines up with
+    /// the title. `DetailHero` uses the same values to place the title.
+    static func titleTopOffset(posterPath: String?, hasImages: Bool) -> CGFloat {
+        if DetailHeroLayout.hasPoster(posterPath) {
+            return (hasImages ? DesignSpacing.sm : 0) + DesignSpacing.xs
+        }
+        return hasImages ? DesignSpacing.md : 0
+    }
+}
+
+/// Rules shared by `DetailHero` and `DetailHeroPart`.
+enum DetailHeroLayout {
+    /// A blank or whitespace path means there is no poster.
+    static func hasPoster(_ posterPath: String?) -> Bool {
+        guard let posterPath else { return false }
+        return !posterPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 }
 
 /// Full-width backdrop stage. A poster overlaps the bottom when `posterPath` is set.
@@ -280,8 +299,7 @@ struct DetailHero<Metadata: View>: View {
     }
 
     private var hasPoster: Bool {
-        guard let posterPath else { return false }
-        return !posterPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        DetailHeroLayout.hasPoster(posterPath)
     }
 
     private func reconcileSelection() {

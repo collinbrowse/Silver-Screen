@@ -243,6 +243,20 @@ final class AdaptiveLayoutTests: XCTestCase {
         XCTAssertEqual(panes.trailing, [3, 4, 7])
     }
 
+    // MARK: - Hinge page title alignment
+
+    func test_titleTopOffset_posterOverBackdrop_matchesTitleInset() {
+        XCTAssertEqual(DetailHeroPart.titleTopOffset(posterPath: "/p.jpg", hasImages: true), 12)
+    }
+
+    func test_titleTopOffset_noPosterWithBackdrop_matchesTitleInset() {
+        XCTAssertEqual(DetailHeroPart.titleTopOffset(posterPath: nil, hasImages: true), 12)
+    }
+
+    func test_titleTopOffset_blankPosterPath_countsAsNoPoster() {
+        XCTAssertEqual(DetailHeroPart.titleTopOffset(posterPath: "  ", hasImages: false), 0)
+    }
+
     // MARK: - Grid rows
 
     func test_rows_oneColumn_yieldsOneRowPerItem() {

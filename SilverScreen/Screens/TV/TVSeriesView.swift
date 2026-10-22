@@ -254,7 +254,13 @@ struct TVSeriesView: View {
             twoColumns: twoColumns,
             contentWidth: contentWidth,
             showsSecondary: sectionsInPanes || !viewModel.awardRows.isEmpty,
-            itemSpacing: DesignSpacing.md
+            itemSpacing: DesignSpacing.md,
+            secondaryTopInset: sectionsInPanes
+                ? DetailHeroPart.titleTopOffset(
+                    posterPath: content.detail.posterPath,
+                    hasImages: !content.detail.images.isEmpty
+                )
+                : 0
         ) {
             if sectionsInPanes {
                 seriesHero(content, twoColumns: true, part: .identity)
