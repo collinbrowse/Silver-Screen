@@ -18,6 +18,9 @@ struct TVSeriesSummary: Sendable, Identifiable, Equatable, Hashable {
     var voteAverage: Double = 0
     /// Used when Browse merges a Popular page. Zero when the payload omitted it.
     var popularity: Double = 0
+    /// How many TMDB users rated it. Onboarding uses it to favor widely seen shows.
+    /// Zero when the payload omitted it.
+    var voteCount: Int = 0
 }
 
 struct TVSeriesPage: Sendable, Equatable {

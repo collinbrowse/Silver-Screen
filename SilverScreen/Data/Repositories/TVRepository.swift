@@ -121,6 +121,18 @@ final class TVRepository: Sendable {
         )
     }
 
+    /// Series with the most TMDB ratings (`discover/tv`, `vote_count.desc`). Onboarding
+    /// uses it for shows most people have heard of, since TMDB's TV lists are global.
+    func mostVoted(page: Int, locale: Locale = .current) async throws -> TVSeriesPage {
+        try await fetchSeriesPage(
+            path: "discover/tv",
+            context: "Most voted TV",
+            page: page,
+            extra: [URLQueryItem(name: "sort_by", value: "vote_count.desc")],
+            locale: locale
+        )
+    }
+
     func search(query: String, page: Int, locale: Locale = .current) async throws -> TVSeriesPage {
         try await fetchSeriesPage(
             path: "search/tv",
@@ -407,7 +419,8 @@ final class TVRepository: Sendable {
             firstAirDate: MovieRepository.parseReleaseDate(dto.firstAirDate ?? ""),
             genreIDs: dto.genreIDs ?? [],
             voteAverage: dto.voteAverage ?? 0,
-            popularity: dto.popularity ?? 0
+            popularity: dto.popularity ?? 0,
+            voteCount: max(dto.voteCount ?? 0, 0)
         )
     }
 

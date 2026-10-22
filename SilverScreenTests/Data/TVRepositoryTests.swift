@@ -178,6 +178,37 @@ final class TVRepositoryTests: XCTestCase {
                 XCTAssertEqual(page.series.map(\.name), ["Breaking Bad"])
                 }
 
+    func test_popular_mapsVoteCount() async throws {
+        let client = RecordingHTTPClient(stub: .success(TMDBFixtures.popularTVPage))
+        let repository = TVRepository.test(client: client)
+
+        let page = try await repository.popular(page: 1)
+
+        XCTAssertEqual(page.series.map(\.voteCount), [18900])
+    }
+
+    func test_mostVoted_discoversByVoteCount() async throws {
+        let client = RecordingHTTPClient(stub: .success(TMDBFixtures.popularTVPage))
+        let repository = TVRepository.test(client: client)
+
+        _ = try await repository.mostVoted(page: 1)
+
+        let lastURL = await client.lastURL
+        let url = try XCTUnwrap(lastURL)
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        XCTAssertEqual(url.path, "/3/discover/tv")
+        XCTAssertTrue(items.contains(URLQueryItem(name: "sort_by", value: "vote_count.desc")))
+    }
+
+    func test_mapSummary_missingVoteCount_isZero() throws {
+        let dto = try JSONDecoder().decode(
+            TVSeriesSummaryDTO.self,
+            from: Data(#"{"id": 1, "name": "Show"}"#.utf8)
+        )
+
+        XCTAssertEqual(TVRepository.mapSummary(dto)?.voteCount, 0)
+    }
+
                 func test_series_skipsMalformedImagesAndKeepsTheSeries() async throws {
                 let payload = Data("""
                     {

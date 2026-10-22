@@ -296,7 +296,8 @@ final class MovieRepository: Sendable {
             releaseDate: parseReleaseDate(dto.releaseDate),
             voteAverage: dto.voteAverage,
             genreIDs: dto.genreIDs,
-            popularity: dto.popularity
+            popularity: dto.popularity,
+            voteCount: max(dto.voteCount, 0)
         )
     }
 

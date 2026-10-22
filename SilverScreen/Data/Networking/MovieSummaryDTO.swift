@@ -26,6 +26,7 @@ struct MovieSummaryDTO: Decodable, Sendable {
     let posterPath: String?
     let releaseDate: String
     let voteAverage: Double
+    let voteCount: Int
     let genreIDs: [Int]
     let popularity: Double
 
@@ -35,6 +36,7 @@ struct MovieSummaryDTO: Decodable, Sendable {
         case posterPath = "poster_path"
         case releaseDate = "release_date"
         case voteAverage = "vote_average"
+        case voteCount = "vote_count"
         case genreIDs = "genre_ids"
         case popularity
     }
@@ -46,6 +48,7 @@ struct MovieSummaryDTO: Decodable, Sendable {
         posterPath = try container.decodeIfPresent(String.self, forKey: .posterPath)
         releaseDate = try container.decodeIfPresent(String.self, forKey: .releaseDate) ?? ""
         voteAverage = try container.decode(Double.self, forKey: .voteAverage)
+        voteCount = try container.decodeIfPresent(Int.self, forKey: .voteCount) ?? 0
         genreIDs = try container.decodeIfPresent([Int].self, forKey: .genreIDs) ?? []
         popularity = try container.decodeIfPresent(Double.self, forKey: .popularity) ?? 0
     }

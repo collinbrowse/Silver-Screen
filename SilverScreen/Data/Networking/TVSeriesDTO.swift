@@ -14,6 +14,7 @@ struct TVSeriesSummaryDTO: Decodable, Sendable {
     let firstAirDate: String?
     let genreIDs: [Int]?
     let voteAverage: Double?
+    let voteCount: Int?
     let popularity: Double?
 
     enum CodingKeys: String, CodingKey {
@@ -23,6 +24,7 @@ struct TVSeriesSummaryDTO: Decodable, Sendable {
         case firstAirDate = "first_air_date"
         case genreIDs = "genre_ids"
         case voteAverage = "vote_average"
+        case voteCount = "vote_count"
         case popularity
     }
 }
