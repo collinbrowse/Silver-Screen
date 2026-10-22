@@ -51,8 +51,7 @@ struct TVSeriesView: View {
         Group {
             switch viewModel.state {
                 case .idle, .loading:
-                    ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    LoadingStateView()
                 case .empty:
                     EmptyStateView(
                         title: "Series Unavailable",

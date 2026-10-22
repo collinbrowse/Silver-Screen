@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		06F9BBE77CE538BE8E380F74 /* LoadingStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B7DA6FEA32086ED39144056 /* LoadingStateView.swift */; };
+		3761473B23F30F75A1180842 /* ReelMorph.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11778598015C5FB177DF8EA8 /* ReelMorph.swift */; };
+		2D16E64FA87048F1BFDF684E /* ReelHelix.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE3E5D3977FF6E7FBEA549D3 /* ReelHelix.swift */; };
+		76C8B361912AA8368FD7E6B4 /* ReelLoaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25BE0856C94DC04AB2131E91 /* ReelLoaderTests.swift */; };
+		C600774EC524343C42298D28 /* ReelLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9BD7CF6636BB5752C7EEEB4 /* ReelLoader.swift */; };
+		86A95F8AED848488DB4E69A8 /* ReelLoaderFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B5D785E849090FF717CEB04 /* ReelLoaderFrame.swift */; };
+		45A138EF08DEE367AF54B55F /* ReelLoaderMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = F917E0A4840596CB3AEEAAFE /* ReelLoaderMotion.swift */; };
 		FFC75DCB06DD8F7F23C02B44 /* DiaryEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650BB0C2EB6D4099886910E1 /* DiaryEntryTests.swift */; };
 		4C55741F9A2DE50D49F01662 /* LogWatchViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02476714651AB893CCAB6D3F /* LogWatchViewModelTests.swift */; };
 		6DE5DB92977A2DEBF2E5ACC3 /* DiaryViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5ADABC67BF9955D8F523573 /* DiaryViewModelTests.swift */; };
@@ -324,6 +331,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		7B7DA6FEA32086ED39144056 /* LoadingStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingStateView.swift; sourceTree = "<group>"; };
+		11778598015C5FB177DF8EA8 /* ReelMorph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelMorph.swift; sourceTree = "<group>"; };
+		BE3E5D3977FF6E7FBEA549D3 /* ReelHelix.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelHelix.swift; sourceTree = "<group>"; };
+		25BE0856C94DC04AB2131E91 /* ReelLoaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelLoaderTests.swift; sourceTree = "<group>"; };
+		C9BD7CF6636BB5752C7EEEB4 /* ReelLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelLoader.swift; sourceTree = "<group>"; };
+		3B5D785E849090FF717CEB04 /* ReelLoaderFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelLoaderFrame.swift; sourceTree = "<group>"; };
+		F917E0A4840596CB3AEEAAFE /* ReelLoaderMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelLoaderMotion.swift; sourceTree = "<group>"; };
 		650BB0C2EB6D4099886910E1 /* DiaryEntryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryEntryTests.swift; sourceTree = "<group>"; };
 		02476714651AB893CCAB6D3F /* LogWatchViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogWatchViewModelTests.swift; sourceTree = "<group>"; };
 		A5ADABC67BF9955D8F523573 /* DiaryViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryViewModelTests.swift; sourceTree = "<group>"; };
@@ -773,6 +787,7 @@
 				C3A100052788B823003D8011 /* TrailerPlayerView.swift */,
 				E2A0002A2788B823003D8011 /* ReviewCard.swift */,
 				B100012D2788B823003D8011 /* EmptyStateView.swift */,
+				7B7DA6FEA32086ED39144056 /* LoadingStateView.swift */,
 				M1C5E4A12F6D4A0E9B7C1D02 /* MacSearchField.swift */,
 				A1B000012788B823003D8011 /* AwardRowsSection.swift */,
 				L1B000102788B823003D8011 /* ListMembershipButton.swift */,
@@ -874,6 +889,11 @@
 				C20000092788B823003D8011 /* MediaDescriptionSection.swift */,
 				B10002212788B823003D8011 /* FlowLayout.swift */,
 				B10003132788B823003D8011 /* SectionHeader.swift */,
+				C9BD7CF6636BB5752C7EEEB4 /* ReelLoader.swift */,
+				3B5D785E849090FF717CEB04 /* ReelLoaderFrame.swift */,
+				F917E0A4840596CB3AEEAAFE /* ReelLoaderMotion.swift */,
+				11778598015C5FB177DF8EA8 /* ReelMorph.swift */,
+				BE3E5D3977FF6E7FBEA549D3 /* ReelHelix.swift */,
 				1A5CCDA56597C07C444B1636 /* FoldPanes.swift */,
 				1A5C49C6C3B059AFA58855C1 /* FoldLayout.swift */,
 				1A5C555B9A63D87EF3BDD01F /* CardLabel.swift */,
@@ -1107,6 +1127,7 @@
 				D6566A7951ECEEFB2FE83AB8 /* OnboardingGateTests.swift */,
 				6CFC32D1E81090C6E092F2DB /* FeedbackViewModelTests.swift */,
 				9FAA25938801AC12AB682A9A /* SettingsAssetsTests.swift */,
+				25BE0856C94DC04AB2131E91 /* ReelLoaderTests.swift */,
 				F100000B2788B823003D8011 /* BrowseListViewModelTests.swift */,
 				G1E000162788B823003D8011 /* GenreBrowseViewModelTests.swift */,
 				E2A0002E2788B823003D8011 /* SearchViewModelTests.swift */,
@@ -1447,6 +1468,7 @@
 				G1E000042788B823003D8011 /* GenreBrowseViewModel.swift in Sources */,
 				B100012E2788B823003D8011 /* ErrorStateView.swift in Sources */,
 				B100012C2788B823003D8011 /* EmptyStateView.swift in Sources */,
+				06F9BBE77CE538BE8E380F74 /* LoadingStateView.swift in Sources */,
 				M1C5E4A12F6D4A0E9B7C1D01 /* MacSearchField.swift in Sources */,
 				A1B000022788B823003D8011 /* AwardRowsSection.swift in Sources */,
 				B10001282788B823003D8011 /* RootTabView.swift in Sources */,
@@ -1467,6 +1489,11 @@
 				B10002042788B823003D8011 /* DesignTokens.swift in Sources */,
 				B10002062788B823003D8011 /* MoviePosterView.swift in Sources */,
 				B10002082788B823003D8011 /* TagChip.swift in Sources */,
+				C600774EC524343C42298D28 /* ReelLoader.swift in Sources */,
+				86A95F8AED848488DB4E69A8 /* ReelLoaderFrame.swift in Sources */,
+				45A138EF08DEE367AF54B55F /* ReelLoaderMotion.swift in Sources */,
+				3761473B23F30F75A1180842 /* ReelMorph.swift in Sources */,
+				2D16E64FA87048F1BFDF684E /* ReelHelix.swift in Sources */,
 				BE714FAA307044B600F6F593 /* MediaTypes.swift in Sources */,
 				C3A100042788B823003D8011 /* MediaMetadataPills.swift in Sources */,
 				C3A100022788B823003D8011 /* MediaTrailer.swift in Sources */,
@@ -1582,6 +1609,7 @@
 				A5A5B581C94A0BEFBCA2A198 /* OnboardingGateTests.swift in Sources */,
 				D915A332BEE5149A1CABE619 /* FeedbackViewModelTests.swift in Sources */,
 				714A13F5C8850FBB61E21502 /* SettingsAssetsTests.swift in Sources */,
+				76C8B361912AA8368FD7E6B4 /* ReelLoaderTests.swift in Sources */,
 				A7CA6C88B871936C0E9A256B /* AppInfoTests.swift in Sources */,
 				5189821B2BB5812BA065C972 /* ReviewPrompterTests.swift in Sources */,
 				179898E2A5EAACA5CA74E751 /* TelemetryDeckClientTests.swift in Sources */,
@@ -1991,3 +2019,7 @@
 	};
 	rootObject = C77D45262788B821003D8011 /* Project object */;
 }
+
+
+
+
