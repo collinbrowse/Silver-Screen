@@ -127,6 +127,7 @@ struct SearchView: View {
                         columns: min(columns, viewModel.shelves.count),
                         cell: awardShelfButton
                     )
+                    .tourAnchor(.awardShelves)
 
                     Text("Genre")
                         .font(DesignTypography.section)

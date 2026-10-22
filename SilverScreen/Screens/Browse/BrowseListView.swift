@@ -139,7 +139,7 @@ struct BrowseListView: View {
                 Section {
                     ForEach(CatalogGrid.rows(rows, columns: columns, id: \.id)) { gridRow in
                         CatalogColumnsRow(row: gridRow, columns: columns, id: \.id) { row in
-                            rowCell(row)
+                            rowCell(row, isFirst: row.id == rows.first?.id)
                         }
                         .id(gridRow.id)
                         .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 8))
@@ -170,7 +170,8 @@ struct BrowseListView: View {
         }
     }
 
-    private func rowCell(_ row: BrowseRow) -> some View {
+    /// One title. The first title's watched eye is the feature tour's Browse stop.
+    private func rowCell(_ row: BrowseRow, isFirst: Bool) -> some View {
         CatalogRowLayout {
             Button {
                 open(row)
@@ -199,6 +200,7 @@ struct BrowseListView: View {
             ) {
                 viewModel.noteListSaveFailed()
             }
+            .tourAnchor(isFirst ? .browseEye : nil)
         }
     }
 

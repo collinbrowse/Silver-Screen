@@ -19,6 +19,8 @@ struct RootTabView: View {
     let imageLoader: ImageLoader
     let libraryHomeViewModel: LibraryHomeViewModel
     let settings: SettingsContext
+    @Bindable var onboarding: OnboardingGate
+    let tour: TourController
     let reviewPrompter: ReviewPrompter
 
     @State private var browseViewModel: BrowseListViewModel
@@ -38,6 +40,8 @@ struct RootTabView: View {
         imageLoader: ImageLoader,
         libraryHomeViewModel: LibraryHomeViewModel,
         settings: SettingsContext,
+        onboarding: OnboardingGate,
+        tour: TourController,
         reviewPrompter: ReviewPrompter
     ) {
         self.router = router
@@ -53,6 +57,8 @@ struct RootTabView: View {
         self.imageLoader = imageLoader
         self.libraryHomeViewModel = libraryHomeViewModel
         self.settings = settings
+        self.onboarding = onboarding
+        self.tour = tour
         self.reviewPrompter = reviewPrompter
         _browseViewModel = State(
             initialValue: BrowseListViewModel(
@@ -91,6 +97,14 @@ struct RootTabView: View {
         let bannerMessage = listChanges.message
         tabs(showsBanner: bannerMessage != nil)
             .environment(listChanges)
+            .environment(tour)
+            // The list-change banner is hosted by each tab; see `ListChangeBannerHost`.
+            // Over the tab bar and any pushed screen, under sheets.
+            .overlay {
+                if tour.isActive {
+                    TourOverlay(tour: tour)
+                }
+            }
             .sheet(item: toastAnnotationEditorBinding) { session in
                 AnnotationEditorSheet(
                     title: session.title,
@@ -102,6 +116,22 @@ struct RootTabView: View {
                 )
             }
             .modifier(ReviewPromptPresenter(prompter: reviewPrompter))
+            // Outside the review prompter's environment: ratings made during onboarding
+            // must not ask for a review, since no completion date exists yet to exclude them.
+            .fullScreenCover(isPresented: $onboarding.isPresented) {
+                OnboardingView(
+                    viewModel: OnboardingViewModel(
+                        movies: movies,
+                        shows: shows,
+                        lists: lists,
+                        annotations: annotations,
+                        tvWatch: tvWatch,
+                        awards: awards,
+                        gate: onboarding
+                    ),
+                    imageLoader: imageLoader
+                )
+            }
     }
 
     /// On Mac this iOS app keeps a tab bar and does not minimize it. Hiding that
@@ -175,7 +205,8 @@ struct RootTabView: View {
                     movies: movies,
                     shows: shows,
                     people: people,
-                    settings: settings
+                    settings: settings,
+                    onGetStarted: onboarding.reopen
                 )
                 .modifier(banner)
             }

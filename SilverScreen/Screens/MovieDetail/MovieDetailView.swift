@@ -134,6 +134,7 @@ struct MovieDetailView: View {
             loadedScroll(content: content, activity: activity, scrollTo: { id in
                 proxy.scrollTo(id, anchor: .top)
                 })
+            .tourScrolls(with: proxy)
         }
     }
 
@@ -309,6 +310,7 @@ struct MovieDetailView: View {
         }
     }
 
+    /// The rating card, which the feature tour points at and scrolls to.
     private func ratingCard(_ content: MovieDetailContent) -> some View {
         TMDBRatingCard(
             formattedRating: content.formattedRating,
@@ -317,6 +319,8 @@ struct MovieDetailView: View {
             userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
             onEdit: { viewModel.openAnnotationEditor() }
         )
+        .id(TourAnchor.ratingCard.scrollID)
+        .tourAnchor(.ratingCard)
     }
 
     private func storyline(_ content: MovieDetailContent, scrollTo: @escaping (String) -> Void) -> some View {
