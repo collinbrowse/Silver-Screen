@@ -10,7 +10,6 @@ struct CreditsListView: View {
     let imageLoader: ImageLoader
     var router: NavigationRouter?
 
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(
         personID: Int,
@@ -64,11 +63,7 @@ struct CreditsListView: View {
 
     /// One credit per row on a phone; two or three side by side on wider screens.
     private func list(_ items: [CreditsListItem]) -> some View {
-        ContentWidthReader { width in
-            let columns = CatalogGridMetrics.columnCount(
-                forWidth: width,
-                isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
-            )
+        CatalogColumnsReader { columns in
             List {
                 Section {
                     ForEach(CatalogGrid.rows(items, columns: columns, id: \.id)) { gridRow in

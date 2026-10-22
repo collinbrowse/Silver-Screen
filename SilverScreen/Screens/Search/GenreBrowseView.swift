@@ -18,7 +18,6 @@ struct GenreBrowseView: View {
     var router: NavigationRouter?
 
     @State private var scrolledID: String?
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(
         genre: MergedGenre,
@@ -121,11 +120,7 @@ struct GenreBrowseView: View {
     /// One row per title on a phone. Wider screens put two or three titles in each
     /// list row; see `CatalogGridMetrics`.
     private func list(_ rows: [BrowseRow], activity: LoadActivity) -> some View {
-        ContentWidthReader { width in
-            let columns = CatalogGridMetrics.columnCount(
-                forWidth: width,
-                isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
-            )
+        CatalogColumnsReader { columns in
             List {
                 Section {
                     ForEach(CatalogGrid.rows(rows, columns: columns, id: \.id)) { gridRow in

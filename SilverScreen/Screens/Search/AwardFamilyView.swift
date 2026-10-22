@@ -9,7 +9,6 @@ struct AwardFamilyView: View {
     @State private var viewModel: AwardFamilyViewModel
     var router: NavigationRouter?
 
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(family: AwardFamily, awards: AwardsRepository, router: NavigationRouter?) {
         _viewModel = State(initialValue: AwardFamilyViewModel(family: family, awards: awards))
@@ -48,11 +47,7 @@ struct AwardFamilyView: View {
 
     /// One category per row on a phone, two or three side by side on a wide screen.
     private func list(_ categories: [AwardCategory]) -> some View {
-        ContentWidthReader { width in
-            let columns = CatalogGridMetrics.columnCount(
-                forWidth: width,
-                isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
-            )
+        CatalogColumnsReader { columns in
             List {
                 Section {
                     ForEach(CatalogGrid.rows(categories, columns: columns, id: \.id)) { row in

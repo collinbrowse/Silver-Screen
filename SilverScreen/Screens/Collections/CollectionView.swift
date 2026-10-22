@@ -12,7 +12,6 @@ struct CollectionView: View {
     let listsIndex: ListsIndex
     var router: NavigationRouter?
 
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Group {
@@ -56,11 +55,7 @@ struct CollectionView: View {
     /// two or three to a row there; see `CatalogGridMetrics`.
     private func loaded(_ content: CollectionContent) -> some View {
         let showsHeader = hasPoster(content) || !content.overview.isEmpty || !content.name.isEmpty
-        return ContentWidthReader { width in
-            let columns = CatalogGridMetrics.columnCount(
-                forWidth: width,
-                isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
-            )
+        return CatalogColumnsReader { columns in
             parts(content, showsHeader: showsHeader, columns: columns)
         }
     }

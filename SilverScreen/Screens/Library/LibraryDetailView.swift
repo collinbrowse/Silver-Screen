@@ -17,7 +17,6 @@ struct LibraryDetailView: View {
     let lists: ListsRepository
 
     @State private var editMode: EditMode = .inactive
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Group {
@@ -87,14 +86,8 @@ struct LibraryDetailView: View {
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                ContentWidthReader { width in
-                    // Reordering drags whole rows, so edit mode is always one column.
-                    let columns = editMode.isEditing
-                        ? 1
-                        : CatalogGridMetrics.columnCount(
-                            forWidth: width,
-                            isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
-                        )
+                // Reordering drags whole rows, so edit mode is always one column.
+                CatalogColumnsReader(singleColumn: editMode.isEditing) { columns in
                     List {
                         Section {
                             if columns == 1 {

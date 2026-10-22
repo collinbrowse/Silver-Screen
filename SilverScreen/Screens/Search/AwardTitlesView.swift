@@ -14,7 +14,6 @@ struct AwardTitlesView: View {
     let tvWatch: TVWatchRepository
     var router: NavigationRouter?
 
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(
         request: AwardTitleRequest,
@@ -101,11 +100,7 @@ struct AwardTitlesView: View {
     /// One row per title on a phone. Wider screens put two or three titles in each
     /// list row; see `CatalogGridMetrics`.
     private func list(_ rows: [AwardTitleRow], activity: LoadActivity) -> some View {
-        ContentWidthReader { width in
-            let columns = CatalogGridMetrics.columnCount(
-                forWidth: width,
-                isAccessibilitySize: dynamicTypeSize.isAccessibilitySize
-            )
+        CatalogColumnsReader { columns in
             List {
                 Section {
                     ForEach(CatalogGrid.rows(rows, columns: columns, id: \.id)) { gridRow in

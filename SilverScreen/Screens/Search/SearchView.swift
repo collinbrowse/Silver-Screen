@@ -25,7 +25,6 @@ struct SearchView: View {
     /// Mirrors the system search field's focus. Not passed into `.searchable`,
     /// because binding `isPresented` clears the visible query after a pop.
     @State private var fieldPresented = false
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Group {
@@ -239,8 +238,7 @@ struct SearchView: View {
     }
 
     private func previewList(_ sections: SearchPreviewSections, activity: LoadActivity) -> some View {
-        ContentWidthReader { width in
-            let columns = catalogColumns(forWidth: width)
+        CatalogColumnsReader { columns in
             List {
                 switch sections.emphasis {
                     case .titlesFirst:
@@ -272,10 +270,6 @@ struct SearchView: View {
                 LoadActivityBanner(activity: activity)
             }
         }
-    }
-
-    private func catalogColumns(forWidth width: CGFloat) -> Int {
-        CatalogGridMetrics.columnCount(forWidth: width, isAccessibilitySize: dynamicTypeSize.isAccessibilitySize)
     }
 
     @ViewBuilder
@@ -354,12 +348,12 @@ struct SearchView: View {
     }
 
     private func allResultsList(_ items: [SearchResultItem], activity: LoadActivity) -> some View {
-        ContentWidthReader { width in
+        CatalogColumnsReader { columns in
             List {
                 Section {
                     resultRows(
                         items,
-                        columns: catalogColumns(forWidth: width),
+                        columns: columns,
                         scrollPrefix: "",
                         loadsMore: true,
                         showsLoadingRow: activity == .loadingMore

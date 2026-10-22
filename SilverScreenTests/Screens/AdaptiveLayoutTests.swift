@@ -53,6 +53,26 @@ final class AdaptiveLayoutTests: XCTestCase {
         XCTAssertEqual(CatalogGridMetrics.columnCount(forWidth: 1194, isAccessibilitySize: true), 1)
     }
 
+    func test_catalogColumns_largerTextWidensColumns_iPhoneDuoInnerScreenIsOne() {
+        // 300 pt scaled for a larger text size.
+        XCTAssertEqual(
+            CatalogGridMetrics.columnCount(forWidth: 669, isAccessibilitySize: false, minimumColumnWidth: 350),
+            1
+        )
+    }
+
+    func test_catalogColumns_folded_isOnePerPane() {
+        XCTAssertEqual(CatalogGridMetrics.columnCount(forWidth: 1194, isFolded: true, isAccessibilitySize: false), 2)
+    }
+
+    func test_catalogColumns_foldedAtAccessibilitySize_isStillOnePerPane() {
+        XCTAssertEqual(CatalogGridMetrics.columnCount(forWidth: 867, isFolded: true, isAccessibilitySize: true), 2)
+    }
+
+    func test_catalogColumns_notFolded_followsWidth() {
+        XCTAssertEqual(CatalogGridMetrics.columnCount(forWidth: 1194, isFolded: false, isAccessibilitySize: false), 3)
+    }
+
     func test_catalogColumns_unmeasuredWidth_isOne() {
         XCTAssertEqual(CatalogGridMetrics.columnCount(forWidth: 0, isAccessibilitySize: false), 1)
     }

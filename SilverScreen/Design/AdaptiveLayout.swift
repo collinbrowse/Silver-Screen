@@ -22,11 +22,32 @@ enum CatalogGridMetrics {
 
     /// Columns that fit in `width` (the list's width inside the safe area).
     /// Accessibility text sizes stack each row's control under its details, which
-    /// needs the whole width, so they always get one column.
-    static func columnCount(forWidth width: CGFloat, isAccessibilitySize: Bool) -> Int {
+    /// needs the whole width, so they always get one column. `minimumColumnWidth` is
+    /// the default scaled with the text size.
+    static func columnCount(
+        forWidth width: CGFloat,
+        isAccessibilitySize: Bool,
+        minimumColumnWidth: CGFloat = minimumColumnWidth
+    ) -> Int {
         guard !isAccessibilitySize, width > 0 else { return 1 }
         let fitting = Int((width + columnSpacing) / (minimumColumnWidth + columnSpacing))
         return min(max(fitting, 1), maximumColumns)
+    }
+
+    /// As above, but a list a fold crosses always gets two columns, one per pane, at
+    /// any width or text size, so no row lies across the crease.
+    static func columnCount(
+        forWidth width: CGFloat,
+        isFolded: Bool,
+        isAccessibilitySize: Bool,
+        minimumColumnWidth: CGFloat = minimumColumnWidth
+    ) -> Int {
+        if isFolded { return 2 }
+        return columnCount(
+            forWidth: width,
+            isAccessibilitySize: isAccessibilitySize,
+            minimumColumnWidth: minimumColumnWidth
+        )
     }
 }
 
