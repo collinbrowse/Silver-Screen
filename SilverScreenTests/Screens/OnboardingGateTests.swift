@@ -121,6 +121,16 @@ final class OnboardingGateTests: XCTestCase {
         XCTAssertFalse(gate.isPresented)
     }
 
+    func test_evaluate_whenRatingsCannotBeRead_doesNotPresent() async {
+        let store = InMemoryAnnotationsStore()
+        await store.setLoadError(URLError(.cannotOpenFile))
+        let gate = makeGate(annotations: AnnotationsRepository(store: store, logger: SilentLogger()))
+
+        await gate.evaluate()
+
+        XCTAssertFalse(gate.isPresented, "An unreadable store must not look like a library with no ratings")
+    }
+
     func test_evaluate_existingLibrary_doesNotPresent() async throws {
         let lists = ListsRepository.empty()
         _ = try await lists.addToWatched(OnboardingFixtures.movieDraft(id: 1))
@@ -256,6 +266,7 @@ final class OnboardingGateTests: XCTestCase {
 
     private func makeGate(
         lists: ListsRepository = .empty(),
+        annotations: AnnotationsRepository = .empty(),
         isDemo: Bool = false,
         router: AppRouter = AppRouter(),
         analytics: any AnalyticsClient = DisabledAnalytics()
@@ -263,7 +274,7 @@ final class OnboardingGateTests: XCTestCase {
         OnboardingGate(
             marker: OnboardingMarkerStore(defaults: defaults),
             lists: lists,
-            annotations: .empty(),
+            annotations: annotations,
             isDemo: isDemo,
             router: router,
             analytics: analytics

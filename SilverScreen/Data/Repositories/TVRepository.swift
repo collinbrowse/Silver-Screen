@@ -177,6 +177,21 @@ final class TVRepository: Sendable {
         }
     }
 
+    /// Series detail with no appended sections: the season list and the fields a list row
+    /// needs. The cold-launch catalog check calls this for every finished show, so it must
+    /// not download images, credits, and recommendations it never reads.
+    func seriesCatalog(id: Int, locale: Locale = .current) async throws -> TVSeriesDetail {
+        try await fetch(
+            path: "tv/\(id)",
+            context: "TV series catalog",
+            queryItems: [
+                URLQueryItem(name: "language", value: TMDBLocale.languageTag(for: locale)),
+            ]
+        ) { data in
+            try Self.decodeSeries(data, locale: locale, logger: logger)
+        }
+    }
+
     func season(seriesID: Int, seasonNumber: Int, locale: Locale = .current) async throws -> TVSeasonDetail {
         try await fetch(
             path: "tv/\(seriesID)/season/\(seasonNumber)",

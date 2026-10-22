@@ -346,9 +346,12 @@ def needs_network_resolution(credits: list[dict]) -> bool:
     return any(not credit.get("work") and credit.get("imdbID") for credit in credits)
 
 
+QUERY_FAILED = "Wikidata query failed"
+
+
 def fetch_bindings(query: str, opener=None, timeout: int = 60) -> list[dict]:
     delay = 2.0
-    last_error = "Wikidata query failed"
+    last_error = QUERY_FAILED
     for attempt in range(4):
         try:
             return _fetch_bindings_once(query, opener, timeout)
@@ -685,7 +688,7 @@ def fetch_wikidata_json(url: str, opener=None, timeout: int = 60) -> dict:
         headers={"Accept": "application/json", "User-Agent": USER_AGENT},
     )
     delay = 1.0
-    last_error = "Wikidata query failed"
+    last_error = QUERY_FAILED
     for attempt in range(4):
         try:
             with _urlopen(opener, request, timeout) as response:
@@ -706,7 +709,7 @@ def fetch_wikidata_json(url: str, opener=None, timeout: int = 60) -> dict:
                 continue
             raise QueryFailure(last_error) from None
         except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
-            last_error = "Wikidata query failed"
+            last_error = _query_failed(error)
             if attempt < 3:
                 time.sleep(delay)
                 delay *= 2
@@ -831,7 +834,7 @@ def _fetch_bindings_once(query: str, opener, timeout: int) -> list[dict]:
     except urllib.error.HTTPError as error:
         raise QueryFailure(f"Wikidata status {error.code}") from None
     except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as error:
-        raise QueryFailure("Wikidata query failed") from error
+        raise QueryFailure(_query_failed(error)) from error
     if status != 200:
         raise QueryFailure(f"Wikidata status {status}")
     try:
@@ -840,8 +843,13 @@ def _fetch_bindings_once(query: str, opener, timeout: int) -> list[dict]:
         raise QueryFailure("Wikidata payload was missing results") from error
 
 
+def _query_failed(error: Exception) -> str:
+    """'Wikidata query failed: <cause>', so the job log says why (DNS, timeout, bad JSON)."""
+    return f"{QUERY_FAILED}: {error}"
+
+
 def _retryable(message: str) -> bool:
-    if message == "Wikidata query failed":
+    if message.startswith(QUERY_FAILED):
         return True
     for code in ("429", "500", "502", "503", "504"):
         if message.endswith(code):

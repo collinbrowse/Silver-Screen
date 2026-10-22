@@ -56,13 +56,15 @@ struct RemoteImageView: View {
               ) else {
             return
         }
-        let expected = path
-        let loaded = try? await imageLoader.image(
+        // `.task(id:)` cancels this load when the path changes; a cancelled or failed
+        // load returns nil and must not overwrite what a newer load already showed.
+        guard let loaded = await imageLoader.displayImage(
             for: url,
             targetSize: CGSize(width: width, height: height),
             scale: displayScale
-        )
-        guard expected == path else { return }
+        ) else {
+            return
+        }
         image = loaded
     }
 }

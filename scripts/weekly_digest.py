@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import http.client
 import json
 import os
 import re
@@ -84,7 +85,8 @@ def http_json(method, url, headers, body=None):
     except urllib.error.HTTPError as error:
         raw = error.read()
         status = error.code
-    except urllib.error.URLError as error:
+    except (OSError, http.client.HTTPException) as error:
+        # URLError, and a TimeoutError or dropped connection during read().
         raise SourceError(f"{url.split('?')[0]}: {error}") from error
     try:
         return status, json.loads(raw.decode()) if raw else {}
@@ -278,7 +280,7 @@ def guarded(title, build):
     """Run one section; an API failure becomes a one-line note so the rest still posts."""
     try:
         return build()
-    except (asc_api.ASCError, SourceError, KeyError, ValueError, TypeError, IndexError) as error:
+    except (asc_api.ASCError, SourceError, OSError, KeyError, ValueError, TypeError, IndexError) as error:
         print(f"{title} unavailable: {error}", file=sys.stderr)
         return Section(title, note=f"Unavailable: {error}")
 

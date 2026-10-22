@@ -14,6 +14,7 @@ actor ImageLoader {
     /// does not inherit a caller's cancellation, so each real caller is tracked by id and the
     /// shared task is cancelled only when the last real caller goes away.
     private struct InFlightEntry {
+        let url: URL
         let task: Task<UIImage, Error>
         /// Real (non-prefetch) callers still awaiting this task. Prefetch does not count, so
         /// cancelling a prefetch can never tear down a fetch a now-visible cell still needs.
@@ -23,8 +24,10 @@ actor ImageLoader {
     private let client: any HTTPClient
     private let logger: any AppLogging
     private let sleeper: any Sleeper
-    private let memoryCache = NSCache<NSURL, UIImage>()
-    private var inFlight: [URL: InFlightEntry] = [:]
+    /// Keyed by URL plus decoded pixel size: one TMDB size token serves several point
+    /// sizes, and reusing a small decode in a larger frame upscales it.
+    private let memoryCache = NSCache<NSString, UIImage>()
+    private var inFlight: [String: InFlightEntry] = [:]
 
     init(
         client: any HTTPClient,
@@ -41,6 +44,14 @@ actor ImageLoader {
         try await image(for: url, targetSize: targetSize, scale: scale, isPrefetch: false)
     }
 
+    /// The image a view should show, or nil when the load failed or the calling task was
+    /// cancelled. A view keyed with `.task(id:)` is cancelled when its path changes, and by
+    /// then a newer load may already have set the image; a nil here means "leave it alone".
+    func displayImage(for url: URL, targetSize: CGSize, scale: CGFloat) async -> UIImage? {
+        let loaded = try? await image(for: url, targetSize: targetSize, scale: scale)
+        return Task.isCancelled ? nil : loaded
+    }
+
     /// Shared fetch path. `isPrefetch` callers do not register as real waiters, which is what
     /// lets `cancelPrefetch` leave a coalesced fetch running for a visible cell.
     private func image(
@@ -49,14 +60,15 @@ actor ImageLoader {
         scale: CGFloat,
         isPrefetch: Bool
     ) async throws -> UIImage {
-        let cacheKey = url as NSURL
+        let key = Self.cacheKey(url: url, targetSize: targetSize, scale: scale)
+        let cacheKey = key as NSString
         if let cached = memoryCache.object(forKey: cacheKey) {
             return cached
         }
 
         let waiterID = UUID()
         let task: Task<UIImage, Error>
-        if let existing = inFlight[url] {
+        if let existing = inFlight[key] {
             task = existing.task
         } else {
             task = Task<UIImage, Error> {
@@ -69,26 +81,26 @@ actor ImageLoader {
                     sleeper: sleeper
                 )
             }
-            inFlight[url] = InFlightEntry(task: task, realWaiterIDs: [])
+            inFlight[key] = InFlightEntry(url: url, task: task, realWaiterIDs: [])
         }
 
         if !isPrefetch {
-            inFlight[url]?.realWaiterIDs.insert(waiterID)
+            inFlight[key]?.realWaiterIDs.insert(waiterID)
         }
 
         do {
             let image = try await withTaskCancellationHandler {
                 try await task.value
             } onCancel: {
-                Task { await self.releaseWaiter(url: url, waiterID: isPrefetch ? nil : waiterID) }
+                Task { await self.releaseWaiter(key: key, waiterID: isPrefetch ? nil : waiterID) }
             }
             memoryCache.setObject(image, forKey: cacheKey)
-            inFlight[url] = nil
+            inFlight[key] = nil
             try Task.checkCancellation()
             return image
         } catch {
             if !isPrefetch {
-                releaseWaiter(url: url, waiterID: waiterID)
+                releaseWaiter(key: key, waiterID: waiterID)
             }
             throw error
         }
@@ -97,21 +109,27 @@ actor ImageLoader {
     /// Drops one real caller. Cancels the shared fetch once nobody visible still needs it.
     /// A second call for the same id is a no-op, so the cancellation handler and the `catch`
     /// can both run without tearing down a fetch another cell is still awaiting.
-    private func releaseWaiter(url: URL, waiterID: UUID?) {
-        guard var entry = inFlight[url] else { return }
+    private func releaseWaiter(key: String, waiterID: UUID?) {
+        guard var entry = inFlight[key] else { return }
         if let waiterID {
             guard entry.realWaiterIDs.remove(waiterID) != nil else { return }
-            inFlight[url] = entry
+            inFlight[key] = entry
         }
         guard entry.realWaiterIDs.isEmpty else { return }
         entry.task.cancel()
-        inFlight[url] = nil
+        inFlight[key] = nil
     }
 
-    /// Visible callers sharing the fetch for `url`. Tests wait on this so a second caller has
-    /// joined before the first is cancelled.
+    /// Visible callers sharing a fetch for `url`, at any size. Tests wait on this so a second
+    /// caller has joined before the first is cancelled.
     func realWaiterCount(for url: URL) -> Int {
-        inFlight[url]?.realWaiterIDs.count ?? 0
+        inFlight.values.filter { $0.url == url }.reduce(0) { $0 + $1.realWaiterIDs.count }
+    }
+
+    /// Cache and coalescing key: the URL plus the decoded size in pixels.
+    private static func cacheKey(url: URL, targetSize: CGSize, scale: CGFloat) -> String {
+        let pixels = Int((max(targetSize.width, targetSize.height) * scale).rounded(.up))
+        return "\(url.absoluteString)#\(pixels)"
     }
 
     func prefetch(urls: [URL], targetSize: CGSize, scale: CGFloat) {
@@ -121,13 +139,13 @@ actor ImageLoader {
     }
 
     func cancelPrefetch(urls: [URL]) {
-        for url in urls {
-            guard let entry = inFlight[url] else { continue }
+        let cancelled = Set(urls)
+        for (key, entry) in inFlight where cancelled.contains(entry.url) {
             // A now-visible cell may be awaiting this same coalesced task. Only cancel a fetch
             // that no real caller depends on; otherwise leave it running.
             guard entry.realWaiterIDs.isEmpty else { continue }
             entry.task.cancel()
-            inFlight[url] = nil
+            inFlight[key] = nil
         }
     }
 

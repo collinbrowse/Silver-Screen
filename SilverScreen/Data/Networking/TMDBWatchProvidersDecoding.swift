@@ -25,10 +25,11 @@ struct TMDBWatchProviderDTO: Decodable, Sendable, Equatable {
 /// Picks flatrate providers for the device region from a TMDB watch-providers block.
 enum TMDBWatchProviders {
     static func make(from results: [String: RegionProviders], locale: Locale) -> [StreamingProvider] {
+        // Only the device's own region counts. Showing another country's services when this
+        // one is missing would advertise a service that does not carry the title here.
+        // A locale with no region at all falls back to the US.
         let region = TMDBLocale.regionCode(for: locale) ?? "US"
-        let regionKey = results.keys.first { $0.caseInsensitiveCompare(region) == .orderedSame }
-        let fallbackKey = regionKey ?? results.keys.first { $0.caseInsensitiveCompare("US") == .orderedSame }
-        guard let key = fallbackKey ?? results.keys.sorted().first,
+        guard let key = results.keys.first(where: { $0.caseInsensitiveCompare(region) == .orderedSame }),
               let flatrate = results[key]?.flatrate else {
             return []
         }

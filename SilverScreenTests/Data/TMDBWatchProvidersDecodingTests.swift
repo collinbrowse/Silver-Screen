@@ -30,6 +30,23 @@ final class TMDBWatchProvidersDecodingTests: XCTestCase {
         XCTAssertEqual(providers.map(\.id), [8, 350])
     }
 
+    func test_make_whenDeviceRegionIsMissing_returnsNoProvidersFromOtherRegions() {
+        let netflix = TMDBWatchProviderDTO(
+            providerID: 8,
+            providerName: "Netflix",
+            logoPath: "/netflix.jpg",
+            displayPriority: 1
+        )
+        let results: [String: TMDBWatchProviders.RegionProviders] = [
+            "US": TMDBWatchProviders.RegionProviders(flatrate: [netflix]),
+            "CA": TMDBWatchProviders.RegionProviders(flatrate: [netflix]),
+        ]
+
+        let providers = TMDBWatchProviders.make(from: results, locale: Locale(identifier: "en_IE"))
+
+        XCTAssertTrue(providers.isEmpty)
+    }
+
     func test_make_dropsRentAndBuyAndBlankLogos() {
         let json = Data("""
             {

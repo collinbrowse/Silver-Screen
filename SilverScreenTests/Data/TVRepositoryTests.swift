@@ -86,6 +86,19 @@ final class TVRepositoryTests: XCTestCase {
         XCTAssertEqual(series.cast.map(\.name), ["Bryan Cranston", "Aaron Paul"])
     }
 
+    func test_seriesCatalog_requestsNoAppendedSectionsAndKeepsSeasons() async throws {
+        let client = RecordingHTTPClient(stub: .success(TMDBFixtures.tvSeriesBreakingBad))
+        let repository = TVRepository.test(client: client)
+
+        let series = try await repository.seriesCatalog(id: 1396)
+
+        let lastURL = await client.lastURL
+        let url = try XCTUnwrap(lastURL)
+        XCTAssertTrue(url.path.hasSuffix("tv/1396"))
+        XCTAssertFalse(url.absoluteString.contains("append_to_response"))
+        XCTAssertFalse(series.seasons.isEmpty)
+    }
+
     func test_mapAggregateCast_breaksEqualCountsByNameAndDropsZero() {
         let cast = [
             TVAggregateCastDTO(
