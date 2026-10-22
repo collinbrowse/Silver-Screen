@@ -7,6 +7,7 @@ permalink: /support/
 
 ## Contact
 
+- **Email:** [silverscreen.camera905@slmails.com](mailto:silverscreen.camera905@slmails.com)
 - **In the app:** Library → Settings (gear) → Send Feedback. Add your email if you'd like a reply.
 - **On GitHub:** [open an issue](https://github.com/collinbrowse/Silver-Screen/issues/new).
 
