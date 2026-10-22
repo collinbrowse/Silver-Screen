@@ -36,6 +36,7 @@ final class TelemetryDeckClientTests: XCTestCase {
             client: FakeHTTPClient(stub: .success(Data())),
             preferences: AnalyticsPreferences(suiteName: makeTestSuite()),
             appInfo: AppInfo(marketingVersion: "1.0", build: "1"),
+            device: AnalyticsDeviceContext(),
             logger: SilentLogger()
         )
 
@@ -48,6 +49,7 @@ final class TelemetryDeckClientTests: XCTestCase {
             client: FakeHTTPClient(stub: .success(Data())),
             preferences: AnalyticsPreferences(suiteName: makeTestSuite()),
             appInfo: AppInfo(marketingVersion: "1.0", build: "1"),
+            device: AnalyticsDeviceContext(),
             logger: SilentLogger()
         )
 
@@ -60,7 +62,7 @@ final class TelemetryDeckClientTests: XCTestCase {
     // MARK: - Payload
 
     func test_request_postsJSONArrayToIngestV2() throws {
-        let signal = makeFactory(suite: makeTestSuite()).signal(for: .listCreated)
+        let signal = makeFactory(suite: makeTestSuite()).signal(for: .listCreated, sessionID: "SESSION")
 
         let request = try TelemetryDeckOutbox.request(for: [signal, signal])
 
@@ -75,7 +77,7 @@ final class TelemetryDeckClientTests: XCTestCase {
     func test_request_encodesEveryIngestField() throws {
         let suite = makeTestSuite()
         let factory = makeFactory(suite: suite)
-        let signal = factory.signal(for: .titleAddedToWatchlist)
+        let signal = factory.signal(for: .titleAddedToWatchlist, sessionID: "SESSION")
 
         let request = try TelemetryDeckOutbox.request(for: [signal])
 
@@ -97,7 +99,7 @@ final class TelemetryDeckClientTests: XCTestCase {
         let preferences = AnalyticsPreferences(suiteName: suite)
         let installID = preferences.installID()
 
-        let signal = makeFactory(suite: suite).signal(for: .firstRating)
+        let signal = makeFactory(suite: suite).signal(for: .firstRating, sessionID: "SESSION")
 
         XCTAssertEqual(signal.clientUser, TelemetryDeckSignalFactory.hashed(installID))
         XCTAssertEqual(signal.clientUser.count, 64)
@@ -111,20 +113,66 @@ final class TelemetryDeckClientTests: XCTestCase {
         )
     }
 
-    func test_defaultPayload_carriesOnlyVersionContext() {
+    func test_defaultPayload_carriesAppOSAndModelOnly() {
         let payload = TelemetryDeckSignalFactory.defaultPayload(
             appInfo: AppInfo(marketingVersion: "1.2.0", build: "14"),
-            os: OperatingSystemVersion(majorVersion: 26, minorVersion: 1, patchVersion: 2)
+            os: OperatingSystemVersion(majorVersion: 26, minorVersion: 1, patchVersion: 2),
+            modelIdentifier: "iPhone17,3",
+            isiOSAppOnMac: false
         )
 
         XCTAssertEqual(payload, [
             "TelemetryDeck.AppInfo.version": "1.2.0",
             "TelemetryDeck.AppInfo.buildNumber": "14",
             "TelemetryDeck.AppInfo.versionAndBuildNumber": "1.2.0 (build 14)",
+            "TelemetryDeck.Device.modelName": "iPhone17,3",
+            "TelemetryDeck.Device.operatingSystem": "iOS",
             "TelemetryDeck.Device.platform": "iOS",
+            "TelemetryDeck.Device.systemVersion": "iOS 26.1.2",
             "TelemetryDeck.Device.systemMajorVersion": "26",
             "TelemetryDeck.Device.systemMajorMinorVersion": "26.1",
         ])
+    }
+
+    func test_defaultPayload_onMac_reportsSDKPlatformName() {
+        let payload = TelemetryDeckSignalFactory.defaultPayload(
+            appInfo: AppInfo(marketingVersion: "1.2.0", build: "14"),
+            os: OperatingSystemVersion(majorVersion: 26, minorVersion: 0, patchVersion: 0),
+            modelIdentifier: "Mac16,10",
+            isiOSAppOnMac: true
+        )
+
+        XCTAssertEqual(payload["TelemetryDeck.Device.platform"], "isiOSAppOnMac")
+        XCTAssertEqual(payload["TelemetryDeck.Device.systemVersion"], "isiOSAppOnMac 26.0.0")
+    }
+
+    func test_modelIdentifier_onSimulator_reportsSimulatedModel() {
+        let model = TelemetryDeckSignalFactory.modelIdentifier(
+            environment: ["SIMULATOR_MODEL_IDENTIFIER": "iPhone18,5"],
+            isiOSAppOnMac: false
+        )
+
+        XCTAssertEqual(model, "iPhone18,5")
+    }
+
+    func test_modelIdentifier_withoutSimulator_readsHardwareModel() {
+        let model = TelemetryDeckSignalFactory.modelIdentifier(environment: [:], isiOSAppOnMac: false)
+
+        // The test host is a simulator on a Mac, so hw.machine is the host CPU; it must still be a real value.
+        XCTAssertFalse(model.isEmpty)
+        XCTAssertNotEqual(model, "Unknown")
+    }
+
+    func test_signal_contextWinsOverLaunchPayload() {
+        let signal = makeFactory(suite: makeTestSuite()).signal(
+            for: .listCreated,
+            sessionID: "SESSION",
+            context: ["TelemetryDeck.AppInfo.version": "override", "TelemetryDeck.Device.orientation": "Landscape"]
+        )
+
+        XCTAssertEqual(signal.payload["TelemetryDeck.AppInfo.version"], "override")
+        XCTAssertEqual(signal.payload["TelemetryDeck.Device.orientation"], "Landscape")
+        XCTAssertEqual(signal.payload["TelemetryDeck.AppInfo.buildNumber"], "14")
     }
 
     // MARK: - Opt-out
@@ -156,7 +204,7 @@ final class TelemetryDeckClientTests: XCTestCase {
         let suite = makeTestSuite()
         let http = RecordingHTTPClient(stub: .success(Data()))
         let outbox = makeOutbox(client: http, suite: suite, sleeper: GateSleeper())
-        await outbox.enqueue(makeFactory(suite: suite).signal(for: .listCreated))
+        await outbox.enqueue(makeFactory(suite: suite).signal(for: .listCreated, sessionID: "SESSION"))
         AnalyticsPreferences(suiteName: suite).setSharingEnabled(false)
 
         await outbox.flush()
@@ -207,8 +255,8 @@ final class TelemetryDeckClientTests: XCTestCase {
         let sleeper = GateSleeper()
         let outbox = makeOutbox(client: http, suite: suite, sleeper: sleeper)
         let factory = makeFactory(suite: suite)
-        await outbox.enqueue(factory.signal(for: .listCreated))
-        await outbox.enqueue(factory.signal(for: .titleAddedToWatchlist))
+        await outbox.enqueue(factory.signal(for: .listCreated, sessionID: "SESSION"))
+        await outbox.enqueue(factory.signal(for: .titleAddedToWatchlist, sessionID: "SESSION"))
 
         await sleeper.open()
         await outbox.waitForScheduledFlush()
@@ -261,7 +309,7 @@ final class TelemetryDeckClientTests: XCTestCase {
     func test_enqueue_pastLimit_dropsOldest() async {
         let suite = makeTestSuite()
         let outbox = makeOutbox(client: FakeHTTPClient(stub: .success(Data())), suite: suite, sleeper: GateSleeper())
-        let signal = makeFactory(suite: suite).signal(for: .listCreated)
+        let signal = makeFactory(suite: suite).signal(for: .listCreated, sessionID: "SESSION")
 
         for _ in 0..<(TelemetryDeckOutbox.maxPending + 5) {
             await outbox.enqueue(signal)
@@ -276,11 +324,12 @@ final class TelemetryDeckClientTests: XCTestCase {
     private func makeFactory(suite: String) -> TelemetryDeckSignalFactory {
         TelemetryDeckSignalFactory(
             appID: appID,
-            sessionID: "SESSION",
             isTestMode: true,
             payload: TelemetryDeckSignalFactory.defaultPayload(
                 appInfo: AppInfo(marketingVersion: "1.2.0", build: "14"),
-                os: OperatingSystemVersion(majorVersion: 26, minorVersion: 0, patchVersion: 0)
+                os: OperatingSystemVersion(majorVersion: 26, minorVersion: 0, patchVersion: 0),
+                modelIdentifier: "iPhone17,3",
+                isiOSAppOnMac: false
             ),
             preferences: AnalyticsPreferences(suiteName: suite)
         )
@@ -300,7 +349,7 @@ final class TelemetryDeckClientTests: XCTestCase {
     private func pendingAfterFlush(stub: FakeHTTPClient.Stub) async -> Int {
         let suite = makeTestSuite()
         let outbox = makeOutbox(client: FakeHTTPClient(stub: stub), suite: suite, sleeper: GateSleeper())
-        await outbox.enqueue(makeFactory(suite: suite).signal(for: .listCreated))
+        await outbox.enqueue(makeFactory(suite: suite).signal(for: .listCreated, sessionID: "SESSION"))
         await outbox.flush()
         return await outbox.pendingCount
     }

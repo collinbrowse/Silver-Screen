@@ -9,11 +9,20 @@
 
 import Foundation
 import Observation
+import os
 
 /// The only product events the app sends. Each one is a bare count: no titles,
 /// list names, ratings, or notes ride along. Raw values follow TelemetryDeck's
-/// `Scope.eventName` convention and are what the dashboard shows.
+/// `Scope.eventName` convention and are what the dashboard shows. The two
+/// `TelemetryDeck.` types are the names its SDK uses, so the built-in session,
+/// active-user, and retention charts read them.
 enum AnalyticsEvent: String, Sendable, CaseIterable {
+    /// The app opened, or came back after `AnalyticsSessionTracker.idleThreshold` away.
+    /// Sent by `AnalyticsSessionTracker`.
+    case sessionStarted = "TelemetryDeck.Session.started"
+    /// The first session after install (or after turning sharing back on). The sender
+    /// adds it in front of that session's `sessionStarted`; nothing sends it directly.
+    case newInstallDetected = "TelemetryDeck.Acquisition.newInstallDetected"
     /// Onboarding's last step was finished (not skipped). Sent from `OnboardingGate.finish()`.
     case onboardingFinished = "Onboarding.finished"
     /// The library went from no ratings to one.
@@ -43,6 +52,13 @@ struct DisabledAnalytics: AnalyticsClient {
 struct AnalyticsPreferences: Sendable {
     static let optedOutKey = "analyticsOptedOut"
     static let installIDKey = "analyticsInstallID"
+    static let firstSessionDayKey = "analyticsFirstSessionDay"
+    static let sessionCountKey = "analyticsSessionCount"
+    static let daysUsedKey = "analyticsDaysUsed"
+    /// Everything that ties this install's signals together over time. Opting out removes all of it.
+    static let identityKeys = [installIDKey, firstSessionDayKey, sessionCountKey, daysUsedKey]
+    /// Days kept for "distinct days used", about a year and a month.
+    static let maxDaysKept = 400
 
     /// The UserDefaults suite, or nil for `.standard`. A name rather than the instance,
     /// because `UserDefaults` is not `Sendable` and the sender reads this off the main actor.
@@ -63,7 +79,9 @@ struct AnalyticsPreferences: Sendable {
     func setSharingEnabled(_ enabled: Bool) {
         defaults.set(!enabled, forKey: Self.optedOutKey)
         if !enabled {
-            defaults.removeObject(forKey: Self.installIDKey)
+            for key in Self.identityKeys {
+                defaults.removeObject(forKey: key)
+            }
         }
     }
 
@@ -76,6 +94,136 @@ struct AnalyticsPreferences: Sendable {
         let fresh = UUID().uuidString
         defaults.set(fresh, forKey: Self.installIDKey)
         return fresh
+    }
+}
+
+/// Session and day counts, so signals can carry TelemetryDeck's retention fields.
+/// Date and calendar are parameters so tests can fix them.
+extension AnalyticsPreferences {
+    /// Counts a new session on `date` and returns the retention numbers after it.
+    /// `isNewInstall` is true for the first session this install records.
+    func recordSessionStart(at date: Date, calendar: Calendar) -> (retention: AnalyticsRetention, isNewInstall: Bool) {
+        let today = AnalyticsRetention.day(date, calendar: calendar)
+        let isNewInstall = defaults.string(forKey: Self.firstSessionDayKey) == nil
+        if isNewInstall {
+            defaults.set(today, forKey: Self.firstSessionDayKey)
+        }
+        defaults.set(defaults.integer(forKey: Self.sessionCountKey) + 1, forKey: Self.sessionCountKey)
+        var days = defaults.stringArray(forKey: Self.daysUsedKey) ?? []
+        if !days.contains(today) {
+            days.append(today)
+            defaults.set(Array(days.suffix(Self.maxDaysKept)), forKey: Self.daysUsedKey)
+        }
+        let retention = retention(at: date, calendar: calendar)
+            ?? AnalyticsRetention(firstSessionDay: today, totalSessions: 1, distinctDaysUsed: 1, distinctDaysUsedLastMonth: 1)
+        return (retention, isNewInstall)
+    }
+
+    /// The retention numbers as of `date`, or nil before the first session.
+    func retention(at date: Date, calendar: Calendar) -> AnalyticsRetention? {
+        guard let firstDay = defaults.string(forKey: Self.firstSessionDayKey) else { return nil }
+        let days = defaults.stringArray(forKey: Self.daysUsedKey) ?? []
+        let monthAgo = calendar.date(byAdding: .day, value: -30, to: date) ?? date
+        let cutoff = AnalyticsRetention.day(monthAgo, calendar: calendar)
+        return AnalyticsRetention(
+            firstSessionDay: firstDay,
+            totalSessions: defaults.integer(forKey: Self.sessionCountKey),
+            distinctDaysUsed: days.count,
+            // `yyyy-MM-dd` strings sort in date order, so this is a date comparison.
+            distinctDaysUsedLastMonth: days.filter { $0 >= cutoff }.count
+        )
+    }
+}
+
+/// How often this install has been used, in the fields TelemetryDeck's retention charts
+/// read. Counts only; the one date is the day of the first session.
+struct AnalyticsRetention: Sendable, Equatable {
+    /// `yyyy-MM-dd` in the person's time zone.
+    let firstSessionDay: String
+    let totalSessions: Int
+    let distinctDaysUsed: Int
+    let distinctDaysUsedLastMonth: Int
+
+    var payload: [String: String] {
+        [
+            "TelemetryDeck.Acquisition.firstSessionDate": firstSessionDay,
+            "TelemetryDeck.Retention.totalSessionsCount": "\(totalSessions)",
+            "TelemetryDeck.Retention.distinctDaysUsed": "\(distinctDaysUsed)",
+            "TelemetryDeck.Retention.distinctDaysUsedLastMonth": "\(distinctDaysUsedLastMonth)",
+        ]
+    }
+
+    /// `yyyy-MM-dd` for `date` in `calendar`'s time zone, the SDK's ISO full date.
+    static func day(_ date: Date, calendar: Calendar) -> String {
+        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
+    }
+}
+
+/// The screen as the window scene last reported it. `SceneDelegate` sets it, because
+/// that is where UIKit is allowed; the sender reads it for every signal.
+struct AnalyticsDisplay: Sendable, Equatable {
+    /// Raw values match TelemetryDeck's SDK.
+    enum Orientation: String, Sendable {
+        case portrait = "Portrait"
+        case landscape = "Landscape"
+        case unknown = "Unknown"
+    }
+
+    let orientation: Orientation
+    /// Screen size in points, in the current orientation.
+    let screenWidth: Int
+    let screenHeight: Int
+
+    var payload: [String: String] {
+        [
+            "TelemetryDeck.Device.orientation": orientation.rawValue,
+            "TelemetryDeck.Device.screenResolutionWidth": "\(screenWidth)",
+            "TelemetryDeck.Device.screenResolutionHeight": "\(screenHeight)",
+        ]
+    }
+}
+
+/// The latest `AnalyticsDisplay` behind a lock: the scene writes it on the main actor
+/// while repositories send events from their own actors.
+final class AnalyticsDeviceContext: Sendable {
+    private let display = OSAllocatedUnfairLock<AnalyticsDisplay?>(initialState: nil)
+
+    func update(_ newValue: AnalyticsDisplay) {
+        display.withLock { $0 = newValue }
+    }
+
+    /// Empty until the scene has reported once.
+    var payload: [String: String] {
+        display.withLock { $0?.payload ?? [:] }
+    }
+}
+
+/// Starts analytics sessions the way TelemetryDeck's SDK does: once at launch, and again
+/// when the app returns after more than `idleThreshold` in the background. `SceneDelegate`
+/// reports the transitions; times are parameters so tests need no clock.
+@MainActor
+final class AnalyticsSessionTracker {
+    static let idleThreshold: TimeInterval = 5 * 60
+
+    private let analytics: any AnalyticsClient
+    private var hasStarted = false
+    private var backgroundedAt: Date?
+
+    init(analytics: any AnalyticsClient) {
+        self.analytics = analytics
+    }
+
+    func sceneWillEnterForeground(at now: Date = Date()) {
+        let wasAwayLongEnough = backgroundedAt.map { now.timeIntervalSince($0) > Self.idleThreshold } ?? false
+        backgroundedAt = nil
+        guard !hasStarted || wasAwayLongEnough else { return }
+        hasStarted = true
+        analytics.send(.sessionStarted)
+    }
+
+    func sceneDidEnterBackground(at now: Date = Date()) {
+        backgroundedAt = now
     }
 }
 

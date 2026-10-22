@@ -24,6 +24,10 @@ struct AppDependencies {
     let reviewPrompter: ReviewPrompter
     /// Anonymous product events. Disabled without a TelemetryDeck app ID and for demo launches.
     let analytics: any AnalyticsClient
+    /// Screen details for analytics, reported by `SceneDelegate`.
+    let analyticsDevice: AnalyticsDeviceContext
+    /// Starts analytics sessions on launch and on returning to the app.
+    let analyticsSession: AnalyticsSessionTracker
 
     /// Builds the app's dependency graph. A demo launch swaps in a throwaway library.
     static func live(demo: DemoMode? = nil) throws -> AppDependencies {
@@ -32,6 +36,7 @@ struct AppDependencies {
         let httpClient = URLSessionHTTPClient()
         let appInfo = AppInfo.live()
         let analyticsPreferences = AnalyticsPreferences()
+        let analyticsDevice = AnalyticsDeviceContext()
         // Demo launches write a seeded library for screenshots; those writes are not real use.
         let analytics: any AnalyticsClient = demo == nil
             ? TelemetryDeckClient.live(
@@ -39,6 +44,7 @@ struct AppDependencies {
                 client: httpClient,
                 preferences: analyticsPreferences,
                 appInfo: appInfo,
+                device: analyticsDevice,
                 logger: logger
             )
             : DisabledAnalytics()
@@ -112,7 +118,9 @@ struct AppDependencies {
             logger: logger,
             settings: settings,
             reviewPrompter: reviewPrompter,
-            analytics: analytics
+            analytics: analytics,
+            analyticsDevice: analyticsDevice,
+            analyticsSession: AnalyticsSessionTracker(analytics: analytics)
         )
     }
 }

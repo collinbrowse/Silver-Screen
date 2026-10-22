@@ -6,11 +6,13 @@
 //  (https://telemetrydeck.com/docs/ingest/v2), so analytics needs no SDK.
 //  Events wait a few seconds in memory and go up as one JSON array. A failed
 //  upload retries with backoff; a rejected one is dropped. Nothing here throws
-//  into the caller or touches the main actor.
+//  into the caller or touches the main actor. Field names match TelemetryDeck's
+//  SDK so its built-in charts (sessions, retention, devices) work.
 //
 
 import CryptoKit
 import Foundation
+import os
 
 /// Where the app ID comes from and where signals go.
 enum TelemetryDeckConfiguration {
@@ -33,31 +35,33 @@ struct TelemetryDeckSignal: Encodable, Equatable, Sendable {
     let appID: String
     /// SHA-256 of the random install ID. TelemetryDeck salts and hashes it again on receipt.
     let clientUser: String
-    /// New each launch, so TelemetryDeck can count sessions.
+    /// New for each `sessionStarted`, so TelemetryDeck can count sessions.
     let sessionID: String
     let type: String
     /// True in Debug builds. TelemetryDeck keeps test signals out of production charts.
     let isTestMode: Bool
-    /// Flat strings only: app version and OS version, never user content.
+    /// Flat strings only: app, OS, and device details plus retention counts, never user content.
     let payload: [String: String]
 }
 
 /// Turns an event into a signal with this launch's fixed fields.
 struct TelemetryDeckSignalFactory: Sendable {
     let appID: String
-    let sessionID: String
     let isTestMode: Bool
+    /// App, OS, and device-model fields that stay the same for the whole launch.
     let payload: [String: String]
     let preferences: AnalyticsPreferences
 
-    func signal(for event: AnalyticsEvent) -> TelemetryDeckSignal {
+    /// `context` holds fields that change during a launch (orientation, retention counts)
+    /// and wins over `payload` for the same key.
+    func signal(for event: AnalyticsEvent, sessionID: String, context: [String: String] = [:]) -> TelemetryDeckSignal {
         TelemetryDeckSignal(
             appID: appID,
             clientUser: Self.hashed(preferences.installID()),
             sessionID: sessionID,
             type: event.rawValue,
             isTestMode: isTestMode,
-            payload: payload
+            payload: payload.merging(context) { _, latest in latest }
         )
     }
 
@@ -68,17 +72,58 @@ struct TelemetryDeckSignalFactory: Sendable {
             .joined()
     }
 
-    /// The version context every signal carries. Keys are the ones TelemetryDeck's SDK
-    /// uses, so the dashboard's built-in version and OS breakdowns work.
-    static func defaultPayload(appInfo: AppInfo, os: OperatingSystemVersion) -> [String: String] {
-        [
+    /// The app, OS, and device fields every signal carries. Keys and value formats are
+    /// the ones TelemetryDeck's SDK uses, so the dashboard's built-in breakdowns work.
+    static func defaultPayload(
+        appInfo: AppInfo,
+        os: OperatingSystemVersion,
+        modelIdentifier: String,
+        isiOSAppOnMac: Bool
+    ) -> [String: String] {
+        let platform = isiOSAppOnMac ? "isiOSAppOnMac" : "iOS"
+        return [
             "TelemetryDeck.AppInfo.version": appInfo.marketingVersion,
             "TelemetryDeck.AppInfo.buildNumber": appInfo.build,
             "TelemetryDeck.AppInfo.versionAndBuildNumber": "\(appInfo.marketingVersion) (build \(appInfo.build))",
-            "TelemetryDeck.Device.platform": "iOS",
+            "TelemetryDeck.Device.modelName": modelIdentifier,
+            "TelemetryDeck.Device.operatingSystem": "iOS",
+            "TelemetryDeck.Device.platform": platform,
+            "TelemetryDeck.Device.systemVersion": "\(platform) \(os.majorVersion).\(os.minorVersion).\(os.patchVersion)",
             "TelemetryDeck.Device.systemMajorVersion": "\(os.majorVersion)",
             "TelemetryDeck.Device.systemMajorMinorVersion": "\(os.majorVersion).\(os.minorVersion)",
         ]
+    }
+
+    /// Apple's model identifier, such as `iPhone17,3` or `iPad16,3`: the same for every
+    /// device of that model, so it says which hardware people use without singling anyone
+    /// out. A simulator reports the model it simulates; an iPhone app on a Mac reports the Mac.
+    static func modelIdentifier(environment: [String: String], isiOSAppOnMac: Bool) -> String {
+        if let simulated = environment["SIMULATOR_MODEL_IDENTIFIER"], !simulated.isEmpty {
+            return simulated
+        }
+        return sysctlString(isiOSAppOnMac ? "hw.model" : "hw.machine") ?? "Unknown"
+    }
+
+    private static func sysctlString(_ name: String) -> String? {
+        var size = 0
+        guard sysctlbyname(name, nil, &size, nil, 0) == 0, size > 0 else { return nil }
+        var buffer = [UInt8](repeating: 0, count: size)
+        guard sysctlbyname(name, &buffer, &size, nil, 0) == 0 else { return nil }
+        let value = String(decoding: buffer.prefix { $0 != 0 }, as: UTF8.self)
+        return value.isEmpty ? nil : value
+    }
+}
+
+/// The current session ID behind a lock, replaced on every `sessionStarted`.
+final class TelemetryDeckSession: Sendable {
+    private let id = OSAllocatedUnfairLock(initialState: UUID().uuidString)
+
+    var current: String {
+        id.withLock { $0 }
+    }
+
+    func rotate() {
+        id.withLock { $0 = UUID().uuidString }
     }
 }
 
@@ -235,22 +280,69 @@ actor TelemetryDeckOutbox {
     }
 }
 
-/// The live `AnalyticsClient`. `send` checks the opt-out, builds the signal, and hands
-/// it to the outbox on a background task, so the caller never waits.
+/// The live `AnalyticsClient`. `send` checks the opt-out and builds the signals on the
+/// caller's thread (cheap: a few UserDefaults reads), so session IDs and counters follow
+/// call order, then hands them to the outbox on a background task.
 struct TelemetryDeckClient: AnalyticsClient {
     let factory: TelemetryDeckSignalFactory
     let outbox: TelemetryDeckOutbox
+    let device: AnalyticsDeviceContext
+    let session: TelemetryDeckSession
+    let calendar: Calendar
+    let now: @Sendable () -> Date
+
+    init(
+        factory: TelemetryDeckSignalFactory,
+        outbox: TelemetryDeckOutbox,
+        device: AnalyticsDeviceContext = AnalyticsDeviceContext(),
+        session: TelemetryDeckSession = TelemetryDeckSession(),
+        calendar: Calendar = .current,
+        now: @escaping @Sendable () -> Date = { Date() }
+    ) {
+        self.factory = factory
+        self.outbox = outbox
+        self.device = device
+        self.session = session
+        self.calendar = calendar
+        self.now = now
+    }
 
     func send(_ event: AnalyticsEvent) {
-        Task { [self] in
-            await record(event)
+        let signals = signals(for: event)
+        guard !signals.isEmpty else { return }
+        Task { [outbox] in
+            for signal in signals {
+                await outbox.enqueue(signal)
+            }
         }
     }
 
-    /// The work behind `send`, awaitable so tests can check the outbox afterwards.
+    /// `send`, awaitable so tests can check the outbox afterwards.
     func record(_ event: AnalyticsEvent) async {
-        guard factory.preferences.isSharingEnabled else { return }
-        await outbox.enqueue(factory.signal(for: event))
+        for signal in signals(for: event) {
+            await outbox.enqueue(signal)
+        }
+    }
+
+    /// The signals one event becomes. `sessionStarted` starts a new session ID and counts
+    /// the session; the first one also sends `newInstallDetected`. Empty when opted out.
+    func signals(for event: AnalyticsEvent) -> [TelemetryDeckSignal] {
+        let preferences = factory.preferences
+        guard preferences.isSharingEnabled else { return [] }
+        let date = now()
+        var events = [event]
+        if event == .sessionStarted {
+            session.rotate()
+            if preferences.recordSessionStart(at: date, calendar: calendar).isNewInstall {
+                events.insert(.newInstallDetected, at: 0)
+            }
+        }
+        var context = device.payload
+        if let retention = preferences.retention(at: date, calendar: calendar) {
+            context.merge(retention.payload) { _, latest in latest }
+        }
+        let sessionID = session.current
+        return events.map { factory.signal(for: $0, sessionID: sessionID, context: context) }
     }
 
     /// The composition root's analytics. No usable app ID means `DisabledAnalytics`.
@@ -260,6 +352,7 @@ struct TelemetryDeckClient: AnalyticsClient {
         client: any HTTPClient,
         preferences: AnalyticsPreferences,
         appInfo: AppInfo,
+        device: AnalyticsDeviceContext,
         logger: any AppLogging
     ) -> any AnalyticsClient {
         guard let appID = TelemetryDeckConfiguration.resolvedAppID(infoDictionary: infoDictionary) else {
@@ -270,17 +363,22 @@ struct TelemetryDeckClient: AnalyticsClient {
         #else
         let isTestMode = false
         #endif
+        let process = ProcessInfo.processInfo
         let factory = TelemetryDeckSignalFactory(
             appID: appID,
-            sessionID: UUID().uuidString,
             isTestMode: isTestMode,
             payload: TelemetryDeckSignalFactory.defaultPayload(
                 appInfo: appInfo,
-                os: ProcessInfo.processInfo.operatingSystemVersion
+                os: process.operatingSystemVersion,
+                modelIdentifier: TelemetryDeckSignalFactory.modelIdentifier(
+                    environment: process.environment,
+                    isiOSAppOnMac: process.isiOSAppOnMac
+                ),
+                isiOSAppOnMac: process.isiOSAppOnMac
             ),
             preferences: preferences
         )
         let outbox = TelemetryDeckOutbox(client: client, preferences: preferences, logger: logger)
-        return TelemetryDeckClient(factory: factory, outbox: outbox)
+        return TelemetryDeckClient(factory: factory, outbox: outbox, device: device)
     }
 }
