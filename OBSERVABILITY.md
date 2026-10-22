@@ -73,7 +73,7 @@ the events and the opt-out are in [`Analytics.swift`](SilverScreen/Support/Analy
 | --- | --- | --- |
 | `TelemetryDeck.Session.started` | Launch, and returning after more than 5 minutes in the background (the SDK's rule) | `AnalyticsSessionTracker`, called by `SceneDelegate` |
 | `TelemetryDeck.Acquisition.newInstallDetected` | Just before the first session (again after turning sharing back on) | `TelemetryDeckClient` |
-| `Onboarding.finished` | Onboarding's last step is finished (not skipped) | `OnboardingGate.finish()`, once onboarding (#43) merges — see below |
+| `Onboarding.finished` | Onboarding's last step is finished (not skipped) | `OnboardingGate.finish()` |
 | `Library.firstRatingSaved` | A score is saved and no other title had one | `AnnotationsRepository.save` / `saveScore` |
 | `Library.listCreated` | A custom list is created | `ListsRepository.createList` |
 | `Library.titleAddedToWatchlist` | A title is newly put on Watchlist | `ListsRepository` add and toggle |
@@ -138,14 +138,10 @@ other per-environment values so a fresh clone sends nothing.
 
 ### Onboarding event
 
-Onboarding is in PR #43, not on `main`. After it merges:
-
-1. Add `analytics: any AnalyticsClient` to `OnboardingGate`'s init and pass
-   `dependencies.analytics` where `SceneDelegate` builds the gate.
-2. In `OnboardingGate.finish()`, call `analytics.send(.onboardingFinished)` after
-   `marker.markCompleted()`. Do not send it from `skip()`.
-3. Add an `OnboardingGateTests` case with `SpyAnalyticsClient` asserting
-   `finish()` sends `[.onboardingFinished]` and `skip()` sends nothing.
+`OnboardingGate` takes `analytics: any AnalyticsClient` (`SceneDelegate` passes
+`dependencies.analytics`). `finish()` sends `.onboardingFinished` right after it
+writes `onboardingCompletedAt`; `skip()` sends nothing. `OnboardingGateTests`
+covers both with `SpyAnalyticsClient`.
 
 ### Adding an event
 

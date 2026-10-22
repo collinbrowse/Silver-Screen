@@ -156,6 +156,7 @@ struct BrowseListView: View {
                         ) {
                             viewModel.noteListSaveFailed()
                         }
+                        .tourAnchor(index == 0 ? .browseEye : nil)
                     }
                     .id(row.id)
                     .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 8))

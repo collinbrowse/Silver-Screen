@@ -55,7 +55,7 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 
 ### Product
 
-- [ ] Onboarding: a first-launch flow that gets someone to a non-empty library (rate a few
+- [x] Onboarding: a first-launch flow that gets someone to a non-empty library (rate a few
       titles they've seen, start a watchlist) instead of an empty Library tab
 - [x] Review prompt: SwiftUI `requestReview` after a good moment, such as the 5th saved rating, at most once per version, never after an error.
       Ratings saved during onboarding (before `onboardingCompletedAt`) do not count.
@@ -64,7 +64,7 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
       Declare them on the privacy label as Product Interaction, not linked.
       TelemetryDeck client, events, Settings toggle, and privacy manifest are built. Left:
       create the TelemetryDeck app, set `TELEMETRYDECK_APP_ID` (OBSERVABILITY.md → Product
-      analytics), send the onboarding event once onboarding merges, and check signals arrive.
+      analytics), and check signals arrive. The onboarding event is wired (#43).
 
 ### Infrastructure and automation
 

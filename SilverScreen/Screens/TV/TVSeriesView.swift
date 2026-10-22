@@ -152,6 +152,7 @@ struct TVSeriesView: View {
             seriesScroll(content, scrollTo: { id in
                 proxy.scrollTo(id, anchor: .top)
                 })
+            .tourScrolls(with: proxy)
         }
     }
 
@@ -167,6 +168,8 @@ struct TVSeriesView: View {
                 }
                 if !content.seasons.isEmpty {
                     seasonsCarousel(content)
+                        .id(TourAnchor.seasons.scrollID)
+                        .tourAnchor(.seasons)
                 }
                 if !content.recommendations.isEmpty {
                     recommendationsCarousel(content)

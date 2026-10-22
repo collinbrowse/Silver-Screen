@@ -47,6 +47,35 @@ final class LibraryViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.canReorderLists)
     }
 
+    func test_showsGetStarted_emptyMoviesAndTV_isTrue() async {
+        let viewModel = LibraryHomeViewModel(lists: .empty())
+
+        await viewModel.load()
+
+        XCTAssertTrue(viewModel.showsGetStarted)
+    }
+
+    func test_showsGetStarted_afterATitleIsSaved_isFalse() async throws {
+        let repository = ListsRepository.empty()
+        let viewModel = LibraryHomeViewModel(lists: repository)
+        _ = try await repository.addToWatched(
+            ListItemDraft(
+                id: 8,
+                kind: .movie,
+                title: "The Third Man",
+                imagePath: nil,
+                releaseDate: nil,
+                genreNames: [],
+                voteAverage: 8,
+                popularity: 3
+            )
+        )
+
+        await viewModel.load()
+
+        XCTAssertFalse(viewModel.showsGetStarted)
+    }
+
     func test_createList_duplicateName_setsNameError() async throws {
         let repository = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
         let viewModel = LibraryHomeViewModel(lists: repository)
