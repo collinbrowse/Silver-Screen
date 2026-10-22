@@ -25,6 +25,17 @@ struct MovieImagesDTO: Decodable, Sendable {
     let posters: [MovieImageDTO]?
     /// Episode and season stills. Absent on movie payloads.
     let stills: [MovieImageDTO]?
+
+    enum CodingKeys: String, CodingKey {
+        case backdrops, posters, stills
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        backdrops = try container.decodeLossyArrayIfPresent(MovieImageDTO.self, forKey: .backdrops)
+        posters = try container.decodeLossyArrayIfPresent(MovieImageDTO.self, forKey: .posters)
+        stills = try container.decodeLossyArrayIfPresent(MovieImageDTO.self, forKey: .stills)
+    }
 }
 
 struct CastMemberDTO: Decodable, Sendable {
@@ -70,6 +81,16 @@ struct CrewMemberDTO: Decodable, Sendable {
 struct MovieCreditsDTO: Decodable, Sendable {
     let cast: [CastMemberDTO]?
     let crew: [CrewMemberDTO]?
+
+    enum CodingKeys: String, CodingKey {
+        case cast, crew
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        cast = try container.decodeLossyArrayIfPresent(CastMemberDTO.self, forKey: .cast)
+        crew = try container.decodeLossyArrayIfPresent(CrewMemberDTO.self, forKey: .crew)
+    }
 }
 
 struct MovieCollectionRefDTO: Decodable, Sendable {
@@ -97,6 +118,15 @@ struct MovieCollectionDTO: Decodable, Sendable {
         case overview
         case posterPath = "poster_path"
         case parts
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        overview = try container.decodeIfPresent(String.self, forKey: .overview)
+        posterPath = try container.decodeIfPresent(String.self, forKey: .posterPath)
+        parts = try container.decodeLossyArrayIfPresent(MovieSummaryDTO.self, forKey: .parts)
     }
 }
 
@@ -165,8 +195,39 @@ struct MovieDetailDTO: Decodable, Sendable {
         case similar
         case belongsToCollection = "belongs_to_collection"
     }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(Int.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        overview = try container.decodeIfPresent(String.self, forKey: .overview)
+        posterPath = try container.decodeIfPresent(String.self, forKey: .posterPath)
+        releaseDate = try container.decodeIfPresent(String.self, forKey: .releaseDate)
+        voteAverage = try container.decode(Double.self, forKey: .voteAverage)
+        popularity = try container.decodeIfPresent(Double.self, forKey: .popularity)
+        runtime = try container.decodeIfPresent(Int.self, forKey: .runtime)
+        genres = try container.decodeLossyArrayIfPresent(MovieGenreDTO.self, forKey: .genres)
+        budget = try container.decodeIfPresent(Int.self, forKey: .budget)
+        revenue = try container.decodeIfPresent(Int.self, forKey: .revenue)
+        images = try container.decodeIfPresent(MovieImagesDTO.self, forKey: .images)
+        credits = try container.decodeIfPresent(MovieCreditsDTO.self, forKey: .credits)
+        similar = try container.decodeIfPresent(MovieListResultsDTO.self, forKey: .similar)
+        belongsToCollection = try container.decodeIfPresent(
+            MovieCollectionRefDTO.self,
+            forKey: .belongsToCollection
+        )
+    }
 }
 
 struct MovieListResultsDTO: Decodable, Sendable {
     let results: [MovieSummaryDTO]?
+
+    enum CodingKeys: String, CodingKey {
+        case results
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        results = try container.decodeLossyArrayIfPresent(MovieSummaryDTO.self, forKey: .results)
+    }
 }

@@ -47,6 +47,8 @@ enum AppError: Error, Equatable, Sendable {
                 return "The request took too long. Please try again."
             case .unauthorized:
                 return "The movie service rejected this request. Check the access token."
+            case .server(let status) where status != 429 && (400..<500).contains(status):
+                return "The movie service couldn't find what you asked for (\(status))."
             case .server(let status):
                 return "The movie service returned an error (\(status)). Please try again later."
             case .decoding:
@@ -62,9 +64,13 @@ enum AppError: Error, Equatable, Sendable {
         }
     }
 
+    /// Whether the UI offers a retry. A 4xx other than 429 means the request itself is
+    /// wrong (for example a title TMDB removed), so asking again cannot succeed.
     var isRetryable: Bool {
         switch self {
-            case .offline, .timedOut, .server, .unknown, .decoding:
+            case .server(let status):
+                return status == 429 || !(400..<500).contains(status)
+            case .offline, .timedOut, .unknown, .decoding:
                 return true
             case .unauthorized, .persistence, .missingAccessToken, .invalidBaseURL:
                 return false

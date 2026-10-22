@@ -15,6 +15,15 @@ struct PersonExternalIDsDTO: Decodable, Sendable {
 
 struct PersonImagesDTO: Decodable, Sendable {
     let profiles: [MovieImageDTO]?
+
+    enum CodingKeys: String, CodingKey {
+        case profiles
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        profiles = try container.decodeLossyArrayIfPresent(MovieImageDTO.self, forKey: .profiles)
+    }
 }
 
 /// One entry from `combined_credits.cast` or `combined_credits.crew`.
@@ -64,6 +73,16 @@ struct PersonCombinedCreditDTO: Decodable, Sendable {
 struct PersonCombinedCreditsDTO: Decodable, Sendable {
     let cast: [PersonCombinedCreditDTO]?
     let crew: [PersonCombinedCreditDTO]?
+
+    enum CodingKeys: String, CodingKey {
+        case cast, crew
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        cast = try container.decodeLossyArrayIfPresent(PersonCombinedCreditDTO.self, forKey: .cast)
+        crew = try container.decodeLossyArrayIfPresent(PersonCombinedCreditDTO.self, forKey: .crew)
+    }
 }
 
 /// TMDB `/person/{id}` payload, including optional `append_to_response` sections.
