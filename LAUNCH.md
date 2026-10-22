@@ -46,9 +46,9 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
         (App Functionality, Analytics); Product Interaction and Device ID (Analytics)
       - Linked to you: Email Address and Customer Support, only when someone sends feedback with an email (App Functionality)
       - Tracking: none
-- [ ] App Store Connect: privacy policy URL, support URL, Entertainment category, copyright, age rating questionnaire
-- [ ] App Review notes: no sign-in needed; all data is local
-- [ ] Large screens (decided): build the layouts for iPhone Duo first, then use its larger
+- [x] App Store Connect: privacy policy URL, support URL, Entertainment category, copyright, age rating questionnaire
+- [x] App Review notes: no sign-in needed; all data is local
+- [x] Large screens (decided): build the layouts for iPhone Duo first, then use its larger
       screens as the iPad screens. Base each layout on the available width (size classes),
       not on the device model, so one set of views serves both. iPad ships with those layouts
       (`TARGETED_DEVICE_FAMILY` stays `1,2`), and `marketing.py` already captures a 13" iPad set.
