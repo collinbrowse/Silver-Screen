@@ -42,8 +42,8 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 - [ ] Sentry project settings: turn on "Prevent Storing of IP Addresses", so crash reports stay unlinked to a person
 - [x] Add the official TMDB logo to Settings → Data Sources (TMDB's attribution rules ask for it)
 - [ ] App Store Connect privacy label, matching `PrivacyInfo.xcprivacy`:
-      - Not linked to you: Crash Data, Performance Data, Other Diagnostic Data (App Functionality);
-        Product Interaction (Analytics)
+      - Not linked to you: Crash Data, Performance Data (App Functionality); Other Diagnostic Data
+        (App Functionality, Analytics); Product Interaction and Device ID (Analytics)
       - Linked to you: Email Address and Customer Support, only when someone sends feedback with an email (App Functionality)
       - Tracking: none
 - [ ] App Store Connect: privacy policy URL, support URL, Entertainment category, copyright, age rating questionnaire

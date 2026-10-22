@@ -62,7 +62,8 @@ because the App Store Connect API has reviews but no aggregate rating.
 
 ## Product analytics
 
-[TelemetryDeck](https://telemetrydeck.com/) counts four anonymous events. The app
+[TelemetryDeck](https://telemetrydeck.com/) counts sessions and four anonymous
+events. The app
 posts them to the [v2 ingest API](https://telemetrydeck.com/docs/ingest/v2) with
 `URLSession` in
 [`TelemetryDeckClient.swift`](SilverScreen/Data/Networking/TelemetryDeckClient.swift);
@@ -70,19 +71,36 @@ the events and the opt-out are in [`Analytics.swift`](SilverScreen/Support/Analy
 
 | Signal type | Sent when | Sent from |
 | --- | --- | --- |
+| `TelemetryDeck.Session.started` | Launch, and returning after more than 5 minutes in the background (the SDK's rule) | `AnalyticsSessionTracker`, called by `SceneDelegate` |
+| `TelemetryDeck.Acquisition.newInstallDetected` | Just before the first session (again after turning sharing back on) | `TelemetryDeckClient` |
 | `Onboarding.finished` | Onboarding's last step is finished (not skipped) | `OnboardingGate.finish()`, once onboarding (#43) merges — see below |
 | `Library.firstRatingSaved` | A score is saved and no other title had one | `AnnotationsRepository.save` / `saveScore` |
 | `Library.listCreated` | A custom list is created | `ListsRepository.createList` |
 | `Library.titleAddedToWatchlist` | A title is newly put on Watchlist | `ListsRepository` add and toggle |
 
-The repositories send them after the write is saved, so every screen that saves
+The two `TelemetryDeck.` types use the SDK's names, so the dashboard's built-in
+session, active-user, and retention charts work without the SDK. The repositories
+send the `Library.*` events after the write is saved, so every screen that saves
 reports the same way and a failed save sends nothing.
 
 Each signal carries the app ID, a SHA-256 of a random per-install UUID
-(`clientUser`), a per-launch session ID, the type, and the app and iOS version.
-Never a title, list name, rating, note, or search. TelemetryDeck salts and
-hashes `clientUser` again on arrival. Settings → Share Anonymous Usage turns it
-off and forgets the install UUID. Events wait about 5 seconds in memory and
+(`clientUser`), the session ID (new each session), the type, and these fields,
+named as the SDK names them:
+
+| Fields | Values |
+| --- | --- |
+| `TelemetryDeck.AppInfo.*` | Version and build |
+| `TelemetryDeck.Device.*` | Model identifier (`iPhone17,3`; a simulator reports the model it simulates), iOS version, platform, orientation (`Portrait` / `Landscape` / `Unknown`), screen size in points |
+| `TelemetryDeck.Acquisition.firstSessionDate` | Day of the first session, `yyyy-MM-dd` |
+| `TelemetryDeck.Retention.*` | Total sessions, distinct days used, distinct days in the last 30 |
+
+Never a title, list name, rating, note, or search. A model identifier is shared by
+every device of that model, so it does not single anyone out. TelemetryDeck salts
+and hashes `clientUser` again on arrival. `SceneDelegate` reports orientation and
+screen size (UIKit stays in the delegates); signals sent before it first reports
+leave those fields out. Session and day counts live in UserDefaults. Settings →
+Share Anonymous Usage turns it all off and forgets the install UUID and the counts,
+so turning it back on looks like a new install. Events wait about 5 seconds in memory and
 go up as one request. Offline or 5xx uploads retry with backoff (30 s doubling
 to 15 min); a 4xx is dropped. Nothing is written to disk, so events queued when
 the app is killed are lost — fine for counts.
@@ -112,7 +130,9 @@ other per-environment values so a fresh clone sends nothing.
 1. Build and run a Debug build with the app ID set.
 2. Create a list, add a title to Watchlist, and rate a title in a library that has no ratings.
 3. Within a few seconds, open TelemetryDeck, turn on **Test Mode** in the dashboard,
-   and check Explore → Recent Signals for the `Library.*` types.
+   and check Explore → Recent Signals for `TelemetryDeck.Session.started`,
+   `TelemetryDeck.Acquisition.newInstallDetected`, and the `Library.*` types. Open
+   one and check its payload has the model, orientation, and retention fields.
 4. After the first TestFlight build, turn Test Mode off and check the same signals
    arrive from a TestFlight install.
 
@@ -129,9 +149,12 @@ Onboarding is in PR #43, not on `main`. After it merges:
 
 ### Adding an event
 
-Add a case to `AnalyticsEvent` with a `Scope.eventName` raw value, send it where
-the action is saved, add a test with `SpyAnalyticsClient`, and add it to the
-table above. Keep it a bare count: no payload from user content. If it measures a
+Add a case to `AnalyticsEvent` with a `Scope.eventName` raw value (leave the
+`TelemetryDeck.` scope to the SDK names above), send it where the action is saved,
+add a test with `SpyAnalyticsClient`, and add it to the table above. Keep it a
+bare count: no payload from user content. A new device or app field goes in
+`TelemetryDeckSignalFactory.defaultPayload` (fixed per launch) or
+`AnalyticsDisplay` (changes during a launch), under the SDK's key when it has one. If it measures a
 new kind of data, update `PrivacyInfo.xcprivacy`, the privacy policy in
 [`docs/privacy.md`](docs/privacy.md), and the App Store privacy label.
 
