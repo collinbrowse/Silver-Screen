@@ -36,7 +36,7 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 - [x] Privacy manifest declares crash, performance, diagnostic, and feedback data
 - [x] `ITSAppUsesNonExemptEncryption = NO`, so uploads skip the export compliance question
 - [x] Privacy policy and support pages in `docs/`
-- [ ] Turn on GitHub Pages: repo Settings → Pages → Deploy from a branch → `main`, `/docs`.
+- [x] Turn on GitHub Pages: repo Settings → Pages → Deploy from a branch → `main`, `/docs`.
       Then check that `https://collinbrowse.github.io/Silver-Screen/privacy/` and `/support/` load.
 - [x] Add a support email address to `docs/support.md` (Apple expects contact details on the support URL)
 - [ ] Sentry project settings: turn on "Prevent Storing of IP Addresses", so crash reports stay unlinked to a person
