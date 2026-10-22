@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import urllib.error
 
 sys.path.insert(0, os.path.dirname(__file__))
 import build_awards_catalog as builder  # noqa: E402
@@ -375,6 +376,17 @@ class BuilderTests(unittest.TestCase):
         self.assertNotIn("test-token", seen["url"])
         self.assertEqual(seen["authorization"], "Bearer test-token")
         self.assertIn("external_source=imdb_id", seen["url"])
+
+    def test_wikidata_network_failure_names_the_cause(self) -> None:
+        def opener(request, timeout):
+            raise urllib.error.URLError("Name or service not known")
+
+        with self.assertRaises(builder.QueryFailure) as caught:
+            builder._fetch_bindings_once("SELECT * WHERE {}", opener, 5)
+        message = str(caught.exception)
+        self.assertTrue(message.startswith("Wikidata query failed: "), message)
+        self.assertIn("Name or service not known", message)
+        self.assertTrue(builder._retryable(message))
 
 
 if __name__ == "__main__":

@@ -156,9 +156,21 @@ jobs:
       # needed (and current sentry-cli rejects --release here).
       - name: Upload dSYMs to Sentry
         if: env.UPLOAD == 'true' && env.SENTRY_AUTH_TOKEN != ''
+        env:
+          # Pinned release binary, checked against its SHA-256, instead of piping
+          # an install script into bash in the signing job. To upgrade, take the
+          # sentry-cli-Darwin-universal asset from github.com/getsentry/sentry-cli/releases
+          # and its digest (shasum -a 256).
+          SENTRY_CLI_VERSION: "3.8.0"
+          SENTRY_CLI_SHA256: "2c26914636c47ab9bf9e710484ad7b44d371cbec8bd29cafb36b3cf877bf4285"
         run: |
-          curl -sL https://sentry.io/get-cli/ | bash
-          export PATH="$HOME/.local/bin:$PATH"
+          mkdir -p "$RUNNER_TEMP/sentry-cli"
+          cli="$RUNNER_TEMP/sentry-cli/sentry-cli"
+          curl -fsSL --retry 3 -o "$cli" \
+            "https://github.com/getsentry/sentry-cli/releases/download/${SENTRY_CLI_VERSION}/sentry-cli-Darwin-universal"
+          echo "${SENTRY_CLI_SHA256}  ${cli}" | shasum -a 256 -c -
+          chmod +x "$cli"
+          export PATH="$RUNNER_TEMP/sentry-cli:$PATH"
           sentry-cli debug-files upload \
             --org "$SENTRY_ORG" \
             --project "$SENTRY_PROJECT" \

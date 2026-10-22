@@ -42,15 +42,22 @@ jobs:
           git checkout -B awards-catalog
           git add SilverScreen/Data/Resources/AwardsCatalog.json
           git commit -m "Update the awards catalog from Wikidata."
-          git push --force-with-lease -u origin awards-catalog
+          # The checkout fetched main only, so there is no tracking ref for the
+          # bot's branch. Lease against the remote tip read here instead. It is
+          # empty on the first run, which means the branch must not exist yet.
+          remote_sha="$(git ls-remote --heads origin refs/heads/awards-catalog | cut -f1)"
+          git push --force-with-lease="refs/heads/awards-catalog:${remote_sha}" -u origin awards-catalog
           body="$(PYTHONPATH=scripts python3 -c 'import build_awards_catalog as builder, pathlib; print(builder.render_pr_body(pathlib.Path("/tmp/awards-summary.md").read_text()))')"
           if gh pr view awards-catalog --json url >/dev/null 2>&1; then
             gh pr edit awards-catalog --body "$body"
           else
-            gh pr create \
+            if ! gh pr create \
               --base main \
               --head awards-catalog \
               --title "Update awards catalog" \
-              --body "$body"
+              --body "$body"; then
+              echo "::error::Pushed the awards-catalog branch but could not open its pull request. If gh says GitHub Actions is not permitted to create pull requests, open the PR by hand from awards-catalog, or turn on Settings > Actions > General > Allow GitHub Actions to create and approve pull requests."
+              exit 1
+            fi
           fi
 
