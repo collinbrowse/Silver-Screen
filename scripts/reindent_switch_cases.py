@@ -64,6 +64,11 @@ def brace_delta(line: str) -> int:
     return cleaned.count("{") - cleaned.count("}")
 
 
+def paren_delta(line: str) -> int:
+    cleaned = strip_strings_and_comments(line)
+    return cleaned.count("(") - cleaned.count(")")
+
+
 def reindent_switch_block(lines: list[str], start: int, switch_indent: int) -> tuple[list[str], int]:
     unit = 4
     case_indent = switch_indent + unit
@@ -90,6 +95,21 @@ def reindent_switch_block(lines: list[str], start: int, switch_indent: int) -> t
             out.append(" " * case_indent + stripped)
             i += 1
             depth += brace_delta(out[-1])
+            # A pattern split across lines (`case .tvSeason(` … `):`) is part of the label:
+            # its bindings sit one level in and the closing `)` lines up with `case`.
+            parens = paren_delta(out[-1])
+            while parens > 0 and i < len(lines):
+                pattern = lines[i]
+                pattern_stripped = pattern.lstrip()
+                if pattern_stripped.startswith(")"):
+                    out.append(" " * case_indent + pattern_stripped)
+                elif pattern_stripped and leading_spaces(pattern) < body_indent:
+                    out.append(" " * body_indent + pattern_stripped)
+                else:
+                    out.append(pattern)
+                parens += paren_delta(pattern)
+                depth += brace_delta(pattern)
+                i += 1
             while i < len(lines):
                 if depth == 1:
                     nxt = lines[i]

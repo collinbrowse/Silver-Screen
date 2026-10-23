@@ -10,6 +10,8 @@ paths:
 
 Indent `case` and `default` one level under `switch`. Indent the body of each case one level under the label.
 
+The PostToolUse hook `.claude/hooks/format-swift.sh` applies this to every Swift file Claude edits, and CI runs `python3 scripts/reindent_switch_cases.py --check`. A pattern split across lines keeps its closing `):` level with `case`.
+
 ```swift
 switch viewModel.state {
     case .idle, .loading:
