@@ -1,7 +1,6 @@
 ---
-description: Unit test conventions for SilverScreen using XCTest and injected fakes.
-globs: SilverScreenTests/**/*.swift
-alwaysApply: false
+paths:
+  - "SilverScreenTests/**/*.swift"
 ---
 
 # Tests
@@ -13,7 +12,7 @@ alwaysApply: false
 
 ## Fake at the boundary, not at the repository
 
-The seam is `HTTPClient` (and the persistence store for Library lists) — the external boundaries named in [`architecture.mdc`](.cursor/rules/architecture.mdc). Build the **real** repository over a fake client. Do not add a repository protocol to fake one; that would leave DTO mapping and `AppError` translation untested, which is where the bugs actually are.
+The seam is `HTTPClient` (and the persistence store for Library lists) — the external boundaries named in [`architecture.md`](.claude/rules/architecture.md). Build the **real** repository over a fake client. Do not add a repository protocol to fake one; that would leave DTO mapping and `AppError` translation untested, which is where the bugs actually are.
 
 ```swift
 @MainActor
@@ -31,7 +30,7 @@ func test_load_whenClientIsOffline_setsFailedState() async {
 
 Empty test bodies and Xcode placeholders (`testExample`, `testPerformanceExample`) are banned. `scripts/validate-tests.py` fails the harness job if a test asserts nothing.
 
-When verifying mid-turn with `xcodebuild test`, do not pass `-derivedDataPath` (use Xcode’s default). Narrow with `-only-testing:SilverScreenTests/<Class>`; the stop hook still runs the full target — see [`shell-progress.mdc`](.cursor/rules/shell-progress.mdc).
+When verifying mid-turn with `xcodebuild test`, do not pass `-derivedDataPath` (use Xcode’s default). Narrow with `-only-testing:SilverScreenTests/<Class>`; the stop hook still runs the full target — see [`shell-progress.md`](.claude/rules/shell-progress.md).
 
 - View models are `@MainActor`: mark tests `@MainActor` and `await` the work instead of using expectations with timeouts.
 - One behavior per test. Add a regression test with every bug fix.

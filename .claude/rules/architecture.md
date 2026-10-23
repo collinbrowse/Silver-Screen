@@ -1,8 +1,3 @@
----
-description: SilverScreen architecture — MVVM, repositories, dependency injection, AppRouter, and the target toolchain.
-alwaysApply: true
----
-
 # Architecture
 
 Each layer knows only the layer below it:
@@ -14,7 +9,7 @@ Each layer knows only the layer below it:
 The source tree follows that arrow. A screen may use domain types and an injected repository. It does not own DTOs, request building, or a disk store.
 
 - `App/` — composition root, plus `AppDelegate` and `SceneDelegate`.
-- `Screens/<Feature>/` — the screen view, its view model, screen payload types (`…Content`), and **one Swift file per extracted subview** (see [`formatting.mdc`](.cursor/rules/formatting.mdc)).
+- `Screens/<Feature>/` — the screen view, its view model, screen payload types (`…Content`), and **one Swift file per extracted subview** (see [`formatting.md`](.claude/rules/formatting.md)).
 - `Screens/Shared/` — empty, error, and other chrome reused across screens.
 - `Design/` — tokens and visual primitives.
 - `Navigation/` — tabs, routes, and routers.
@@ -23,7 +18,7 @@ The source tree follows that arrow. A screen may use domain types and an injecte
 - `Data/Networking/` — the HTTP client, TMDB requests, and DTOs.
 - `Data/Persistence/` — disk stores.
 - `Data/Resources/` — bundled data, including the awards catalog.
-- `Support/` — `AppError`, `LoadState`, logging, `ImageLoader`, and Sentry bootstrap (see [`observability.mdc`](.cursor/rules/observability.mdc)).
+- `Support/` — `AppError`, `LoadState`, logging, `ImageLoader`, and Sentry bootstrap (see [`observability.md`](.claude/rules/observability.md)).
 
 Tests use the same split under `SilverScreenTests/` (`Screens`, `Data`, `Navigation`, `Support`).
 
@@ -98,7 +93,7 @@ final class MovieListViewModel {
 - No protocol per type, and no protocol wrapping a single concrete struct.
 - Prefer several small types with one reason to change over one type with mode flags.
 
-Concretely, the boundary protocols are `HTTPClient` (network), the Library stores (disk), `AppLogging`, and `AnalyticsClient` (TelemetryDeck; tests use `SpyAnalyticsClient`). **Repositories and view models are concrete types.** There is no `MovieRepositoryProtocol`, and tests do not fake a repository — see [`testing.mdc`](.cursor/rules/testing.mdc).
+Concretely, the boundary protocols are `HTTPClient` (network), the Library stores (disk), `AppLogging`, and `AnalyticsClient` (TelemetryDeck; tests use `SpyAnalyticsClient`). **Repositories and view models are concrete types.** There is no `MovieRepositoryProtocol`, and tests do not fake a repository — see [`testing.md`](.claude/rules/testing.md).
 
 ## Target toolchain
 

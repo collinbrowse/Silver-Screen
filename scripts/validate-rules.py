@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
-"""Validate the Cursor rule harness.
+"""Validate the Claude Code harness.
 
 The rules are the contract that every agent works from, so a typo in a glob or a
 dead cross-reference silently stops a rule from ever loading. This makes that a
 build failure instead of a mystery.
 
 Checks:
-  1. Every .mdc has well-formed frontmatter with `description` and `alwaysApply`.
-  2. Scoped rules declare globs. A glob matching nothing is reported but not fatal —
-     several rules deliberately point at directories that arrive with later stories.
-  3. Every relative markdown link resolves from the repo root.
-  4. No hardcoded TMDB credential in tracked Swift source (see secrets.mdc):
+  1. Every .claude/rules/*.md either has no frontmatter (always loaded) or
+     well-formed frontmatter whose `paths` is a non-empty list. A glob matching
+     nothing is reported but not fatal — several rules deliberately point at
+     directories that arrive with later stories.
+  2. Every relative markdown link in CLAUDE.md, the rules, and the skills
+     resolves from the repo root.
+  3. .claude/settings.json parses, and every hook script it names exists and is
+     executable.
+  4. No hardcoded TMDB credential in tracked Swift source (see secrets.md):
      a 32-hex v3 key, or a JWT-shaped read access token.
   5. Remote Swift packages in the Xcode project are only the approved Sentry repo
-     (see observability.mdc).
+     (see observability.md).
 
 Run from the repo root: python3 scripts/validate-rules.py
 """
@@ -21,12 +25,14 @@ Run from the repo root: python3 scripts/validate-rules.py
 from __future__ import annotations
 
 import glob
+import json
 import os
 import re
 import subprocess
 import sys
 
-RULES_DIR = ".cursor/rules"
+RULES_DIR = ".claude/rules"
+SETTINGS = ".claude/settings.json"
 PBXPROJ = "SilverScreen.xcodeproj/project.pbxproj"
 
 # Tracked Swift must not contain a TMDB credential. The allowlist stays empty;
@@ -57,30 +63,34 @@ def fail(problems: list[str], message: str) -> None:
 
 
 def check_rules(problems: list[str]) -> None:
-    paths = sorted(glob.glob(f"{RULES_DIR}/*.mdc"))
+    paths = sorted(glob.glob(f"{RULES_DIR}/**/*.md", recursive=True))
     if not paths:
         fail(problems, f"no rules found in {RULES_DIR}")
         return
 
     for path in paths:
         text = open(path, encoding="utf-8").read()
-        match = re.match(r"^---\n(.*?)\n---\n", text, re.S)
-        if not match:
-            fail(problems, f"{path}: missing or malformed frontmatter")
+        name = os.path.relpath(path, RULES_DIR)
+        if not text.startswith("---\n"):
+            print(f"  ok  {name:22} always loaded")
             continue
 
-        keys = dict(re.findall(r"^(\w+):[ \t]*(.*)$", match.group(1), re.M))
-        for required in ("description", "alwaysApply"):
-            if not keys.get(required, "").strip():
-                fail(problems, f"{path}: frontmatter is missing `{required}`")
+        match = re.match(r"^---\n(.*?)\n---\n", text, re.S)
+        if not match:
+            fail(problems, f"{path}: malformed frontmatter")
+            continue
 
-        always = keys.get("alwaysApply", "").strip() == "true"
-        globs = [g.strip() for g in keys.get("globs", "").split(",") if g.strip()]
+        frontmatter = match.group(1)
+        if not re.match(r"^paths:[ \t]*$", frontmatter, re.M):
+            fail(problems, f"{path}: frontmatter has no `paths` list; drop the frontmatter to load the rule every session")
+            continue
 
-        if not always and not globs:
-            fail(problems, f"{path}: alwaysApply is false but no globs are declared, so it never loads")
+        globs = re.findall(r"""^[ \t]+-[ \t]+["']?([^"'\n]+?)["']?[ \t]*$""", frontmatter, re.M)
+        if not globs:
+            fail(problems, f"{path}: `paths` is empty, so the rule never loads")
+            continue
 
-        print(f"  ok  {os.path.basename(path):22} alwaysApply={str(always).lower()}")
+        print(f"  ok  {name:22} paths={len(globs)}")
 
         # A glob that matches nothing is printed so a typo is visible, but not fatal.
         for pattern in globs:
@@ -89,8 +99,8 @@ def check_rules(problems: list[str]) -> None:
 
 
 def check_links(problems: list[str]) -> None:
-    targets = sorted(glob.glob(f"{RULES_DIR}/*.mdc")) + ["AGENTS.md"]
-    targets += sorted(glob.glob(".cursor/skills/*/SKILL.md"))
+    targets = sorted(glob.glob(f"{RULES_DIR}/**/*.md", recursive=True)) + ["CLAUDE.md"]
+    targets += sorted(glob.glob(".claude/skills/*/SKILL.md"))
     for path in targets:
         if not os.path.exists(path):
             continue
@@ -100,6 +110,30 @@ def check_links(problems: list[str]) -> None:
             link = link.split("#", 1)[0]
             if link and not os.path.exists(link):
                 fail(problems, f"{path}: broken link -> {link}")
+
+
+def check_hooks(problems: list[str]) -> None:
+    """Fail if settings.json is not valid JSON or names a hook script that is missing."""
+    if not os.path.isfile(SETTINGS):
+        fail(problems, f"{SETTINGS}: missing")
+        return
+    try:
+        settings = json.load(open(SETTINGS, encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        fail(problems, f"{SETTINGS}: invalid JSON ({error})")
+        return
+
+    for event, groups in (settings.get("hooks") or {}).items():
+        for group in groups:
+            for hook in group.get("hooks", []):
+                command = hook.get("command", "")
+                script = command.replace('"${CLAUDE_PROJECT_DIR}"/', "").replace("${CLAUDE_PROJECT_DIR}/", "").split()[0]
+                if not os.path.isfile(script):
+                    fail(problems, f"{SETTINGS}: {event} hook script {script!r} does not exist")
+                elif not os.access(script, os.X_OK):
+                    fail(problems, f"{SETTINGS}: {event} hook script {script!r} is not executable")
+                else:
+                    print(f"  ok  {event:22} {script}")
 
 
 def check_secrets(problems: list[str]) -> None:
@@ -118,7 +152,7 @@ def check_secrets(problems: list[str]) -> None:
             if path in SECRET_DEBT_ALLOWLIST:
                 print(f"  WARN {path}:{lineno} known committed credential, pending rotation")
                 continue
-            fail(problems, f"{path}:{lineno}: hardcoded credential in source (see .cursor/rules/secrets.mdc)")
+            fail(problems, f"{path}:{lineno}: hardcoded credential in source (see .claude/rules/secrets.md)")
 
 
 def _normalize_spm_url(url: str) -> str:
@@ -142,7 +176,7 @@ def check_spm_packages(problems: list[str]) -> None:
             fail(
                 problems,
                 f"{PBXPROJ}: unapproved Swift package {url!r} "
-                "(only https://github.com/getsentry/sentry-cocoa is allowed; see observability.mdc)",
+                "(only https://github.com/getsentry/sentry-cocoa is allowed; see .claude/rules/observability.md)",
             )
         else:
             print(f"  ok  approved package {url}")
@@ -157,6 +191,8 @@ def main() -> int:
 
     print("Rules:")
     check_rules(problems)
+    print("Hooks:")
+    check_hooks(problems)
     print("Links and credentials:")
     check_links(problems)
     check_secrets(problems)

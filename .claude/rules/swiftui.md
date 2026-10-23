@@ -1,13 +1,14 @@
 ---
-description: SwiftUI and Observation conventions for SilverScreen screens.
-globs: SilverScreen/Screens/**/*.swift,SilverScreen/Design/**/*.swift,SilverScreen/**/*View.swift
-alwaysApply: false
+paths:
+  - "SilverScreen/Screens/**/*.swift"
+  - "SilverScreen/Design/**/*.swift"
+  - "SilverScreen/**/*View.swift"
 ---
 
 # SwiftUI views
 
 - All new screens are SwiftUI with Observation. Do not add new `UIViewController` subclasses.
-- New screens live in `SilverScreen/Screens/<Feature>/` — the screen view, its view model, and extracted subviews in separate files when they are named types (not `@ViewBuilder` sections). See [`formatting.mdc`](.cursor/rules/formatting.mdc).
+- New screens live in `SilverScreen/Screens/<Feature>/` — the screen view, its view model, and extracted subviews in separate files when they are named types (not `@ViewBuilder` sections). See [`formatting.md`](.claude/rules/formatting.md).
 - Observe with `@State private var viewModel` (injected at construction) or `@Environment`. Do not use `ObservableObject`, `@Published`, `@StateObject`, or `@ObservedObject`.
 - A view is a function of state: `switch viewModel.state` and handle every case, including empty and failed.
 

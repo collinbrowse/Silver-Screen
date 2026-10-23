@@ -1,8 +1,3 @@
----
-description: PRs must use .github/pull_request_template.md — every section, no shortcuts.
-alwaysApply: true
----
-
 # Pull requests
 
 When creating or editing a GitHub pull request for this repo, the body **must** follow [`.github/pull_request_template.md`](.github/pull_request_template.md). Do not invent a shorter Summary/Test-plan-only body.

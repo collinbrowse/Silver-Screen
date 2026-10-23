@@ -1,8 +1,3 @@
----
-description: Run iPhone simulator checks on the iPhone 17e through Device Hub.
-alwaysApply: true
----
-
 # Simulator target
 
 Xcode 27 removed the Simulator app. Booted devices live in Device Hub. Do not launch or script `Simulator.app`.
@@ -12,4 +7,4 @@ Xcode 27 removed the Simulator app. Booted devices live in Device Hub. Do not la
 - An iPad simulator is optional. Any available iPad is fine when a check actually needs one.
 - Capture with `xcrun simctl io <iphone-17e-udid> screenshot`. Device Hub is the on-screen viewer.
 - Drive the simulator only through MobAI `execute_dsl` (tap, swipe, type, scroll). Do not use `cliclick`, Quartz mouse events, or clicks on the Device Hub window.
-- When running `xcodebuild` or other long simulator jobs, follow [`.cursor/rules/shell-progress.mdc`](.cursor/rules/shell-progress.mdc): `tee` the log; do not pipe into `tail -N` without `-f`.
+- When running `xcodebuild` or other long simulator jobs, follow [`.claude/rules/shell-progress.md`](.claude/rules/shell-progress.md): `tee` the log; do not pipe into `tail -N` without `-f`.

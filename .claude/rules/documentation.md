@@ -1,8 +1,3 @@
----
-description: Require brief purpose comments on types and functions that are not self-explanatory; keep variable comments selective.
-alwaysApply: true
----
-
 # Documentation comments
 
 Prefer code that reads clearly on its own. When it does not, document **what the symbol is and why it exists** so another human (or agent) can navigate the app without reverse-engineering.

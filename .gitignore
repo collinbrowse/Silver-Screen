@@ -35,7 +35,11 @@ xcuserdata/
 *.xcresult
 
 ## Stop-hook unit-test pass fingerprint (per worktree; local only)
-.cursor/hooks/.last-unit-test-pass
+.claude/hooks/.last-unit-test-pass
+
+## Personal Claude Code settings and instructions (never shared)
+.claude/settings.local.json
+CLAUDE.local.md
 
 ## Obj-C/Swift specific
 *.hmap

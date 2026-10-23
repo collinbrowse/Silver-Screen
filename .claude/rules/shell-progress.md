@@ -1,8 +1,3 @@
----
-description: Keep long-running shell output observable — no buffering tail on builds/tests.
-alwaysApply: true
----
-
 # Shell progress for long commands
 
 Agents must be able to see progress while `xcodebuild`, installs, and other long jobs run. A pipe that buffers until EOF hides that progress and looks like a hang.

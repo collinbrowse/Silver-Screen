@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-# stop hook: run SilverScreenTests against Xcode's default DerivedData (per-worktree).
+# Claude Code Stop hook: run SilverScreenTests against Xcode's default DerivedData (per-worktree).
 # Skip xcodebuild when the relevant sources match the last passing fingerprint.
-# Fail-open (print {}) if aborted, missing simulator, or unexpected errors.
+# Fail-open (exit 0, no output) if there is no simulator or something unexpected breaks.
+# A failure blocks the stop with {"decision": "block", "reason": ...} so Claude fixes it.
 
 set -u
 
-PASS_FINGERPRINT_FILE=".cursor/hooks/.last-unit-test-pass"
+PASS_FINGERPRINT_FILE=".claude/hooks/.last-unit-test-pass"
 LOCK_DIR="/tmp/silverscreen-stop-tests.lock"
 LOG="/tmp/silverscreen-stop-tests.log"
 XCODEBUILD_PID=""
 LOCK_HELD=0
 
 emit_empty() {
-  printf '%s\n' '{}'
   exit 0
 }
 
 emit_followup() {
-  python3 -c 'import json,sys; print(json.dumps({"followup_message": sys.argv[1]}))' "$1"
+  python3 -c 'import json,sys; print(json.dumps({"decision": "block", "reason": sys.argv[1]}))' "$1"
   exit 0
 }
 
@@ -38,26 +38,28 @@ on_interrupt() {
   emit_followup "SilverScreenTests stop hook was interrupted (timeout or signal). The suite did not finish — do not treat this as green. Re-run \`xcodebuild test\` for SilverScreenTests (no -derivedDataPath), then continue. Log: ${LOG}"
 }
 
-# Cursor sends TERM on hook timeout. Do not trap INT — a child interrupt must not
+# Claude Code sends TERM on hook timeout. Do not trap INT — a child interrupt must not
 # look like a hook timeout and kick off another agent loop.
 trap on_interrupt TERM
 trap release_lock EXIT
 
 INPUT="$(cat || true)"
 
-STATUS="$(printf '%s' "$INPUT" | python3 -c '
+# stop_hook_active is true when Claude is already continuing because this hook blocked
+# the last stop. Let that turn end rather than loop (one automatic follow-up per stop).
+ACTIVE="$(printf '%s' "$INPUT" | python3 -c '
 import json, sys
 raw = sys.stdin.read()
 try:
     data = json.loads(raw) if raw.strip() else {}
 except Exception:
     data = {}
-print(data.get("status", "") or "")
+print("1" if data.get("stop_hook_active") else "")
 ' 2>/dev/null || true)"
 
-case "$STATUS" in
-  aborted|error) emit_empty ;;
-esac
+if [[ -n "${ACTIVE}" ]]; then
+  emit_empty
+fi
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT" || emit_empty
@@ -163,7 +165,7 @@ fi
 xcrun simctl boot "${UDID}" >/dev/null 2>&1 || true
 
 # Split build + test. A single `xcodebuild test` often hangs after codesign on this
-# toolchain (no further log until Cursor's stop-hook timeout). build-for-testing +
+# toolchain (no further log until the stop-hook timeout). build-for-testing +
 # test-without-building completes in tens of seconds once DerivedData is warm.
 # Do not pass -derivedDataPath: Xcode's default is hashed per project path.
 : >"$LOG"
