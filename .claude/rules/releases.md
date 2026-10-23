@@ -1,6 +1,11 @@
 ---
-description: Version and git workflow for dev, TestFlight, and the App Store.
-alwaysApply: true
+paths:
+  - "Version.xcconfig"
+  - "RELEASE.md"
+  - "CHANGELOG.md"
+  - "scripts/release.py"
+  - "scripts/test_release.py"
+  - ".github/workflows/release.yml"
 ---
 
 # Releases

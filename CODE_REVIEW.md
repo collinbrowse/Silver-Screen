@@ -53,7 +53,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 **Fix:**
 - Callers share one stored bootstrap `Task`. A failed run clears the task so the next call retries.
 - The legacy JSON readers are now injected through the initializer, defaulting to the file stores. This lets the test hold the second import's read until the files are renamed, so the race reproduces every time.
-- The importer also no longer builds its own stores, which `architecture.mdc` asks for.
+- The importer also no longer builds its own stores, which `.claude/rules/architecture.md` asks for.
 
 **Test:** `SQLiteLibraryStoreTests.test_bootstrap_concurrentCallers_importLegacyJSONOnce`
 
@@ -89,7 +89,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 
 **Detail:**
 - `fetchSnapshot` decodes `release_date` and `added_at` per row, so a 1,000-entry library builds about 2,000 formatters on each load.
-- `data-layer.mdc` says to build formatters once.
+- `.claude/rules/data-layer.md` says to build formatters once.
 - `Date.ISO8601FormatStyle(includingFractionalSeconds: true)` held in a `static let` is a `Sendable` replacement.
 
 ### P4 · Low · `fetchSnapshot` / `fetchAnnotations` drop undecodable rows silently
@@ -100,7 +100,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 
 **Detail:**
 - A row with an unknown `segment`, `sort` or `kind` raw value is skipped with no log and no count.
-- `data-layer.mdc` asks for a logged count. The store has no logger today.
+- `.claude/rules/data-layer.md` asks for a logged count. The store has no logger today.
 
 ### P5 · Low · Persistence catch sites drop the root cause, and `TVWatchRepository.save` turns cancellation into `.persistence`
 
@@ -111,7 +111,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 - `AnnotationsRepository.swift:215, 224-226`
 - `ListsRepository.swift:550`
 
-**Detail:** these sites log a fixed string without `\(error)`, against `errors-logging.mdc`. `ListsRepository.persist` (line 564) is the one site that does it correctly.
+**Detail:** these sites log a fixed string without `\(error)`, against `.claude/rules/errors-logging.md`. `ListsRepository.persist` (line 564) is the one site that does it correctly.
 
 ### P6 · Low · Reconcile can re-add a series the user just removed from Watched
 
@@ -213,7 +213,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 **How it fails:**
 - Every non-2xx status other than 401/403 becomes `.server(status:)`, and `.server` is always `isRetryable`.
 - Example: a library row or award link to a title TMDB removed gives the user a permanent retry loop.
-- `data-layer.mdc` names `isRetryable` as the single source of truth and says never to retry 4xx.
+- `.claude/rules/data-layer.md` names `isRetryable` as the single source of truth and says never to retry 4xx.
 
 **Fix:**
 - A 4xx other than 429 is no longer retryable.
@@ -250,7 +250,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 **How it fails:**
 - Example: one "similar" movie with `"title": null`, or one backdrop without `file_path`, throws `DecodingError`.
 - The user then sees "Unexpected Data" instead of the movie.
-- This breaks `data-layer.mdc`: "One malformed element must not discard the other nineteen".
+- This breaks `.claude/rules/data-layer.md`: "One malformed element must not discard the other nineteen".
 
 **Fix:**
 - New `KeyedDecodingContainer.decodeLossyArrayIfPresent`, which skips a bad element and keeps the rest.
@@ -381,7 +381,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 **How it leaks:**
 - The SDK defaults keep network breadcrumbs, network tracking and failed-request capture on.
 - sentry-cocoa 9.30.2 copies the URL query into breadcrumb data (`SentryNetworkTracker.swift:620-621`), into span data (`:219`), and into a failed request's `queryString` (`:491`).
-- A search request's `query=` is what the user typed. It rides along on every later event, which breaks `observability.mdc` ("No user content (search queries…)").
+- A search request's `query=` is what the user typed. It rides along on every later event, which breaks `.claude/rules/observability.md` ("No user content (search queries…)").
 
 **Fix:**
 - `beforeBreadcrumb` and `beforeSendSpan` drop `http.query` / `http.fragment`.
@@ -457,7 +457,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 **How it fails:**
 - `guard expected == path` compares a value-type snapshot with itself, so it never blocks.
 - On an identity change, `.task(id:)` cancels the old task and the new task sets the image (often straight from cache). The old task then resumes with `nil` from `try?` and clears it, or with the previous path's image.
-- The result is a visible row showing a placeholder or the wrong poster. `images.mdc` calls this out explicitly.
+- The result is a visible row showing a placeholder or the wrong poster. `.claude/rules/images.md` calls this out explicitly.
 
 **Fix:**
 - A new `ImageLoader.displayImage` returns nil for a failed load, and for a load whose task was cancelled.
@@ -475,7 +475,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 **How it fails:**
 - On a 3x device, the episode still is shown at 120 pt in `TVSeasonView` and at 200 pt in `TVEpisodeView`, and both resolve to `w780`.
 - Whichever decodes first (360 px) is reused and upscaled in the 200 pt card.
-- This misses `images.mdc`'s "Cache keys include the requested size".
+- This misses `.claude/rules/images.md`'s "Cache keys include the requested size".
 
 **Fix:** the cache and in-flight keys are URL plus pixel size.
 

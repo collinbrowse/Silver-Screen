@@ -39,4 +39,4 @@ storage design is in [`PERSISTENCE.md`](PERSISTENCE.md).
 
 ## How it was built
 
-The harness is in the repo: rules under `.cursor/rules/`, the contract in [`AGENTS.md`](AGENTS.md), hooks that block a new third-party dependency, and CI checks for empty tests and pull-request bodies. Tests substitute the network and the disk store, then run the real repositories and view models.
+The harness is in the repo: rules under `.claude/rules/`, the contract in [`CLAUDE.md`](CLAUDE.md), hooks that block a new third-party dependency, and CI checks for empty tests and pull-request bodies. Tests substitute the network and the disk store, then run the real repositories and view models.

@@ -1,7 +1,6 @@
 ---
-description: Strict Swift concurrency conventions for SilverScreen under Swift 6 language mode.
-globs: SilverScreen/**/*.swift
-alwaysApply: false
+paths:
+  - "SilverScreen/**/*.swift"
 ---
 
 # Concurrency

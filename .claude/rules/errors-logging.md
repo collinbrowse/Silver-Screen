@@ -1,7 +1,6 @@
 ---
-description: SilverScreen user-facing error system and logging conventions.
-globs: SilverScreen/**/*.swift
-alwaysApply: false
+paths:
+  - "SilverScreen/**/*.swift"
 ---
 
 # Errors and logging
@@ -51,7 +50,7 @@ protocol AppLogging: Sendable {
 ```
 
 - The production implementation wraps `os.Logger` with subsystem `com.collinbrowse.thesilverscreen` and a fixed `LogCategory` set: `networking`, `persistence`, `ui`, `navigation`.
-- Log failures and lifecycle transitions. Never log API keys, tokens, or full response bodies. Never log a URL that carries credentials in its query — see [`secrets.mdc`](.cursor/rules/secrets.mdc).
+- Log failures and lifecycle transitions. Never log API keys, tokens, or full response bodies. Never log a URL that carries credentials in its query — see [`secrets.md`](.claude/rules/secrets.md).
 
 ### Annotate privacy, or every line reads `<private>`
 

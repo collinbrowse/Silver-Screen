@@ -1,7 +1,7 @@
 ---
-description: SilverScreen data layer — API models separated from domain models, repositories, and mapping.
-globs: SilverScreen/Data/**/*.swift,SilverScreen/**/*Repository.swift
-alwaysApply: false
+paths:
+  - "SilverScreen/Data/**/*.swift"
+  - "SilverScreen/**/*Repository.swift"
 ---
 
 # Data layer
@@ -48,7 +48,7 @@ protocol HTTPClient: Sendable {
 }
 ```
 
-- Keep URL building and query parameters in the data layer. A view model never assembles a request. Credentials follow [`secrets.mdc`](.cursor/rules/secrets.mdc).
+- Keep URL building and query parameters in the data layer. A view model never assembles a request. Credentials follow [`secrets.md`](.claude/rules/secrets.md).
 - Translate transport, decoding, and persistence failures into `AppError` at this boundary.
 
 ## Request hardening

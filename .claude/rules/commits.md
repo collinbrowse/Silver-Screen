@@ -1,8 +1,3 @@
----
-description: Keep git commits reviewable — one logical unit each, never a dump of unrelated work.
-alwaysApply: true
----
-
 # Reviewable commits
 
 Commits are for reviewers, not for the agent’s convenience. Prefer several small commits over one large one.

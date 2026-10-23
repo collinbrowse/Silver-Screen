@@ -1,7 +1,9 @@
 ---
-description: How the TMDB credential is stored, transmitted, and kept out of logs and source control.
-globs: SilverScreen/Data/Networking/**/*.swift,SilverScreen/Info.plist,*.xcconfig,.github/workflows/**
-alwaysApply: false
+paths:
+  - "SilverScreen/Data/Networking/**/*.swift"
+  - "SilverScreen/Info.plist"
+  - "*.xcconfig"
+  - ".github/workflows/**"
 ---
 
 # Secrets
@@ -26,7 +28,7 @@ A query parameter is part of the URL, so it lands anywhere a URL lands — `os_l
 
 ## Logging
 
-This is where the two rules interact, and it is easy to get wrong. [`errors-logging.mdc`](.cursor/rules/errors-logging.mdc) says never log a token — and a query parameter would put that token in the URL. Logging a request URL would log the credential, and "log the failing URL" is the first instinct when a request fails.
+This is where the two rules interact, and it is easy to get wrong. [`errors-logging.md`](.claude/rules/errors-logging.md) says never log a token — and a query parameter would put that token in the URL. Logging a request URL would log the credential, and "log the failing URL" is the first instinct when a request fails.
 
 - Never interpolate a `URLRequest`, `URL`, or `URLComponents` into a log line. Log the path and the status code.
 - If a URL must be logged, strip the query first.

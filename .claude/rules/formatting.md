@@ -1,7 +1,7 @@
 ---
-description: Swift formatting — switch indentation and when to split Swift files.
-globs: SilverScreen/**/*.swift,SilverScreenTests/**/*.swift
-alwaysApply: false
+paths:
+  - "SilverScreen/**/*.swift"
+  - "SilverScreenTests/**/*.swift"
 ---
 
 # Formatting
@@ -9,6 +9,8 @@ alwaysApply: false
 ## Switch cases
 
 Indent `case` and `default` one level under `switch`. Indent the body of each case one level under the label.
+
+The PostToolUse hook `.claude/hooks/format-swift.sh` applies this to every Swift file Claude edits, and CI runs `python3 scripts/reindent_switch_cases.py --check`. A pattern split across lines keeps its closing `):` level with `case`.
 
 ```swift
 switch viewModel.state {
@@ -78,4 +80,4 @@ Prefer names that show up in the Project navigator. Split when a type is its own
 
 Rough guides: consider splitting a **view file past ~250 lines** or a **view model past ~350** when the extra type would get a clear filename. Do not split only to hit a line count.
 
-See also [`swiftui.mdc`](.cursor/rules/swiftui.mdc) for when to extract subviews from an oversized `body`.
+See also [`swiftui.md`](.claude/rules/swiftui.md) for when to extract subviews from an oversized `body`.

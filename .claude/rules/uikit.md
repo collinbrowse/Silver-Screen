@@ -1,7 +1,6 @@
 ---
-description: SilverScreen screens are SwiftUI. Do not add UIKit view controllers or lists.
-globs: SilverScreen/**/*.swift
-alwaysApply: false
+paths:
+  - "SilverScreen/**/*.swift"
 ---
 
 # No UIKit screens

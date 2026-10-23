@@ -29,6 +29,10 @@ jobs:
         run: python3 scripts/test_build_awards_catalog.py
       - name: Test marketing tooling
         run: python3 scripts/test_marketing.py
+      - name: Test Claude Code hooks
+        run: python3 scripts/test_claude_hooks.py
+      - name: Check switch indentation
+        run: python3 scripts/reindent_switch_cases.py --check
       - name: Validate test suite gates
         run: python3 scripts/validate-tests.py
       - name: Validate PR body template
@@ -69,7 +73,7 @@ jobs:
 
       # Simulator names and OS versions change with every runner image, so a
       # hardcoded `name=iPhone 17` destination is a time bomb. Resolve one at runtime,
-      # the same way .cursor/hooks/run-unit-tests.sh does locally.
+      # the same way .claude/hooks/run-unit-tests.sh does locally.
       - name: Select a simulator
         id: sim
         run: |

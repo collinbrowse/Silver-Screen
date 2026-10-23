@@ -3,7 +3,7 @@
 //  SilverScreen
 //
 //  The only network seam. Repositories talk to this; tests fake it.
-//  See .cursor/rules/data-layer.mdc and .cursor/rules/testing.mdc.
+//  See .claude/rules/data-layer.md and .claude/rules/testing.md.
 //
 
 import Foundation

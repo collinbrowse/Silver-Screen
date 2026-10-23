@@ -1,7 +1,9 @@
 ---
-description: Production observability — Sentry is the only approved third-party SDK; privacy and release-health rules.
-globs: SilverScreen/**/*.swift,SilverScreen/PrivacyInfo.xcprivacy,.github/workflows/**,scripts/release.py
-alwaysApply: false
+paths:
+  - "SilverScreen/**/*.swift"
+  - "SilverScreen/PrivacyInfo.xcprivacy"
+  - ".github/workflows/**"
+  - "scripts/release.py"
 ---
 
 # Observability
@@ -14,7 +16,7 @@ Product analytics go to TelemetryDeck through first-party `URLSession` code (`An
 
 - Add or upgrade Sentry only through the Xcode project’s package reference (`sentry-cocoa`). Do not add CocoaPods or Carthage.
 - [`scripts/validate-rules.py`](scripts/validate-rules.py) fails if `project.pbxproj` references any other remote Swift package.
-- The beforeShellExecution hook still blocks CocoaPods, Carthage, and ad-hoc `Package.swift` / `Podfile` manifests.
+- The PreToolUse Bash hook still blocks CocoaPods, Carthage, and ad-hoc `Package.swift` / `Podfile` manifests.
 
 ## What we capture
 
@@ -24,7 +26,7 @@ Product analytics go to TelemetryDeck through first-party `URLSession` code (`An
 
 ## What we never capture
 
-Same bar as [`errors-logging.mdc`](.cursor/rules/errors-logging.mdc) and [`secrets.mdc`](.cursor/rules/secrets.mdc):
+Same bar as [`errors-logging.md`](.claude/rules/errors-logging.md) and [`secrets.md`](.claude/rules/secrets.md):
 
 - No user content (search queries, list titles, favorites, notes, PII).
 - No API keys, tokens, Authorization headers, or full request URLs (query strings can hold credentials).

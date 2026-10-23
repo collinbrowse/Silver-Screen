@@ -1,7 +1,8 @@
 ---
-description: Accessibility requirements for SilverScreen screens.
-globs: SilverScreen/Screens/**/*.swift,SilverScreen/Design/**/*.swift,SilverScreen/**/*View.swift
-alwaysApply: false
+paths:
+  - "SilverScreen/Screens/**/*.swift"
+  - "SilverScreen/Design/**/*.swift"
+  - "SilverScreen/**/*View.swift"
 ---
 
 # Accessibility

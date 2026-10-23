@@ -2,7 +2,7 @@
 
 Sentry is the only third-party SDK. Product analytics go to TelemetryDeck
 through first-party code, with no SDK. Agent rules live in
-[`.cursor/rules/observability.mdc`](.cursor/rules/observability.mdc).
+[`.claude/rules/observability.md`](.claude/rules/observability.md).
 
 ## Release health
 

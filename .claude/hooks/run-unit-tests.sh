@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-# stop hook: run SilverScreenTests against Xcode's default DerivedData (per-worktree).
+# Claude Code Stop hook: run SilverScreenTests against Xcode's default DerivedData (per-worktree).
 # Skip xcodebuild when the relevant sources match the last passing fingerprint.
-# Fail-open (print {}) if aborted, missing simulator, or unexpected errors.
+# Fail-open (exit 0, no output) if there is no simulator or something unexpected breaks.
+# A failure blocks the stop with {"decision": "block", "reason": ...} so Claude fixes it.
 
 set -u
 
-PASS_FINGERPRINT_FILE=".cursor/hooks/.last-unit-test-pass"
+PASS_FINGERPRINT_FILE=".claude/hooks/.last-unit-test-pass"
 LOCK_DIR="/tmp/silverscreen-stop-tests.lock"
 LOG="/tmp/silverscreen-stop-tests.log"
 XCODEBUILD_PID=""
 LOCK_HELD=0
 
 emit_empty() {
-  printf '%s\n' '{}'
   exit 0
 }
 
 emit_followup() {
-  python3 -c 'import json,sys; print(json.dumps({"followup_message": sys.argv[1]}))' "$1"
+  python3 -c 'import json,sys; print(json.dumps({"decision": "block", "reason": sys.argv[1]}))' "$1"
   exit 0
 }
 
@@ -38,26 +38,16 @@ on_interrupt() {
   emit_followup "SilverScreenTests stop hook was interrupted (timeout or signal). The suite did not finish — do not treat this as green. Re-run \`xcodebuild test\` for SilverScreenTests (no -derivedDataPath), then continue. Log: ${LOG}"
 }
 
-# Cursor sends TERM on hook timeout. Do not trap INT — a child interrupt must not
+# Claude Code sends TERM on hook timeout. Do not trap INT — a child interrupt must not
 # look like a hook timeout and kick off another agent loop.
 trap on_interrupt TERM
 trap release_lock EXIT
 
 INPUT="$(cat || true)"
 
-STATUS="$(printf '%s' "$INPUT" | python3 -c '
-import json, sys
-raw = sys.stdin.read()
-try:
-    data = json.loads(raw) if raw.strip() else {}
-except Exception:
-    data = {}
-print(data.get("status", "") or "")
-' 2>/dev/null || true)"
-
-case "$STATUS" in
-  aborted|error) emit_empty ;;
-esac
+# The hook runs again after Claude fixes a failure (stop_hook_active is true then), so a
+# fix is proven before the turn ends. Claude Code caps consecutive blocks, so a failure
+# Claude cannot fix still lets the turn end.
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT" || emit_empty
@@ -76,10 +66,9 @@ fi
 printf '%s\n' "$$" > "${LOCK_DIR}/pid"
 LOCK_HELD=1
 
+# Any available iPhone will do for unit tests. Prefer one that is already booted.
 UDID="$(python3 -c '
 import json, subprocess, sys
-
-PREFERRED = "iPhone 17e"
 
 try:
     raw = subprocess.check_output(
@@ -91,22 +80,17 @@ try:
 except Exception:
     sys.exit(0)
 
-by_name = {}
-for runtime, devices in (data.get("devices") or {}).items():
-    if "iOS" not in runtime:
-        continue
-    for device in devices or []:
-        if device.get("isAvailable") is False:
-            continue
-        name = device.get("name") or ""
-        udid = device.get("udid") or ""
-        if name == PREFERRED and udid:
-            by_name[PREFERRED] = udid
-            break
-    if PREFERRED in by_name:
-        break
-
-chosen = by_name.get(PREFERRED, "")
+iphones = [
+    device
+    for runtime, devices in (data.get("devices") or {}).items()
+    if "iOS" in runtime
+    for device in devices or []
+    if device.get("isAvailable") is not False
+    and "iPhone" in (device.get("name") or "")
+    and device.get("udid")
+]
+booted = [device for device in iphones if device.get("state") == "Booted"]
+chosen = (booted or iphones or [{}])[0].get("udid", "")
 if chosen:
     print(chosen)
 ' 2>/dev/null || true)"
@@ -159,11 +143,11 @@ if [[ -n "${FINGERPRINT}" && -f "${PASS_FINGERPRINT_FILE}" ]]; then
   fi
 fi
 
-# Boot preferred sim up front so install/launch is not starting from a cold device.
+# Boot the sim up front so install/launch is not starting from a cold device.
 xcrun simctl boot "${UDID}" >/dev/null 2>&1 || true
 
 # Split build + test. A single `xcodebuild test` often hangs after codesign on this
-# toolchain (no further log until Cursor's stop-hook timeout). build-for-testing +
+# toolchain (no further log until the stop-hook timeout). build-for-testing +
 # test-without-building completes in tens of seconds once DerivedData is warm.
 # Do not pass -derivedDataPath: Xcode's default is hashed per project path.
 : >"$LOG"

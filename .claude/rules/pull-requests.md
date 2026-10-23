@@ -1,14 +1,10 @@
----
-description: PRs must use .github/pull_request_template.md — every section, no shortcuts.
-alwaysApply: true
----
-
 # Pull requests
 
 When creating or editing a GitHub pull request for this repo, the body **must** follow [`.github/pull_request_template.md`](.github/pull_request_template.md). Do not invent a shorter Summary/Test-plan-only body.
 
 ## Required workflow
 
+0. **Review first.** The first PR attempt from a branch is held by `.claude/hooks/require-code-review.sh` until you run the `code-review` skill with `--fix` and commit its verified fixes. Then open the PR again.
 1. **Read** [`.github/pull_request_template.md`](.github/pull_request_template.md) before drafting.
 2. **Fill every section** with real content (or an explicit `None` where the template allows it):
    - `## Summary`

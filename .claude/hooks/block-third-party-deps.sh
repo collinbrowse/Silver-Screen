@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# beforeShellExecution: deny SPM / CocoaPods / Carthage additions.
+# Claude Code PreToolUse hook (Bash): deny SPM / CocoaPods / Carthage additions.
 # Allow xcodebuild (including package resolve for the approved Sentry package).
+# Allowed commands return no decision, so the normal permission flow still applies.
 
 set -u
 
@@ -15,18 +16,19 @@ try:
 except Exception:
     data = {}
 
-command = data.get("command") or ""
+command = (data.get("tool_input") or {}).get("command") or ""
 normalized = " ".join(command.strip().split())
 
 def allow():
-    print(json.dumps({"permission": "allow"}))
     sys.exit(0)
 
 def deny(message):
     print(json.dumps({
-        "permission": "deny",
-        "user_message": message,
-        "agent_message": message,
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": message,
+        }
     }))
     sys.exit(0)
 
