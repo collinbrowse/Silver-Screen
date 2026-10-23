@@ -41,6 +41,9 @@ xcuserdata/
 .claude/settings.local.json
 CLAUDE.local.md
 
+## Claude Code session worktrees (one per session; local only)
+.claude/worktrees/
+
 ## Obj-C/Swift specific
 *.hmap
 *.ipa
