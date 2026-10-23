@@ -69,7 +69,7 @@ jobs:
 
       # Simulator names and OS versions change with every runner image, so a
       # hardcoded `name=iPhone 17` destination is a time bomb. Resolve one at runtime,
-      # the same way .cursor/hooks/run-unit-tests.sh does locally.
+      # the same way .claude/hooks/run-unit-tests.sh does locally.
       - name: Select a simulator
         id: sim
         run: |

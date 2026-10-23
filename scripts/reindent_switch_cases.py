@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Indent switch case labels and bodies per .cursor/rules/formatting.mdc.
+"""Indent switch case labels and bodies per .claude/rules/formatting.md.
 
 Only reindents inside `switch` statements. Enum `case` declarations are unchanged.
 

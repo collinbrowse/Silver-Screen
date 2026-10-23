@@ -96,7 +96,7 @@ enum SentryBootstrap {
     }
 
     /// Keys where the SDK copies a request's query string and fragment. Search requests
-    /// carry what the user typed in `query`, which observability.mdc never sends.
+    /// carry what the user typed in `query`, which .claude/rules/observability.md never sends.
     static let requestURLDataKeys = ["http.query", "http.fragment"]
 
     /// Drops the query and fragment from an HTTP breadcrumb. Other breadcrumbs pass through.

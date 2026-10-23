@@ -4,8 +4,8 @@ Staff-level redesign of on-device user data. Product rules stay in the repositor
 this document defines the **storage model** under them.
 
 Roadmap (phases through social): [`ROADMAP.md`](ROADMAP.md).  
-Related: [`NOTES.md`](NOTES.md), [`.cursor/rules/architecture.mdc`](.cursor/rules/architecture.mdc),
-[`.cursor/rules/data-layer.mdc`](.cursor/rules/data-layer.mdc).
+Related: [`NOTES.md`](NOTES.md), [`.claude/rules/architecture.md`](.claude/rules/architecture.md),
+[`.claude/rules/data-layer.md`](.claude/rules/data-layer.md).
 
 ---
 
