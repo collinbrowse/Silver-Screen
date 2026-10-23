@@ -14,7 +14,7 @@ Agents must be able to see progress while `xcodebuild`, installs, and other long
 
 ```bash
 xcodebuild test -scheme SilverScreen \
-  -destination 'platform=iOS Simulator,id=<iphone-17e-udid>' \
+  -destination 'platform=iOS Simulator,id=<iphone-udid>' \
   -only-testing:SilverScreenTests/SearchViewModelTests \
   2>&1 | tee /tmp/search-tests.log
 ```

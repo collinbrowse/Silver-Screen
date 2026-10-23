@@ -124,7 +124,7 @@ Category names in the file drop a leading “Academy Award for ”, “BAFTA Awa
 - `python3 scripts/test_build_awards_catalog.py`
 - `xcodebuild test -scheme SilverScreen -only-testing:SilverScreenTests/AwardsRepositoryTests -only-testing:SilverScreenTests/AwardTitlesViewModelTests -only-testing:SilverScreenTests/AwardDetailLabelTests -only-testing:SilverScreenTests/SearchViewModelTests`
 
-On device, use the iPhone 17e. Empty Search shows the three cards. A family lists categories. A category lists winners with the ceremony year under the title. A known title, such as Oppenheimer, shows the awards card after the facts. A person with a matching IMDb id shows the same card under the biography.
+On device, use any iPhone simulator. Empty Search shows the three cards. A family lists categories. A category lists winners with the ceremony year under the title. A known title, such as Oppenheimer, shows the awards card after the facts. A person with a matching IMDb id shows the same card under the biography.
 
 ## Files
 

@@ -45,21 +45,9 @@ trap release_lock EXIT
 
 INPUT="$(cat || true)"
 
-# stop_hook_active is true when Claude is already continuing because this hook blocked
-# the last stop. Let that turn end rather than loop (one automatic follow-up per stop).
-ACTIVE="$(printf '%s' "$INPUT" | python3 -c '
-import json, sys
-raw = sys.stdin.read()
-try:
-    data = json.loads(raw) if raw.strip() else {}
-except Exception:
-    data = {}
-print("1" if data.get("stop_hook_active") else "")
-' 2>/dev/null || true)"
-
-if [[ -n "${ACTIVE}" ]]; then
-  emit_empty
-fi
+# The hook runs again after Claude fixes a failure (stop_hook_active is true then), so a
+# fix is proven before the turn ends. Claude Code caps consecutive blocks, so a failure
+# Claude cannot fix still lets the turn end.
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT" || emit_empty
@@ -78,10 +66,9 @@ fi
 printf '%s\n' "$$" > "${LOCK_DIR}/pid"
 LOCK_HELD=1
 
+# Any available iPhone will do for unit tests. Prefer one that is already booted.
 UDID="$(python3 -c '
 import json, subprocess, sys
-
-PREFERRED = "iPhone 17e"
 
 try:
     raw = subprocess.check_output(
@@ -93,22 +80,17 @@ try:
 except Exception:
     sys.exit(0)
 
-by_name = {}
-for runtime, devices in (data.get("devices") or {}).items():
-    if "iOS" not in runtime:
-        continue
-    for device in devices or []:
-        if device.get("isAvailable") is False:
-            continue
-        name = device.get("name") or ""
-        udid = device.get("udid") or ""
-        if name == PREFERRED and udid:
-            by_name[PREFERRED] = udid
-            break
-    if PREFERRED in by_name:
-        break
-
-chosen = by_name.get(PREFERRED, "")
+iphones = [
+    device
+    for runtime, devices in (data.get("devices") or {}).items()
+    if "iOS" in runtime
+    for device in devices or []
+    if device.get("isAvailable") is not False
+    and "iPhone" in (device.get("name") or "")
+    and device.get("udid")
+]
+booted = [device for device in iphones if device.get("state") == "Booted"]
+chosen = (booted or iphones or [{}])[0].get("udid", "")
 if chosen:
     print(chosen)
 ' 2>/dev/null || true)"
@@ -161,7 +143,7 @@ if [[ -n "${FINGERPRINT}" && -f "${PASS_FINGERPRINT_FILE}" ]]; then
   fi
 fi
 
-# Boot preferred sim up front so install/launch is not starting from a cold device.
+# Boot the sim up front so install/launch is not starting from a cold device.
 xcrun simctl boot "${UDID}" >/dev/null 2>&1 || true
 
 # Split build + test. A single `xcodebuild test` often hangs after codesign on this
