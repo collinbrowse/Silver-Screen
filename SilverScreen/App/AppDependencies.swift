@@ -30,7 +30,6 @@ struct AppDependencies {
     /// Starts analytics sessions on launch and on returning to the app.
     let analyticsSession: AnalyticsSessionTracker
 
-    /// Builds the app's dependency graph. A demo launch swaps in a throwaway library.
     /// The awards download cache, or nil when Application Support is unavailable. The cache
     /// only holds newer catalog downloads, so losing it must not stop the app from starting.
     private static func awardsCacheURL(logger: any AppLogging) -> URL? {
@@ -45,6 +44,7 @@ struct AppDependencies {
         }
     }
 
+    /// Builds the app's dependency graph. A demo launch swaps in a throwaway library.
     static func live(demo: DemoMode? = nil) throws -> AppDependencies {
         let logger = OSAppLogger()
         let connection = try TMDBConnection.fromBundle()
