@@ -70,7 +70,13 @@ final class AwardTitlesViewModel {
     private let annotations: AnnotationsRepository
     private let tvWatch: TVWatchRepository?
     private var nextPage = 1
-    private var isPaging = false
+    /// Bumped by every reload. A page or reload that finishes under an older generation is
+    /// dropped, so a late result cannot overwrite a newer Winners/Nominees selection or move
+    /// `nextPage` for it.
+    private var generation = 0
+    /// Generation of the `loadMore` in flight, if any. Keyed by generation so a stale page
+    /// finishing late cannot clear the flag for a newer selection's page.
+    private var pagingGeneration: Int?
 
     init(
         request: AwardTitleRequest,
@@ -109,23 +115,30 @@ final class AwardTitlesViewModel {
         await reload(keepingVisible: true)
     }
 
-    /// Fetches the next page of local credits. Concurrent calls are ignored.
+    /// Fetches the next page of local credits. Concurrent calls for the same selection are
+    /// ignored, and a page that lands after the selection changed is discarded.
     func loadMore() async {
-        guard hasMore, !isPaging else { return }
+        guard hasMore, pagingGeneration != generation else { return }
         guard case .loaded(let current, let activity) = state, activity == .none else { return }
-        isPaging = true
+        let token = generation
+        pagingGeneration = token
+        defer { if pagingGeneration == token { pagingGeneration = nil } }
         state = .loaded(current, activity: .loadingMore)
-        defer { isPaging = false }
         let page = await awards.creditPage(request: request, winners: showingWinners, page: nextPage)
+        guard token == generation else { return }
         let rows = await hydrate(page.credits)
+        guard token == generation else { return }
         let merged = current + rows.filter { row in !current.contains { $0.id == row.id } }
         hasMore = page.hasMore && merged.count > current.count
         nextPage += 1
         state = merged.isEmpty ? .empty : .loaded(merged)
     }
 
+    /// Loads page one for the current selection. Starting a reload makes any page or reload
+    /// still in flight stale, so only the newest selection's results reach the screen.
     private func reload(keepingVisible: Bool) async {
-        isPaging = false
+        generation += 1
+        let token = generation
         nextPage = 1
         if keepingVisible, case .loaded(let current, _) = state {
             state = .loaded(current, activity: .refreshing)
@@ -133,7 +146,9 @@ final class AwardTitlesViewModel {
             state = .loading
         }
         let page = await awards.creditPage(request: request, winners: showingWinners, page: 1)
+        guard token == generation else { return }
         let rows = await hydrate(page.credits)
+        guard token == generation else { return }
         hasMore = page.hasMore
         nextPage = 2
         if rows.isEmpty {

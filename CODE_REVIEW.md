@@ -675,7 +675,7 @@ These are owned by in-flight Screens work and were not changed here.
 
 ### S1 · High · A first load cancelled by a tab switch leaves the screen on a spinner forever
 
-**Status:** Reported
+**Status:** Fixed in #57
 
 **Where:**
 - `MovieDetailViewModel.swift:39-74`
@@ -695,7 +695,7 @@ These are owned by in-flight Screens work and were not changed here.
 
 ### S2 · High · AwardTitles has no stale-result guard
 
-**Status:** Reported
+**Status:** Fixed: `AwardTitlesViewModel` drops a page or reload from an older selection
 
 **Where:** `AwardTitlesViewModel.swift:106-144`
 
