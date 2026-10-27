@@ -36,6 +36,9 @@ import github_issues
 ISSUE_LABEL = "tmdb-health"
 BASE_URL = "https://api.themoviedb.org/3"
 MAX_ERRORS_PER_CHECK = 10
+# Cloudflare answers urllib's default "Python-urllib/3.x" with Error 1010, so the Worker
+# proxy check needs a named client. TMDB accepts it too.
+USER_AGENT = "SilverScreenTMDBHealth/1.0 (https://github.com/collinbrowse/Silver-Screen)"
 
 
 # Schema vocabulary --------------------------------------------------------
@@ -507,7 +510,7 @@ def run_check(check, token, fetch=default_fetch, sleep=time.sleep, base_url=BASE
     url = f"{base_url.rstrip('/')}/{check.path}"
     if check.query:
         url += f"?{urllib.parse.urlencode(check.query)}"
-    headers = {"Accept": "application/json"}
+    headers = {"Accept": "application/json", "User-Agent": USER_AGENT}
     if token is not None:
         headers["Authorization"] = f"Bearer {token}"
     status, raw = fetch(url, headers)

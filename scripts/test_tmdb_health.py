@@ -104,6 +104,8 @@ class RunCheckTests(unittest.TestCase):
         url, headers = seen[0]
         self.assertEqual(url, "https://proxy.example.workers.dev/3/movie/550")
         self.assertNotIn("Authorization", headers)
+        # Cloudflare blocks urllib's default User-Agent with Error 1010.
+        self.assertEqual(headers["User-Agent"], tmdb_health.USER_AGENT)
 
     def test_proxy_check_fails_without_an_id_or_on_an_error_status(self) -> None:
         no_id = tmdb_health.run_proxy_check(
