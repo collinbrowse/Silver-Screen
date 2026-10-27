@@ -48,10 +48,12 @@ actor AwardsRepository {
         self.didDownload = true
     }
 
+    /// A nil `cacheURL` (Application Support unavailable) keeps the bundled catalog and skips
+    /// the weekly download, since there is nowhere to keep it.
     init(
         client: any HTTPClient,
         bundleURL: URL?,
-        cacheURL: URL,
+        cacheURL: URL?,
         remoteURL: URL = AwardsRepository.remoteCatalogURL,
         logger: any AppLogging,
         now: @escaping @Sendable () -> Date = { Date() }
@@ -60,7 +62,7 @@ actor AwardsRepository {
         self.client = client
         self.bundleURL = bundleURL
         self.cacheURL = cacheURL
-        self.stampURL = cacheURL
+        self.stampURL = cacheURL?
             .deletingLastPathComponent()
             .appendingPathComponent("AwardsCatalog.stamp.json")
         self.remoteURL = remoteURL

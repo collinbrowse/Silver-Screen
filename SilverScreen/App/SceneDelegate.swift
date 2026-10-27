@@ -25,7 +25,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
 
         let window = UIWindow(windowScene: windowScene)
+        installRoot(in: window)
+        self.window = window
+        window.makeKeyAndVisible()
+    }
 
+    /// Builds the dependency graph and the root view. On failure it logs the cause and shows
+    /// `StartupFailureView`, whose Try Again runs this again on the same window.
+    private func installRoot(in window: UIWindow) {
         do {
             let demo = DemoMode.current()
             let dependencies = try AppDependencies.live(demo: demo)
@@ -55,7 +62,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 library: libraryHomeViewModel,
                 tour: tour
             )
-            Task { try? await dependencies.libraryStore.bootstrap() }
+            Task {
+                do {
+                    try await dependencies.libraryStore.bootstrap()
+                } catch {
+                    dependencies.logger.error(
+                        "Library bootstrap failed: \(StartupFailureView.errorCode(error))",
+                        category: .persistence
+                    )
+                }
+            }
             Task { try? await dependencies.lists.loadIndex() }
             Task { await dependencies.awards.prepare() }
             Task {
@@ -125,19 +141,19 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 window.rootViewController = UIHostingController(rootView: root)
             }
         } catch {
-            let message: String
-            if let appError = error as? AppError {
-                message = "\(appError.title)\n\n\(appError.message)"
-            } else {
-                message = "The app could not start."
-            }
+            // Logged before anything else so a launch that never gets past here still
+            // reaches Sentry; the dependency graph's own logger was never built.
+            OSAppLogger().error(
+                "App startup failed: \(StartupFailureView.errorCode(error))",
+                category: .persistence
+            )
             window.rootViewController = UIHostingController(
-                rootView: StartupFailureView(message: message)
+                rootView: StartupFailureView(message: StartupFailureView.message(for: error)) { [weak self, weak window] in
+                    guard let self, let window else { return }
+                    self.installRoot(in: window)
+                }
             )
         }
-
-        self.window = window
-        window.makeKeyAndVisible()
     }
 
     /// Longest a first launch holds its first frame for the onboarding check.
