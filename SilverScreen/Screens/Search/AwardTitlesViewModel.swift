@@ -119,7 +119,7 @@ final class AwardTitlesViewModel {
     /// ignored, and a page that lands after the selection changed is discarded.
     func loadMore() async {
         guard hasMore, pagingGeneration != generation else { return }
-        guard case .loaded(let current, let activity) = state, activity == .none else { return }
+        guard case .loaded(let current, let activity) = state, activity.allowsLoadMore else { return }
         let token = generation
         pagingGeneration = token
         defer { if pagingGeneration == token { pagingGeneration = nil } }
@@ -164,10 +164,12 @@ final class AwardTitlesViewModel {
     }
 
     /// Refreshes Next up captions after returning from a detail screen.
+    /// Skips the write when the rows changed during the await, since a new page arrives
+    /// already stamped.
     func reloadDisplayedScores() async {
-        guard case .loaded(let rows, let activity) = state else { return }
+        guard case .loaded(let rows, _) = state else { return }
         let stamped = await stampNextUp(rows)
-        guard stamped != rows else { return }
+        guard stamped != rows, case .loaded(let latest, let activity) = state, latest == rows else { return }
         state = .loaded(stamped, activity: activity)
     }
 

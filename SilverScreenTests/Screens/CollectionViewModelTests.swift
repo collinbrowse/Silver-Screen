@@ -31,6 +31,31 @@ final class CollectionViewModelTests: XCTestCase {
         XCTAssertEqual(content.parts[0].formattedReleaseDate, "1972")
     }
 
+    func test_reloadDisplayedScores_keepsAListSaveFailureRaisedDuringTheAwait() async {
+        let store = GatedAnnotationsStore(records: [
+            MediaAnnotation(key: .movie(238), score: 8, note: nil, watchedAt: nil),
+        ])
+        let viewModel = CollectionViewModel(
+            collectionID: 230,
+            movies: MovieRepository.test(
+                client: FakeHTTPClient(stub: .success(TMDBFixtures.collectionGodfather))
+            ),
+            annotations: AnnotationsRepository(store: store, logger: SilentLogger())
+        )
+
+        let loading = Task { await viewModel.load() }
+        await store.waitUntilGated()
+        viewModel.noteListSaveFailed()
+        await store.release()
+        await loading.value
+
+        guard case .loaded(let content, let activity) = viewModel.state else {
+            return XCTFail("Expected loaded, got \(viewModel.state)")
+        }
+        XCTAssertNotNil(content.parts.first { $0.id == 238 }?.formattedUserScore)
+        XCTAssertEqual(activity, .failed(.persistence))
+    }
+
     func test_load_sortsUndatedPartsBeforeOldestRelease() async {
         let viewModel = CollectionViewModel(
             collectionID: 1,
@@ -107,4 +132,43 @@ final class CollectionViewModelTests: XCTestCase {
         {"id": 1, "name": "Empty", "overview": "  ", "poster_path": "", "parts": []}
         """.utf8
     )
+}
+
+/// Holds the first `load()` open until `release()`, so a test can change the screen while a
+/// score stamp is waiting on the store.
+private actor GatedAnnotationsStore: AnnotationsStore {
+    private let records: [MediaAnnotation]
+    private var isReleased = false
+    private var gate: CheckedContinuation<Void, Never>?
+    private var entered: CheckedContinuation<Void, Never>?
+    private var didEnter = false
+
+    init(records: [MediaAnnotation]) {
+        self.records = records
+    }
+
+    func load() async throws -> [MediaAnnotation] {
+        if !isReleased {
+            await withCheckedContinuation { continuation in
+                gate = continuation
+                didEnter = true
+                entered?.resume()
+                entered = nil
+            }
+        }
+        return records
+    }
+
+    func save(_ records: [MediaAnnotation]) async throws {}
+
+    func waitUntilGated() async {
+        if didEnter { return }
+        await withCheckedContinuation { entered = $0 }
+    }
+
+    func release() {
+        isReleased = true
+        gate?.resume()
+        gate = nil
+    }
 }

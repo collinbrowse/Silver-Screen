@@ -105,7 +105,7 @@ final class BrowseListViewModel {
     /// to an older selection or an older refresh is discarded.
     func loadMore() async {
         guard hasMore, activePagingTicket == nil else { return }
-        guard case .loaded(_, let activity) = state, activity == .none else { return }
+        guard case .loaded(_, let activity) = state, activity.allowsLoadMore else { return }
 
         pagingTicket += 1
         let ticket = pagingTicket
@@ -329,7 +329,7 @@ final class BrowseListViewModel {
 
     private func stampScores(token: Int) async {
         let scores = await annotations.formattedScores()
-        guard token == generation, case .loaded(let rows, let activity) = state else { return }
+        guard token == generation, case .loaded(let rows, _) = state else { return }
         let seriesIDs = rows.compactMap { $0.media == .tv ? $0.mediaID : nil }
         let nextUp = await tvWatch?.progressSubtitles(for: seriesIDs) ?? [:]
         guard token == generation else { return }
@@ -339,7 +339,10 @@ final class BrowseListViewModel {
             guard row.media == .tv else { return scored }
             return scored.withNextUp(nextUp[row.mediaID])
         }
-        guard stamped != rows else { return }
+        // A page or refresh that landed during the awaits stamps itself; writing this older
+        // snapshot back would revert it. The activity is re-read so a finished page's
+        // `.loadingMore` cannot stick.
+        guard stamped != rows, case .loaded(let latest, let activity) = state, latest == rows else { return }
         state = .loaded(stamped, activity: activity)
     }
 

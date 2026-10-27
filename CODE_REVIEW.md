@@ -708,7 +708,7 @@ These are owned by in-flight Screens work and were not changed here.
 
 ### S3 · Medium · After any `.failed` activity, infinite scroll stops for good
 
-**Status:** Reported
+**Status:** Fixed: `loadMore` runs again after a soft failure (`LoadActivity.allowsLoadMore`)
 
 **Where:**
 - `SearchViewModel.swift:272`
@@ -722,7 +722,7 @@ These are owned by in-flight Screens work and were not changed here.
 
 ### S4 · Medium · Score-stamping helpers write back a snapshot captured before their awaits
 
-**Status:** Reported
+**Status:** Fixed: stamps skip the write when rows changed and keep the current activity
 
 **Where:**
 - `SearchViewModel.swift:254-261`
