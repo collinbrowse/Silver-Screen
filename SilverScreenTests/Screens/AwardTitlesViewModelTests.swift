@@ -83,6 +83,62 @@ final class AwardTitlesViewModelTests: XCTestCase {
         XCTAssertEqual(rows.first?.listDraft?.imagePath, "/from.jpg")
     }
 
+    func test_switchingToNominees_whilePageTwoHydrates_dropsTheLateWinnersPage() async {
+        let client = GatedMovieHTTPClient(gatedMovieID: 2000)
+        let viewModel = Self.pagedViewModel(client: client)
+        await viewModel.load()
+
+        let paging = Task { await viewModel.loadMore() }
+        await client.waitUntilGated()
+        await viewModel.setShowingWinners(false)
+        await client.release()
+        await paging.value
+
+        guard case .loaded(let rows, activity: .none) = viewModel.state else {
+            return XCTFail("Expected the nominees list, got \(viewModel.state)")
+        }
+        XCTAssertEqual(rows.map(\.title), ["Nominee"])
+        XCTAssertFalse(viewModel.hasMore)
+    }
+
+    func test_switchingBackToWinners_afterAStalePage_loadsPageTwoWithoutSkipping() async {
+        let client = GatedMovieHTTPClient(gatedMovieID: 2000)
+        let viewModel = Self.pagedViewModel(client: client)
+        await viewModel.load()
+
+        let paging = Task { await viewModel.loadMore() }
+        await client.waitUntilGated()
+        await viewModel.setShowingWinners(false)
+        await viewModel.setShowingWinners(true)
+        await client.release()
+        await paging.value
+
+        guard case .loaded(let first, activity: .none) = viewModel.state else {
+            return XCTFail("Expected the first winners page, got \(viewModel.state)")
+        }
+        XCTAssertEqual(first.count, 20)
+        XCTAssertTrue(viewModel.hasMore)
+
+        await viewModel.loadMore()
+
+        guard case .loaded(let second, activity: .none) = viewModel.state else {
+            return XCTFail("Expected the second winners page, got \(viewModel.state)")
+        }
+        XCTAssertEqual(second.map(\.title), (2000...2020).reversed().map { "Film \($0)" })
+        XCTAssertFalse(viewModel.hasMore)
+    }
+
+    /// Winners 2000–2020 plus one nominee, with movie lookups through `client`.
+    private static func pagedViewModel(client: any HTTPClient) -> AwardTitlesViewModel {
+        AwardTitlesViewModel(
+            request: AwardTitleRequest(family: .academy, category: "Best Picture"),
+            awards: AwardsRepository(catalog: pagedCatalog),
+            movies: MovieRepository.test(client: client),
+            shows: TVRepository.test(client: FakeHTTPClient(result: .failure(URLError(.badURL)))),
+            annotations: .empty()
+        )
+    }
+
     private static let pagedCatalog: AwardsCatalog = {
         var credits: [AwardCredit] = (2000...2020).map { year in
             AwardCredit(
@@ -116,3 +172,30 @@ final class AwardTitlesViewModelTests: XCTestCase {
     }()
 }
 
+/// Holds the detail lookup for one movie open until `release()`, so a test can change the
+/// selection while a page is still hydrating. Every other lookup fails at once, which keeps
+/// the catalog title.
+private actor GatedMovieHTTPClient: HTTPClient {
+    private let gatedPath: String
+    private let gate = BlockingHTTPClient(responseData: Data("{}".utf8))
+
+    init(gatedMovieID: Int) {
+        gatedPath = "/movie/\(gatedMovieID)"
+    }
+
+    func data(for request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        let path = request.url?.path ?? ""
+        if path.hasSuffix(gatedPath) {
+            return try await gate.data(for: request)
+        }
+        throw URLError(.notConnectedToInternet)
+    }
+
+    func waitUntilGated() async {
+        await gate.waitUntilEntered()
+    }
+
+    func release() async {
+        await gate.release()
+    }
+}
