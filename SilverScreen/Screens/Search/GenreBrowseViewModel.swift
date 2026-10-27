@@ -92,7 +92,7 @@ final class GenreBrowseViewModel {
 
     func loadMore() async {
         guard hasMore, activePagingTicket == nil else { return }
-        guard case .loaded(_, let activity) = state, activity == .none else { return }
+        guard case .loaded(_, let activity) = state, activity.allowsLoadMore else { return }
 
         pagingTicket += 1
         let ticket = pagingTicket

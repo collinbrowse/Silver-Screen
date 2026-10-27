@@ -119,7 +119,7 @@ final class AwardTitlesViewModel {
     /// ignored, and a page that lands after the selection changed is discarded.
     func loadMore() async {
         guard hasMore, pagingGeneration != generation else { return }
-        guard case .loaded(let current, let activity) = state, activity == .none else { return }
+        guard case .loaded(let current, let activity) = state, activity.allowsLoadMore else { return }
         let token = generation
         pagingGeneration = token
         defer { if pagingGeneration == token { pagingGeneration = nil } }

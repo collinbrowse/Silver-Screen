@@ -83,6 +83,20 @@ final class AwardTitlesViewModelTests: XCTestCase {
         XCTAssertEqual(rows.first?.listDraft?.imagePath, "/from.jpg")
     }
 
+    func test_loadMore_afterListSaveFailed_stillLoadsTheNextPage() async {
+        let viewModel = Self.pagedViewModel(client: FakeHTTPClient(result: .failure(URLError(.notConnectedToInternet))))
+        await viewModel.load()
+        viewModel.noteListSaveFailed()
+
+        await viewModel.loadMore()
+
+        guard case .loaded(let rows, activity: .none) = viewModel.state else {
+            return XCTFail("Expected the second page, got \(viewModel.state)")
+        }
+        XCTAssertEqual(rows.count, 21)
+        XCTAssertFalse(viewModel.hasMore)
+    }
+
     func test_switchingToNominees_whilePageTwoHydrates_dropsTheLateWinnersPage() async {
         let client = GatedMovieHTTPClient(gatedMovieID: 2000)
         let viewModel = Self.pagedViewModel(client: client)

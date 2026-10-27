@@ -323,6 +323,24 @@ final class BrowseListViewModelTests: XCTestCase {
         XCTAssertEqual(activity, .failed(.offline))
     }
 
+    func test_loadMore_afterAFailedPage_retriesAndAppends() async {
+        let client = SequencingHTTPClient(stubs: [
+            .success(TMDBFixtures.topMoviesPage1),
+            .failure(URLError(.notConnectedToInternet)),
+            .success(Self.moviePage(id: 1, title: "Next", page: 2, totalPages: 2)),
+            ])
+        let viewModel = makeViewModel(movies: MovieRepository.test(client: client), shows: TVRepository.test(client: client))
+        await viewModel.load()
+        await viewModel.loadMore()
+        await viewModel.loadMore()
+
+        guard case .loaded(let rows, let activity) = viewModel.state else {
+            return XCTFail("Expected the retried page, got \(viewModel.state)")
+        }
+        XCTAssertEqual(rows.map(\.mediaID), [278, 238, 1])
+        XCTAssertEqual(activity, .none)
+    }
+
     func test_reloadAndRefresh_stampSavedMovieScore() async throws {
         let annotations = AnnotationsRepository.empty()
         let client = FakeHTTPClient(stub: .success(TMDBFixtures.topMoviesPage1))

@@ -269,7 +269,7 @@ final class SearchViewModel {
     /// Concurrent calls are ignored; failures stay on `.loaded`.
     func loadMore() async {
         guard showsAllResults, hasMore, !isPaging, !showsFocusedPlaceholder, !showsAwardShelves else { return }
-        guard case .loaded(let current, let activity) = state, activity == .none else { return }
+        guard case .loaded(let current, let activity) = state, activity.allowsLoadMore else { return }
         guard var cache = caches[activeKey] else { return }
 
         let token = requestGeneration
