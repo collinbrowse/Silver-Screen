@@ -406,7 +406,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 
 ### O3 · Medium · Startup failures are silent and too broad
 
-**Status:** Reported (App composition, owned by the large-screen work)
+**Status:** Fixed: startup failures are logged with domain and code, the failure screen has Try Again, the awards cache is optional, and bootstrap errors are logged
 
 **Where:**
 - `SilverScreen/App/SceneDelegate.swift:42, 97-107`
