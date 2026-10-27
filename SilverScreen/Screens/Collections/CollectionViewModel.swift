@@ -72,12 +72,15 @@ final class CollectionViewModel {
         state = .loaded(content, activity: .failed(.persistence))
     }
 
-    /// Writes saved scores onto the parts already on screen.
+    /// Writes saved scores onto the parts already on screen. Skips the write when the
+    /// content changed during the await, and keeps whatever activity is current by then.
     func reloadDisplayedScores() async {
-        guard case .loaded(let content, let activity) = state else { return }
+        guard case .loaded(let content, _) = state else { return }
         let scores = await annotations.formattedScores()
         let parts = content.parts.map { $0.withUserScore(scores[.movie($0.id)]) }
-        guard parts != content.parts else { return }
+        guard parts != content.parts,
+              case .loaded(let latest, let activity) = state,
+              latest == content else { return }
         state = .loaded(
             CollectionContent(
                 id: content.id,

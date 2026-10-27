@@ -251,12 +251,14 @@ final class SearchViewModel {
 
     /// Writes saved scores and TV Next up captions onto rows already on screen,
     /// including after returning from detail.
+    /// Skips the write when the rows changed during its awaits, since whatever changed them
+    /// stamps the new rows itself.
     func reloadDisplayedScores() async {
-        guard case .loaded(let content, let activity) = state else { return }
+        guard case .loaded(let content, _) = state else { return }
         let scores = await annotations.formattedScores()
         let nextUp = await tvWatch?.progressSubtitles(for: content.tvSeriesIDs) ?? [:]
         let stamped = content.applying(scores: scores, nextUp: nextUp)
-        guard stamped != content else { return }
+        guard stamped != content, case .loaded(let latest, let activity) = state, latest == content else { return }
         state = .loaded(stamped, activity: activity)
     }
 
