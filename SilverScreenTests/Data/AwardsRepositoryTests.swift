@@ -390,6 +390,34 @@ final class AwardsRepositoryTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: fixture.cacheURL.path))
     }
 
+    func test_prepare_withoutACacheURL_keepsBundleAndSkipsDownload() async throws {
+        let fixture = try makeFiles(
+            bundle: catalog(title: "Bundle Film", generatedAt: "2020-01-01T00:00:00Z"),
+            cache: nil,
+            stamp: nil
+        )
+        defer { fixture.cleanup() }
+        let client = RecordingHTTPClient(stub: .failure(URLError(.notConnectedToInternet)))
+        let repository = AwardsRepository(
+            client: client,
+            bundleURL: fixture.bundleURL,
+            cacheURL: nil,
+            logger: SilentLogger(),
+            now: { Date() }
+        )
+
+        await repository.prepare()
+
+        let page = await repository.creditPage(
+            request: AwardTitleRequest(family: .academy, category: "Best Picture"),
+            winners: true,
+            page: 1
+        )
+        XCTAssertEqual(page.credits.map(\.title), ["Bundle Film"])
+        let count = await client.requestCount
+        XCTAssertEqual(count, 0)
+    }
+
     private static let fixtureJSON = """
     {
       "credits": [

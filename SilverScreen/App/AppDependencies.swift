@@ -30,6 +30,20 @@ struct AppDependencies {
     /// Starts analytics sessions on launch and on returning to the app.
     let analyticsSession: AnalyticsSessionTracker
 
+    /// The awards download cache, or nil when Application Support is unavailable. The cache
+    /// only holds newer catalog downloads, so losing it must not stop the app from starting.
+    private static func awardsCacheURL(logger: any AppLogging) -> URL? {
+        do {
+            return try AwardsRepository.cacheURL()
+        } catch {
+            logger.error(
+                "Awards cache unavailable: \(StartupFailureView.errorCode(error))",
+                category: .persistence
+            )
+            return nil
+        }
+    }
+
     /// Builds the app's dependency graph. A demo launch swaps in a throwaway library.
     static func live(demo: DemoMode? = nil) throws -> AppDependencies {
         let logger = OSAppLogger()
@@ -92,7 +106,7 @@ struct AppDependencies {
         let awards = AwardsRepository(
             client: httpClient,
             bundleURL: Bundle.main.url(forResource: "AwardsCatalog", withExtension: "json"),
-            cacheURL: try AwardsRepository.cacheURL(),
+            cacheURL: awardsCacheURL(logger: logger),
             logger: logger
         )
         let router = AppRouter()
