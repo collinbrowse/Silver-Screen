@@ -31,6 +31,24 @@ actor DiaryRepository {
         try await entries().filter { $0.subject == subject }
     }
 
+    /// Episodes checked off in TV progress, newest first. Read fresh every time rather
+    /// than cached, because the TV screens write progress without going through here.
+    func episodeWatches() async throws -> [EpisodeWatch] {
+        do {
+            return try await store.loadEpisodeWatches()
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            logger.error("Diary episode history load failed", category: .persistence)
+            throw AppError.persistence
+        }
+    }
+
+    /// Episode watches for one series, newest first.
+    func episodeWatches(seriesID: Int) async throws -> [EpisodeWatch] {
+        try await episodeWatches().filter { $0.seriesID == seriesID }
+    }
+
     /// Inserts `entry`, or replaces the entry with the same id. Returns what was stored
     /// (normalized: blank review and tags dropped, invalid score cleared).
     @discardableResult

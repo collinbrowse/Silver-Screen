@@ -5,8 +5,10 @@
 
 import Foundation
 
-/// The diary list: every logged watch grouped by month, newest first, with edit and delete.
-/// A failed reload or delete keeps the list on screen with a failed activity.
+/// The diary list: every logged watch and every TV episode check-off, grouped by month,
+/// newest first, with edit and delete for logged watches. A failed reload or delete keeps
+/// the list on screen with a failed activity. Episode history that cannot be read is
+/// logged and left out, so the logged watches still show.
 @Observable
 @MainActor
 final class DiaryViewModel {
@@ -45,7 +47,8 @@ final class DiaryViewModel {
         }
         do {
             let entries = try await context.diary.entries()
-            let months = DiaryContent.months(from: entries, calendar: calendar, locale: locale)
+            let episodes = try await episodeWatches()
+            let months = DiaryContent.months(from: entries, episodes: episodes, calendar: calendar, locale: locale)
             state = months.isEmpty ? .empty : .loaded(months)
         } catch is CancellationError {
             return
@@ -112,11 +115,28 @@ final class DiaryViewModel {
         await load()
     }
 
+    /// The show an episodes row belongs to.
+    func route(for row: DiaryEpisodeGroup) -> Route {
+        .tvSeries(id: row.seriesID)
+    }
+
     /// The detail screen for the row's title.
     func route(for row: DiaryRow) -> Route {
         switch row.entry.subject.kind {
             case .tv: .tvSeries(id: row.entry.subject.tmdbID)
             case .movie, .person: .movieDetail(id: row.entry.subject.tmdbID)
+        }
+    }
+
+    /// Episode history, or none when it cannot be read (the repository logs the failure).
+    /// Only cancellation propagates.
+    private func episodeWatches() async throws -> [EpisodeWatch] {
+        do {
+            return try await context.diary.episodeWatches()
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            return []
         }
     }
 

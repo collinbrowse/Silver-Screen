@@ -4,9 +4,10 @@
 //
 //  One logged watch of a movie or a whole series: the day it was watched, and the
 //  rating, review, tags, and rewatch flag for that viewing. A title can have many
-//  entries. Episode-by-episode history stays in TV progress (`completed_at`), so the
-//  diary is not flooded with one row per episode. Columns line up with Letterboxd's
-//  diary CSV; see PERSISTENCE.md.
+//  entries. Episode-by-episode history stays in TV progress (`completed_at`); the diary
+//  reads it back as `EpisodeWatch` and shows one row per show per day, so it is not
+//  flooded with one row per episode. Columns line up with Letterboxd's diary CSV; see
+//  PERSISTENCE.md.
 //
 
 import Foundation
@@ -140,6 +141,19 @@ struct DiaryEntry: Sendable, Equatable, Hashable, Identifiable {
         copy.tags = DiaryTags.normalized(tags)
         return copy
     }
+}
+
+/// One episode checked off in TV progress, read back for the diary. It is not a diary
+/// entry: it has no rating or review, and unmarking the episode removes it.
+struct EpisodeWatch: Sendable, Equatable {
+    let seriesID: Int
+    /// The series name stored with the show's list entry.
+    let seriesTitle: String
+    let posterPath: String?
+    let episode: TVEpisodeRef
+    /// When the episode was marked watched. Marking a whole season stamps every episode
+    /// with the same moment.
+    let completedAt: Date
 }
 
 /// Tag cleanup shared by the editor and the store.

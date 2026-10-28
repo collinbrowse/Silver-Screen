@@ -177,7 +177,89 @@ final class DiaryViewModelTests: XCTestCase {
         XCTAssertEqual(route, .movieDetail(id: 550))
     }
 
+    func test_load_groupsEpisodesByShowAndDay() async {
+        let store = InMemoryDiaryStore(episodeWatches: [
+            episodeWatch(series: 7, season: 2, episode: 3, at: "2026-10-16T20:00:00.000Z"),
+            episodeWatch(series: 7, season: 2, episode: 4, at: "2026-10-16T21:00:00.000Z"),
+            episodeWatch(series: 7, season: 2, episode: 5, at: "2026-10-17T20:00:00.000Z"),
+            episodeWatch(series: 8, season: 1, episode: 1, at: "2026-10-16T22:00:00.000Z"),
+        ])
+        let viewModel = makeViewModel(store: store)
+
+        await viewModel.load()
+
+        let groups = episodeGroups(viewModel)
+        XCTAssertEqual(groups.map(\.id), ["episodes-7-2026-10-17", "episodes-8-2026-10-16", "episodes-7-2026-10-16"])
+        XCTAssertEqual(groups.map(\.episodesText), ["S2 · E5", "S1 · E1", "S2 · E3–E4"])
+        XCTAssertEqual(groups.last?.accessibilityLabel, "Show 7. 2 episodes. Watched Friday, October 16, 2026.")
+    }
+
+    func test_load_mergesEpisodesAndEntriesByDayNewestFirst() async {
+        let entry = DiaryFixtures.entry(title: "Movie", watchedOn: DiaryDay(year: 2026, month: 10, day: 15))
+        let store = InMemoryDiaryStore(
+            entries: [entry],
+            episodeWatches: [episodeWatch(series: 7, season: 1, episode: 1, at: "2026-10-16T20:00:00.000Z")]
+        )
+        let viewModel = makeViewModel(store: store)
+
+        await viewModel.load()
+
+        let items = loadedMonths(viewModel).first?.items ?? []
+        XCTAssertEqual(items.map(\.id), ["episodes-7-2026-10-16", entry.id.uuidString])
+        XCTAssertEqual(loadedMonths(viewModel).first?.rows.map(\.title), ["Movie"])
+    }
+
+    func test_load_onlyEpisodes_isLoadedNotEmpty() async {
+        let store = InMemoryDiaryStore(episodeWatches: [
+            episodeWatch(series: 7, season: 1, episode: 1, at: "2026-10-16T20:00:00.000Z"),
+        ])
+        let viewModel = makeViewModel(store: store)
+
+        await viewModel.load()
+
+        XCTAssertEqual(episodeGroups(viewModel).count, 1)
+    }
+
+    func test_load_whenEpisodeHistoryFails_stillShowsEntries() async {
+        let store = InMemoryDiaryStore(entries: [DiaryFixtures.entry(title: "Kept")])
+        await store.setEpisodeLoadError(CocoaError(.fileReadCorruptFile))
+        let viewModel = makeViewModel(store: store)
+
+        await viewModel.load()
+
+        XCTAssertEqual(loadedMonths(viewModel).flatMap(\.rows).map(\.title), ["Kept"])
+    }
+
+    func test_route_episodeGroup_opensSeries() async throws {
+        let store = InMemoryDiaryStore(episodeWatches: [
+            episodeWatch(series: 7, season: 1, episode: 1, at: "2026-10-16T20:00:00.000Z"),
+        ])
+        let viewModel = makeViewModel(store: store)
+        await viewModel.load()
+
+        let route = viewModel.route(for: try XCTUnwrap(episodeGroups(viewModel).first))
+
+        XCTAssertEqual(route, .tvSeries(id: 7))
+    }
+
     // MARK: - Helpers
+
+    private func episodeWatch(series: Int, season: Int, episode: Int, at iso: String) -> EpisodeWatch {
+        EpisodeWatch(
+            seriesID: series,
+            seriesTitle: "Show \(series)",
+            posterPath: nil,
+            episode: TVEpisodeRef(seasonNumber: season, episodeNumber: episode),
+            completedAt: LibrarySQLDate.decode(iso)!
+        )
+    }
+
+    private func episodeGroups(_ viewModel: DiaryViewModel) -> [DiaryEpisodeGroup] {
+        loadedMonths(viewModel).flatMap(\.items).compactMap { item -> DiaryEpisodeGroup? in
+            guard case .episodes(let group) = item else { return nil }
+            return group
+        }
+    }
 
     private func makeContext(store: InMemoryDiaryStore) -> DiaryContext {
         DiaryContext(
@@ -207,6 +289,28 @@ final class DiaryViewModelTests: XCTestCase {
     private func loadedMonths(_ viewModel: DiaryViewModel) -> [DiaryMonth] {
         guard case .loaded(let months, _) = viewModel.state else { return [] }
         return months
+    }
+}
+
+final class DiaryEpisodesTextTests: XCTestCase {
+    private func refs(_ pairs: [(Int, Int)]) -> [TVEpisodeRef] {
+        pairs.map { TVEpisodeRef(seasonNumber: $0.0, episodeNumber: $0.1) }
+    }
+
+    func test_oneEpisode() {
+        XCTAssertEqual(DiaryContent.episodesText(refs([(2, 3)])), "S2 · E3")
+    }
+
+    func test_runInOneSeason() {
+        XCTAssertEqual(DiaryContent.episodesText(refs([(2, 3), (2, 4), (2, 5)])), "S2 · E3–E5")
+    }
+
+    func test_gapsInOneSeason_countsEpisodes() {
+        XCTAssertEqual(DiaryContent.episodesText(refs([(2, 1), (2, 3), (2, 6), (2, 7)])), "S2 · 4 episodes")
+    }
+
+    func test_acrossSeasons_namesSeasonRange() {
+        XCTAssertEqual(DiaryContent.episodesText(refs([(1, 9), (1, 10), (3, 1)])), "S1–S3 · 3 episodes")
     }
 }
 

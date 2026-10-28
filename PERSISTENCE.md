@@ -229,8 +229,9 @@ Decisions:
 - **Movies and whole series, not episodes or seasons.** Episode history already lives
   in `tv_episode_completed.completed_at`, one row per episode; copying it into the diary
   would bury the movies under hundreds of rows. A series entry means "watched the show".
-  Seasons are not logged. The UI logs movies from movie detail today; series rows come
-  from the backfill and can get a "Log a watch" button when the TV screens settle.
+  Seasons are not logged. The diary screen still *shows* episode history: it reads
+  `tv_episode_completed` joined to the series' `media_item` (`fetchEpisodeWatches`) and
+  draws one read-only row per show per day ("S2 · E3–E5"), which opens the show.
 - **The watch's rating is a snapshot.** `diary_entry.score` and `review` describe that
   viewing. The title's rating (`annotation`) stays the one badges and Watched use, and
   logging a watch never changes it. The editor prefills the current title rating.

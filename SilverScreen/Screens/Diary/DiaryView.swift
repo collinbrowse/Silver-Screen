@@ -2,8 +2,9 @@
 //  DiaryView.swift
 //  SilverScreen
 //
-//  Every logged watch, grouped by month, newest first. Tapping a row edits it; swipe
-//  or the context menu deletes it or opens the title. The column is centered at a
+//  Every logged watch and TV episode check-off, grouped by month, newest first. Tapping
+//  a logged watch edits it; swipe or the context menu deletes it or opens the title.
+//  An episodes row opens its show, where episodes are marked and unmarked. The column is centered at a
 //  readable width when the screen is wide (see `DiaryLayout`).
 //
 
@@ -37,7 +38,7 @@ struct DiaryView: View {
                 case .empty:
                     EmptyStateView(
                         title: "No Diary Entries",
-                        message: "Log a watch from any movie and it shows up here, by the day you watched it.",
+                        message: "Log a watch from any movie or show, or check off an episode, and it shows up here by the day you watched it.",
                         systemImage: "book.closed"
                     )
                 case .loaded(let months, let activity):
@@ -79,38 +80,54 @@ struct DiaryView: View {
         List {
             ForEach(months) { month in
                 Section {
-                    ForEach(month.rows) { row in
-                        Button {
-                            viewModel.edit(row)
-                        } label: {
-                            DiaryEntryRow(row: row, layout: layout, imageLoader: imageLoader)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("Edits this entry")
-                        .accessibilityAction(named: "Open title") {
-                            router.push(viewModel.route(for: row))
-                        }
-                        .accessibilityAction(named: "Delete") {
-                            Task { await viewModel.delete(row) }
-                        }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button("Delete", role: .destructive) {
-                                Task { await viewModel.delete(row) }
-                            }
-                        }
-                        .contextMenu {
-                            Button("Edit Entry", systemImage: "pencil") {
-                                viewModel.edit(row)
-                            }
-                            Button(
-                                row.entry.subject.kind == .tv ? "Go to Show" : "Go to Movie",
-                                systemImage: row.entry.subject.kind == .tv ? "tv" : "film"
-                            ) {
-                                router.push(viewModel.route(for: row))
-                            }
-                            Button("Delete", systemImage: "trash", role: .destructive) {
-                                Task { await viewModel.delete(row) }
-                            }
+                    ForEach(month.items) { item in
+                        switch item {
+                            case .entry(let row):
+                                Button {
+                                    viewModel.edit(row)
+                                } label: {
+                                    DiaryEntryRow(row: row, layout: layout, imageLoader: imageLoader)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityHint("Edits this entry")
+                                .accessibilityAction(named: "Open title") {
+                                    router.push(viewModel.route(for: row))
+                                }
+                                .accessibilityAction(named: "Delete") {
+                                    Task { await viewModel.delete(row) }
+                                }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    Button("Delete", role: .destructive) {
+                                        Task { await viewModel.delete(row) }
+                                    }
+                                }
+                                .contextMenu {
+                                    Button("Edit Entry", systemImage: "pencil") {
+                                        viewModel.edit(row)
+                                    }
+                                    Button(
+                                        row.entry.subject.kind == .tv ? "Go to Show" : "Go to Movie",
+                                        systemImage: row.entry.subject.kind == .tv ? "tv" : "film"
+                                    ) {
+                                        router.push(viewModel.route(for: row))
+                                    }
+                                    Button("Delete", systemImage: "trash", role: .destructive) {
+                                        Task { await viewModel.delete(row) }
+                                    }
+                                }
+                            case .episodes(let group):
+                                Button {
+                                    router.push(viewModel.route(for: group))
+                                } label: {
+                                    DiaryEpisodeGroupRow(group: group, layout: layout, imageLoader: imageLoader)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityHint("Opens the show")
+                                .contextMenu {
+                                    Button("Go to Show", systemImage: "tv") {
+                                        router.push(viewModel.route(for: group))
+                                    }
+                                }
                         }
                     }
                 } header: {

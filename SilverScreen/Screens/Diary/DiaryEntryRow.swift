@@ -13,20 +13,9 @@ struct DiaryEntryRow: View {
     let layout: DiaryLayout
     let imageLoader: ImageLoader
 
-    @ScaledMetric(relativeTo: .title2) private var dayColumnWidth: CGFloat = 40
-
     var body: some View {
         HStack(alignment: .top, spacing: DesignSpacing.md) {
-            VStack(spacing: 0) {
-                Text(row.weekday.uppercased())
-                    .font(DesignTypography.factLabel)
-                    .foregroundStyle(DesignTheme.textMuted)
-                Text(row.dayNumber)
-                    .font(DesignTypography.ratingValue)
-                    .foregroundStyle(DesignTheme.textPrimary)
-                    .monospacedDigit()
-            }
-            .frame(width: dayColumnWidth)
+            DiaryDayColumn(weekday: row.weekday, dayNumber: row.dayNumber)
 
             RemoteImageView(
                 path: row.entry.posterPath,

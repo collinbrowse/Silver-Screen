@@ -11,6 +11,8 @@ import Foundation
 protocol DiaryStore: Sendable {
     func load() async throws -> [DiaryEntry]
     func save(_ entries: [DiaryEntry]) async throws
+    /// Episodes checked off in TV progress, which the diary lists beside its entries.
+    func loadEpisodeWatches() async throws -> [EpisodeWatch]
 }
 
 /// `DiaryStore` over the shared library store, so a diary save is one diffed,
@@ -28,5 +30,9 @@ actor LibraryDiaryStoreAdapter: DiaryStore {
 
     func save(_ entries: [DiaryEntry]) async throws {
         try await library.apply(.replaceDiary(entries))
+    }
+
+    func loadEpisodeWatches() async throws -> [EpisodeWatch] {
+        try await library.fetchEpisodeWatches()
     }
 }
