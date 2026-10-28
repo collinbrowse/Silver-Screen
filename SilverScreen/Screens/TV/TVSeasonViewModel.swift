@@ -244,12 +244,13 @@ final class TVSeasonViewModel {
         do {
             let outcome: TVWatchOutcome
             let knownTitles = Dictionary(
-                uniqueKeysWithValues: (loadedEpisodes() ?? []).map { row in
+                (loadedEpisodes() ?? []).map { row in
                     (
                         TVEpisodeRef(seasonNumber: seasonNumber, episodeNumber: row.episodeNumber),
                         row.title
                     )
-                }
+                },
+                uniquingKeysWith: { first, _ in first }
             )
             if wasCompleted {
                 outcome = try await tvWatch.unmarkEpisode(
@@ -296,7 +297,10 @@ final class TVSeasonViewModel {
     @discardableResult
     func markSeasonWatched() async -> TVWatchOutcome? {
         guard case .loaded(let content, _) = state, let tvWatch else { return nil }
-        let titles = Dictionary(uniqueKeysWithValues: content.episodes.map { ($0.episodeNumber, $0.title) })
+        let titles = Dictionary(
+            content.episodes.map { ($0.episodeNumber, $0.title) },
+            uniquingKeysWith: { first, _ in first }
+        )
         do {
             let outcome = try await tvWatch.markSeason(
                 seriesID: seriesID,

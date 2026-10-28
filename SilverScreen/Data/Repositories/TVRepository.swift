@@ -485,9 +485,16 @@ final class TVRepository: Sendable {
         directorsAndWriters: [TVCredit],
         trailers: [MediaTrailer]
     ) -> TVSeasonDetail {
+        var seenNumbers = Set<Int>()
         let episodes = (dto.episodes ?? [])
             .sorted { $0.episodeNumber < $1.episodeNumber }
+            .filter { seenNumbers.insert($0.episodeNumber).inserted }
             .map { mapEpisodeSummary($0, logger: logger) }
+        // Screens key episodes by number, so a repeated number keeps only its first entry.
+        let duplicates = (dto.episodes?.count ?? 0) - episodes.count
+        if duplicates > 0 {
+            logger.debug("Skipped \(duplicates) duplicate episode number(s)", category: .networking)
+        }
         return TVSeasonDetail(
             id: dto.id,
             name: dto.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
