@@ -50,10 +50,12 @@ struct AnnotationKey: Codable, Sendable, Equatable, Hashable {
 enum UserScore {
     static let options: [Double] = (1...20).reversed().map { Double($0) / 2.0 }
 
+    /// Whether `value` is a half step from 0.5 through 10. Compares in `Double` so a corrupt
+    /// stored score far outside `Int`'s range is rejected instead of trapping in `Int(_:)`.
     static func isValid(_ value: Double) -> Bool {
         let steps = (value * 2).rounded()
         guard abs(value * 2 - steps) < 0.001 else { return false }
-        return (1...20).contains(Int(steps))
+        return (1.0...20.0).contains(steps)
     }
 
     static func formatted(_ value: Double) -> String {
