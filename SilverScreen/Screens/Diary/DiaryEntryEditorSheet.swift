@@ -3,7 +3,8 @@
 //  SilverScreen
 //
 //  Editor for one watch: the day (never in the future), an optional rating (the same
-//  slider as the Rate sheet) and review for that viewing, a rewatch switch, and tags. Save keeps the sheet open on failure.
+//  slider as the Rate sheet) and review for that viewing, and tags. Whether it is a
+//  rewatch comes from the title's history, so there is no switch for it. Save keeps the sheet open on failure.
 //  Editing an existing entry also offers Delete, behind a confirmation. Sized as a form
 //  sheet so it reads the same on iPhone and iPad.
 //
@@ -51,7 +52,6 @@ struct DiaryEntryEditorSheet: View {
                         in: ...Date(),
                         displayedComponents: .date
                     )
-                    Toggle("Rewatch", isOn: $draft.isRewatch)
                 }
 
                 Section {

@@ -74,7 +74,7 @@ final class LogWatchViewModel {
 
     /// Opens the editor dated today, prefilled with the title's current rating.
     func beginLog(currentScore: Double?) {
-        editor = .logging(title, currentScore: currentScore, hasEarlierWatch: watchCount > 0, now: now())
+        editor = .logging(title, currentScore: currentScore, now: now())
     }
 
     func dismissEditor() {

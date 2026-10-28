@@ -74,9 +74,11 @@ struct DiaryRow: Sendable, Equatable, Identifiable {
     /// One sentence for VoiceOver, e.g. "Dune, 2021. Watched Thursday, October 16, 2026. Rated 8.0 out of 10. Rewatch."
     let accessibilityLabel: String
 
+    /// Shown with a Rewatch badge. See `DiaryContent.rewatchIDs(in:)`.
+    let isRewatch: Bool
+
     var id: UUID { entry.id }
     var title: String { entry.title }
-    var isRewatch: Bool { entry.isRewatch }
 }
 
 enum DiaryContent {
@@ -88,8 +90,10 @@ enum DiaryContent {
         calendar: Calendar = .current,
         locale: Locale = .current
     ) -> [DiaryMonth] {
+        let rewatches = rewatchIDs(in: entries)
         let entryItems = DiaryRepository.sorted(entries).map { entry in
-            (day: entry.watchedOn, time: entry.loggedAt, item: DiaryItem.entry(row(for: entry, calendar: calendar, locale: locale)))
+            let entryRow = row(for: entry, isRewatch: rewatches.contains(entry.id), calendar: calendar, locale: locale)
+            return (day: entry.watchedOn, time: entry.loggedAt, item: DiaryItem.entry(entryRow))
         }
         let episodeItems = episodeGroups(from: episodes, calendar: calendar, locale: locale).map { row in
             (day: row.watchedOn, time: row.lastCompletedAt, item: DiaryItem.episodes(row))
@@ -193,7 +197,27 @@ enum DiaryContent {
         return "\(episodes.count) episodes"
     }
 
-    static func row(for entry: DiaryEntry, calendar: Calendar = .current, locale: Locale = .current) -> DiaryRow {
+    /// Entries that count as rewatches: every watch of a title after its earliest one,
+    /// plus any entry stored as a rewatch (a Letterboxd import keeps its own flag, which
+    /// covers a first log of something seen before the app). Nothing is switched by hand.
+    static func rewatchIDs(in entries: [DiaryEntry]) -> Set<UUID> {
+        let earliestFirst = DiaryRepository.sorted(entries).reversed()
+        var seen = Set<DiarySubject>()
+        var result = Set<UUID>()
+        for entry in earliestFirst {
+            if !seen.insert(entry.subject).inserted || entry.isRewatch {
+                result.insert(entry.id)
+            }
+        }
+        return result
+    }
+
+    static func row(
+        for entry: DiaryEntry,
+        isRewatch: Bool,
+        calendar: Calendar = .current,
+        locale: Locale = .current
+    ) -> DiaryRow {
         let date = entry.watchedOn.date(in: calendar)
         let weekday = date.formatted(
             Date.FormatStyle(locale: locale, calendar: calendar, timeZone: calendar.timeZone).weekday(.abbreviated)
@@ -210,7 +234,7 @@ enum DiaryContent {
         if let score = entry.score {
             spoken.append(String(format: "Rated %.1f out of 10", score))
         }
-        if entry.isRewatch {
+        if isRewatch {
             spoken.append("Rewatch")
         }
         if entry.review != nil {
@@ -228,7 +252,8 @@ enum DiaryContent {
             ratingText: ratingText,
             reviewExcerpt: entry.review,
             tagsText: tagsText,
-            accessibilityLabel: spoken.joined(separator: ". ") + "."
+            accessibilityLabel: spoken.joined(separator: ". ") + ".",
+            isRewatch: isRewatch
         )
     }
 

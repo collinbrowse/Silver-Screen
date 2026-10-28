@@ -86,7 +86,6 @@ final class DiaryViewModelTests: XCTestCase {
         XCTAssertTrue(session.canDelete)
         XCTAssertEqual(session.draft.score, 6)
         XCTAssertEqual(session.draft.review, "Fine")
-        XCTAssertTrue(session.draft.isRewatch)
         XCTAssertEqual(session.draft.tagsText, "a, b")
         XCTAssertEqual(DiaryDay(session.draft.watchedOn, calendar: DiaryFixtures.utcCalendar), entry.watchedOn)
     }
@@ -281,6 +280,40 @@ final class DiaryViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.navigationTitle, "Diary")
         XCTAssertTrue(viewModel.showsTitleLinks)
+    }
+
+    func test_load_laterWatchOfSameTitle_isRewatchAutomatically() async {
+        let first = DiaryFixtures.entry(subject: .movie(550), title: "First", watchedOn: DiaryDay(year: 2026, month: 10, day: 1))
+        let second = DiaryFixtures.entry(subject: .movie(550), title: "Second", watchedOn: DiaryDay(year: 2026, month: 10, day: 9))
+        let other = DiaryFixtures.entry(subject: .movie(1), title: "Other", watchedOn: DiaryDay(year: 2026, month: 10, day: 12))
+        let viewModel = makeViewModel(store: InMemoryDiaryStore(entries: [first, second, other]))
+
+        await viewModel.load()
+
+        let rows = loadedMonths(viewModel).flatMap(\.rows)
+        XCTAssertEqual(rows.map(\.title), ["Other", "Second", "First"])
+        XCTAssertEqual(rows.map(\.isRewatch), [false, true, false])
+    }
+
+    func test_load_importedRewatchFlagOnFirstWatch_isKept() async {
+        let imported = DiaryFixtures.entry(isRewatch: true)
+        let viewModel = makeViewModel(store: InMemoryDiaryStore(entries: [imported]))
+
+        await viewModel.load()
+
+        XCTAssertEqual(loadedMonths(viewModel).first?.rows.first?.isRewatch, true)
+    }
+
+    func test_load_deletingFirstWatch_makesNextOneTheFirst() async throws {
+        let first = DiaryFixtures.entry(title: "First", watchedOn: DiaryDay(year: 2026, month: 10, day: 1))
+        let second = DiaryFixtures.entry(title: "Second", watchedOn: DiaryDay(year: 2026, month: 10, day: 9))
+        let viewModel = makeViewModel(store: InMemoryDiaryStore(entries: [first, second]))
+        await viewModel.load()
+
+        let firstRow = try XCTUnwrap(loadedMonths(viewModel).flatMap(\.rows).first { $0.id == first.id })
+        await viewModel.delete(firstRow)
+
+        XCTAssertEqual(loadedMonths(viewModel).flatMap(\.rows).map(\.isRewatch), [false])
     }
 
     // MARK: - Helpers

@@ -57,18 +57,19 @@ final class LogWatchViewModelTests: XCTestCase {
         XCTAssertFalse(session.canDelete)
         XCTAssertEqual(session.title, "Fight Club")
         XCTAssertEqual(session.draft.score, 8.5)
-        XCTAssertFalse(session.draft.isRewatch)
         XCTAssertEqual(session.draft.watchedOn, now)
     }
 
-    func test_beginLog_afterEarlierWatch_startsAsRewatch() async throws {
-        let viewModel = makeViewModel(store: InMemoryDiaryStore(entries: [DiaryFixtures.entry(subject: .movie(550))]))
+    func test_save_afterEarlierWatch_storesNoManualRewatchFlag() async throws {
+        let store = InMemoryDiaryStore(entries: [DiaryFixtures.entry(subject: .movie(550))])
+        let viewModel = makeViewModel(store: store)
         await viewModel.load()
-
         viewModel.beginLog(currentScore: nil)
 
-        XCTAssertEqual(viewModel.editor?.draft.isRewatch, true)
-        XCTAssertNil(viewModel.editor?.draft.score)
+        _ = await viewModel.save(try XCTUnwrap(viewModel.editor?.draft))
+
+        let stored = await store.entries
+        XCTAssertEqual(stored.map(\.isRewatch), [false, false])
     }
 
     func test_beginLog_invalidCurrentScore_isNotPrefilled() {

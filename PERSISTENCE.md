@@ -238,6 +238,10 @@ Decisions:
 - **Logging a movie puts it on Watched.** Removing it from Watched later does not
   delete diary entries; history stays. Logging a show (from its page) leaves its lists
   alone, because a show's Watched and In Progress membership follow episode progress.
+- **Rewatches are worked out, not switched.** The diary badges every watch of a title
+  after its earliest entry as a rewatch. `is_rewatch` is only set by a Letterboxd import
+  (or kept through an edit), which covers a first log of something seen before the app;
+  a new log stores `0`. Deleting the first watch makes the next one the first.
 - **`watched_on` is a calendar day.** It is computed on the device calendar when logged,
   so a late-night watch keeps its day when the phone changes timezone.
 

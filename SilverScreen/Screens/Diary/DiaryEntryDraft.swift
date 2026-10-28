@@ -8,12 +8,12 @@
 
 import Foundation
 
-/// Editable fields of one watch, as the sheet shows them.
+/// Editable fields of one watch, as the sheet shows them. Rewatch is not one of them:
+/// the diary works it out from the title's history (`DiaryContent.rewatchIDs(in:)`).
 struct DiaryEntryDraft: Sendable, Equatable {
     var watchedOn: Date
     var score: Double?
     var review: String
-    var isRewatch: Bool
     /// Comma-separated, the way Letterboxd writes tags.
     var tagsText: String
 }
@@ -41,19 +41,16 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
                 watchedOn: entry.watchedOn.date(in: calendar),
                 score: entry.score,
                 review: entry.review ?? "",
-                isRewatch: entry.isRewatch,
                 tagsText: DiaryTags.joined(entry.tags)
             )
         )
     }
 
     /// Opens a new watch of `title` dated today. The current title rating is prefilled
-    /// so a person who already rated it only picks a date; a title that already has
-    /// entries starts as a rewatch.
+    /// so a person who already rated it only picks a date.
     static func logging(
         _ title: LogWatchTitle,
         currentScore: Double?,
-        hasEarlierWatch: Bool,
         now: Date
     ) -> DiaryEditorSession {
         let base = DiaryEntry(
@@ -78,7 +75,6 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
                 watchedOn: now,
                 score: currentScore.flatMap { UserScore.isValid($0) ? $0 : nil },
                 review: "",
-                isRewatch: hasEarlierWatch,
                 tagsText: ""
             )
         )
@@ -96,7 +92,8 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
             watchedOn: DiaryDay(draft.watchedOn, calendar: calendar),
             score: draft.score,
             review: draft.review,
-            isRewatch: draft.isRewatch,
+            // An imported rewatch flag survives an edit; a new log stores none.
+            isRewatch: base.isRewatch,
             tags: DiaryTags.parse(draft.tagsText),
             loggedAt: isNew ? now : base.loggedAt
         ).normalized()
