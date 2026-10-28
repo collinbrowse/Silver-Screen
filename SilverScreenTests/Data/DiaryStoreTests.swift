@@ -239,6 +239,10 @@ final class DiaryStoreTests: XCTestCase {
         XCTAssertEqual(watches.first?.seriesTitle, "Severance")
         XCTAssertEqual(watches.first?.posterPath, "/sev.jpg")
         XCTAssertEqual(watches.first?.episode, first)
+        let narrowed = try await store.fetchEpisodeWatches(seriesID: 42)
+        XCTAssertEqual(narrowed, watches)
+        let other = try await store.fetchEpisodeWatches(seriesID: 7)
+        XCTAssertEqual(other, [])
     }
 
     func test_replaceDiary_savingOneEntry_leavesOtherRowsUntouched() async throws {

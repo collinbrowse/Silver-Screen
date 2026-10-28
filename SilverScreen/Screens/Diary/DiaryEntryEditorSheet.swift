@@ -60,6 +60,7 @@ struct DiaryEntryEditorSheet: View {
                         Button("Clear Rating") {
                             draft.score = nil
                         }
+                        .disabled(isSaving)
                     }
                 } footer: {
                     Text("This rating is for this watch. Your rating for the title stays as it is.")

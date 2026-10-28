@@ -35,11 +35,12 @@ actor InMemoryDiaryStore: DiaryStore {
         self.entries = entries
     }
 
-    func loadEpisodeWatches() async throws -> [EpisodeWatch] {
+    func loadEpisodeWatches(seriesID: Int?) async throws -> [EpisodeWatch] {
         if let episodeLoadError {
             throw episodeLoadError
         }
-        return episodeWatches
+        guard let seriesID else { return episodeWatches }
+        return episodeWatches.filter { $0.seriesID == seriesID }
     }
 
     func setEpisodeLoadError(_ error: Error?) {

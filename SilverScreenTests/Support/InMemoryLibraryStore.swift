@@ -46,7 +46,7 @@ actor InMemoryLibraryStore: LibraryStore {
         diary
     }
 
-    func fetchEpisodeWatches() async throws -> [EpisodeWatch] {
+    func fetchEpisodeWatches(seriesID: Int?) async throws -> [EpisodeWatch] {
         []
     }
 

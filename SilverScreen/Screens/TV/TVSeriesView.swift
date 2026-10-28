@@ -15,6 +15,9 @@ struct TVSeriesView: View {
     var router: NavigationRouter?
 
     @Environment(ListChangeNotice.self) private var notice
+    /// Told when the series eye or an Undo rewrites episode progress, so the Log a watch
+    /// card (and an open diary) re-read the episode history it shows.
+    @Environment(DiaryContext.self) private var diaryContext: DiaryContext?
     @Namespace private var heroTransition
     @State private var selectedBackdropID: String?
     @State private var playingTrailer: MediaTrailer?
@@ -82,7 +85,10 @@ struct TVSeriesView: View {
                         seasons: content.detail.seasons,
                         chrome: false,
                         isWatchedOverride: viewModel.isSeriesFullyWatched,
-                        onToggleComplete: { Task { await viewModel.reloadNextUp() } },
+                        onToggleComplete: {
+                            diaryContext?.noteChange()
+                            Task { await viewModel.reloadNextUp() }
+                        },
                         onFailure: { viewModel.noteListSaveFailed() }
                     )
 
@@ -111,6 +117,7 @@ struct TVSeriesView: View {
             }
         }
         .onChange(of: notice.watchRevision) { _, _ in
+            diaryContext?.noteChange()
             Task { await viewModel.reloadNextUp() }
         }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
