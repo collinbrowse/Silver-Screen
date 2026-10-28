@@ -166,7 +166,100 @@ final class LogWatchViewModelTests: XCTestCase {
         XCTAssertEqual(stored.count, 1)
     }
 
+    func test_load_withNoHistory_hidesHistoryRow() async {
+        let viewModel = makeViewModel(store: InMemoryDiaryStore())
+
+        await viewModel.load()
+
+        XCTAssertFalse(viewModel.hasHistory)
+    }
+
+    func test_load_withEntries_offersHistoryRouteForTitle() async {
+        let viewModel = makeViewModel(store: InMemoryDiaryStore(entries: [DiaryFixtures.entry(subject: .movie(550))]))
+
+        await viewModel.load()
+
+        XCTAssertTrue(viewModel.hasHistory)
+        XCTAssertEqual(viewModel.historyRoute, .titleHistory(kind: .movie, id: 550, title: "Fight Club"))
+    }
+
+    func test_load_seriesWithOnlyEpisodes_summarizesEpisodes() async {
+        let store = InMemoryDiaryStore(episodeWatches: [
+            episodeWatch(series: 42, episode: 1, at: Date(timeIntervalSince1970: 1_792_000_000)),
+            episodeWatch(series: 42, episode: 2, at: now),
+            episodeWatch(series: 7, episode: 1, at: now),
+        ])
+        let viewModel = makeViewModel(store: store, title: seriesTitle)
+
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.watchCount, 0)
+        XCTAssertEqual(viewModel.episodeCount, 2)
+        XCTAssertTrue(viewModel.hasHistory)
+        XCTAssertEqual(viewModel.summary, "2 episodes watched · last Oct 16, 2026")
+        XCTAssertEqual(viewModel.actionTitle, "Log a watch")
+    }
+
+    func test_load_movie_ignoresEpisodeHistory() async {
+        let store = InMemoryDiaryStore(episodeWatches: [episodeWatch(series: 550, episode: 1, at: now)])
+        let viewModel = makeViewModel(store: store)
+
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.episodeCount, 0)
+        XCTAssertFalse(viewModel.hasHistory)
+    }
+
+    func test_save_series_leavesListsAlone() async throws {
+        let lists = ListsRepository.empty()
+        let diaryStore = InMemoryDiaryStore()
+        let context = DiaryContext(
+            diary: DiaryRepository(store: diaryStore, logger: SilentLogger()),
+            lists: lists,
+            logger: SilentLogger()
+        )
+        let viewModel = makeViewModel(context: context, title: seriesTitle)
+        viewModel.beginLog(currentScore: nil)
+
+        let result = await viewModel.save(try XCTUnwrap(viewModel.editor?.draft))
+
+        XCTAssertEqual(result, .succeeded)
+        let stored = await diaryStore.entries
+        XCTAssertEqual(stored.map(\.subject), [.series(42)])
+        let snapshot = try await lists.snapshot()
+        XCTAssertFalse(snapshot.entries.contains { $0.itemKey == "tv-42" })
+    }
+
     // MARK: - Helpers
+
+    private var seriesTitle: LogWatchTitle {
+        LogWatchTitle(
+            subject: .series(42),
+            title: "Severance",
+            releaseYear: 2022,
+            posterPath: "/sev.jpg",
+            listItem: ListItemDraft(
+                id: 42,
+                kind: .tv,
+                title: "Severance",
+                imagePath: "/sev.jpg",
+                releaseDate: nil,
+                genreNames: [],
+                voteAverage: 8,
+                popularity: 10
+            )
+        )
+    }
+
+    private func episodeWatch(series: Int, episode: Int, at date: Date) -> EpisodeWatch {
+        EpisodeWatch(
+            seriesID: series,
+            seriesTitle: "Show \(series)",
+            posterPath: nil,
+            episode: TVEpisodeRef(seasonNumber: 1, episodeNumber: episode),
+            completedAt: date
+        )
+    }
 
     private var title: LogWatchTitle {
         LogWatchTitle(
@@ -187,20 +280,21 @@ final class LogWatchViewModelTests: XCTestCase {
         )
     }
 
-    private func makeViewModel(store: InMemoryDiaryStore) -> LogWatchViewModel {
+    private func makeViewModel(store: InMemoryDiaryStore, title: LogWatchTitle? = nil) -> LogWatchViewModel {
         makeViewModel(
             context: DiaryContext(
                 diary: DiaryRepository(store: store, logger: SilentLogger()),
                 lists: ListsRepository.empty(),
                 logger: SilentLogger()
-            )
+            ),
+            title: title
         )
     }
 
-    private func makeViewModel(context: DiaryContext) -> LogWatchViewModel {
+    private func makeViewModel(context: DiaryContext, title: LogWatchTitle? = nil) -> LogWatchViewModel {
         let now = now
         return LogWatchViewModel(
-            title: title,
+            title: title ?? self.title,
             context: context,
             calendar: DiaryFixtures.utcCalendar,
             locale: Locale(identifier: "en_US"),

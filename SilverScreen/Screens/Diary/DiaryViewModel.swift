@@ -9,6 +9,8 @@ import Foundation
 /// newest first, with edit and delete for logged watches. A failed reload or delete keeps
 /// the list on screen with a failed activity. Episode history that cannot be read is
 /// logged and left out, so the logged watches still show.
+///
+/// With a `scope` it is one title's watch history instead, reached from that title's page.
 @Observable
 @MainActor
 final class DiaryViewModel {
@@ -16,6 +18,8 @@ final class DiaryViewModel {
     /// Open editor for an existing entry, or nil.
     var editor: DiaryEditorSession?
 
+    /// Nil for the whole diary.
+    let scope: DiaryScope?
     private let context: DiaryContext
     private let calendar: Calendar
     private let locale: Locale
@@ -23,11 +27,13 @@ final class DiaryViewModel {
 
     init(
         context: DiaryContext,
+        scope: DiaryScope? = nil,
         calendar: Calendar = .current,
         locale: Locale = .current,
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
         self.context = context
+        self.scope = scope
         self.calendar = calendar
         self.locale = locale
         self.now = now
@@ -35,6 +41,12 @@ final class DiaryViewModel {
 
     /// Moves whenever any screen writes the diary; the view reloads on change.
     var contextRevision: Int { context.revision }
+
+    var navigationTitle: String { scope?.title ?? "Diary" }
+
+    /// Rows link back to their title only in the full diary; a title's history was
+    /// opened from that title.
+    var showsTitleLinks: Bool { scope == nil }
 
     func load() async {
         switch state {
@@ -46,7 +58,12 @@ final class DiaryViewModel {
                 state = .loading
         }
         do {
-            let entries = try await context.diary.entries()
+            let entries: [DiaryEntry]
+            if let subject = scope?.subject {
+                entries = try await context.diary.entries(for: subject)
+            } else {
+                entries = try await context.diary.entries()
+            }
             let episodes = try await episodeWatches()
             let months = DiaryContent.months(from: entries, episodes: episodes, calendar: calendar, locale: locale)
             state = months.isEmpty ? .empty : .loaded(months)
@@ -132,7 +149,11 @@ final class DiaryViewModel {
     /// Only cancellation propagates.
     private func episodeWatches() async throws -> [EpisodeWatch] {
         do {
-            return try await context.diary.episodeWatches()
+            guard let subject = scope?.subject else {
+                return try await context.diary.episodeWatches()
+            }
+            guard subject.kind == .tv else { return [] }
+            return try await context.diary.episodeWatches(seriesID: subject.tmdbID)
         } catch is CancellationError {
             throw CancellationError()
         } catch {

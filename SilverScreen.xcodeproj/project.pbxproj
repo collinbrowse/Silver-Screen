@@ -37,6 +37,7 @@
 		9066E2FD78DD3F73E7869CBF /* DiaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F2F118DE08BB189A7CDA97 /* DiaryView.swift */; };
 		CBDF9688926948FFE043FB2E /* LogWatchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89B6846044022C2B46E17F65 /* LogWatchViewModel.swift */; };
 		F0DA800E4B5DDA9C620D60F8 /* LogWatchButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D16740386C5F6BDBCFABC199 /* LogWatchButton.swift */; };
+		7887C486E3F932EDB368DAC3 /* LogWatchCardRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A99D41940F1BF1E8B100F093 /* LogWatchCardRow.swift */; };
 		SQL000012788B823003D8011 /* SQLiteDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL000022788B823003D8011 /* SQLiteDatabase.swift */; };
 		SQL000032788B823003D8011 /* LibrarySchema.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL000042788B823003D8011 /* LibrarySchema.swift */; };
 		SQL000052788B823003D8011 /* LibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL000062788B823003D8011 /* LibraryStore.swift */; };
@@ -365,6 +366,7 @@
 		A2F2F118DE08BB189A7CDA97 /* DiaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryView.swift; sourceTree = "<group>"; };
 		89B6846044022C2B46E17F65 /* LogWatchViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogWatchViewModel.swift; sourceTree = "<group>"; };
 		D16740386C5F6BDBCFABC199 /* LogWatchButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogWatchButton.swift; sourceTree = "<group>"; };
+		A99D41940F1BF1E8B100F093 /* LogWatchCardRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogWatchCardRow.swift; sourceTree = "<group>"; };
 		SQL000022788B823003D8011 /* SQLiteDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteDatabase.swift; sourceTree = "<group>"; };
 		SQL000042788B823003D8011 /* LibrarySchema.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySchema.swift; sourceTree = "<group>"; };
 		SQL000062788B823003D8011 /* LibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryStore.swift; sourceTree = "<group>"; };
@@ -690,6 +692,7 @@
 				A2F2F118DE08BB189A7CDA97 /* DiaryView.swift */,
 				89B6846044022C2B46E17F65 /* LogWatchViewModel.swift */,
 				D16740386C5F6BDBCFABC199 /* LogWatchButton.swift */,
+				A99D41940F1BF1E8B100F093 /* LogWatchCardRow.swift */,
 			);
 			path = Diary;
 			sourceTree = "<group>";
@@ -1604,6 +1607,7 @@
 				9066E2FD78DD3F73E7869CBF /* DiaryView.swift in Sources */,
 				CBDF9688926948FFE043FB2E /* LogWatchViewModel.swift in Sources */,
 				F0DA800E4B5DDA9C620D60F8 /* LogWatchButton.swift in Sources */,
+				7887C486E3F932EDB368DAC3 /* LogWatchCardRow.swift in Sources */,
 				L1B000212788B823003D8011 /* LibraryListArtwork.swift in Sources */,
 				L1B000232788B823003D8011 /* LibraryListCoverView.swift in Sources */,
 				L1B000152788B823003D8011 /* LibraryHomeViewModel.swift in Sources */,

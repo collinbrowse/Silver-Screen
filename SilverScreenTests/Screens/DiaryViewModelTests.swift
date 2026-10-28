@@ -242,6 +242,47 @@ final class DiaryViewModelTests: XCTestCase {
         XCTAssertEqual(route, .tvSeries(id: 7))
     }
 
+    func test_load_scopedToMovie_showsOnlyThatTitle() async {
+        let store = InMemoryDiaryStore(
+            entries: [
+                DiaryFixtures.entry(subject: .movie(550), title: "Fight Club"),
+                DiaryFixtures.entry(subject: .movie(1), title: "Other"),
+            ],
+            episodeWatches: [episodeWatch(series: 550, season: 1, episode: 1, at: "2026-10-16T20:00:00.000Z")]
+        )
+        let viewModel = makeViewModel(store: store, scope: DiaryScope(subject: .movie(550), title: "Fight Club"))
+
+        await viewModel.load()
+
+        XCTAssertEqual(loadedMonths(viewModel).flatMap(\.items).count, 1)
+        XCTAssertEqual(loadedMonths(viewModel).flatMap(\.rows).map(\.title), ["Fight Club"])
+        XCTAssertEqual(viewModel.navigationTitle, "Fight Club")
+        XCTAssertFalse(viewModel.showsTitleLinks)
+    }
+
+    func test_load_scopedToSeries_includesItsEpisodesOnly() async {
+        let store = InMemoryDiaryStore(
+            entries: [DiaryFixtures.entry(subject: .series(7), title: "Show 7")],
+            episodeWatches: [
+                episodeWatch(series: 7, season: 1, episode: 1, at: "2026-10-16T20:00:00.000Z"),
+                episodeWatch(series: 8, season: 1, episode: 1, at: "2026-10-16T20:00:00.000Z"),
+            ]
+        )
+        let viewModel = makeViewModel(store: store, scope: DiaryScope(subject: .series(7), title: "Show 7"))
+
+        await viewModel.load()
+
+        XCTAssertEqual(episodeGroups(viewModel).map(\.seriesID), [7])
+        XCTAssertEqual(loadedMonths(viewModel).flatMap(\.rows).count, 1)
+    }
+
+    func test_fullDiary_showsTitleLinks() {
+        let viewModel = makeViewModel(store: InMemoryDiaryStore())
+
+        XCTAssertEqual(viewModel.navigationTitle, "Diary")
+        XCTAssertTrue(viewModel.showsTitleLinks)
+    }
+
     // MARK: - Helpers
 
     private func episodeWatch(series: Int, season: Int, episode: Int, at iso: String) -> EpisodeWatch {
@@ -269,17 +310,18 @@ final class DiaryViewModelTests: XCTestCase {
         )
     }
 
-    private func makeViewModel(store: InMemoryDiaryStore) -> DiaryViewModel {
-        makeViewModel(context: makeContext(store: store))
+    private func makeViewModel(store: InMemoryDiaryStore, scope: DiaryScope? = nil) -> DiaryViewModel {
+        makeViewModel(context: makeContext(store: store), scope: scope)
     }
 
     private func makeViewModel(repository: DiaryRepository) -> DiaryViewModel {
         makeViewModel(context: DiaryContext(diary: repository, lists: ListsRepository.empty(), logger: SilentLogger()))
     }
 
-    private func makeViewModel(context: DiaryContext) -> DiaryViewModel {
+    private func makeViewModel(context: DiaryContext, scope: DiaryScope? = nil) -> DiaryViewModel {
         DiaryViewModel(
             context: context,
+            scope: scope,
             calendar: DiaryFixtures.utcCalendar,
             locale: locale,
             now: { Date(timeIntervalSince1970: 1_792_000_000) }

@@ -8,6 +8,13 @@
 
 import Foundation
 
+/// Narrows the diary screen to one title's watch history.
+struct DiaryScope: Sendable, Equatable {
+    let subject: DiarySubject
+    /// The title's name, used as the screen title.
+    let title: String
+}
+
 /// Diary dependencies plus a change counter. Any screen that writes an entry calls
 /// `noteChange()`, and any screen that shows entries reloads when `revision` moves, so
 /// a watch logged on a movie appears in an open diary (and the reverse).

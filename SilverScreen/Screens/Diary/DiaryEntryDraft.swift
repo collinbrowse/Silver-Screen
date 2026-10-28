@@ -120,6 +120,14 @@ struct LogWatchTitle: Sendable, Equatable {
         self.listItem = listItem
     }
 
+    init(series: TVSeriesDetail) {
+        subject = .series(series.id)
+        title = series.name
+        releaseYear = DisplayDate.year(series.firstAirDate).flatMap(Int.init)
+        posterPath = series.posterPath
+        listItem = series.listItem()
+    }
+
     init(movie: MovieDetail) {
         subject = .movie(movie.id)
         title = movie.title

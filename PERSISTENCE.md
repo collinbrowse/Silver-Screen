@@ -235,8 +235,9 @@ Decisions:
 - **The watch's rating is a snapshot.** `diary_entry.score` and `review` describe that
   viewing. The title's rating (`annotation`) stays the one badges and Watched use, and
   logging a watch never changes it. The editor prefills the current title rating.
-- **Logging a watch puts the title on Watched.** Removing it from Watched later does not
-  delete diary entries; history stays.
+- **Logging a movie puts it on Watched.** Removing it from Watched later does not
+  delete diary entries; history stays. Logging a show (from its page) leaves its lists
+  alone, because a show's Watched and In Progress membership follow episode progress.
 - **`watched_on` is a calendar day.** It is computed on the device calendar when logged,
   so a late-night watch keeps its day when the phone changes timezone.
 

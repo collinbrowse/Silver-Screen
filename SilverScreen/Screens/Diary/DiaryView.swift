@@ -36,11 +36,19 @@ struct DiaryView: View {
                 case .idle, .loading:
                     LoadingStateView()
                 case .empty:
-                    EmptyStateView(
-                        title: "No Diary Entries",
-                        message: "Log a watch from any movie or show, or check off an episode, and it shows up here by the day you watched it.",
-                        systemImage: "book.closed"
-                    )
+                    if viewModel.scope == nil {
+                        EmptyStateView(
+                            title: "No Diary Entries",
+                            message: "Log a watch from any movie or show, or check off an episode, and it shows up here by the day you watched it.",
+                            systemImage: "book.closed"
+                        )
+                    } else {
+                        EmptyStateView(
+                            title: "No Watches Yet",
+                            message: "Watches you log for this title show up here.",
+                            systemImage: "book.closed"
+                        )
+                    }
                 case .loaded(let months, let activity):
                     list(months)
                         .overlay(alignment: .top) {
@@ -59,7 +67,7 @@ struct DiaryView: View {
         } action: { width in
             availableWidth = width
         }
-        .navigationTitle("Diary")
+        .navigationTitle(viewModel.navigationTitle)
         .toolbarTitleDisplayMode(.inlineLarge)
         .sheet(item: editorBinding) { session in
             DiaryEntryEditorSheet(
@@ -90,11 +98,15 @@ struct DiaryView: View {
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityHint("Edits this entry")
-                                .accessibilityAction(named: "Open title") {
-                                    router.push(viewModel.route(for: row))
-                                }
                                 .accessibilityAction(named: "Delete") {
                                     Task { await viewModel.delete(row) }
+                                }
+                                .accessibilityActions {
+                                    if viewModel.showsTitleLinks {
+                                        Button("Open title") {
+                                            router.push(viewModel.route(for: row))
+                                        }
+                                    }
                                 }
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                     Button("Delete", role: .destructive) {
@@ -105,28 +117,34 @@ struct DiaryView: View {
                                     Button("Edit Entry", systemImage: "pencil") {
                                         viewModel.edit(row)
                                     }
-                                    Button(
-                                        row.entry.subject.kind == .tv ? "Go to Show" : "Go to Movie",
-                                        systemImage: row.entry.subject.kind == .tv ? "tv" : "film"
-                                    ) {
-                                        router.push(viewModel.route(for: row))
+                                    if viewModel.showsTitleLinks {
+                                        Button(
+                                            row.entry.subject.kind == .tv ? "Go to Show" : "Go to Movie",
+                                            systemImage: row.entry.subject.kind == .tv ? "tv" : "film"
+                                        ) {
+                                            router.push(viewModel.route(for: row))
+                                        }
                                     }
                                     Button("Delete", systemImage: "trash", role: .destructive) {
                                         Task { await viewModel.delete(row) }
                                     }
                                 }
                             case .episodes(let group):
-                                Button {
-                                    router.push(viewModel.route(for: group))
-                                } label: {
-                                    DiaryEpisodeGroupRow(group: group, layout: layout, imageLoader: imageLoader)
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityHint("Opens the show")
-                                .contextMenu {
-                                    Button("Go to Show", systemImage: "tv") {
+                                if viewModel.showsTitleLinks {
+                                    Button {
                                         router.push(viewModel.route(for: group))
+                                    } label: {
+                                        DiaryEpisodeGroupRow(group: group, layout: layout, imageLoader: imageLoader)
                                     }
+                                    .buttonStyle(.plain)
+                                    .accessibilityHint("Opens the show")
+                                    .contextMenu {
+                                        Button("Go to Show", systemImage: "tv") {
+                                            router.push(viewModel.route(for: group))
+                                        }
+                                    }
+                                } else {
+                                    DiaryEpisodeGroupRow(group: group, layout: layout, imageLoader: imageLoader)
                                 }
                         }
                     }

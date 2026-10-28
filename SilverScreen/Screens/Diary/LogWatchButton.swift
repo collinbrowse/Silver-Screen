@@ -2,8 +2,8 @@
 //  LogWatchButton.swift
 //  SilverScreen
 //
-//  "Log a watch" card for a detail screen, with the title's watch count and last day.
-//  Reads `DiaryContext` from the environment and draws nothing where the root did not
+//  "Log a watch" card for a detail screen. Once the title has history, a second row
+//  shows the watch count and last day and opens the title's watch history. Reads `DiaryContext` from the environment and draws nothing where the root did not
 //  install one (previews), so a detail screen needs no new initializer arguments.
 //
 
@@ -50,36 +50,36 @@ private struct LogWatchCard: View {
     }
 
     var body: some View {
-        Button {
-            viewModel.beginLog(currentScore: currentScore)
-        } label: {
-            SurfaceCard {
-                HStack(spacing: DesignSpacing.md) {
-                    Image(systemName: "calendar.badge.plus")
-                        .font(.title3)
-                        .foregroundStyle(DesignTheme.accent)
-                        .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: DesignSpacing.xs) {
-                        Text(viewModel.actionTitle)
-                            .font(DesignTypography.section)
-                            .foregroundStyle(DesignTheme.textPrimary)
-                        if let summary = viewModel.summary {
-                            Text(summary)
-                                .font(DesignTypography.metadata)
-                                .foregroundStyle(DesignTheme.textSecondary)
-                        }
+        SurfaceCard {
+            VStack(alignment: .leading, spacing: DesignSpacing.md) {
+                Button {
+                    viewModel.beginLog(currentScore: currentScore)
+                } label: {
+                    LogWatchCardRow(
+                        systemImage: "calendar.badge.plus",
+                        title: viewModel.actionTitle,
+                        subtitle: viewModel.hasHistory ? nil : viewModel.summary
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityElement(children: .combine)
+                .accessibilityHint("Adds this watch to your diary")
+
+                if viewModel.hasHistory {
+                    Divider()
+                    NavigationLink(value: viewModel.historyRoute) {
+                        LogWatchCardRow(
+                            systemImage: "clock.arrow.circlepath",
+                            title: "Watch History",
+                            subtitle: viewModel.summary
+                        )
                     }
-                    Spacer(minLength: 0)
-                    Image(systemName: "chevron.right")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(DesignTheme.textMuted)
-                        .accessibilityHidden(true)
+                    .buttonStyle(.plain)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityHint("Shows every watch of this title")
                 }
             }
         }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityHint("Adds this watch to your diary")
         .sheet(item: editorBinding) { session in
             DiaryEntryEditorSheet(
                 session: session,
