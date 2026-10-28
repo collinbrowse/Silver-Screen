@@ -73,6 +73,13 @@ final class AnnotationsRepositoryTests: XCTestCase {
         XCTAssertFalse(UserScore.isValid(10.5))
     }
 
+    func test_snapped_roundsToHalfStepsWithinRange() {
+        XCTAssertEqual(UserScore.snapped(7.26), 7.5)
+        XCTAssertEqual(UserScore.snapped(7.24), 7)
+        XCTAssertEqual(UserScore.snapped(0), 0.5)
+        XCTAssertEqual(UserScore.snapped(12), 10)
+    }
+
     func test_save_rejectsInvalidScore() async {
         let repository = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
 

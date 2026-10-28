@@ -25,8 +25,6 @@ struct AnnotationEditorSheet: View {
     @Environment(ReviewPrompter.self) private var reviewPrompter: ReviewPrompter?
     /// Committed rating for Save. Nil until the title already had one or the slider moves.
     @State private var score: Double?
-    /// Slider thumb position; does not imply a chosen score until `score` is set.
-    @State private var sliderValue: Double
     @State private var note: String
     @State private var confirmClear = false
     /// The sheet's safe-area insets, read so the side margins can be balanced.
@@ -47,9 +45,7 @@ struct AnnotationEditorSheet: View {
         self.canClear = canClear
         self.onSave = onSave
         self.onClear = onClear
-        let initial = score.map(Self.snapped)
-        _score = State(initialValue: initial)
-        _sliderValue = State(initialValue: initial ?? 5.5)
+        _score = State(initialValue: score.map(UserScore.snapped))
         _note = State(initialValue: note)
     }
 
@@ -79,45 +75,10 @@ struct AnnotationEditorSheet: View {
                         .accessibilityLabel("\(saveError.title). \(saveError.message)")
                 }
 
-                VStack(alignment: .leading, spacing: DesignSpacing.sm) {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text("Rate out of 10")
-                            .font(DesignTypography.metadata)
-                            .foregroundStyle(DesignTheme.textSecondary)
-                        Spacer(minLength: DesignSpacing.sm)
-                        if let score {
-                            Text(UserScore.formatted(score))
-                                .font(DesignTypography.ratingValue)
-                                .foregroundStyle(DesignTheme.accent)
-                                .accessibilityLabel(UserScore.accessibilityLabel(score))
-                        } else {
-                            Text("-")
-                                .font(DesignTypography.ratingValue)
-                                .foregroundStyle(DesignTheme.accent)
-                                .accessibilityLabel("Choose a rating")
-                        }
+                ScoreSlider(score: $score, isDisabled: isSaving) {
+                    if noteFocused {
+                        resignNoteFocus()
                     }
-
-                    Slider(
-                        value: Binding(
-                            get: { sliderValue },
-                            set: { newValue in
-                                sliderValue = newValue
-                                score = Self.snapped(newValue)
-                                if noteFocused {
-                                    resignNoteFocus()
-                                }
-                            }
-                        ),
-                        in: 0.5...10,
-                        step: 0.5
-                    )
-                    .tint(DesignTheme.accent)
-                    .disabled(isSaving)
-                    .accessibilityLabel("Your rating")
-                    .accessibilityValue(
-                        score.map(UserScore.formatted) ?? "No rating chosen"
-                    )
                 }
 
                 ZStack(alignment: .topLeading) {
@@ -254,11 +215,5 @@ struct AnnotationEditorSheet: View {
             from: nil,
             for: nil
         )
-    }
-
-    private static func snapped(_ value: Double) -> Double {
-        let steps = (value * 2).rounded()
-        let clamped = min(max(steps, 1), 20)
-        return clamped / 2.0
     }
 }

@@ -58,6 +58,13 @@ enum UserScore {
         return (1.0...20.0).contains(steps)
     }
 
+    /// Rounds a slider position to the nearest half step, clamped to 0.5–10.
+    static func snapped(_ value: Double) -> Double {
+        let steps = (value * 2).rounded()
+        let clamped = min(max(steps, 1), 20)
+        return clamped / 2.0
+    }
+
     static func formatted(_ value: Double) -> String {
         String(format: "%.1f / 10", value)
     }
