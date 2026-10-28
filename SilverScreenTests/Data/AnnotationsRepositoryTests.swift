@@ -63,6 +63,16 @@ final class AnnotationsRepositoryTests: XCTestCase {
         XCTAssertNil(saved.note)
     }
 
+    func test_isValid_rejectsScoresOutsideIntRangeWithoutTrapping() {
+        XCTAssertFalse(UserScore.isValid(1e300))
+        XCTAssertFalse(UserScore.isValid(-1e300))
+        XCTAssertFalse(UserScore.isValid(.infinity))
+        XCTAssertFalse(UserScore.isValid(.nan))
+        XCTAssertTrue(UserScore.isValid(0.5))
+        XCTAssertTrue(UserScore.isValid(10))
+        XCTAssertFalse(UserScore.isValid(10.5))
+    }
+
     func test_save_rejectsInvalidScore() async {
         let repository = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
 

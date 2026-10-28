@@ -130,6 +130,27 @@ final class TVRepositoryTests: XCTestCase {
         XCTAssertEqual(credits.map(\.name), ["Amy", "Zed"])
     }
 
+    func test_season_keepsTheFirstOfARepeatedEpisodeNumber() async throws {
+        let payload = Data("""
+            {
+              "id": 3,
+              "name": "Season 3",
+              "season_number": 3,
+              "episodes": [
+                {"id": 21, "name": "Two", "episode_number": 2},
+                {"id": 20, "name": "One", "episode_number": 1},
+                {"id": 22, "name": "Two Again", "episode_number": 2}
+              ]
+            }
+            """.utf8)
+
+        let season = try await TVRepository.test(client: FakeHTTPClient(stub: .success(payload)))
+            .season(seriesID: 1396, seasonNumber: 3)
+
+        XCTAssertEqual(season.episodes.map(\.episodeNumber), [1, 2])
+        XCTAssertEqual(season.episodes.map(\.title), ["One", "Two"])
+    }
+
     func test_season_joinsEveryDirector() async throws {
         let payload = Data("""
             {

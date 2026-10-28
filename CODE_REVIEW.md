@@ -333,7 +333,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 
 ### N11 · Low · `UserScore.isValid` traps on a huge finite score from disk
 
-**Status:** Reported
+**Status:** Fixed: the range check runs in `Double`
 
 **Where:** `MediaAnnotation.swift:53-56`
 
@@ -758,7 +758,7 @@ These are owned by in-flight Screens work and were not changed here.
 
 ### S8 · Low · `Dictionary(uniqueKeysWithValues:)` traps on a duplicate episode number
 
-**Status:** Reported
+**Status:** Fixed: `mapSeason` keeps the first of a repeated episode number, and the title maps no longer trap
 
 **Where:** `TVSeasonViewModel.swift:245, 297`
 
