@@ -78,6 +78,10 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 - [x] Weekly digest: a GitHub Action every Monday that pulls downloads, ratings, and new
       reviews from the App Store Connect API, plus crash-free sessions, top issues, and
       feedback count from Sentry, and posts them as a GitHub issue
+      - Optional: post the digest to a private repo, because this repo is public and so are
+        the download counts, crash rates and review text in the digest (`CODE_REVIEW.md` C7).
+        Needs a private repo and a fine-grained token with issue access to it. Then delete
+        the digests already posted here (#52, #59).
 
 ### Launch
 

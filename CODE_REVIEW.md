@@ -591,7 +591,7 @@ Every finding below was confirmed by reading the code at the cited line; anythin
 
 ### C7 · Medium · The weekly digest posts business data and unescaped review text to a public repo
 
-**Status:** Reported (owner decision)
+**Status:** Deferred: optional item in `LAUNCH.md` (post to a private repo)
 
 **Where:** `scripts/weekly_digest.py:261-271, 329-334, 461-469`
 
