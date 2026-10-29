@@ -121,7 +121,8 @@ struct WatchedToggleButton: View {
                     optimisticWatched = !isWatched
                     do {
                         let change = try await lists.toggleWatched(draft)
-                        notice.show(change, using: lists)
+                        // Also logs today's diary watch when this marked it watched.
+                        await notice.showMovieWatch(change, draft: draft, using: lists)
                         optimisticWatched = nil
                         onToggleComplete()
                     } catch {

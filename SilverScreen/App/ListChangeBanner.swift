@@ -20,7 +20,7 @@ struct ListChangeBanner: View {
                     .foregroundStyle(DesignTheme.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: DesignSpacing.sm)
-                if notice.ratingKey != nil, notice.annotationEditor == nil {
+                if notice.offersRating {
                     Button {
                         Task { await notice.openRatingEditor() }
                     } label: {

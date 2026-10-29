@@ -91,14 +91,15 @@ struct AppDependencies {
             logger: logger,
             analytics: analytics
         )
-        let listChanges = ListChangeNotice(annotations: annotations)
-        let tvWatch = TVWatchRepository(
-            store: LibraryTVWatchStoreAdapter(library: libraryStore),
+        let diary = DiaryContext(
+            diary: DiaryRepository(store: LibraryDiaryStoreAdapter(library: libraryStore), logger: logger),
             lists: lists,
             logger: logger
         )
-        let diary = DiaryContext(
-            diary: DiaryRepository(store: LibraryDiaryStoreAdapter(library: libraryStore), logger: logger),
+        // The eye on a movie logs a diary watch, so the toast needs the diary.
+        let listChanges = ListChangeNotice(annotations: annotations, diary: diary)
+        let tvWatch = TVWatchRepository(
+            store: LibraryTVWatchStoreAdapter(library: libraryStore),
             lists: lists,
             logger: logger
         )
