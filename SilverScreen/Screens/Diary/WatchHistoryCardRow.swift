@@ -1,14 +1,14 @@
 //
-//  LogWatchCardRow.swift
+//  WatchHistoryCardRow.swift
 //  SilverScreen
 //
-//  One line of the "Log a watch" card on a detail screen.
+//  The Watch History line on a detail screen.
 //
 
 import SwiftUI
 
-/// One tappable line of the card: an icon, a title, an optional subtitle, and a chevron.
-struct LogWatchCardRow: View {
+/// One tappable line: an icon, a title, an optional subtitle, and a chevron.
+struct WatchHistoryCardRow: View {
     let systemImage: String
     let title: String
     let subtitle: String?

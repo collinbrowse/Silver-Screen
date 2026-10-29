@@ -11,12 +11,16 @@ import Foundation
 /// logged and left out, so the logged watches still show.
 ///
 /// With a `scope` it is one title's watch history instead, reached from that title's page.
+/// A movie's history is also where a rewatch is logged (`beginRewatch()`).
 @Observable
 @MainActor
 final class DiaryViewModel {
     private(set) var state: LoadState<[DiaryMonth]> = .idle
-    /// Open editor for an existing entry, or nil.
+    /// Open editor for an existing entry or a new rewatch, or nil.
     var editor: DiaryEditorSession?
+    /// The movie a new rewatch is for while its sheet is open, so saving can put it back
+    /// on Watched.
+    private var pendingRewatch: LogWatchTitle?
 
     /// Nil for the whole diary.
     let scope: DiaryScope?
@@ -47,6 +51,10 @@ final class DiaryViewModel {
     /// Rows link back to their title only in the full diary; a title's history was
     /// opened from that title.
     var showsTitleLinks: Bool { scope == nil }
+
+    /// Log a Rewatch shows on a movie's own history. A show is logged episode by episode
+    /// with its eyes, so its history has no button.
+    var canLogRewatch: Bool { scope?.subject.kind == .movie }
 
     /// Rows show their poster and title only in the full diary; on one title's history
     /// the screen's name already says which title every row is.
@@ -90,6 +98,33 @@ final class DiaryViewModel {
 
     func dismissEditor() {
         editor = nil
+        pendingRewatch = nil
+    }
+
+    /// Opens the sheet for a new watch of the scoped movie, dated today and unrated. The
+    /// title snapshot comes from its latest entry, falling back to the screen's title.
+    func beginRewatch() async {
+        guard let scope, canLogRewatch else { return }
+        let latest = try? await context.diary.entries(for: scope.subject).first
+        let name = latest?.title ?? scope.title
+        let title = LogWatchTitle(
+            subject: scope.subject,
+            title: name,
+            releaseYear: latest?.releaseYear,
+            posterPath: latest?.posterPath,
+            listItem: ListItemDraft(
+                id: scope.subject.tmdbID,
+                kind: .movie,
+                title: name,
+                imagePath: latest?.posterPath,
+                releaseDate: nil,
+                genreNames: [],
+                voteAverage: 0,
+                popularity: 0
+            )
+        )
+        pendingRewatch = title
+        editor = .logging(title, currentScore: nil, now: now())
     }
 
     /// Saves the open editor's draft. Success closes the sheet; failure keeps it open.
@@ -102,10 +137,26 @@ final class DiaryViewModel {
         } catch {
             return .failed
         }
+        if session.isNew, let rewatch = pendingRewatch {
+            await putOnWatched(rewatch, on: session.entry(from: draft, now: now(), calendar: calendar).watchedOn)
+        }
         editor = nil
+        pendingRewatch = nil
         context.noteChange()
         await load()
         return .succeeded
+    }
+
+    /// A logged watch means the movie is watched. A movie already on Watched keeps its
+    /// row; a failure is logged and the saved entry stands.
+    private func putOnWatched(_ title: LogWatchTitle, on day: DiaryDay) async {
+        do {
+            _ = try await context.lists.addToWatched(title.listItem, at: day.date(in: calendar))
+        } catch is CancellationError {
+            return
+        } catch {
+            context.logger.error("Logged rewatch was not added to Watched", category: .persistence)
+        }
     }
 
     /// Deletes the entry open in the editor. Failure keeps the sheet open.

@@ -299,6 +299,59 @@ final class DiaryViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.prefersInlineTitle)
     }
 
+    func test_canLogRewatch_onlyOnAMoviesHistory() {
+        let movie = makeViewModel(store: InMemoryDiaryStore(), scope: DiaryScope(subject: .movie(550), title: "Fight Club"))
+        let show = makeViewModel(store: InMemoryDiaryStore(), scope: DiaryScope(subject: .series(7), title: "Show 7"))
+        let diary = makeViewModel(store: InMemoryDiaryStore())
+
+        XCTAssertTrue(movie.canLogRewatch)
+        XCTAssertFalse(show.canLogRewatch)
+        XCTAssertFalse(diary.canLogRewatch)
+    }
+
+    func test_beginRewatch_opensNewUnratedWatchDatedTodayFromLatestSnapshot() async throws {
+        let earlier = DiaryFixtures.entry(subject: .movie(550), title: "Fight Club", score: 9)
+        let viewModel = makeViewModel(
+            store: InMemoryDiaryStore(entries: [earlier]),
+            scope: DiaryScope(subject: .movie(550), title: "Fight Club")
+        )
+
+        await viewModel.beginRewatch()
+
+        let session = try XCTUnwrap(viewModel.editor)
+        XCTAssertTrue(session.isNew)
+        XCTAssertFalse(session.canDelete)
+        XCTAssertNil(session.draft.score)
+        XCTAssertEqual(session.base.subject, .movie(550))
+        XCTAssertEqual(session.base.posterPath, earlier.posterPath)
+        XCTAssertEqual(session.draft.watchedOn, Date(timeIntervalSince1970: 1_792_000_000))
+    }
+
+    func test_saveRewatch_addsSecondEntryAndPutsMovieOnWatched() async throws {
+        let earlier = DiaryFixtures.entry(subject: .movie(550), title: "Fight Club")
+        let store = InMemoryDiaryStore(entries: [earlier])
+        let lists = ListsRepository.empty()
+        let context = DiaryContext(diary: DiaryRepository(store: store, logger: SilentLogger()), lists: lists, logger: SilentLogger())
+        let viewModel = makeViewModel(context: context, scope: DiaryScope(subject: .movie(550), title: "Fight Club"))
+        await viewModel.load()
+        await viewModel.beginRewatch()
+        var draft = try XCTUnwrap(viewModel.editor?.draft)
+        draft.score = 7
+
+        let result = await viewModel.save(draft)
+
+        XCTAssertEqual(result, .succeeded)
+        XCTAssertNil(viewModel.editor)
+        let stored = await store.entries
+        XCTAssertEqual(stored.count, 2)
+        XCTAssertTrue(stored.contains { $0.id == earlier.id })
+        XCTAssertTrue(stored.contains { $0.id != earlier.id && $0.score == 7 })
+        let snapshot = try await lists.snapshot()
+        let watchedID = try XCTUnwrap(snapshot.list(.watched)?.id)
+        XCTAssertTrue(snapshot.entries.contains { $0.listID == watchedID && $0.itemKey == "movie-550" })
+        XCTAssertEqual(loadedMonths(viewModel).flatMap(\.rows).count, 2)
+    }
+
     func test_titleHistory_hidesRowTitlesAndUsesInlineTitle() {
         let viewModel = makeViewModel(
             store: InMemoryDiaryStore(),

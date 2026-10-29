@@ -4,7 +4,8 @@
 //
 //  Every logged watch and TV episode check-off, grouped by month, newest first. Tapping
 //  a logged watch edits it; swipe or the context menu deletes it or opens the title.
-//  An episodes row opens its show, where episodes are marked and unmarked. The column is centered at a
+//  An episodes row opens its show, where episodes are marked and unmarked. A movie's own
+//  history pins a Log a Rewatch button above the list. The column is centered at a
 //  readable width when the screen is wide (see `DiaryLayout`).
 //
 
@@ -39,7 +40,7 @@ struct DiaryView: View {
                     if viewModel.scope == nil {
                         EmptyStateView(
                             title: "No Diary Entries",
-                            message: "Log a watch from any movie or show, or check off an episode, and it shows up here by the day you watched it.",
+                            message: "Mark a movie or an episode watched with its eye, and it shows up here by the day you watched it.",
                             systemImage: "book.closed"
                         )
                     } else {
@@ -61,6 +62,13 @@ struct DiaryView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Pinned above the list (and its empty state) so it is the first thing on a
+        // movie's history, rather than a row that scrolls away.
+        .safeAreaInset(edge: .top, spacing: 0) {
+            if viewModel.canLogRewatch {
+                logRewatchButton
+            }
+        }
         .background(DesignTheme.canvas)
         .onGeometryChange(for: CGFloat.self) { proxy in
             proxy.size.width
@@ -86,6 +94,27 @@ struct DiaryView: View {
         .onChange(of: viewModel.contextRevision) { _, _ in
             Task { await viewModel.load() }
         }
+    }
+
+    /// Full-width, filled button that opens the sheet for a new watch dated today.
+    private var logRewatchButton: some View {
+        Button {
+            Task { await viewModel.beginRewatch() }
+        } label: {
+            Label("Log a Rewatch", systemImage: "arrow.counterclockwise")
+                .font(DesignTypography.section)
+                .foregroundStyle(DesignTheme.accentOnFill)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(DesignTheme.accent)
+        .controlSize(.large)
+        .accessibilityHint("Adds a new watch of this movie, dated today")
+        .frame(maxWidth: DiaryLayout.readableWidth)
+        .padding(.horizontal, DesignSpacing.lg)
+        .padding(.vertical, DesignSpacing.sm)
+        .frame(maxWidth: .infinity)
+        .background(DesignTheme.canvas)
     }
 
     private func list(_ months: [DiaryMonth]) -> some View {

@@ -101,13 +101,13 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
     }
 }
 
-/// The title a "Log a watch" control belongs to.
+/// The title a new diary watch is logged for (a rewatch from a movie's history).
 struct LogWatchTitle: Sendable, Equatable {
     let subject: DiarySubject
     let title: String
     let releaseYear: Int?
     let posterPath: String?
-    /// Snapshot used to put the title on Watched after the first log.
+    /// Snapshot used to put the title on Watched when a watch is logged.
     let listItem: ListItemDraft
 
     init(subject: DiarySubject, title: String, releaseYear: Int?, posterPath: String?, listItem: ListItemDraft) {

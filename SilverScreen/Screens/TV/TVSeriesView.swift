@@ -15,9 +15,11 @@ struct TVSeriesView: View {
     var router: NavigationRouter?
 
     @Environment(ListChangeNotice.self) private var notice
-    /// Told when the series eye or an Undo rewrites episode progress, so the Log a watch
+    /// Told when the series eye or an Undo rewrites episode progress, so the Watch History
     /// card (and an open diary) re-read the episode history it shows.
     @Environment(DiaryContext.self) private var diaryContext: DiaryContext?
+    /// The Watch History card's summary; the card shows only once there is history.
+    @State private var watchHistory: WatchHistoryCardViewModel?
     @Namespace private var heroTransition
     @State private var selectedBackdropID: String?
     @State private var playingTrailer: MediaTrailer?
@@ -107,6 +109,14 @@ struct TVSeriesView: View {
                 await viewModel.load()
             }
         }
+        // Reloads when the show finishes loading and whenever a screen writes the diary.
+        .task(id: WatchHistoryLoadKey(subject: loadedSubject, revision: diaryContext?.revision)) {
+            watchHistory = await WatchHistoryCardViewModel.refreshed(
+                watchHistory,
+                subject: loadedSubject,
+                context: diaryContext
+            )
+        }
         .onAppear {
             // Season page (and series eye) write the watch ledger; refresh badges/Next up on return.
             Task { await viewModel.reloadNextUp() }
@@ -142,6 +152,14 @@ struct TVSeriesView: View {
             }
             .navigationTransition(.zoom(sourceID: selection.initialID, in: heroTransition))
         }
+    }
+
+    /// The show once its details have loaded, for Watch History.
+    private var loadedSubject: DiarySubject? {
+        if case .loaded(let content, _) = viewModel.state {
+            return .series(content.detail.id)
+        }
+        return nil
     }
 
     private var navigationTitle: String {
@@ -216,7 +234,13 @@ struct TVSeriesView: View {
                         userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
                         onEdit: { viewModel.openAnnotationEditor() }
                     )
-                    LogWatchButton(title: LogWatchTitle(series: content.detail), currentScore: content.userScore)
+                    // Episodes are logged with their eyes; the show itself is not logged.
+                    if let watchHistory, watchHistory.hasHistory {
+                        WatchHistoryCard(
+                            viewModel: watchHistory,
+                            route: .titleHistory(kind: .tv, id: content.detail.id, title: content.detail.name)
+                        )
+                    }
                     MediaDescriptionSection(
                         overview: content.detail.overview,
                         note: content.userNote,

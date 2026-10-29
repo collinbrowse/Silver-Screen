@@ -15,7 +15,7 @@
 		86A95F8AED848488DB4E69A8 /* ReelLoaderFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B5D785E849090FF717CEB04 /* ReelLoaderFrame.swift */; };
 		45A138EF08DEE367AF54B55F /* ReelLoaderMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = F917E0A4840596CB3AEEAAFE /* ReelLoaderMotion.swift */; };
 		FFC75DCB06DD8F7F23C02B44 /* DiaryEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650BB0C2EB6D4099886910E1 /* DiaryEntryTests.swift */; };
-		4C55741F9A2DE50D49F01662 /* LogWatchViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02476714651AB893CCAB6D3F /* LogWatchViewModelTests.swift */; };
+		4C55741F9A2DE50D49F01662 /* WatchHistoryCardViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02476714651AB893CCAB6D3F /* WatchHistoryCardViewModelTests.swift */; };
 		6DE5DB92977A2DEBF2E5ACC3 /* DiaryViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5ADABC67BF9955D8F523573 /* DiaryViewModelTests.swift */; };
 		5CC25101B272073620C28D7C /* DiaryRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22899E2AE667CC1109104922 /* DiaryRepositoryTests.swift */; };
 		9C8A7CEDCD98A7B9B78E3851 /* DiaryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF25DCB2CB677BCE2694175A /* DiaryStoreTests.swift */; };
@@ -36,9 +36,9 @@
 		2E707E9C7B252E93913185A7 /* DiaryEpisodeGroupRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5369E293703A5830FD56CE81 /* DiaryEpisodeGroupRow.swift */; };
 		381B1A3FCAEF8C4CBCC55346 /* DiaryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6F212CCC1775F98A5764BBB /* DiaryViewModel.swift */; };
 		9066E2FD78DD3F73E7869CBF /* DiaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F2F118DE08BB189A7CDA97 /* DiaryView.swift */; };
-		CBDF9688926948FFE043FB2E /* LogWatchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89B6846044022C2B46E17F65 /* LogWatchViewModel.swift */; };
-		F0DA800E4B5DDA9C620D60F8 /* LogWatchButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = D16740386C5F6BDBCFABC199 /* LogWatchButton.swift */; };
-		7887C486E3F932EDB368DAC3 /* LogWatchCardRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A99D41940F1BF1E8B100F093 /* LogWatchCardRow.swift */; };
+		CBDF9688926948FFE043FB2E /* WatchHistoryCardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89B6846044022C2B46E17F65 /* WatchHistoryCardViewModel.swift */; };
+		F0DA800E4B5DDA9C620D60F8 /* WatchHistoryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = D16740386C5F6BDBCFABC199 /* WatchHistoryCard.swift */; };
+		7887C486E3F932EDB368DAC3 /* WatchHistoryCardRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A99D41940F1BF1E8B100F093 /* WatchHistoryCardRow.swift */; };
 		SQL000012788B823003D8011 /* SQLiteDatabase.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL000022788B823003D8011 /* SQLiteDatabase.swift */; };
 		SQL000032788B823003D8011 /* LibrarySchema.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL000042788B823003D8011 /* LibrarySchema.swift */; };
 		SQL000052788B823003D8011 /* LibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = SQL000062788B823003D8011 /* LibraryStore.swift */; };
@@ -345,7 +345,7 @@
 		3B5D785E849090FF717CEB04 /* ReelLoaderFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelLoaderFrame.swift; sourceTree = "<group>"; };
 		F917E0A4840596CB3AEEAAFE /* ReelLoaderMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReelLoaderMotion.swift; sourceTree = "<group>"; };
 		650BB0C2EB6D4099886910E1 /* DiaryEntryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryEntryTests.swift; sourceTree = "<group>"; };
-		02476714651AB893CCAB6D3F /* LogWatchViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogWatchViewModelTests.swift; sourceTree = "<group>"; };
+		02476714651AB893CCAB6D3F /* WatchHistoryCardViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchHistoryCardViewModelTests.swift; sourceTree = "<group>"; };
 		A5ADABC67BF9955D8F523573 /* DiaryViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryViewModelTests.swift; sourceTree = "<group>"; };
 		22899E2AE667CC1109104922 /* DiaryRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryRepositoryTests.swift; sourceTree = "<group>"; };
 		AF25DCB2CB677BCE2694175A /* DiaryStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryStoreTests.swift; sourceTree = "<group>"; };
@@ -366,9 +366,9 @@
 		5369E293703A5830FD56CE81 /* DiaryEpisodeGroupRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryEpisodeGroupRow.swift; sourceTree = "<group>"; };
 		B6F212CCC1775F98A5764BBB /* DiaryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryViewModel.swift; sourceTree = "<group>"; };
 		A2F2F118DE08BB189A7CDA97 /* DiaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryView.swift; sourceTree = "<group>"; };
-		89B6846044022C2B46E17F65 /* LogWatchViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogWatchViewModel.swift; sourceTree = "<group>"; };
-		D16740386C5F6BDBCFABC199 /* LogWatchButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogWatchButton.swift; sourceTree = "<group>"; };
-		A99D41940F1BF1E8B100F093 /* LogWatchCardRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogWatchCardRow.swift; sourceTree = "<group>"; };
+		89B6846044022C2B46E17F65 /* WatchHistoryCardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchHistoryCardViewModel.swift; sourceTree = "<group>"; };
+		D16740386C5F6BDBCFABC199 /* WatchHistoryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchHistoryCard.swift; sourceTree = "<group>"; };
+		A99D41940F1BF1E8B100F093 /* WatchHistoryCardRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchHistoryCardRow.swift; sourceTree = "<group>"; };
 		SQL000022788B823003D8011 /* SQLiteDatabase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteDatabase.swift; sourceTree = "<group>"; };
 		SQL000042788B823003D8011 /* LibrarySchema.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySchema.swift; sourceTree = "<group>"; };
 		SQL000062788B823003D8011 /* LibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryStore.swift; sourceTree = "<group>"; };
@@ -693,9 +693,9 @@
 				5369E293703A5830FD56CE81 /* DiaryEpisodeGroupRow.swift */,
 				B6F212CCC1775F98A5764BBB /* DiaryViewModel.swift */,
 				A2F2F118DE08BB189A7CDA97 /* DiaryView.swift */,
-				89B6846044022C2B46E17F65 /* LogWatchViewModel.swift */,
-				D16740386C5F6BDBCFABC199 /* LogWatchButton.swift */,
-				A99D41940F1BF1E8B100F093 /* LogWatchCardRow.swift */,
+				89B6846044022C2B46E17F65 /* WatchHistoryCardViewModel.swift */,
+				D16740386C5F6BDBCFABC199 /* WatchHistoryCard.swift */,
+				A99D41940F1BF1E8B100F093 /* WatchHistoryCardRow.swift */,
 			);
 			path = Diary;
 			sourceTree = "<group>";
@@ -1159,7 +1159,7 @@
 				E2A000362788B823003D8011 /* TVSeasonViewModelTests.swift */,
 				E2A000382788B823003D8011 /* TVEpisodeViewModelTests.swift */,
 				L1B0001E2788B823003D8011 /* LibraryViewModelTests.swift */,
-				02476714651AB893CCAB6D3F /* LogWatchViewModelTests.swift */,
+				02476714651AB893CCAB6D3F /* WatchHistoryCardViewModelTests.swift */,
 				A5ADABC67BF9955D8F523573 /* DiaryViewModelTests.swift */,
 				B10002132788B823003D8011 /* MovieDetailViewModelTests.swift */,
 				B10003192788B823003D8011 /* PersonDetailViewModelTests.swift */,
@@ -1609,9 +1609,9 @@
 				2E707E9C7B252E93913185A7 /* DiaryEpisodeGroupRow.swift in Sources */,
 				381B1A3FCAEF8C4CBCC55346 /* DiaryViewModel.swift in Sources */,
 				9066E2FD78DD3F73E7869CBF /* DiaryView.swift in Sources */,
-				CBDF9688926948FFE043FB2E /* LogWatchViewModel.swift in Sources */,
-				F0DA800E4B5DDA9C620D60F8 /* LogWatchButton.swift in Sources */,
-				7887C486E3F932EDB368DAC3 /* LogWatchCardRow.swift in Sources */,
+				CBDF9688926948FFE043FB2E /* WatchHistoryCardViewModel.swift in Sources */,
+				F0DA800E4B5DDA9C620D60F8 /* WatchHistoryCard.swift in Sources */,
+				7887C486E3F932EDB368DAC3 /* WatchHistoryCardRow.swift in Sources */,
 				L1B000212788B823003D8011 /* LibraryListArtwork.swift in Sources */,
 				L1B000232788B823003D8011 /* LibraryListCoverView.swift in Sources */,
 				L1B000152788B823003D8011 /* LibraryHomeViewModel.swift in Sources */,
@@ -1680,7 +1680,7 @@
 				06C75927AEFBD1C860D3EB6A /* AnalyticsEventsTests.swift in Sources */,
 				TW0000122788B823003D8011 /* TVWatchRepositoryTests.swift in Sources */,
 				L1B0001D2788B823003D8011 /* LibraryViewModelTests.swift in Sources */,
-				4C55741F9A2DE50D49F01662 /* LogWatchViewModelTests.swift in Sources */,
+				4C55741F9A2DE50D49F01662 /* WatchHistoryCardViewModelTests.swift in Sources */,
 				6DE5DB92977A2DEBF2E5ACC3 /* DiaryViewModelTests.swift in Sources */,
 				LC0000022788B823003D8011 /* ListChangeNoticeTests.swift in Sources */,
 				WT0000082788B823003D8011 /* TVWatchConfirmTests.swift in Sources */,
