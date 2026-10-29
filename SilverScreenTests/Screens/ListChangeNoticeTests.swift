@@ -164,6 +164,56 @@ final class ListChangeNoticeTests: XCTestCase {
         XCTAssertEqual(notice.message, "Added to In Progress")
     }
 
+    func test_dismiss_clearsBannerAndUndo() async throws {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        let notice = ListChangeNotice(annotations: annotations)
+        let draft = ListItemDraft(
+            id: 15,
+            kind: .movie,
+            title: "Heat",
+            imagePath: nil,
+            releaseDate: nil,
+            genreNames: [],
+            voteAverage: 0,
+            popularity: 0
+        )
+        let change = try await lists.addToWatched(draft)
+        notice.show(change, using: lists)
+        await waitForRatingKey(notice)
+
+        notice.dismiss()
+
+        XCTAssertNil(notice.message)
+        XCTAssertNil(notice.ratingKey)
+        XCTAssertFalse(notice.canUndo)
+    }
+
+    func test_dismiss_whileRatingSheetOpen_keepsBanner() async throws {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        let notice = ListChangeNotice(annotations: annotations)
+        let draft = ListItemDraft(
+            id: 7,
+            kind: .tv,
+            title: "Severance",
+            imagePath: nil,
+            releaseDate: nil,
+            genreNames: [],
+            voteAverage: 0,
+            popularity: 0
+        )
+        let change = try await lists.addToInProgress(draft)
+        notice.show(change, using: lists)
+        await waitForRatingKey(notice)
+        await notice.openRatingEditor()
+
+        notice.dismiss()
+
+        XCTAssertNotNil(notice.annotationEditor)
+        XCTAssertEqual(notice.message, "Added to In Progress")
+    }
+
     func test_presentWatch_withoutMembership_offersEpisodeRatingAndLedgerUndo() async throws {
         let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
         let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())

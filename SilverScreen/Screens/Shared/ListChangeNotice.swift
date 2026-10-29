@@ -314,6 +314,14 @@ final class ListChangeNotice {
         }
     }
 
+    /// Drops the toast when the person leaves the screen it was about, e.g. by switching
+    /// tabs, so Undo never shows next to unrelated content. A rating sheet opened from
+    /// the toast keeps it until that sheet closes.
+    func dismiss() {
+        guard message != nil, annotationEditor == nil else { return }
+        clear()
+    }
+
     private func clear() {
         generation += 1
         message = nil

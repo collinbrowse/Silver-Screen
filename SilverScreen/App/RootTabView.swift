@@ -99,6 +99,10 @@ struct RootTabView: View {
             .environment(listChanges)
             .environment(tour)
             // The list-change banner is hosted by each tab; see `ListChangeBannerHost`.
+            // Its Undo is about the tab it appeared on, so leaving that tab drops it.
+            .onChange(of: router.selectedTab) { _, _ in
+                listChanges.dismiss()
+            }
             // Over the tab bar and any pushed screen, under sheets.
             .overlay {
                 if tour.isActive {
