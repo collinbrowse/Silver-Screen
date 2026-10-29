@@ -14,7 +14,8 @@ struct DiaryEntryDraft: Sendable, Equatable {
     var watchedOn: Date
     var score: Double?
     var review: String
-    /// Comma-separated, the way Letterboxd writes tags.
+    /// Comma-separated, the way Letterboxd writes tags. The sheet has no field for it; it
+    /// carries an imported entry's tags through an edit so saving does not drop them.
     var tagsText: String
 }
 

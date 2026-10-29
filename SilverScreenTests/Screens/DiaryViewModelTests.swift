@@ -115,6 +115,21 @@ final class DiaryViewModelTests: XCTestCase {
         XCTAssertEqual(loadedMonths(viewModel).map(\.id), ["2026-09"])
     }
 
+    func test_save_editedImportedEntry_keepsItsTags() async throws {
+        let entry = DiaryFixtures.entry(score: 6, tags: ["festival", "with:mom"])
+        let store = InMemoryDiaryStore(entries: [entry])
+        let viewModel = makeViewModel(store: store)
+        await viewModel.load()
+        viewModel.edit(try XCTUnwrap(loadedMonths(viewModel).first?.rows.first))
+        var draft = try XCTUnwrap(viewModel.editor?.draft)
+        draft.review = "Better the second time."
+
+        _ = await viewModel.save(draft)
+
+        let stored = await store.entries
+        XCTAssertEqual(stored.first?.tags, ["festival", "with:mom"])
+    }
+
     func test_save_whenStoreFails_keepsEditorOpen() async throws {
         let store = InMemoryDiaryStore(entries: [DiaryFixtures.entry()])
         let viewModel = makeViewModel(store: store)
