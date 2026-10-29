@@ -47,8 +47,13 @@ struct DiaryEntryRow: View {
                     .fixedSize(horizontal: false, vertical: true)
                 }
 
-                if row.ratingText != nil || row.isRewatch {
+                if row.ratingText != nil || row.isRewatch || row.episodeText != nil {
                     HStack(spacing: DesignSpacing.sm) {
+                        // Which episode, for an episode rewatch; same mark as an episodes row.
+                        if let episode = row.episodeText {
+                            DiaryIconText(text: episode, systemImage: "tv")
+                                .foregroundStyle(DesignTheme.textSecondary)
+                        }
                         if let rating = row.ratingText {
                             DiaryIconText(text: rating, systemImage: "star.fill")
                                 .foregroundStyle(DesignTheme.accent)

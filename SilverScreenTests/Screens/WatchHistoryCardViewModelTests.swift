@@ -62,6 +62,19 @@ final class WatchHistoryCardViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.summary, "2 episodes watched · last Oct 16, 2026")
     }
 
+    func test_load_seriesWithEpisodeRewatch_stillSummarizesByEpisodes() async {
+        let store = InMemoryDiaryStore(
+            entries: [DiaryFixtures.entry(subject: .episode(seriesID: 42, season: 1, episode: 2))],
+            episodeWatches: [episodeWatch(series: 42, episode: 1, at: now), episodeWatch(series: 42, episode: 2, at: now)]
+        )
+        let viewModel = makeViewModel(store: store, subject: .series(42))
+
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.watchCount, 1)
+        XCTAssertEqual(viewModel.summary, "2 episodes watched · last Oct 16, 2026")
+    }
+
     func test_load_movie_ignoresEpisodeHistory() async {
         let store = InMemoryDiaryStore(episodeWatches: [episodeWatch(series: 550, episode: 1, at: now)])
         let viewModel = makeViewModel(store: store)

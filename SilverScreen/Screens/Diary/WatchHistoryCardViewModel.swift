@@ -72,8 +72,14 @@ final class WatchHistoryCardViewModel {
             let episodes = try await episodeWatches()
             watchCount = entries.count
             episodeCount = episodes.count
-            summary = Self.summary(for: entries, calendar: calendar, locale: locale)
-                ?? Self.episodesSummary(for: episodes, calendar: calendar, locale: locale)
+            // A show reads by its episodes; its diary entries (episode rewatches, an
+            // imported whole-series log) only speak when nothing was checked off.
+            if subject.kind == .tv {
+                summary = Self.episodesSummary(for: episodes, calendar: calendar, locale: locale)
+                    ?? Self.summary(for: entries, calendar: calendar, locale: locale)
+            } else {
+                summary = Self.summary(for: entries, calendar: calendar, locale: locale)
+            }
         } catch is CancellationError {
             return
         } catch {

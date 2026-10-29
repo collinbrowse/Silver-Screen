@@ -45,6 +45,8 @@ final class DiaryContext {
     /// Saves `entry`. When it has a score and is now the title's newest watch, that score
     /// also becomes the title's rating, the way Letterboxd's film rating follows your
     /// latest log. Older watches keep their own scores and never change the title's.
+    /// An episode entry sets that episode's rating, never the series'; "newest" compares
+    /// only entries for the exact same subject.
     /// An unrated watch leaves the title's rating alone. If only the rating copy fails,
     /// it is logged and the saved entry stands.
     @discardableResult
@@ -52,7 +54,8 @@ final class DiaryContext {
         let saved = try await diary.save(entry)
         guard let score = saved.score, let annotations else { return saved }
         do {
-            guard try await diary.entries(for: saved.subject).first?.id == saved.id else { return saved }
+            let sameSubject = try await diary.entries(for: saved.subject).filter { $0.subject == saved.subject }
+            guard sameSubject.first?.id == saved.id else { return saved }
             _ = try await annotations.saveScore(score, for: Self.annotationKey(for: saved.subject))
         } catch is CancellationError {
             throw CancellationError()
@@ -67,6 +70,9 @@ final class DiaryContext {
     }
 
     private static func annotationKey(for subject: DiarySubject) -> AnnotationKey {
-        subject.kind == .tv ? .series(subject.tmdbID) : .movie(subject.tmdbID)
+        if let episode = subject.episode {
+            return .episode(seriesID: subject.tmdbID, seasonNumber: episode.seasonNumber, episodeNumber: episode.episodeNumber)
+        }
+        return subject.kind == .tv ? .series(subject.tmdbID) : .movie(subject.tmdbID)
     }
 }

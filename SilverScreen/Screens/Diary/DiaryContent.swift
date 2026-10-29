@@ -70,6 +70,8 @@ struct DiaryRow: Sendable, Equatable, Identifiable {
     /// "8.0"; nil when the watch is unrated.
     let ratingText: String?
     let reviewExcerpt: String?
+    /// "S2 · E3" for an episode entry (an episode rewatch); nil for a movie or series.
+    let episodeText: String?
     /// One sentence for VoiceOver, e.g. "Dune, 2021. Watched Thursday, October 16, 2026. Rated 8.0 out of 10. Rewatch."
     let accessibilityLabel: String
 
@@ -89,7 +91,7 @@ enum DiaryContent {
         calendar: Calendar = .current,
         locale: Locale = .current
     ) -> [DiaryMonth] {
-        let rewatches = rewatchIDs(in: entries)
+        let rewatches = rewatchIDs(in: entries, episodes: episodes, calendar: calendar)
         let entryItems = DiaryRepository.sorted(entries).map { entry in
             let entryRow = row(for: entry, isRewatch: rewatches.contains(entry.id), calendar: calendar, locale: locale)
             return (day: entry.watchedOn, time: entry.loggedAt, item: DiaryItem.entry(entryRow))
@@ -198,13 +200,30 @@ enum DiaryContent {
 
     /// Entries that count as rewatches: every watch of a title after its earliest one,
     /// plus any entry stored as a rewatch (a Letterboxd import keeps its own flag, which
-    /// covers a first log of something seen before the app). Nothing is switched by hand.
-    static func rewatchIDs(in entries: [DiaryEntry]) -> Set<UUID> {
+    /// covers a first log of something seen before the app). An episode entry is also a
+    /// rewatch when that episode was checked off on or before its day, since the check-off
+    /// was the first viewing. Nothing is switched by hand.
+    static func rewatchIDs(
+        in entries: [DiaryEntry],
+        episodes: [EpisodeWatch] = [],
+        calendar: Calendar = .current
+    ) -> Set<UUID> {
+        var firstCheckOff: [DiarySubject: DiaryDay] = [:]
+        for watch in episodes {
+            let subject = DiarySubject.episode(
+                seriesID: watch.seriesID,
+                season: watch.episode.seasonNumber,
+                episode: watch.episode.episodeNumber
+            )
+            let day = DiaryDay(watch.completedAt, calendar: calendar)
+            firstCheckOff[subject] = min(firstCheckOff[subject] ?? day, day)
+        }
         let earliestFirst = DiaryRepository.sorted(entries).reversed()
         var seen = Set<DiarySubject>()
         var result = Set<UUID>()
         for entry in earliestFirst {
-            if !seen.insert(entry.subject).inserted || entry.isRewatch {
+            let checkedOffEarlier = firstCheckOff[entry.subject].map { $0 <= entry.watchedOn } ?? false
+            if !seen.insert(entry.subject).inserted || entry.isRewatch || checkedOffEarlier {
                 result.insert(entry.id)
             }
         }
@@ -226,8 +245,12 @@ enum DiaryContent {
         )
         let yearText = entry.releaseYear.map(String.init)
         let ratingText = entry.score.map { String(format: "%.1f", $0) }
+        let episodeText = entry.subject.episode.map { episodesText([$0]) }
 
         var spoken = [yearText.map { "\(entry.title), \($0)" } ?? entry.title]
+        if let episode = entry.subject.episode {
+            spoken.append("Season \(episode.seasonNumber), episode \(episode.episodeNumber)")
+        }
         spoken.append("Watched \(spokenDay)")
         if let score = entry.score {
             spoken.append(String(format: "Rated %.1f out of 10", score))
@@ -246,6 +269,7 @@ enum DiaryContent {
             yearText: yearText,
             ratingText: ratingText,
             reviewExcerpt: entry.review,
+            episodeText: episodeText,
             accessibilityLabel: spoken.joined(separator: ". ") + ".",
             isRewatch: isRewatch
         )

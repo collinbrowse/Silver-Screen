@@ -486,6 +486,29 @@ final class DiaryContextRatingTests: XCTestCase {
         XCTAssertEqual(rating?.score, 9)
     }
 
+    func test_save_ratedEpisodeRewatch_setsEpisodeRatingNotSeries() async throws {
+        let (context, annotations) = makeContext(entries: [DiaryFixtures.entry(subject: .series(42))])
+        _ = try await annotations.saveScore(6, for: .series(42))
+
+        try await context.save(DiaryFixtures.entry(subject: .episode(seriesID: 42, season: 2, episode: 3), score: 9.5))
+
+        let episode = try await annotations.annotation(for: .episode(seriesID: 42, seasonNumber: 2, episodeNumber: 3))
+        let series = try await annotations.annotation(for: .series(42))
+        XCTAssertEqual(episode?.score, 9.5)
+        XCTAssertEqual(series?.score, 6)
+    }
+
+    func test_save_ratedSeriesEntry_isNewestEvenWithANewerEpisodeEntry() async throws {
+        let (context, annotations) = makeContext(entries: [
+            DiaryFixtures.entry(subject: .episode(seriesID: 42, season: 1, episode: 1), watchedOn: DiaryDay(year: 2026, month: 12, day: 1)),
+        ])
+
+        try await context.save(DiaryFixtures.entry(subject: .series(42), score: 7))
+
+        let series = try await annotations.annotation(for: .series(42))
+        XCTAssertEqual(series?.score, 7)
+    }
+
     private func makeContext(entries: [DiaryEntry]) -> (DiaryContext, AnnotationsRepository) {
         let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
         let context = DiaryContext(
@@ -495,6 +518,76 @@ final class DiaryContextRatingTests: XCTestCase {
             annotations: annotations
         )
         return (context, annotations)
+    }
+}
+
+/// Episode rewatches: their own diary rows, badged Rewatch after the episode's check-off.
+final class DiaryEpisodeRewatchContentTests: XCTestCase {
+    private let utc = DiaryFixtures.utcCalendar
+
+    func test_rewatchIDs_episodeCheckedOffEarlier_isRewatch() {
+        let entry = DiaryFixtures.entry(
+            subject: .episode(seriesID: 42, season: 2, episode: 3),
+            watchedOn: DiaryDay(year: 2026, month: 10, day: 20)
+        )
+        let checkOff = episodeWatch(series: 42, season: 2, episode: 3, at: "2026-10-01T20:00:00.000Z")
+
+        let ids = DiaryContent.rewatchIDs(in: [entry], episodes: [checkOff], calendar: utc)
+
+        XCTAssertEqual(ids, [entry.id])
+    }
+
+    func test_rewatchIDs_episodeNeverCheckedOff_firstEntryIsNotRewatch() {
+        let entry = DiaryFixtures.entry(subject: .episode(seriesID: 42, season: 2, episode: 3))
+        let otherEpisode = episodeWatch(series: 42, season: 2, episode: 4, at: "2026-10-01T20:00:00.000Z")
+
+        let ids = DiaryContent.rewatchIDs(in: [entry], episodes: [otherEpisode], calendar: utc)
+
+        XCTAssertTrue(ids.isEmpty)
+    }
+
+    func test_rewatchIDs_episodeCheckedOffLater_firstEntryIsNotRewatch() {
+        let entry = DiaryFixtures.entry(
+            subject: .episode(seriesID: 42, season: 2, episode: 3),
+            watchedOn: DiaryDay(year: 2026, month: 10, day: 1)
+        )
+        let checkOff = episodeWatch(series: 42, season: 2, episode: 3, at: "2026-10-20T20:00:00.000Z")
+
+        let ids = DiaryContent.rewatchIDs(in: [entry], episodes: [checkOff], calendar: utc)
+
+        XCTAssertTrue(ids.isEmpty)
+    }
+
+    func test_months_episodeEntry_getsItsOwnRowBesideThatDaysEpisodesRow() {
+        let entry = DiaryFixtures.entry(
+            subject: .episode(seriesID: 42, season: 2, episode: 3),
+            title: "Severance",
+            watchedOn: DiaryDay(year: 2026, month: 10, day: 16),
+            score: 9
+        )
+        let checkOff = episodeWatch(series: 42, season: 2, episode: 3, at: "2026-10-16T18:00:00.000Z")
+
+        let months = DiaryContent.months(from: [entry], episodes: [checkOff], calendar: utc, locale: Locale(identifier: "en_US"))
+
+        let rows = months.flatMap(\.rows)
+        XCTAssertEqual(rows.count, 1)
+        XCTAssertEqual(rows.first?.title, "Severance")
+        XCTAssertEqual(rows.first?.episodeText, "S2 · E3")
+        XCTAssertEqual(rows.first?.isRewatch, true)
+        XCTAssertEqual(months.flatMap(\.items).count, 2)
+        XCTAssertTrue(rows.first?.accessibilityLabel.contains("Season 2, episode 3") == true)
+    }
+
+    private func episodeWatch(series: Int, season: Int, episode: Int, at iso: String) -> EpisodeWatch {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return EpisodeWatch(
+            seriesID: series,
+            seriesTitle: "Show \(series)",
+            posterPath: nil,
+            episode: TVEpisodeRef(seasonNumber: season, episodeNumber: episode),
+            completedAt: formatter.date(from: iso)!
+        )
     }
 }
 
