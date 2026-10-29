@@ -18,6 +18,7 @@ struct DiaryScope: Sendable, Equatable {
 /// Diary dependencies plus a change counter. Any screen that writes an entry calls
 /// `noteChange()`, and any screen that shows entries reloads when `revision` moves, so
 /// a watch logged on a movie appears in an open diary (and the reverse).
+/// Screens save entries through `save(_:)` so the title's rating follows its newest watch.
 @Observable
 @MainActor
 final class DiaryContext {
@@ -25,15 +26,47 @@ final class DiaryContext {
     /// Logging a watch also puts the title on Watched.
     let lists: ListsRepository
     let logger: any AppLogging
+    /// The title ratings a newest watch's score is copied to. Nil in tests that skip it.
+    let annotations: AnnotationsRepository?
     private(set) var revision = 0
 
-    init(diary: DiaryRepository, lists: ListsRepository, logger: any AppLogging) {
+    init(
+        diary: DiaryRepository,
+        lists: ListsRepository,
+        logger: any AppLogging,
+        annotations: AnnotationsRepository? = nil
+    ) {
         self.diary = diary
         self.lists = lists
         self.logger = logger
+        self.annotations = annotations
+    }
+
+    /// Saves `entry`. When it has a score and is now the title's newest watch, that score
+    /// also becomes the title's rating, the way Letterboxd's film rating follows your
+    /// latest log. Older watches keep their own scores and never change the title's.
+    /// An unrated watch leaves the title's rating alone. If only the rating copy fails,
+    /// it is logged and the saved entry stands.
+    @discardableResult
+    func save(_ entry: DiaryEntry) async throws -> DiaryEntry {
+        let saved = try await diary.save(entry)
+        guard let score = saved.score, let annotations else { return saved }
+        do {
+            guard try await diary.entries(for: saved.subject).first?.id == saved.id else { return saved }
+            _ = try await annotations.saveScore(score, for: Self.annotationKey(for: saved.subject))
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            logger.error("Newest watch's rating was not copied to the title", category: .persistence)
+        }
+        return saved
     }
 
     func noteChange() {
         revision += 1
+    }
+
+    private static func annotationKey(for subject: DiarySubject) -> AnnotationKey {
+        subject.kind == .tv ? .series(subject.tmdbID) : .movie(subject.tmdbID)
     }
 }

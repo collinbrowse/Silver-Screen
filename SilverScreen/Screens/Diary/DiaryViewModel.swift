@@ -131,7 +131,7 @@ final class DiaryViewModel {
     func save(_ draft: DiaryEntryDraft) async -> AnnotationEditorWriteResult {
         guard let session = editor else { return .cancelled }
         do {
-            try await context.diary.save(session.entry(from: draft, now: now(), calendar: calendar))
+            try await context.save(session.entry(from: draft, now: now(), calendar: calendar))
         } catch is CancellationError {
             return .cancelled
         } catch {

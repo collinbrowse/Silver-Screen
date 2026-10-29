@@ -105,6 +105,10 @@ struct MovieDetailView: View {
                 context: diaryContext
             )
         }
+        // A rated newest watch also sets the movie's rating, so the rating card re-reads it.
+        .onChange(of: diaryContext?.revision) { _, _ in
+            Task { await viewModel.reloadPersonalDetail() }
+        }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
         .sheet(item: annotationEditorBinding) { session in
             AnnotationEditorSheet(

@@ -353,7 +353,7 @@ final class ListChangeNotice {
     func saveDiaryEntry(_ draft: DiaryEntryDraft) async -> AnnotationEditorWriteResult {
         guard let session = diaryEditor, let diary else { return .failed }
         do {
-            loggedWatch = try await diary.diary.save(session.entry(from: draft, now: Date()))
+            loggedWatch = try await diary.save(session.entry(from: draft, now: Date()))
         } catch is CancellationError {
             return .cancelled
         } catch {

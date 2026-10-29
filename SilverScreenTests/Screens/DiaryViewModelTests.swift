@@ -447,6 +447,74 @@ final class DiaryViewModelTests: XCTestCase {
     }
 }
 
+/// The title's rating follows its newest watch, the way Letterboxd's film rating does.
+@MainActor
+final class DiaryContextRatingTests: XCTestCase {
+    func test_save_ratedNewestWatch_setsTitleRating() async throws {
+        let (context, annotations) = makeContext(entries: [
+            DiaryFixtures.entry(subject: .movie(550), watchedOn: DiaryDay(year: 2026, month: 1, day: 1)),
+        ])
+
+        try await context.save(DiaryFixtures.entry(subject: .movie(550), watchedOn: DiaryDay(year: 2026, month: 10, day: 1), score: 7.5))
+
+        let rating = try await annotations.annotation(for: .movie(550))
+        XCTAssertEqual(rating?.score, 7.5)
+    }
+
+    func test_save_ratedOlderWatch_leavesTitleRating() async throws {
+        let (context, annotations) = makeContext(entries: [
+            DiaryFixtures.entry(subject: .movie(550), watchedOn: DiaryDay(year: 2026, month: 10, day: 1)),
+        ])
+        _ = try await annotations.saveScore(9, for: .movie(550))
+
+        try await context.save(DiaryFixtures.entry(subject: .movie(550), watchedOn: DiaryDay(year: 2024, month: 5, day: 1), score: 4))
+
+        let rating = try await annotations.annotation(for: .movie(550))
+        XCTAssertEqual(rating?.score, 9)
+    }
+
+    func test_save_unratedNewestWatch_leavesTitleRating() async throws {
+        let (context, annotations) = makeContext(entries: [])
+        _ = try await annotations.saveScore(8, for: .movie(550))
+
+        try await context.save(DiaryFixtures.entry(subject: .movie(550), score: nil))
+
+        let rating = try await annotations.annotation(for: .movie(550))
+        XCTAssertEqual(rating?.score, 8)
+    }
+
+    func test_save_keepsTitleNote() async throws {
+        let (context, annotations) = makeContext(entries: [])
+        _ = try await annotations.save(score: 6, note: "Rewatch with friends", for: .movie(550))
+
+        try await context.save(DiaryFixtures.entry(subject: .movie(550), score: 8.5))
+
+        let rating = try await annotations.annotation(for: .movie(550))
+        XCTAssertEqual(rating?.score, 8.5)
+        XCTAssertEqual(rating?.note, "Rewatch with friends")
+    }
+
+    func test_save_ratedShowWatch_setsSeriesRating() async throws {
+        let (context, annotations) = makeContext(entries: [])
+
+        try await context.save(DiaryFixtures.entry(subject: .series(42), score: 9))
+
+        let rating = try await annotations.annotation(for: .series(42))
+        XCTAssertEqual(rating?.score, 9)
+    }
+
+    private func makeContext(entries: [DiaryEntry]) -> (DiaryContext, AnnotationsRepository) {
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        let context = DiaryContext(
+            diary: DiaryRepository(store: InMemoryDiaryStore(entries: entries), logger: SilentLogger()),
+            lists: ListsRepository.empty(),
+            logger: SilentLogger(),
+            annotations: annotations
+        )
+        return (context, annotations)
+    }
+}
+
 final class DiaryEpisodesTextTests: XCTestCase {
     private func refs(_ pairs: [(Int, Int)]) -> [TVEpisodeRef] {
         pairs.map { TVEpisodeRef(seasonNumber: $0.0, episodeNumber: $0.1) }

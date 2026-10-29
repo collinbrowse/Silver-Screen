@@ -261,6 +261,15 @@ final class MovieDetailViewModel {
         relatedUserScores = related
     }
 
+    /// Re-reads the movie's rating and note after something outside this screen may have
+    /// changed them, such as a rated diary watch. Leaves the screen as is on failure.
+    func reloadPersonalDetail() async {
+        guard case .loaded = state, let personal = try? await personalDetail(), personal.activity == .none else {
+            return
+        }
+        apply(personal.detail)
+    }
+
     private func apply(_ personal: PersonalDetail) {
         guard case .loaded(let content, let activity) = state else { return }
         state = .loaded(content.withPersonal(personal), activity: AnnotationActivity.afterSuccess(activity))

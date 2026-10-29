@@ -65,7 +65,7 @@ struct DiaryEntryEditorSheet: View {
                         .disabled(isSaving)
                     }
                 } footer: {
-                    Text("This rating is for this watch. Your rating for the title stays as it is.")
+                    Text("Your newest watch's rating is also your rating for this title. Rating an older watch leaves it as it is.")
                 }
 
                 Section("Review") {
