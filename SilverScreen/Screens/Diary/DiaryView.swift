@@ -68,7 +68,11 @@ struct DiaryView: View {
             availableWidth = width
         }
         .navigationTitle(viewModel.navigationTitle)
-        .toolbarTitleDisplayMode(.inlineLarge)
+        // Inline when the column is centered on a wide screen: a large title stays at the
+        // leading edge and no longer lines up with the rows.
+        .toolbarTitleDisplayMode(
+            viewModel.prefersInlineTitle || layout.horizontalMargin > 0 ? .inline : .inlineLarge
+        )
         .sheet(item: editorBinding) { session in
             DiaryEntryEditorSheet(
                 session: session,
@@ -94,7 +98,12 @@ struct DiaryView: View {
                                 Button {
                                     viewModel.edit(row)
                                 } label: {
-                                    DiaryEntryRow(row: row, layout: layout, imageLoader: imageLoader)
+                                    DiaryEntryRow(
+                                        row: row,
+                                        layout: layout,
+                                        imageLoader: imageLoader,
+                                        showsTitle: viewModel.showsRowTitles
+                                    )
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityHint("Edits this entry")
@@ -144,7 +153,12 @@ struct DiaryView: View {
                                         }
                                     }
                                 } else {
-                                    DiaryEpisodeGroupRow(group: group, layout: layout, imageLoader: imageLoader)
+                                    DiaryEpisodeGroupRow(
+                                        group: group,
+                                        layout: layout,
+                                        imageLoader: imageLoader,
+                                        showsTitle: viewModel.showsRowTitles
+                                    )
                                 }
                         }
                     }

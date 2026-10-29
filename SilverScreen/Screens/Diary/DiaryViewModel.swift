@@ -48,6 +48,14 @@ final class DiaryViewModel {
     /// opened from that title.
     var showsTitleLinks: Bool { scope == nil }
 
+    /// Rows show their poster and title only in the full diary; on one title's history
+    /// the screen's name already says which title every row is.
+    var showsRowTitles: Bool { scope == nil }
+
+    /// A title's name can be long, so its history uses the smaller inline title instead
+    /// of a large one that truncates.
+    var prefersInlineTitle: Bool { scope != nil }
+
     func load() async {
         switch state {
             case .loaded(let months, _):

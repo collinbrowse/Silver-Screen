@@ -12,50 +12,57 @@ struct DiaryEntryRow: View {
     let row: DiaryRow
     let layout: DiaryLayout
     let imageLoader: ImageLoader
+    /// False on one title's history, where every row would repeat the same poster and
+    /// title as the screen's name.
+    var showsTitle = true
 
     var body: some View {
         HStack(alignment: .top, spacing: DesignSpacing.md) {
             DiaryDayColumn(weekday: row.weekday, dayNumber: row.dayNumber)
 
-            RemoteImageView(
-                path: row.entry.posterPath,
-                kind: .poster,
-                width: layout.posterWidth,
-                aspectRatio: 2 / 3,
-                imageLoader: imageLoader,
-                placeholderSystemImage: row.entry.subject.kind == .tv ? "tv" : "film",
-                cornerRadius: DesignSpacing.sm
-            )
+            if showsTitle {
+                RemoteImageView(
+                    path: row.entry.posterPath,
+                    kind: .poster,
+                    width: layout.posterWidth,
+                    aspectRatio: 2 / 3,
+                    imageLoader: imageLoader,
+                    placeholderSystemImage: row.entry.subject.kind == .tv ? "tv" : "film",
+                    cornerRadius: DesignSpacing.sm
+                )
+            }
 
             VStack(alignment: .leading, spacing: DesignSpacing.xs) {
-                HStack(alignment: .firstTextBaseline, spacing: DesignSpacing.xs) {
-                    Text(row.title)
-                        .font(DesignTypography.section)
-                        .foregroundStyle(DesignTheme.textPrimary)
-                    if let year = row.yearText {
-                        Text(year)
-                            .font(DesignTypography.metadata)
-                            .foregroundStyle(DesignTheme.textSecondary)
+                if showsTitle {
+                    HStack(alignment: .firstTextBaseline, spacing: DesignSpacing.xs) {
+                        Text(row.title)
+                            .font(DesignTypography.section)
+                            .foregroundStyle(DesignTheme.textPrimary)
+                        if let year = row.yearText {
+                            Text(year)
+                                .font(DesignTypography.metadata)
+                                .foregroundStyle(DesignTheme.textSecondary)
+                        }
                     }
+                    .fixedSize(horizontal: false, vertical: true)
                 }
-                .fixedSize(horizontal: false, vertical: true)
 
                 if row.ratingText != nil || row.isRewatch {
                     HStack(spacing: DesignSpacing.sm) {
                         if let rating = row.ratingText {
-                            HStack(spacing: 2) {
-                                Image(systemName: "star.fill")
-                                Text(rating)
-                            }
-                            .font(DesignTypography.chip)
-                            .foregroundStyle(DesignTheme.accent)
+                            DiaryIconText(text: rating, systemImage: "star.fill")
+                                .foregroundStyle(DesignTheme.accent)
                         }
                         if row.isRewatch {
-                            Label("Rewatch", systemImage: "arrow.counterclockwise")
-                                .font(DesignTypography.chip)
+                            DiaryIconText(text: "Rewatch", systemImage: "arrow.counterclockwise")
                                 .foregroundStyle(DesignTheme.textSecondary)
                         }
                     }
+                } else if !showsTitle && row.reviewExcerpt == nil && row.tagsText == nil {
+                    // Without the title, a bare unrated watch would leave the row empty.
+                    Text("No rating")
+                        .font(DesignTypography.chip)
+                        .foregroundStyle(DesignTheme.textMuted)
                 }
 
                 if let review = row.reviewExcerpt {
@@ -76,6 +83,8 @@ struct DiaryEntryRow: View {
         }
         .padding(.vertical, DesignSpacing.xs)
         .contentShape(Rectangle())
+        // Every diary divider starts at the row's edge; by default it follows the first text, which differs row to row.
+        .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(row.accessibilityLabel)
     }

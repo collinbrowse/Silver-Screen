@@ -280,6 +280,18 @@ final class DiaryViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.navigationTitle, "Diary")
         XCTAssertTrue(viewModel.showsTitleLinks)
+        XCTAssertTrue(viewModel.showsRowTitles)
+        XCTAssertFalse(viewModel.prefersInlineTitle)
+    }
+
+    func test_titleHistory_hidesRowTitlesAndUsesInlineTitle() {
+        let viewModel = makeViewModel(
+            store: InMemoryDiaryStore(),
+            scope: DiaryScope(subject: .movie(550), title: "Spider-Man: Brand New Day")
+        )
+
+        XCTAssertFalse(viewModel.showsRowTitles)
+        XCTAssertTrue(viewModel.prefersInlineTitle)
     }
 
     func test_load_laterWatchOfSameTitle_isRewatchAutomatically() async {
