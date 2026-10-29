@@ -64,10 +64,20 @@ struct DiaryDay: Sendable, Hashable, Comparable, Codable {
     }
 }
 
-/// The title a diary entry is about. People cannot be logged.
+/// The title a diary entry is about: a movie, a whole series, or one episode of a
+/// series (an episode rewatch). People cannot be logged.
 struct DiarySubject: Sendable, Hashable {
     let kind: ListItemKind
+    /// The movie, or the series an episode belongs to.
     let tmdbID: Int
+    /// Set only for an episode entry; nil for a movie or a whole series.
+    let episode: TVEpisodeRef?
+
+    init(kind: ListItemKind, tmdbID: Int, episode: TVEpisodeRef? = nil) {
+        self.kind = kind
+        self.tmdbID = tmdbID
+        self.episode = episode
+    }
 
     static func movie(_ id: Int) -> DiarySubject {
         DiarySubject(kind: .movie, tmdbID: id)
@@ -75,6 +85,17 @@ struct DiarySubject: Sendable, Hashable {
 
     static func series(_ id: Int) -> DiarySubject {
         DiarySubject(kind: .tv, tmdbID: id)
+    }
+
+    static func episode(seriesID: Int, season: Int, episode: Int) -> DiarySubject {
+        DiarySubject(kind: .tv, tmdbID: seriesID, episode: TVEpisodeRef(seasonNumber: season, episodeNumber: episode))
+    }
+
+    /// Whether `other` belongs on this subject's watch history: the same title, and for an
+    /// episode subject the same episode. A series' history includes its episode entries.
+    func contains(_ other: DiarySubject) -> Bool {
+        guard kind == other.kind, tmdbID == other.tmdbID else { return false }
+        return episode == nil || episode == other.episode
     }
 
     /// Same key the lists use (`movie-550`), so a diary row can join to a list entry.

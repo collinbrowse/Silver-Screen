@@ -34,7 +34,7 @@ final class DiaryStoreTests: XCTestCase {
 
         let db = try SQLiteDatabase(fileURL: databaseURL())
         defer { db.close() }
-        XCTAssertEqual(try db.scalarInt("SELECT MAX(version) FROM schema_migrations;"), 4)
+        XCTAssertEqual(try db.scalarInt("SELECT MAX(version) FROM schema_migrations;"), LibrarySchema.currentVersion)
         XCTAssertEqual(try db.scalarInt("SELECT COUNT(*) FROM library_list;"), 2)
         XCTAssertEqual(try db.scalarInt("SELECT COUNT(*) FROM media_item;"), 5)
         XCTAssertEqual(try db.scalarInt("SELECT COUNT(*) FROM list_membership;"), 5)
@@ -514,6 +514,36 @@ final class DiaryStoreTests: XCTestCase {
 
     private func date(_ iso: String) -> Date {
         LibrarySQLDate.decode(iso)!
+    }
+
+    // MARK: - Episode entries (v5)
+
+    func test_bootstrap_v5AddsEpisodeColumnsToDiary() async throws {
+        let store = try makeStore()
+        try await store.bootstrap()
+
+        let db = try SQLiteDatabase(fileURL: databaseURL())
+        defer { db.close() }
+        XCTAssertEqual(
+            try db.scalarInt(
+                "SELECT COUNT(*) FROM pragma_table_info('diary_entry') WHERE name IN ('season_number', 'episode_number');"
+            ),
+            2
+        )
+    }
+
+    func test_replaceDiary_roundTripsEpisodeAndKeepsSeriesEntriesWhole() async throws {
+        let store = try makeStore()
+        try await store.bootstrap()
+        let episode = makeEntry(subject: .episode(seriesID: 42, season: 2, episode: 3), score: 8)
+        let series = makeEntry(subject: .series(42))
+
+        try await store.apply(.replaceDiary([episode, series]))
+
+        let loaded = try await store.fetchDiaryEntries()
+        XCTAssertEqual(loaded.first { $0.id == episode.id }?.subject, .episode(seriesID: 42, season: 2, episode: 3))
+        XCTAssertEqual(loaded.first { $0.id == series.id }?.subject, .series(42))
+        XCTAssertNil(loaded.first { $0.id == series.id }?.subject.episode)
     }
 
     private func databaseURL() -> URL {

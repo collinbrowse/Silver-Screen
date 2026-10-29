@@ -224,6 +224,14 @@ CREATE INDEX diary_entry_watched_on ON diary_entry(watched_on);
 CREATE INDEX diary_entry_subject ON diary_entry(kind, tmdb_id);
 ```
 
+Schema v5 lets an entry be about one TV episode (an episode rewatch):
+
+```sql
+ALTER TABLE diary_entry ADD COLUMN season_number INTEGER;  -- NULL for a movie or whole series
+ALTER TABLE diary_entry ADD COLUMN episode_number INTEGER; -- NULL for a movie or whole series
+CREATE INDEX diary_entry_episode ON diary_entry(kind, tmdb_id, season_number, episode_number);
+```
+
 Decisions:
 
 - **Rows are movies; TV is episodes.** Episode history already lives in
@@ -234,6 +242,13 @@ Decisions:
   history: it reads `tv_episode_completed` joined to the series' `media_item`
   (`fetchEpisodeWatches`) and draws one read-only row per show per day ("S2 · E3–E5"),
   which opens the show.
+- **An episode rewatch is a diary row about that episode.** `tv_episode_completed` holds
+  one completion per episode, so it cannot record a second viewing. A watched episode's
+  page offers Log a Rewatch, which writes a `diary_entry` with `kind = 'tv'`, the series'
+  `tmdb_id`, and that episode's `season_number`/`episode_number`
+  (`DiarySubject.episode`). It never changes TV progress or lists. It gets its own diary
+  row ("S2 · E3", badged Rewatch), not a place in the day's episodes row, because it has
+  its own rating, review, edit, and delete. A series' history includes its episode rows.
 - **The eye is how a movie watch is logged.** Marking a movie Watched with the eye
   inserts an unrated `diary_entry` dated today (`ListChangeNotice.showMovieWatch`), and
   the toast's Add rating edits that same row, so one viewing is one row. A movie already
@@ -246,14 +261,17 @@ Decisions:
   `watched_on`, then latest `logged_at`) also writes that score to `annotation.score`,
   keeping the note, the way Letterboxd's film rating follows your latest log
   (`DiaryContext.save`). Rating an older watch, or saving an unrated one, leaves the
-  title's rating alone. Deleting a watch never changes it.
+  title's rating alone. Deleting a watch never changes it. An episode entry sets that
+  episode's `annotation` (`kind = tvEpisode`), never the series', and "newest" compares
+  only entries for the exact same movie, series, or episode.
 - **No tags.** The app has no tags: nothing reads or writes `tags_json`, and the log
   sheet has no field for them. The column stays at its default `'[]'` because schema v4
   already created it on development installs; a later schema version can drop it.
 - **Rewatches are worked out, not switched.** The diary badges every watch of a title
   after its earliest entry as a rewatch. `is_rewatch` is only set by a Letterboxd import
   (or kept through an edit), which covers a first log of something seen before the app;
-  a new log stores `0`. Deleting the first watch makes the next one the first.
+  a new log stores `0`. Deleting the first watch makes the next one the first. An
+  episode entry is also a rewatch when that episode was checked off on or before its day.
 - **`watched_on` is a calendar day.** It is computed on the device calendar when logged,
   so a late-night watch keeps its day when the phone changes timezone.
 

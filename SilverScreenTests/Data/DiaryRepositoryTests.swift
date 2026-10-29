@@ -173,6 +173,20 @@ final class DiaryRepositoryTests: XCTestCase {
         let saves = await store.saveCount
         XCTAssertEqual(saves, 0)
     }
+
+    func test_entriesForSeries_includeItsEpisodeEntries_episodeSubjectOnlyItsOwn() async throws {
+        let series = DiaryFixtures.entry(subject: .series(42))
+        let e23 = DiaryFixtures.entry(subject: .episode(seriesID: 42, season: 2, episode: 3))
+        let e24 = DiaryFixtures.entry(subject: .episode(seriesID: 42, season: 2, episode: 4))
+        let other = DiaryFixtures.entry(subject: .episode(seriesID: 7, season: 2, episode: 3))
+        let repository = DiaryRepository(store: InMemoryDiaryStore(entries: [series, e23, e24, other]), logger: SilentLogger())
+
+        let show = try await repository.entries(for: .series(42))
+        let episode = try await repository.entries(for: .episode(seriesID: 42, season: 2, episode: 3))
+
+        XCTAssertEqual(Set(show.map(\.id)), [series.id, e23.id, e24.id])
+        XCTAssertEqual(episode.map(\.id), [e23.id])
+    }
 }
 
 /// Diary entries for tests, dated 16 Oct 2026 unless told otherwise.

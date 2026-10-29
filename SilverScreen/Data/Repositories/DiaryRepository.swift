@@ -26,9 +26,10 @@ actor DiaryRepository {
         Self.sorted(try await loadCache())
     }
 
-    /// Entries for one title, newest watch first.
+    /// Entries for one title, newest watch first. A series includes its episode entries;
+    /// an episode subject returns only that episode's.
     func entries(for subject: DiarySubject) async throws -> [DiaryEntry] {
-        try await entries().filter { $0.subject == subject }
+        try await entries().filter { subject.contains($0.subject) }
     }
 
     /// Episodes checked off in TV progress, newest first; one show's when `seriesID` is

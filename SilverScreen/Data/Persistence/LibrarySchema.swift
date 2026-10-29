@@ -9,7 +9,7 @@
 import Foundation
 
 enum LibrarySchema {
-    static let currentVersion = 4
+    static let currentVersion = 5
 
     static let v1Statements: [String] = [
         """
@@ -210,6 +210,14 @@ enum LibrarySchema {
         "CREATE INDEX diary_entry_subject ON diary_entry(kind, tmdb_id);",
     ]
 
+    /// v5 lets a diary entry be about one TV episode (an episode rewatch). Both columns
+    /// are NULL for a movie or whole-series entry, so every existing row keeps its meaning.
+    static let v5Statements: [String] = [
+        "ALTER TABLE diary_entry ADD COLUMN season_number INTEGER;",
+        "ALTER TABLE diary_entry ADD COLUMN episode_number INTEGER;",
+        "CREATE INDEX diary_entry_episode ON diary_entry(kind, tmdb_id, season_number, episode_number);",
+    ]
+
     /// SQL for a single schema version. Unknown versions fail instead of no-op.
     static func statements(for version: Int) throws -> [String] {
         switch version {
@@ -217,6 +225,7 @@ enum LibrarySchema {
             case 2: return v2Statements
             case 3: return v3Statements
             case 4: return v4Statements
+            case 5: return v5Statements
             default:
                 throw SQLiteDatabaseError.executionFailed(
                     message: "unknown library schema version \(version)"

@@ -17,7 +17,7 @@ extension SQLiteLibraryStore {
         try database.collect(
             """
             SELECT id, kind, tmdb_id, title, release_year, image_path, watched_on,
-                   score, review, is_rewatch, logged_at
+                   score, review, is_rewatch, logged_at, season_number, episode_number
             FROM diary_entry
             WHERE deleted_at IS NULL
             ORDER BY watched_on DESC, logged_at DESC;
@@ -39,7 +39,11 @@ extension SQLiteLibraryStore {
             entries.append(
                 DiaryEntry(
                     id: id,
-                    subject: DiarySubject(kind: kind, tmdbID: SQLiteBinding.columnInt(statement, index: 2)),
+                    subject: DiarySubject(
+                        kind: kind,
+                        tmdbID: SQLiteBinding.columnInt(statement, index: 2),
+                        episode: Self.episodeRef(statement, seasonIndex: 11, episodeIndex: 12)
+                    ),
                     title: title,
                     releaseYear: SQLiteBinding.columnIsNull(statement, index: 4)
                         ? nil
@@ -119,9 +123,9 @@ extension SQLiteLibraryStore {
                 """
                 INSERT INTO diary_entry
                   (id, kind, tmdb_id, title, release_year, image_path, watched_on,
-                   score, review, is_rewatch, logged_at,
+                   score, review, is_rewatch, logged_at, season_number, episode_number,
                    created_at, updated_at, revision, deleted_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?12, ?12, 1, NULL)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?14, ?14, 1, NULL)
                 ON CONFLICT(id) DO UPDATE SET
                   kind = excluded.kind,
                   tmdb_id = excluded.tmdb_id,
@@ -133,6 +137,8 @@ extension SQLiteLibraryStore {
                   review = excluded.review,
                   is_rewatch = excluded.is_rewatch,
                   logged_at = excluded.logged_at,
+                  season_number = excluded.season_number,
+                  episode_number = excluded.episode_number,
                   created_at = CASE WHEN diary_entry.deleted_at IS NULL
                     THEN diary_entry.created_at ELSE excluded.created_at END,
                   updated_at = excluded.updated_at,
@@ -148,7 +154,9 @@ extension SQLiteLibraryStore {
                    OR diary_entry.score IS NOT excluded.score
                    OR diary_entry.review IS NOT excluded.review
                    OR diary_entry.is_rewatch IS NOT excluded.is_rewatch
-                   OR diary_entry.logged_at IS NOT excluded.logged_at;
+                   OR diary_entry.logged_at IS NOT excluded.logged_at
+                   OR diary_entry.season_number IS NOT excluded.season_number
+                   OR diary_entry.episode_number IS NOT excluded.episode_number;
                 """
             ) { statement in
                 SQLiteBinding.text(statement, index: 1, id)
@@ -162,7 +170,9 @@ extension SQLiteLibraryStore {
                 SQLiteBinding.text(statement, index: 9, entry.review)
                 SQLiteBinding.int(statement, index: 10, entry.isRewatch ? 1 : 0)
                 SQLiteBinding.text(statement, index: 11, LibrarySQLDate.encode(entry.loggedAt))
-                SQLiteBinding.text(statement, index: 12, now)
+                SQLiteBinding.int(statement, index: 12, entry.subject.episode?.seasonNumber)
+                SQLiteBinding.int(statement, index: 13, entry.subject.episode?.episodeNumber)
+                SQLiteBinding.text(statement, index: 14, now)
             }
         }
         try tombstoneRows(in: "diary_entry", keyExpression: "id", keeping: ids, now: now)
@@ -273,6 +283,21 @@ extension SQLiteLibraryStore {
                 SQLiteBinding.text(statement, index: 10, stamp)
             }
         }
+    }
+
+    /// The episode an entry is about, or nil when either column is NULL (a movie or a
+    /// whole series).
+    private static func episodeRef(_ statement: OpaquePointer, seasonIndex: Int32, episodeIndex: Int32) -> TVEpisodeRef? {
+        guard
+            !SQLiteBinding.columnIsNull(statement, index: seasonIndex),
+            !SQLiteBinding.columnIsNull(statement, index: episodeIndex)
+        else {
+            return nil
+        }
+        return TVEpisodeRef(
+            seasonNumber: SQLiteBinding.columnInt(statement, index: seasonIndex),
+            episodeNumber: SQLiteBinding.columnInt(statement, index: episodeIndex)
+        )
     }
 
     /// TMDB release dates are stored as UTC midnight, so the year is read in UTC.
