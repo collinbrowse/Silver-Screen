@@ -226,18 +226,29 @@ CREATE INDEX diary_entry_subject ON diary_entry(kind, tmdb_id);
 
 Decisions:
 
-- **Movies and whole series, not episodes or seasons.** Episode history already lives
-  in `tv_episode_completed.completed_at`, one row per episode; copying it into the diary
-  would bury the movies under hundreds of rows. A series entry means "watched the show".
-  Seasons are not logged. The diary screen still *shows* episode history: it reads
-  `tv_episode_completed` joined to the series' `media_item` (`fetchEpisodeWatches`) and
-  draws one read-only row per show per day ("S2 · E3–E5"), which opens the show.
-- **The watch's rating is a snapshot.** `diary_entry.score` and `review` describe that
-  viewing. The title's rating (`annotation`) stays the one badges and Watched use, and
-  logging a watch never changes it. The editor prefills the current title rating.
-- **Logging a movie puts it on Watched.** Removing it from Watched later does not
-  delete diary entries; history stays. Logging a show (from its page) leaves its lists
-  alone, because a show's Watched and In Progress membership follow episode progress.
+- **Rows are movies; TV is episodes.** Episode history already lives in
+  `tv_episode_completed.completed_at`, one row per episode; copying it into the diary
+  would bury the movies under hundreds of rows. The app no longer logs a whole series
+  (a show page has no log control); series rows come only from the backfill or a
+  Letterboxd import. Seasons are not logged. The diary screen still *shows* episode
+  history: it reads `tv_episode_completed` joined to the series' `media_item`
+  (`fetchEpisodeWatches`) and draws one read-only row per show per day ("S2 · E3–E5"),
+  which opens the show.
+- **The eye is how a movie watch is logged.** Marking a movie Watched with the eye
+  inserts an unrated `diary_entry` dated today (`ListChangeNotice.showMovieWatch`), and
+  the toast's Add rating edits that same row, so one viewing is one row. A movie already
+  logged today reuses its row. Undo deletes the row only if that toast created it.
+  Un-marking the movie leaves its history. A rewatch is logged from the movie's Watch
+  History screen (Log a Rewatch), which also puts the movie back on Watched. Onboarding's
+  "seen it" picks add to Watched without a diary row, since the day is unknown.
+- **The title's rating follows its newest watch.** `diary_entry.score` and `review`
+  describe that viewing. Saving a scored entry that is the title's newest watch (latest
+  `watched_on`, then latest `logged_at`) also writes that score to `annotation.score`,
+  keeping the note, the way Letterboxd's film rating follows your latest log
+  (`DiaryContext.save`). Rating an older watch, or saving an unrated one, leaves the
+  title's rating alone. Deleting a watch never changes it.
+- **Tags are carried, not edited.** `tags_json` keeps Letterboxd's tags so an import
+  round-trips, and an edit preserves them, but the log sheet has no tags field.
 - **Rewatches are worked out, not switched.** The diary badges every watch of a title
   after its earliest entry as a rewatch. `is_rewatch` is only set by a Letterboxd import
   (or kept through an edit), which covers a first log of something seen before the app;
