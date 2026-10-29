@@ -58,7 +58,8 @@ struct ScoreSlider: View {
                 in: 0.5...10,
                 step: 0.5
             )
-            .tint(DesignTheme.accent)
+            // No accent fill until a score exists, so the mid-scale thumb doesn't read as a 5.
+            .tint(score == nil ? DesignTheme.textMuted : DesignTheme.accent)
             .disabled(isDisabled)
             .accessibilityLabel("Your rating")
             .accessibilityValue(score.map(UserScore.formatted) ?? "No rating chosen")

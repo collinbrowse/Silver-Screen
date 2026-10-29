@@ -60,6 +60,7 @@ struct DiaryEntryEditorSheet: View {
                         Button("Clear Rating") {
                             draft.score = nil
                         }
+                        .tint(DesignTheme.accent)
                         .disabled(isSaving)
                     }
                 } footer: {
