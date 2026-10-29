@@ -44,7 +44,7 @@ final class DiaryViewModelTests: XCTestCase {
     }
 
     func test_load_rowFormatsDayRatingAndSpokenLabel() async {
-        let entry = DiaryFixtures.entry(score: 8, review: "Rules.", isRewatch: true, tags: ["noir"])
+        let entry = DiaryFixtures.entry(score: 8, review: "Rules.", isRewatch: true)
         let viewModel = makeViewModel(store: InMemoryDiaryStore(entries: [entry]))
 
         await viewModel.load()
@@ -54,10 +54,9 @@ final class DiaryViewModelTests: XCTestCase {
         XCTAssertEqual(row?.weekday, "Fri")
         XCTAssertEqual(row?.yearText, "1999")
         XCTAssertEqual(row?.ratingText, "8.0")
-        XCTAssertEqual(row?.tagsText, "#noir")
         XCTAssertEqual(
             row?.accessibilityLabel,
-            "Fight Club, 1999. Watched Friday, October 16, 2026. Rated 8.0 out of 10. Rewatch. Has a review. Tags: noir."
+            "Fight Club, 1999. Watched Friday, October 16, 2026. Rated 8.0 out of 10. Rewatch. Has a review."
         )
     }
 
@@ -75,7 +74,7 @@ final class DiaryViewModelTests: XCTestCase {
     }
 
     func test_edit_opensSessionWithSavedValues() async throws {
-        let entry = DiaryFixtures.entry(score: 6, review: "Fine", isRewatch: true, tags: ["a", "b"])
+        let entry = DiaryFixtures.entry(score: 6, review: "Fine", isRewatch: true)
         let viewModel = makeViewModel(store: InMemoryDiaryStore(entries: [entry]))
         await viewModel.load()
 
@@ -86,7 +85,6 @@ final class DiaryViewModelTests: XCTestCase {
         XCTAssertTrue(session.canDelete)
         XCTAssertEqual(session.draft.score, 6)
         XCTAssertEqual(session.draft.review, "Fine")
-        XCTAssertEqual(session.draft.tagsText, "a, b")
         XCTAssertEqual(DiaryDay(session.draft.watchedOn, calendar: DiaryFixtures.utcCalendar), entry.watchedOn)
     }
 
@@ -113,21 +111,6 @@ final class DiaryViewModelTests: XCTestCase {
         XCTAssertEqual(stored.first?.watchedOn, DiaryDay(year: 2026, month: 9, day: 1))
         XCTAssertEqual(stored.first?.loggedAt, entry.loggedAt)
         XCTAssertEqual(loadedMonths(viewModel).map(\.id), ["2026-09"])
-    }
-
-    func test_save_editedImportedEntry_keepsItsTags() async throws {
-        let entry = DiaryFixtures.entry(score: 6, tags: ["festival", "with:mom"])
-        let store = InMemoryDiaryStore(entries: [entry])
-        let viewModel = makeViewModel(store: store)
-        await viewModel.load()
-        viewModel.edit(try XCTUnwrap(loadedMonths(viewModel).first?.rows.first))
-        var draft = try XCTUnwrap(viewModel.editor?.draft)
-        draft.review = "Better the second time."
-
-        _ = await viewModel.save(draft)
-
-        let stored = await store.entries
-        XCTAssertEqual(stored.first?.tags, ["festival", "with:mom"])
     }
 
     func test_save_whenStoreFails_keepsEditorOpen() async throws {

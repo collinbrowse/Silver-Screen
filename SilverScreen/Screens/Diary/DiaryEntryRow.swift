@@ -3,7 +3,7 @@
 //  SilverScreen
 //
 //  One diary row: the day, the poster, the title, and this watch's rating, rewatch
-//  mark, review excerpt, and tags. Sizes come from `DiaryLayout`.
+//  mark, and review excerpt. Sizes come from `DiaryLayout`.
 //
 
 import SwiftUI
@@ -58,7 +58,7 @@ struct DiaryEntryRow: View {
                                 .foregroundStyle(DesignTheme.textSecondary)
                         }
                     }
-                } else if !showsTitle && row.reviewExcerpt == nil && row.tagsText == nil {
+                } else if !showsTitle && row.reviewExcerpt == nil {
                     // Without the title, a bare unrated watch would leave the row empty.
                     Text("No rating")
                         .font(DesignTypography.chip)
@@ -70,13 +70,6 @@ struct DiaryEntryRow: View {
                         .font(DesignTypography.metadata)
                         .foregroundStyle(DesignTheme.textSecondary)
                         .lineLimit(layout.reviewLineLimit)
-                }
-
-                if let tags = row.tagsText {
-                    Text(tags)
-                        .font(DesignTypography.chip)
-                        .foregroundStyle(DesignTheme.textMuted)
-                        .lineLimit(1)
                 }
             }
             Spacer(minLength: 0)

@@ -247,8 +247,9 @@ Decisions:
   keeping the note, the way Letterboxd's film rating follows your latest log
   (`DiaryContext.save`). Rating an older watch, or saving an unrated one, leaves the
   title's rating alone. Deleting a watch never changes it.
-- **Tags are carried, not edited.** `tags_json` keeps Letterboxd's tags so an import
-  round-trips, and an edit preserves them, but the log sheet has no tags field.
+- **No tags.** The app has no tags: nothing reads or writes `tags_json`, and the log
+  sheet has no field for them. The column stays at its default `'[]'` because schema v4
+  already created it on development installs; a later schema version can drop it.
 - **Rewatches are worked out, not switched.** The diary badges every watch of a title
   after its earliest entry as a rewatch. `is_rewatch` is only set by a Letterboxd import
   (or kept through an edit), which covers a first log of something seen before the app;
@@ -265,7 +266,7 @@ Backfill (in Swift, inside the v4 migration transaction, because ids come from
 | `watched_on`, `logged_at`, `created_at`, `updated_at` | Earliest of the title's `annotation.watched_at` and its Watched `added_at` |
 | `score`, `review` | The title's current `annotation.score` and `note` (series use the series annotation) |
 | `title`, `release_year`, `image_path` | `media_item` |
-| `is_rewatch`, `tags_json` | `0`, `[]` |
+| `is_rewatch` | `0` (`tags_json` is left at its default) |
 
 Tombstoned Watched rows and Watchlist-only titles get no entry. The legacy JSON import
 runs the same backfill after it writes lists, because v4 ran before those lists existed;
@@ -284,7 +285,7 @@ Watched Date) and `reviews.csv` (the same plus Review). Each row maps to one ent
 | `Letterboxd URI` | `id` | `LibraryStableID.uuid("diary:letterboxd:<uri>")`; re-importing the same file upserts the same rows |
 | `Rating` | `score` | `LetterboxdRating.score(fromStars:)`: stars × 2, exact. Empty means unrated |
 | `Rewatch` | `is_rewatch` | `Yes` → 1, empty → 0 |
-| `Tags` | `tags_json` | `DiaryTags.parse`: comma-separated, trimmed, case-insensitive dedupe |
+| `Tags` | — | Not imported; the app has no tags |
 | `Watched Date` | `watched_on` | Already `yyyy-MM-dd`; `DiaryDay(iso:)` |
 | `Review` (reviews.csv) | `review` | Join to the diary row on `Letterboxd URI` |
 | — | `kind`, `tmdb_id`, `image_path` | `movie`, then the TMDB match for Name + Year |

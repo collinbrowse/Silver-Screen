@@ -70,7 +70,6 @@ struct DiaryRow: Sendable, Equatable, Identifiable {
     /// "8.0"; nil when the watch is unrated.
     let ratingText: String?
     let reviewExcerpt: String?
-    let tagsText: String?
     /// One sentence for VoiceOver, e.g. "Dune, 2021. Watched Thursday, October 16, 2026. Rated 8.0 out of 10. Rewatch."
     let accessibilityLabel: String
 
@@ -227,7 +226,6 @@ enum DiaryContent {
         )
         let yearText = entry.releaseYear.map(String.init)
         let ratingText = entry.score.map { String(format: "%.1f", $0) }
-        let tagsText = entry.tags.isEmpty ? nil : entry.tags.map { "#\($0)" }.joined(separator: " ")
 
         var spoken = [yearText.map { "\(entry.title), \($0)" } ?? entry.title]
         spoken.append("Watched \(spokenDay)")
@@ -240,9 +238,6 @@ enum DiaryContent {
         if entry.review != nil {
             spoken.append("Has a review")
         }
-        if !entry.tags.isEmpty {
-            spoken.append("Tags: \(entry.tags.joined(separator: ", "))")
-        }
 
         return DiaryRow(
             entry: entry,
@@ -251,7 +246,6 @@ enum DiaryContent {
             yearText: yearText,
             ratingText: ratingText,
             reviewExcerpt: entry.review,
-            tagsText: tagsText,
             accessibilityLabel: spoken.joined(separator: ". ") + ".",
             isRewatch: isRewatch
         )

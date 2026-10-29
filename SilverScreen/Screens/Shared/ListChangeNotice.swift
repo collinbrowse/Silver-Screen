@@ -420,7 +420,6 @@ final class ListChangeNotice {
                 score: nil,
                 review: nil,
                 isRewatch: false,
-                tags: [],
                 loggedAt: now
             )
             let saved = try await diary.diary.save(entry)

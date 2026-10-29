@@ -46,7 +46,7 @@ actor DiaryRepository {
     }
 
     /// Inserts `entry`, or replaces the entry with the same id. Returns what was stored
-    /// (normalized: blank review and tags dropped, invalid score cleared).
+    /// (normalized: blank review dropped, invalid score cleared).
     @discardableResult
     func save(_ entry: DiaryEntry) async throws -> DiaryEntry {
         guard entry.subject.kind != .person else {

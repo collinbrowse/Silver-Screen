@@ -63,7 +63,7 @@ final class DiaryStoreTests: XCTestCase {
             Set(entries.map(\.id)),
             Set([DiarySubject.movie(550), .movie(600), .series(42)].map(SQLiteLibraryStore.backfilledDiaryID))
         )
-        XCTAssertTrue(entries.allSatisfy { !$0.isRewatch && $0.tags.isEmpty })
+        XCTAssertTrue(entries.allSatisfy { !$0.isRewatch })
     }
 
     func test_migrate_fromV3_backfillUsesEarliestOfRatingAndWatchedDates() async throws {
@@ -192,8 +192,7 @@ final class DiaryStoreTests: XCTestCase {
             watchedOn: DiaryDay(year: 2026, month: 10, day: 16),
             score: 7.5,
             review: "Better the second time.",
-            isRewatch: true,
-            tags: ["cozy", "rainy day"]
+            isRewatch: true
         )
 
         try await store.apply(.replaceDiary([entry]))
@@ -363,17 +362,27 @@ final class DiaryStoreTests: XCTestCase {
         XCTAssertEqual(try db.scalarInt("SELECT MAX(revision) FROM list_membership;"), 1)
     }
 
+    func test_replaceDiary_leavesUnusedTagsColumnAtItsDefault() async throws {
+        let store = try makeStore()
+        try await store.bootstrap()
+
+        try await store.apply(.replaceDiary([makeEntry(subject: .movie(1)), makeEntry(subject: .series(2))]))
+
+        let db = try SQLiteDatabase(fileURL: databaseURL())
+        defer { db.close() }
+        XCTAssertEqual(try db.scalarInt("SELECT COUNT(*) FROM diary_entry WHERE tags_json = '[]';"), 2)
+    }
+
     func test_replaceDiary_storesNormalizedEntry() async throws {
         let store = try makeStore()
         try await store.bootstrap()
-        let entry = makeEntry(subject: .movie(1), score: 11, review: "   ", tags: [" a ", "A", ""])
+        let entry = makeEntry(subject: .movie(1), score: 11, review: "   ")
 
         try await store.apply(.replaceDiary([entry]))
 
         let loaded = try await store.fetchDiaryEntries()
         XCTAssertNil(loaded.first?.score)
         XCTAssertNil(loaded.first?.review)
-        XCTAssertEqual(loaded.first?.tags, ["a"])
     }
 
     func test_fetchDiaryEntries_ordersNewestWatchFirst() async throws {
@@ -474,8 +483,7 @@ final class DiaryStoreTests: XCTestCase {
         watchedOn: DiaryDay = DiaryDay(year: 2026, month: 10, day: 16),
         score: Double? = nil,
         review: String? = nil,
-        isRewatch: Bool = false,
-        tags: [String] = []
+        isRewatch: Bool = false
     ) -> DiaryEntry {
         DiaryEntry(
             id: UUID(),
@@ -487,7 +495,6 @@ final class DiaryStoreTests: XCTestCase {
             score: score,
             review: review,
             isRewatch: isRewatch,
-            tags: tags,
             loggedAt: date("2026-10-16T20:15:00.000Z")
         )
     }

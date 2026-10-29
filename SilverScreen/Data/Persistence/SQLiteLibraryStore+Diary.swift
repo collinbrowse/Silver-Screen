@@ -17,7 +17,7 @@ extension SQLiteLibraryStore {
         try database.collect(
             """
             SELECT id, kind, tmdb_id, title, release_year, image_path, watched_on,
-                   score, review, is_rewatch, tags_json, logged_at
+                   score, review, is_rewatch, logged_at
             FROM diary_entry
             WHERE deleted_at IS NULL
             ORDER BY watched_on DESC, logged_at DESC;
@@ -32,11 +32,10 @@ extension SQLiteLibraryStore {
                 let title = SQLiteBinding.columnText(statement, index: 3),
                 let watchedOnRaw = SQLiteBinding.columnText(statement, index: 6),
                 let watchedOn = DiaryDay(iso: watchedOnRaw),
-                let loggedAt = LibrarySQLDate.decode(SQLiteBinding.columnText(statement, index: 11))
+                let loggedAt = LibrarySQLDate.decode(SQLiteBinding.columnText(statement, index: 10))
             else {
                 return
             }
-            let tagsJSON = SQLiteBinding.columnText(statement, index: 10) ?? "[]"
             entries.append(
                 DiaryEntry(
                     id: id,
@@ -52,7 +51,6 @@ extension SQLiteLibraryStore {
                         : SQLiteBinding.columnDouble(statement, index: 7),
                     review: SQLiteBinding.columnText(statement, index: 8),
                     isRewatch: SQLiteBinding.columnInt(statement, index: 9) != 0,
-                    tags: (try? decoder.decode([String].self, from: Data(tagsJSON.utf8))) ?? [],
                     loggedAt: loggedAt
                 )
             )
@@ -117,17 +115,13 @@ extension SQLiteLibraryStore {
             guard entry.subject.kind != .person else { continue }
             let id = entry.id.uuidString
             guard ids.insert(id).inserted else { continue }
-            let tagsJSON = String(
-                data: (try? encoder.encode(entry.tags)) ?? Data("[]".utf8),
-                encoding: .utf8
-            ) ?? "[]"
             try database.run(
                 """
                 INSERT INTO diary_entry
                   (id, kind, tmdb_id, title, release_year, image_path, watched_on,
-                   score, review, is_rewatch, tags_json, logged_at,
+                   score, review, is_rewatch, logged_at,
                    created_at, updated_at, revision, deleted_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?13, ?13, 1, NULL)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?12, ?12, 1, NULL)
                 ON CONFLICT(id) DO UPDATE SET
                   kind = excluded.kind,
                   tmdb_id = excluded.tmdb_id,
@@ -138,7 +132,6 @@ extension SQLiteLibraryStore {
                   score = excluded.score,
                   review = excluded.review,
                   is_rewatch = excluded.is_rewatch,
-                  tags_json = excluded.tags_json,
                   logged_at = excluded.logged_at,
                   created_at = CASE WHEN diary_entry.deleted_at IS NULL
                     THEN diary_entry.created_at ELSE excluded.created_at END,
@@ -155,7 +148,6 @@ extension SQLiteLibraryStore {
                    OR diary_entry.score IS NOT excluded.score
                    OR diary_entry.review IS NOT excluded.review
                    OR diary_entry.is_rewatch IS NOT excluded.is_rewatch
-                   OR diary_entry.tags_json IS NOT excluded.tags_json
                    OR diary_entry.logged_at IS NOT excluded.logged_at;
                 """
             ) { statement in
@@ -169,9 +161,8 @@ extension SQLiteLibraryStore {
                 SQLiteBinding.double(statement, index: 8, entry.score)
                 SQLiteBinding.text(statement, index: 9, entry.review)
                 SQLiteBinding.int(statement, index: 10, entry.isRewatch ? 1 : 0)
-                SQLiteBinding.text(statement, index: 11, tagsJSON)
-                SQLiteBinding.text(statement, index: 12, LibrarySQLDate.encode(entry.loggedAt))
-                SQLiteBinding.text(statement, index: 13, now)
+                SQLiteBinding.text(statement, index: 11, LibrarySQLDate.encode(entry.loggedAt))
+                SQLiteBinding.text(statement, index: 12, now)
             }
         }
         try tombstoneRows(in: "diary_entry", keyExpression: "id", keeping: ids, now: now)
@@ -257,7 +248,6 @@ extension SQLiteLibraryStore {
                 score: candidate.score,
                 review: candidate.note,
                 isRewatch: false,
-                tags: [],
                 loggedAt: watchedAt
             ).normalized()
             let stamp = LibrarySQLDate.encode(watchedAt)
@@ -265,9 +255,9 @@ extension SQLiteLibraryStore {
                 """
                 INSERT INTO diary_entry
                   (id, kind, tmdb_id, title, release_year, image_path, watched_on,
-                   score, review, is_rewatch, tags_json, logged_at,
+                   score, review, is_rewatch, logged_at,
                    created_at, updated_at, revision, deleted_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, '[]', ?10, ?10, ?10, 1, NULL)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?10, ?10, ?10, 1, NULL)
                 ON CONFLICT(id) DO NOTHING;
                 """
             ) { statement in

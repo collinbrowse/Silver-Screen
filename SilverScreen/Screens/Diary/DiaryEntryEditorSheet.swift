@@ -3,8 +3,7 @@
 //  SilverScreen
 //
 //  Editor for one watch: the day (never in the future), an optional rating (the same
-//  slider as the Rate sheet) and review for that viewing. Tags are not editable here;
-//  an imported entry's tags ride along in the draft untouched. Whether it is a
+//  slider as the Rate sheet) and review for that viewing. Whether it is a
 //  rewatch comes from the title's history, so there is no switch for it. Save keeps the sheet open on failure.
 //  Editing an existing entry also offers Delete, behind a confirmation. Sized as a form
 //  sheet so it reads the same on iPhone and iPad.

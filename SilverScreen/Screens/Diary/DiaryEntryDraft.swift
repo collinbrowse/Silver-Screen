@@ -14,9 +14,6 @@ struct DiaryEntryDraft: Sendable, Equatable {
     var watchedOn: Date
     var score: Double?
     var review: String
-    /// Comma-separated, the way Letterboxd writes tags. The sheet has no field for it; it
-    /// carries an imported entry's tags through an edit so saving does not drop them.
-    var tagsText: String
 }
 
 /// One presentation of the editor, for a new watch or an existing entry.
@@ -41,8 +38,7 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
             draft: DiaryEntryDraft(
                 watchedOn: entry.watchedOn.date(in: calendar),
                 score: entry.score,
-                review: entry.review ?? "",
-                tagsText: DiaryTags.joined(entry.tags)
+                review: entry.review ?? ""
             )
         )
     }
@@ -64,7 +60,6 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
             score: nil,
             review: nil,
             isRewatch: false,
-            tags: [],
             loggedAt: now
         )
         return DiaryEditorSession(
@@ -75,8 +70,7 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
             draft: DiaryEntryDraft(
                 watchedOn: now,
                 score: currentScore.flatMap { UserScore.isValid($0) ? $0 : nil },
-                review: "",
-                tagsText: ""
+                review: ""
             )
         )
     }
@@ -95,7 +89,6 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
             review: draft.review,
             // An imported rewatch flag survives an edit; a new log stores none.
             isRewatch: base.isRewatch,
-            tags: DiaryTags.parse(draft.tagsText),
             loggedAt: isNew ? now : base.loggedAt
         ).normalized()
     }

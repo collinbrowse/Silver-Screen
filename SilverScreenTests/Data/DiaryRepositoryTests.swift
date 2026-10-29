@@ -10,12 +10,11 @@ final class DiaryRepositoryTests: XCTestCase {
     func test_save_newEntry_storesNormalizedEntry() async throws {
         let store = InMemoryDiaryStore()
         let repository = DiaryRepository(store: store, logger: SilentLogger())
-        let entry = DiaryFixtures.entry(review: "  Loved it  ", tags: ["a", " A "])
+        let entry = DiaryFixtures.entry(review: "  Loved it  ")
 
         let saved = try await repository.save(entry)
 
         XCTAssertEqual(saved.review, "Loved it")
-        XCTAssertEqual(saved.tags, ["a"])
         let stored = await store.entries
         XCTAssertEqual(stored, [saved])
     }
@@ -185,7 +184,6 @@ enum DiaryFixtures {
         score: Double? = nil,
         review: String? = nil,
         isRewatch: Bool = false,
-        tags: [String] = [],
         loggedAt: Date = Date(timeIntervalSince1970: 1_792_000_000)
     ) -> DiaryEntry {
         DiaryEntry(
@@ -198,7 +196,6 @@ enum DiaryFixtures {
             score: score,
             review: review,
             isRewatch: isRewatch,
-            tags: tags,
             loggedAt: loggedAt
         )
     }

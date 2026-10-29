@@ -38,14 +38,6 @@ final class DiaryEntryTests: XCTestCase {
         XCTAssertLessThan(DiaryDay(year: 2026, month: 1, day: 9), DiaryDay(year: 2026, month: 1, day: 10))
     }
 
-    func test_diaryTagsParse_trimsDropsEmptiesAndCaseInsensitiveRepeats() {
-        XCTAssertEqual(DiaryTags.parse("  horror, Halloween ,,horror, HALLOWEEN"), ["horror", "Halloween"])
-    }
-
-    func test_diaryTagsJoined_matchesLetterboxdCommaForm() {
-        XCTAssertEqual(DiaryTags.joined(["horror", "with friends"]), "horror, with friends")
-    }
-
     func test_normalized_dropsInvalidScoreAndBlankReview() {
         let entry = DiaryFixtures.entry(score: 0, review: " \n ")
 
