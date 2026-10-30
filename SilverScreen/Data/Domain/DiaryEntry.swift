@@ -2,12 +2,10 @@
 //  DiaryEntry.swift
 //  SilverScreen
 //
-//  One logged watch of a movie or a whole series: the day it was watched, and the
-//  rating, review, and rewatch flag for that viewing. A title can have many
-//  entries. Episode-by-episode history stays in TV progress (`completed_at`); the diary
-//  reads it back as `EpisodeWatch` and shows one row per show per day, so it is not
-//  flooded with one row per episode. Columns line up with Letterboxd's diary CSV; see
-//  PERSISTENCE.md.
+//  One logged watch of a movie or an episode: the day it was watched, and the rating,
+//  review, and rewatch flag for that viewing. A title can have many entries, and a title
+//  is watched exactly when it has at least one. Columns line up with Letterboxd's diary
+//  CSV; see PERSISTENCE.md.
 //
 
 import Foundation
@@ -64,8 +62,8 @@ struct DiaryDay: Sendable, Hashable, Comparable, Codable {
     }
 }
 
-/// The title a diary entry is about: a movie, a whole series, or one episode of a
-/// series (an episode rewatch). People cannot be logged.
+/// The title a diary entry is about: a movie, one episode of a series, or a whole series
+/// (only older entries; shows are watched through their episodes). People cannot be logged.
 struct DiarySubject: Sendable, Hashable {
     let kind: ListItemKind
     /// The movie, or the series an episode belongs to.
@@ -96,6 +94,11 @@ struct DiarySubject: Sendable, Hashable {
     func contains(_ other: DiarySubject) -> Bool {
         guard kind == other.kind, tmdbID == other.tmdbID else { return false }
         return episode == nil || episode == other.episode
+    }
+
+    /// A show as a whole, not a movie or one of its episodes.
+    var isWholeSeries: Bool {
+        kind == .tv && episode == nil
     }
 
     /// The annotation row holding this subject's rating.
@@ -172,19 +175,6 @@ struct DiaryEntry: Sendable, Equatable, Hashable, Identifiable {
         copy.review = (trimmedReview?.isEmpty == false) ? trimmedReview : nil
         return copy
     }
-}
-
-/// One episode checked off in TV progress, read back for the diary. It is not a diary
-/// entry: it has no rating or review, and unmarking the episode removes it.
-struct EpisodeWatch: Sendable, Equatable {
-    let seriesID: Int
-    /// The series name stored with the show's list entry.
-    let seriesTitle: String
-    let posterPath: String?
-    let episode: TVEpisodeRef
-    /// When the episode was marked watched. Marking a whole season stamps every episode
-    /// with the same moment.
-    let completedAt: Date
 }
 
 /// Converts between this app's 0.5–10 score and Letterboxd's 0.5–5 star rating.

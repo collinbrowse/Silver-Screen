@@ -98,8 +98,12 @@ final class DiaryViewModel {
             } else {
                 entries = try await context.diary.entries()
             }
-            let episodes = try await episodeWatches()
-            let months = DiaryContent.months(from: entries, episodes: episodes, calendar: calendar, locale: locale)
+            let months = DiaryContent.months(
+                from: entries,
+                groupsEpisodes: scope?.subject.episode == nil,
+                calendar: calendar,
+                locale: locale
+            )
             state = months.isEmpty ? .empty : .loaded(months)
             if showsSeasonPosters, let seriesID = scope?.subject.tmdbID {
                 seasonPosters = await context.seasonPosters(seriesID: seriesID)
@@ -222,22 +226,6 @@ final class DiaryViewModel {
         switch row.entry.subject.kind {
             case .tv: .tvSeries(id: row.entry.subject.tmdbID)
             case .movie, .person: .movieDetail(id: row.entry.subject.tmdbID)
-        }
-    }
-
-    /// Episode history, or none when it cannot be read (the repository logs the failure).
-    /// Only cancellation propagates.
-    private func episodeWatches() async throws -> [EpisodeWatch] {
-        do {
-            guard let subject = scope?.subject else {
-                return try await context.diary.episodeWatches()
-            }
-            guard subject.kind == .tv else { return [] }
-            return try await context.diary.episodeWatches(seriesID: subject.tmdbID)
-        } catch is CancellationError {
-            throw CancellationError()
-        } catch {
-            return []
         }
     }
 

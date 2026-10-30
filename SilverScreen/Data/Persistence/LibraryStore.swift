@@ -29,6 +29,5 @@ protocol LibraryStore: Sendable {
     func fetchDiaryEntries() async throws -> [DiaryEntry]
     /// Every live completed episode that has a completion time and a stored series title,
     /// for one series when `seriesID` is set.
-    func fetchEpisodeWatches(seriesID: Int?) async throws -> [EpisodeWatch]
     func apply(_ mutation: LibraryStoreMutation) async throws
 }

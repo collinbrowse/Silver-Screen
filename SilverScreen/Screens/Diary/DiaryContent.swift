@@ -2,8 +2,9 @@
 //  DiaryContent.swift
 //  SilverScreen
 //
-//  Display values for the diary list: entries and TV episode check-offs grouped by
-//  month, newest first. Episodes of one show checked off on one day share a row.
+//  Display values for the diary list: entries grouped by month, newest first. Plain
+//  first watches of one show's episodes on one day share a row; a rated, reviewed, or
+//  rewatched episode keeps its own. Undated watches stay off the timeline.
 //
 
 import Foundation
@@ -25,7 +26,7 @@ struct DiaryMonth: Sendable, Equatable, Identifiable {
     }
 }
 
-/// One line of the diary: a logged watch, or a show's episodes checked off that day.
+/// One line of the diary: a logged watch, or a show's plain episode watches that day.
 enum DiaryItem: Sendable, Equatable, Identifiable {
     case entry(DiaryRow)
     case episodes(DiaryEpisodeGroup)
@@ -38,8 +39,8 @@ enum DiaryItem: Sendable, Equatable, Identifiable {
     }
 }
 
-/// Episodes of one show marked watched on one day. Read-only: it comes from TV progress,
-/// so it is changed on the show's own screens, not in the diary.
+/// Plain first watches of one show's episodes on one day. Read-only here: rating one
+/// happens on the episode's page, which then gives it its own row.
 struct DiaryEpisodeGroup: Sendable, Equatable, Identifiable {
     let seriesID: Int
     let seriesTitle: String
@@ -47,7 +48,7 @@ struct DiaryEpisodeGroup: Sendable, Equatable, Identifiable {
     let watchedOn: DiaryDay
     /// Sorted by season, then episode.
     let episodes: [TVEpisodeRef]
-    /// Latest check-off in the group, which orders it against entries on the same day.
+    /// Latest log in the group, which orders it against entries on the same day.
     let lastCompletedAt: Date
     let dayNumber: String
     let weekday: String
@@ -70,7 +71,7 @@ struct DiaryRow: Sendable, Equatable, Identifiable {
     /// "8.0"; nil when the watch is unrated.
     let ratingText: String?
     let reviewExcerpt: String?
-    /// "S2 · E3" for an episode entry (an episode rewatch); nil for a movie or series.
+    /// "S2 · E3" for an episode entry; nil for a movie or series.
     let episodeText: String?
     /// One sentence for VoiceOver, e.g. "Dune, 2021. Watched Thursday, October 16, 2026. Rated 8.0 out of 10. Rewatch."
     let accessibilityLabel: String
@@ -83,20 +84,24 @@ struct DiaryRow: Sendable, Equatable, Identifiable {
 }
 
 enum DiaryContent {
-    /// Groups `entries` and `episodes` into months, newest month first and newest watch
-    /// first inside each. Episodes of one show on one day become a single row.
+    /// Groups `entries` into months, newest month first and newest watch first inside
+    /// each. With `groupsEpisodes`, plain episode watches of one show on one day become a
+    /// single row; an episode's own history turns it off so each watch can be edited.
     static func months(
         from entries: [DiaryEntry],
-        episodes: [EpisodeWatch] = [],
+        groupsEpisodes: Bool = true,
         calendar: Calendar = .current,
         locale: Locale = .current
     ) -> [DiaryMonth] {
-        let rewatches = rewatchIDs(in: entries, episodes: episodes, calendar: calendar)
-        let entryItems = DiaryRepository.sorted(entries).map { entry in
+        let rewatches = rewatchIDs(in: entries)
+        let dated = entries.filter(\.isDateKnown)
+        let grouped = groupsEpisodes ? dated.filter { isPlainEpisodeWatch($0, rewatches: rewatches) } : []
+        let groupedIDs = Set(grouped.map(\.id))
+        let entryItems = DiaryRepository.sorted(dated.filter { !groupedIDs.contains($0.id) }).map { entry in
             let entryRow = row(for: entry, isRewatch: rewatches.contains(entry.id), calendar: calendar, locale: locale)
             return (day: entry.watchedOn, time: entry.loggedAt, item: DiaryItem.entry(entryRow))
         }
-        let episodeItems = episodeGroups(from: episodes, calendar: calendar, locale: locale).map { row in
+        let episodeItems = episodeGroups(from: grouped, calendar: calendar, locale: locale).map { row in
             (day: row.watchedOn, time: row.lastCompletedAt, item: DiaryItem.episodes(row))
         }
         // Stable: entries keep the repository's order among themselves.
@@ -131,9 +136,17 @@ enum DiaryContent {
         return months
     }
 
+    /// An episode's first watch with nothing of its own to show.
+    private static func isPlainEpisodeWatch(_ entry: DiaryEntry, rewatches: Set<UUID>) -> Bool {
+        entry.subject.episode != nil
+            && entry.score == nil
+            && entry.review == nil
+            && !rewatches.contains(entry.id)
+    }
+
     /// One row per show per day, newest day first.
     static func episodeGroups(
-        from watches: [EpisodeWatch],
+        from watches: [DiaryEntry],
         calendar: Calendar = .current,
         locale: Locale = .current
     ) -> [DiaryEpisodeGroup] {
@@ -142,11 +155,11 @@ enum DiaryContent {
             let day: DiaryDay
         }
         let groups = Dictionary(grouping: watches) { watch in
-            GroupKey(seriesID: watch.seriesID, day: DiaryDay(watch.completedAt, calendar: calendar))
+            GroupKey(seriesID: watch.subject.tmdbID, day: watch.watchedOn)
         }
         let rows = groups.compactMap { key, watches -> DiaryEpisodeGroup? in
-            guard let latest = watches.max(by: { $0.completedAt < $1.completedAt }) else { return nil }
-            let episodes = Array(Set(watches.map(\.episode))).sorted()
+            guard let latest = watches.max(by: { $0.loggedAt < $1.loggedAt }) else { return nil }
+            let episodes = Array(Set(watches.compactMap(\.subject.episode))).sorted()
             let date = key.day.date(in: calendar)
             let weekday = date.formatted(
                 Date.FormatStyle(locale: locale, calendar: calendar, timeZone: calendar.timeZone).weekday(.abbreviated)
@@ -156,15 +169,15 @@ enum DiaryContent {
             )
             return DiaryEpisodeGroup(
                 seriesID: key.seriesID,
-                seriesTitle: latest.seriesTitle,
+                seriesTitle: latest.title,
                 posterPath: latest.posterPath,
                 watchedOn: key.day,
                 episodes: episodes,
-                lastCompletedAt: latest.completedAt,
+                lastCompletedAt: latest.loggedAt,
                 dayNumber: String(key.day.day),
                 weekday: weekday,
                 episodesText: episodesText(episodes),
-                accessibilityLabel: "\(latest.seriesTitle). \(spokenEpisodes(episodes)). Watched \(spokenDay)."
+                accessibilityLabel: "\(latest.title). \(spokenEpisodes(episodes)). Watched \(spokenDay)."
             )
         }
         return rows.sorted { lhs, rhs in
@@ -200,30 +213,13 @@ enum DiaryContent {
 
     /// Entries that count as rewatches: every watch of a title after its earliest one,
     /// plus any entry stored as a rewatch (a Letterboxd import keeps its own flag, which
-    /// covers a first log of something seen before the app). An episode entry is also a
-    /// rewatch when that episode was checked off on or before its day, since the check-off
-    /// was the first viewing. Nothing is switched by hand.
-    static func rewatchIDs(
-        in entries: [DiaryEntry],
-        episodes: [EpisodeWatch] = [],
-        calendar: Calendar = .current
-    ) -> Set<UUID> {
-        var firstCheckOff: [DiarySubject: DiaryDay] = [:]
-        for watch in episodes {
-            let subject = DiarySubject.episode(
-                seriesID: watch.seriesID,
-                season: watch.episode.seasonNumber,
-                episode: watch.episode.episodeNumber
-            )
-            let day = DiaryDay(watch.completedAt, calendar: calendar)
-            firstCheckOff[subject] = min(firstCheckOff[subject] ?? day, day)
-        }
+    /// covers a first log of something seen before the app). Nothing is switched by hand.
+    static func rewatchIDs(in entries: [DiaryEntry]) -> Set<UUID> {
         let earliestFirst = DiaryRepository.sorted(entries).reversed()
         var seen = Set<DiarySubject>()
         var result = Set<UUID>()
         for entry in earliestFirst {
-            let checkedOffEarlier = firstCheckOff[entry.subject].map { $0 <= entry.watchedOn } ?? false
-            if !seen.insert(entry.subject).inserted || entry.isRewatch || checkedOffEarlier {
+            if !seen.insert(entry.subject).inserted || entry.isRewatch {
                 result.insert(entry.id)
             }
         }

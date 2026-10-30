@@ -63,48 +63,6 @@ extension SQLiteLibraryStore {
         return entries
     }
 
-    /// Completed episodes joined to their series' stored title and poster, newest first.
-    /// An episode whose series has no `media_item` row is skipped: there is no name to show.
-    /// `seriesID` narrows the read to one show, so a show page does not read every show.
-    func fetchEpisodeWatches(seriesID: Int? = nil) async throws -> [EpisodeWatch] {
-        try await ensureBootstrapped()
-        var watches: [EpisodeWatch] = []
-        try database.collect(
-            """
-            SELECT c.series_id, c.season_number, c.episode_number, c.completed_at,
-                   m.title, m.image_path
-            FROM tv_episode_completed c
-            JOIN media_item m ON m.item_key = 'tv-' || c.series_id
-            WHERE c.deleted_at IS NULL AND c.completed_at IS NOT NULL
-              AND (?1 IS NULL OR c.series_id = ?1)
-            ORDER BY c.completed_at DESC, c.series_id ASC, c.season_number ASC, c.episode_number ASC;
-            """,
-            binds: { statement in
-                SQLiteBinding.int(statement, index: 1, seriesID)
-            }
-        ) { statement in
-            guard
-                let completedAt = LibrarySQLDate.decode(SQLiteBinding.columnText(statement, index: 3)),
-                let title = SQLiteBinding.columnText(statement, index: 4)
-            else {
-                return
-            }
-            watches.append(
-                EpisodeWatch(
-                    seriesID: SQLiteBinding.columnInt(statement, index: 0),
-                    seriesTitle: title,
-                    posterPath: SQLiteBinding.columnText(statement, index: 5),
-                    episode: TVEpisodeRef(
-                        seasonNumber: SQLiteBinding.columnInt(statement, index: 1),
-                        episodeNumber: SQLiteBinding.columnInt(statement, index: 2)
-                    ),
-                    completedAt: completedAt
-                )
-            )
-        }
-        return watches
-    }
-
     func replaceDiary(_ entries: [DiaryEntry]) throws {
         try withTransaction { try writeDiary(entries) }
     }

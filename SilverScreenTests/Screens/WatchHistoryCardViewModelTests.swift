@@ -47,7 +47,7 @@ final class WatchHistoryCardViewModelTests: XCTestCase {
     }
 
     func test_load_seriesWithOnlyEpisodes_summarizesEpisodes() async {
-        let store = InMemoryDiaryStore(episodeWatches: [
+        let store = InMemoryDiaryStore(entries: [
             episodeWatch(series: 42, episode: 1, at: Date(timeIntervalSince1970: 1_792_000_000)),
             episodeWatch(series: 42, episode: 2, at: now),
             episodeWatch(series: 7, episode: 1, at: now),
@@ -56,29 +56,34 @@ final class WatchHistoryCardViewModelTests: XCTestCase {
 
         await viewModel.load()
 
-        XCTAssertEqual(viewModel.watchCount, 0)
+        XCTAssertEqual(viewModel.watchCount, 2)
         XCTAssertEqual(viewModel.episodeCount, 2)
         XCTAssertTrue(viewModel.hasHistory)
         XCTAssertEqual(viewModel.summary, "2 episodes watched · last Oct 16, 2026")
     }
 
     func test_load_seriesWithEpisodeRewatch_summaryCountsTheRewatch() async {
-        let store = InMemoryDiaryStore(
-            entries: [DiaryFixtures.entry(subject: .episode(seriesID: 42, season: 1, episode: 2))],
-            episodeWatches: [episodeWatch(series: 42, episode: 1, at: now), episodeWatch(series: 42, episode: 2, at: now)]
-        )
+        let store = InMemoryDiaryStore(entries: [
+            episodeWatch(series: 42, episode: 1, at: now),
+            episodeWatch(series: 42, episode: 2, at: Date(timeIntervalSince1970: 1_791_000_000)),
+            episodeWatch(series: 42, episode: 2, at: now),
+        ])
         let viewModel = makeViewModel(store: store, subject: .series(42))
 
         await viewModel.load()
 
-        XCTAssertEqual(viewModel.watchCount, 1)
+        XCTAssertEqual(viewModel.watchCount, 3)
         XCTAssertEqual(viewModel.summary, "2 episodes watched · 1 rewatch · last Oct 16, 2026")
     }
 
-    func test_episodesSummary_twoRewatches_usesNewestDayAcrossBoth() {
+    func test_episodesSummary_twoRewatches_usesNewestDay() {
+        let later = now.addingTimeInterval(4 * 86_400)
         let summary = WatchHistoryCardViewModel.episodesSummary(
-            for: [episodeWatch(series: 42, episode: 1, at: now)],
-            rewatches: [DiaryDay(year: 2026, month: 10, day: 20), DiaryDay(year: 2026, month: 10, day: 18)],
+            for: [
+                episodeWatch(series: 42, episode: 1, at: now.addingTimeInterval(-86_400)),
+                episodeWatch(series: 42, episode: 1, at: now),
+                episodeWatch(series: 42, episode: 1, at: later),
+            ],
             calendar: DiaryFixtures.utcCalendar,
             locale: Locale(identifier: "en_US")
         )
@@ -86,8 +91,21 @@ final class WatchHistoryCardViewModelTests: XCTestCase {
         XCTAssertEqual(summary, "1 episode watched · 2 rewatches · last Oct 20, 2026")
     }
 
+    func test_summary_undatedOnly_leavesOutTheDay() {
+        var undated = DiaryFixtures.entry()
+        undated.isDateKnown = false
+
+        let summary = WatchHistoryCardViewModel.summary(
+            for: [undated],
+            calendar: DiaryFixtures.utcCalendar,
+            locale: Locale(identifier: "en_US")
+        )
+
+        XCTAssertEqual(summary, "Watched once")
+    }
+
     func test_load_movie_ignoresEpisodeHistory() async {
-        let store = InMemoryDiaryStore(episodeWatches: [episodeWatch(series: 550, episode: 1, at: now)])
+        let store = InMemoryDiaryStore(entries: [episodeWatch(series: 550, episode: 1, at: now)])
         let viewModel = makeViewModel(store: store)
 
         await viewModel.load()
@@ -131,14 +149,8 @@ final class WatchHistoryCardViewModelTests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func episodeWatch(series: Int, episode: Int, at date: Date) -> EpisodeWatch {
-        EpisodeWatch(
-            seriesID: series,
-            seriesTitle: "Show \(series)",
-            posterPath: nil,
-            episode: TVEpisodeRef(seasonNumber: 1, episodeNumber: episode),
-            completedAt: date
-        )
+    private func episodeWatch(series: Int, episode: Int, at date: Date) -> DiaryEntry {
+        DiaryFixtures.episodeWatch(series: series, episode: episode, at: date)
     }
 
     private func makeContext(store: InMemoryDiaryStore) -> DiaryContext {

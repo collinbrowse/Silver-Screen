@@ -46,10 +46,6 @@ actor InMemoryLibraryStore: LibraryStore {
         diary
     }
 
-    func fetchEpisodeWatches(seriesID: Int?) async throws -> [EpisodeWatch] {
-        []
-    }
-
     func apply(_ mutation: LibraryStoreMutation) async throws {
         switch mutation {
             case .replaceLists(let snapshot):

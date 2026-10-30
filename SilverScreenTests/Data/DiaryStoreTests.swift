@@ -217,49 +217,6 @@ final class DiaryStoreTests: XCTestCase {
         XCTAssertEqual(loaded, [entry])
     }
 
-    func test_fetchEpisodeWatches_joinsSeriesTitleAndSkipsUnmarkedEpisodes() async throws {
-        let store = try makeStore()
-        try await store.bootstrap()
-        let list = LibraryList.system(.inProgress)
-        let series = ListItemDraft(
-            id: 42,
-            kind: .tv,
-            title: "Severance",
-            imagePath: "/sev.jpg",
-            releaseDate: nil,
-            genreNames: [],
-            voteAverage: 8,
-            popularity: 10
-        )
-        try await store.apply(
-            .replaceLists(
-                LibrarySnapshot(lists: [list], entries: [ListEntry(listID: list.id, draft: series, addedAt: Date(), position: 0)])
-            )
-        )
-        let first = TVEpisodeRef(seasonNumber: 1, episodeNumber: 1)
-        let second = TVEpisodeRef(seasonNumber: 1, episodeNumber: 2)
-        try await store.apply(.replaceTVWatch([TVSeriesWatchState(seriesID: 42, completed: [first, second])]))
-        try await store.apply(.replaceTVWatch([TVSeriesWatchState(seriesID: 42, completed: [first])]))
-        // An episode of a series with no stored title has nothing to show.
-        try await store.apply(
-            .replaceTVWatch([
-                TVSeriesWatchState(seriesID: 42, completed: [first]),
-                TVSeriesWatchState(seriesID: 99, completed: [first]),
-            ])
-        )
-
-        let watches = try await store.fetchEpisodeWatches()
-
-        XCTAssertEqual(watches.map(\.seriesID), [42])
-        XCTAssertEqual(watches.first?.seriesTitle, "Severance")
-        XCTAssertEqual(watches.first?.posterPath, "/sev.jpg")
-        XCTAssertEqual(watches.first?.episode, first)
-        let narrowed = try await store.fetchEpisodeWatches(seriesID: 42)
-        XCTAssertEqual(narrowed, watches)
-        let other = try await store.fetchEpisodeWatches(seriesID: 7)
-        XCTAssertEqual(other, [])
-    }
-
     func test_replaceDiary_savingOneEntry_leavesOtherRowsUntouched() async throws {
         let store = try makeStore()
         try await store.bootstrap()
