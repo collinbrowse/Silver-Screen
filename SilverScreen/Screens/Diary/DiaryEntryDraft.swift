@@ -14,6 +14,8 @@ struct DiaryEntryDraft: Sendable, Equatable {
     var watchedOn: Date
     var score: Double?
     var review: String
+    /// False for "Don't remember": the watch then has no day, and `watchedOn` is ignored.
+    var isDateKnown = true
 }
 
 /// One presentation of the editor, for a new watch or an existing entry.
@@ -38,7 +40,8 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
             draft: DiaryEntryDraft(
                 watchedOn: entry.watchedOn.date(in: calendar),
                 score: entry.score,
-                review: entry.review ?? ""
+                review: entry.review ?? "",
+                isDateKnown: entry.isDateKnown
             )
         )
     }
@@ -95,7 +98,8 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
             review: draft.review,
             // An imported rewatch flag survives an edit; a new log stores none.
             isRewatch: base.isRewatch,
-            loggedAt: isNew ? now : base.loggedAt
+            loggedAt: isNew ? now : base.loggedAt,
+            isDateKnown: draft.isDateKnown
         ).normalized()
     }
 }

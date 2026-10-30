@@ -19,6 +19,9 @@ final class DiaryViewModel {
     /// Open editor for an existing entry or a new rewatch, or nil.
     var editor: DiaryEditorSession?
 
+    /// Undated watches, shown under "Earlier" on a title's history. Always empty on the
+    /// full diary, because they belong to no day on its timeline.
+    private(set) var earlierRows: [DiaryRow] = []
     /// Poster path by season number, on a show's history.
     private(set) var seasonPosters: [Int: String] = [:]
 
@@ -104,7 +107,8 @@ final class DiaryViewModel {
                 calendar: calendar,
                 locale: locale
             )
-            state = months.isEmpty ? .empty : .loaded(months)
+            earlierRows = scope == nil ? [] : DiaryContent.earlierRows(from: entries, calendar: calendar, locale: locale)
+            state = months.isEmpty && earlierRows.isEmpty ? .empty : .loaded(months)
             if showsSeasonPosters, let seriesID = scope?.subject.tmdbID {
                 seasonPosters = await context.seasonPosters(seriesID: seriesID)
             }

@@ -35,6 +35,13 @@ struct DiaryEntryEditorSheet: View {
         _draft = State(initialValue: session.draft)
     }
 
+    private var dontRemember: Binding<Bool> {
+        Binding(
+            get: { !draft.isDateKnown },
+            set: { draft.isDateKnown = !$0 }
+        )
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -48,12 +55,16 @@ struct DiaryEntryEditorSheet: View {
                 }
 
                 Section {
-                    DatePicker(
-                        "Watched on",
-                        selection: $draft.watchedOn,
-                        in: ...Date(),
-                        displayedComponents: .date
-                    )
+                    if draft.isDateKnown {
+                        DatePicker(
+                            "Watched on",
+                            selection: $draft.watchedOn,
+                            in: ...Date(),
+                            displayedComponents: .date
+                        )
+                    }
+                    Toggle("Don't remember", isOn: dontRemember)
+                        .tint(DesignTheme.accent)
                 }
 
                 Section {

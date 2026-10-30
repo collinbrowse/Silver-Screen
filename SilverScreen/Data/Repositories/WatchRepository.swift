@@ -111,6 +111,42 @@ actor WatchRepository {
         await restoreAnnotation(logged.priorAnnotation, for: logged.entry.subject)
     }
 
+    /// Logs a rewatch of a whole season: one unrated watch per episode, sharing a log time
+    /// so the diary shows them as one row. Nothing else changes, since every episode is
+    /// already watched.
+    func logSeasonRewatch(
+        seriesID: Int,
+        season: Int,
+        episodes: [Int],
+        title: String,
+        posterPath: String?,
+        on day: Date,
+        dateKnown: Bool
+    ) async throws -> [DiaryEntry] {
+        let loggedAt = now()
+        let entries = episodes.map { episode in
+            DiaryEntry(
+                id: UUID(),
+                subject: .episode(seriesID: seriesID, season: season, episode: episode),
+                title: title,
+                releaseYear: nil,
+                posterPath: posterPath,
+                watchedOn: DiaryDay(day, calendar: calendar),
+                score: nil,
+                review: nil,
+                isRewatch: false,
+                loggedAt: loggedAt,
+                isDateKnown: dateKnown
+            )
+        }
+        return try await diary.save(contentsOf: entries)
+    }
+
+    /// Reverses `logSeasonRewatch`.
+    func undo(seasonRewatch entries: [DiaryEntry]) async throws {
+        try await diary.delete(ids: Set(entries.map(\.id)))
+    }
+
     /// Puts back what `removed` took away. A tombstoned id is revived, so a restored
     /// watch keeps its identity.
     func restore(_ removed: RemovedWatches) async throws {

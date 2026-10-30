@@ -51,6 +51,7 @@ struct TVSeasonView: View {
     /// payload before the confirm button’s action reads it (SwiftUI race).
     @State private var isSeasonConfirmPresented = false
     @State private var pendingRemoval: WatchRemovalRequest?
+    @State private var isSeasonRewatchPresented = false
 
     private var fullscreenBinding: Binding<FullscreenImages?> {
         Binding(
@@ -383,6 +384,14 @@ struct TVSeasonView: View {
             addRatingTitle: "Rate season",
             onEdit: { viewModel.openAnnotationEditor() }
         )
+        if viewModel.isSeasonFullyWatched {
+            LogRewatchButton { isSeasonRewatchPresented = true }
+                .sheet(isPresented: $isSeasonRewatchPresented) {
+                    SeasonRewatchSheet(title: "Season \(seasonNumber)") { day, dateKnown in
+                        await logSeasonRewatch(content, on: day, dateKnown: dateKnown)
+                    }
+                }
+        }
         MediaDescriptionSection(
             overview: content.overview,
             note: content.userNote,
@@ -480,6 +489,30 @@ struct TVSeasonView: View {
             return .series(seriesID)
         }
         return .season(seriesID: seriesID, seasonNumber: seasonNumber)
+    }
+
+    private func logSeasonRewatch(
+        _ content: TVSeasonContent,
+        on day: Date,
+        dateKnown: Bool
+    ) async -> AnnotationEditorWriteResult {
+        do {
+            try await notice.logSeasonRewatch(
+                seriesID: seriesID,
+                season: seasonNumber,
+                episodes: content.episodes.map(\.episodeNumber),
+                title: content.seriesName,
+                posterPath: viewModel.seriesSnapshot.posterPath,
+                on: day,
+                dateKnown: dateKnown,
+                using: lists
+            )
+            return .succeeded
+        } catch is CancellationError {
+            return .cancelled
+        } catch {
+            return .failed
+        }
     }
 
     /// Logs an unwatched episode. A watched one is removed, asking first when it has

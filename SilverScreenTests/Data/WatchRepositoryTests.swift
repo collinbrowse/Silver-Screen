@@ -162,6 +162,30 @@ final class WatchRepositoryTests: XCTestCase {
         XCTAssertTrue(after.entries.isEmpty)
     }
 
+    func test_logSeasonRewatch_addsOneWatchPerEpisodeInOneWrite_andUndoRemovesThem() async throws {
+        let harness = Harness()
+
+        let logged = try await harness.watches.logSeasonRewatch(
+            seriesID: 42,
+            season: 1,
+            episodes: [1, 2, 3],
+            title: "Severance",
+            posterPath: nil,
+            on: Date(),
+            dateKnown: true
+        )
+
+        XCTAssertEqual(logged.count, 3)
+        XCTAssertEqual(Set(logged.map(\.loggedAt)).count, 1)
+        let saves = await harness.diaryStore.saveCount
+        XCTAssertEqual(saves, 1)
+
+        try await harness.watches.undo(seasonRewatch: logged)
+
+        let stored = await harness.diaryStore.entries
+        XCTAssertTrue(stored.isEmpty)
+    }
+
     func test_ratedWatch_skipsNewerUnratedWatch() {
         let unrated = DiaryFixtures.entry()
         let rated = DiaryFixtures.entry(score: 8.5)

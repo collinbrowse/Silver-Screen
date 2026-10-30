@@ -15,10 +15,11 @@
 
 import Foundation
 
-/// What Undo reverses on a movie's watch toast.
-enum MovieWatchUndo: Sendable, Equatable {
+/// What Undo reverses on a toast for a change that `WatchRepository` made.
+enum DiaryWatchUndo: Sendable, Equatable {
     case logged(LoggedWatch)
     case removed(RemovedWatches)
+    case seasonRewatch([DiaryEntry])
 }
 
 @Observable
@@ -39,7 +40,7 @@ final class ListChangeNotice {
     /// season/series screens observe this and reload completed / Next up chrome.
     private(set) var watchRevision = 0
     /// True when membership Undo and/or a ledger restore is available.
-    var canUndo: Bool { change != nil || watchUndo != nil || movieUndo != nil }
+    var canUndo: Bool { change != nil || watchUndo != nil || diaryUndo != nil }
     /// "Rate & review" on a watch just logged; a season or show gets a verdict instead.
     var ratingActionTitle: String {
         guard loggedWatch == nil else { return "Rate & review" }
@@ -58,7 +59,7 @@ final class ListChangeNotice {
     private var lists: ListsRepository?
     private var tvWatch: TVWatchRepository?
     private var watchUndo: TVWatchUndo?
-    private var movieUndo: MovieWatchUndo?
+    private var diaryUndo: DiaryWatchUndo?
     private let annotations: AnnotationsRepository?
     private var generation = 0
     /// Title for the rating sheet (series/movie name from the list row when known).
@@ -92,7 +93,7 @@ final class ListChangeNotice {
         guard let watches else { throw AppError.persistence }
         let logged = try await watches.logMovie(draft)
         diary?.noteChange()
-        present(message: "Watched", using: lists, movieUndo: .logged(logged), loggedWatch: logged.entry)
+        present(message: "Watched", using: lists, diaryUndo: .logged(logged), loggedWatch: logged.entry)
     }
 
     /// The orange eye on a movie: removes every watch, after any confirmation.
@@ -100,7 +101,32 @@ final class ListChangeNotice {
         guard let watches else { throw AppError.persistence }
         let removed = try await watches.removeMovie(draft)
         diary?.noteChange()
-        present(message: "Removed", using: lists, movieUndo: .removed(removed))
+        present(message: "Removed", using: lists, diaryUndo: .removed(removed))
+    }
+
+    /// Log a Rewatch on a watched season: a rewatch of each of `episodes` on the chosen day.
+    func logSeasonRewatch(
+        seriesID: Int,
+        season: Int,
+        episodes: [Int],
+        title: String,
+        posterPath: String?,
+        on day: Date,
+        dateKnown: Bool,
+        using lists: ListsRepository
+    ) async throws {
+        guard let watches else { throw AppError.persistence }
+        let logged = try await watches.logSeasonRewatch(
+            seriesID: seriesID,
+            season: season,
+            episodes: episodes,
+            title: title,
+            posterPath: posterPath,
+            on: day,
+            dateKnown: dateKnown
+        )
+        diary?.noteChange()
+        present(message: "Rewatch logged", using: lists, diaryUndo: .seasonRewatch(logged))
     }
 
     /// An episode's eye just logged its watch. A mark that logged several, like a whole
@@ -152,7 +178,7 @@ final class ListChangeNotice {
         change: MembershipChange? = nil,
         tvWatch: TVWatchRepository? = nil,
         watchUndo: TVWatchUndo? = nil,
-        movieUndo: MovieWatchUndo? = nil,
+        diaryUndo: DiaryWatchUndo? = nil,
         loggedWatch: DiaryEntry? = nil
     ) {
         generation += 1
@@ -163,7 +189,7 @@ final class ListChangeNotice {
         self.lists = lists
         self.tvWatch = tvWatch
         self.watchUndo = watchUndo
-        self.movieUndo = movieUndo
+        self.diaryUndo = diaryUndo
         self.loggedWatch = loggedWatch
         self.ratingKey = nil
         self.ratingTitle = nil
@@ -240,7 +266,7 @@ final class ListChangeNotice {
         self.lists = lists
         self.tvWatch = tvWatch
         self.watchUndo = watchUndo
-        self.movieUndo = nil
+        self.diaryUndo = nil
         self.message = message
         self.ratingKey = nil
         self.ratingTitle = nil
@@ -282,7 +308,7 @@ final class ListChangeNotice {
         self.lists = lists
         self.tvWatch = tvWatch
         self.watchUndo = watchUndo
-        self.movieUndo = nil
+        self.diaryUndo = nil
         self.message = message
         self.ratingKey = nil
         self.ratingTitle = nil
@@ -316,7 +342,7 @@ final class ListChangeNotice {
         let watch = tvWatch
         let membership = change
         let listsRef = lists
-        let movie = movieUndo
+        let movie = diaryUndo
         clear()
         do {
             // Restore the episode ledger before list membership so In Progress captions stay valid.
@@ -329,6 +355,7 @@ final class ListChangeNotice {
             switch movie {
                 case .logged(let logged): try await watches?.undo(logged)
                 case .removed(let removed): try await watches?.restore(removed)
+                case .seasonRewatch(let entries): try await watches?.undo(seasonRewatch: entries)
                 case nil: break
             }
             diary?.noteChange()
@@ -518,7 +545,7 @@ final class ListChangeNotice {
         lists = nil
         tvWatch = nil
         watchUndo = nil
-        movieUndo = nil
+        diaryUndo = nil
     }
 
     /// Watched / In Progress adds without a score get a rating prompt. Removals and other lists do not.
