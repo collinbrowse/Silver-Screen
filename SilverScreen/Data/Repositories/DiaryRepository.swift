@@ -22,6 +22,7 @@ actor DiaryRepository {
     }
 
     /// Every entry, newest watch first; entries on the same day put the latest log first.
+    /// An undated watch sorts after every dated one.
     func entries() async throws -> [DiaryEntry] {
         Self.sorted(try await loadCache())
     }
@@ -121,6 +122,9 @@ actor DiaryRepository {
 
     static func sorted(_ entries: [DiaryEntry]) -> [DiaryEntry] {
         entries.sorted { lhs, rhs in
+            if lhs.isDateKnown != rhs.isDateKnown {
+                return lhs.isDateKnown
+            }
             if lhs.watchedOn != rhs.watchedOn {
                 return lhs.watchedOn > rhs.watchedOn
             }

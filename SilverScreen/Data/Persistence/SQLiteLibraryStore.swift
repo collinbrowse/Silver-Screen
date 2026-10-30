@@ -384,6 +384,9 @@ actor SQLiteLibraryStore: LibraryStore {
                 if version == 4 {
                     try backfillDiaryFromWatched()
                 }
+                if version == 6 {
+                    try reconcileWatches()
+                }
                 try database.run(
                     "INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?);"
                 ) { statement in
@@ -443,6 +446,8 @@ actor SQLiteLibraryStore: LibraryStore {
                 // entries now, after annotations so each entry gets its rating.
                 try backfillDiaryFromWatched()
             }
+            // Schema v6 ran before these rows existed too.
+            try reconcileWatches()
             try setSyncState(
                 Self.jsonImportStampKey,
                 value: LibrarySQLDate.encode(Date())

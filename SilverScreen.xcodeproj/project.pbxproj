@@ -276,6 +276,8 @@
 		TW0000122788B823003D8011 /* TVWatchRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = TW0000112788B823003D8011 /* TVWatchRepositoryTests.swift */; };
 		W1R000022788B823003D8011 /* WatchedRatings.swift in Sources */ = {isa = PBXBuildFile; fileRef = W1R000012788B823003D8011 /* WatchedRatings.swift */; };
 		WR0000022788B823003D8011 /* WatchRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000012788B823003D8011 /* WatchRepository.swift */; };
+		WR0000062788B823003D8011 /* SQLiteLibraryStore+WatchReconcile.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000052788B823003D8011 /* SQLiteLibraryStore+WatchReconcile.swift */; };
+		WR0000082788B823003D8011 /* WatchReconcileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000072788B823003D8011 /* WatchReconcileTests.swift */; };
 		WR0000042788B823003D8011 /* WatchRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000032788B823003D8011 /* WatchRepositoryTests.swift */; };
 		WT0000022788B823003D8011 /* WatchedToggleButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = WT0000012788B823003D8011 /* WatchedToggleButton.swift */; };
 		WT0000042788B823003D8011 /* CarouselRatingBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = WT0000032788B823003D8011 /* CarouselRatingBadge.swift */; };
@@ -616,6 +618,8 @@
 		TW0000112788B823003D8011 /* TVWatchRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchRepositoryTests.swift; sourceTree = "<group>"; };
 		W1R000012788B823003D8011 /* WatchedRatings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchedRatings.swift; sourceTree = "<group>"; };
 		WR0000012788B823003D8011 /* WatchRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRepository.swift; sourceTree = "<group>"; };
+		WR0000052788B823003D8011 /* SQLiteLibraryStore+WatchReconcile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SQLiteLibraryStore+WatchReconcile.swift"; sourceTree = "<group>"; };
+		WR0000072788B823003D8011 /* WatchReconcileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchReconcileTests.swift; sourceTree = "<group>"; };
 		WR0000032788B823003D8011 /* WatchRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRepositoryTests.swift; sourceTree = "<group>"; };
 		WT0000012788B823003D8011 /* WatchedToggleButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchedToggleButton.swift; sourceTree = "<group>"; };
 		WT0000032788B823003D8011 /* CarouselRatingBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarouselRatingBadge.swift; sourceTree = "<group>"; };
@@ -784,6 +788,7 @@
 				SQL000062788B823003D8011 /* LibraryStore.swift */,
 				SQL000082788B823003D8011 /* SQLiteLibraryStore.swift */,
 				A20F21127664D23117BC1786 /* SQLiteLibraryStore+Diary.swift */,
+				WR0000052788B823003D8011 /* SQLiteLibraryStore+WatchReconcile.swift */,
 				SQL0000A2788B823003D8011 /* LibraryStoreAdapters.swift */,
 			);
 			path = Persistence;
@@ -1199,6 +1204,7 @@
 				650BB0C2EB6D4099886910E1 /* DiaryEntryTests.swift */,
 				22899E2AE667CC1109104922 /* DiaryRepositoryTests.swift */,
 				WR0000032788B823003D8011 /* WatchRepositoryTests.swift */,
+				WR0000072788B823003D8011 /* WatchReconcileTests.swift */,
 				AF25DCB2CB677BCE2694175A /* DiaryStoreTests.swift */,
 				0E19281196038680DB89C0C3 /* DemoModeTests.swift */,
 				TW00000F2788B823003D8011 /* TVWatchProgressTests.swift */,
@@ -1608,6 +1614,7 @@
 				L1B0000B2788B823003D8011 /* ListsRepository.swift in Sources */,
 				W1R000022788B823003D8011 /* WatchedRatings.swift in Sources */,
 				WR0000022788B823003D8011 /* WatchRepository.swift in Sources */,
+				WR0000062788B823003D8011 /* SQLiteLibraryStore+WatchReconcile.swift in Sources */,
 				TW00000A2788B823003D8011 /* TVWatchReconcile.swift in Sources */,
 				L1B0000D2788B823003D8011 /* ListsIndex.swift in Sources */,
 				L1B0000F2788B823003D8011 /* ListMembershipButton.swift in Sources */,
@@ -1695,6 +1702,7 @@
 				FFC75DCB06DD8F7F23C02B44 /* DiaryEntryTests.swift in Sources */,
 				5CC25101B272073620C28D7C /* DiaryRepositoryTests.swift in Sources */,
 				WR0000042788B823003D8011 /* WatchRepositoryTests.swift in Sources */,
+				WR0000082788B823003D8011 /* WatchReconcileTests.swift in Sources */,
 				9C8A7CEDCD98A7B9B78E3851 /* DiaryStoreTests.swift in Sources */,
 				TW0000102788B823003D8011 /* TVWatchProgressTests.swift in Sources */,
 				B10002122788B823003D8011 /* MovieDetailViewModelTests.swift in Sources */,

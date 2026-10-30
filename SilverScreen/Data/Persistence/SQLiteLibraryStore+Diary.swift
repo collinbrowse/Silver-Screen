@@ -17,10 +17,10 @@ extension SQLiteLibraryStore {
         try database.collect(
             """
             SELECT id, kind, tmdb_id, title, release_year, image_path, watched_on,
-                   score, review, is_rewatch, logged_at, season_number, episode_number
+                   score, review, is_rewatch, logged_at, season_number, episode_number, date_known
             FROM diary_entry
             WHERE deleted_at IS NULL
-            ORDER BY watched_on DESC, logged_at DESC;
+            ORDER BY date_known DESC, watched_on DESC, logged_at DESC;
             """
         ) { statement in
             guard
@@ -55,7 +55,8 @@ extension SQLiteLibraryStore {
                         : SQLiteBinding.columnDouble(statement, index: 7),
                     review: SQLiteBinding.columnText(statement, index: 8),
                     isRewatch: SQLiteBinding.columnInt(statement, index: 9) != 0,
-                    loggedAt: loggedAt
+                    loggedAt: loggedAt,
+                    isDateKnown: SQLiteBinding.columnInt(statement, index: 13) != 0
                 )
             )
         }
@@ -123,9 +124,9 @@ extension SQLiteLibraryStore {
                 """
                 INSERT INTO diary_entry
                   (id, kind, tmdb_id, title, release_year, image_path, watched_on,
-                   score, review, is_rewatch, logged_at, season_number, episode_number,
+                   score, review, is_rewatch, logged_at, season_number, episode_number, date_known,
                    created_at, updated_at, revision, deleted_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?14, ?14, 1, NULL)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?15, ?15, 1, NULL)
                 ON CONFLICT(id) DO UPDATE SET
                   kind = excluded.kind,
                   tmdb_id = excluded.tmdb_id,
@@ -139,6 +140,7 @@ extension SQLiteLibraryStore {
                   logged_at = excluded.logged_at,
                   season_number = excluded.season_number,
                   episode_number = excluded.episode_number,
+                  date_known = excluded.date_known,
                   created_at = CASE WHEN diary_entry.deleted_at IS NULL
                     THEN diary_entry.created_at ELSE excluded.created_at END,
                   updated_at = excluded.updated_at,
@@ -156,7 +158,8 @@ extension SQLiteLibraryStore {
                    OR diary_entry.is_rewatch IS NOT excluded.is_rewatch
                    OR diary_entry.logged_at IS NOT excluded.logged_at
                    OR diary_entry.season_number IS NOT excluded.season_number
-                   OR diary_entry.episode_number IS NOT excluded.episode_number;
+                   OR diary_entry.episode_number IS NOT excluded.episode_number
+                   OR diary_entry.date_known IS NOT excluded.date_known;
                 """
             ) { statement in
                 SQLiteBinding.text(statement, index: 1, id)
@@ -172,7 +175,8 @@ extension SQLiteLibraryStore {
                 SQLiteBinding.text(statement, index: 11, LibrarySQLDate.encode(entry.loggedAt))
                 SQLiteBinding.int(statement, index: 12, entry.subject.episode?.seasonNumber)
                 SQLiteBinding.int(statement, index: 13, entry.subject.episode?.episodeNumber)
-                SQLiteBinding.text(statement, index: 14, now)
+                SQLiteBinding.int(statement, index: 14, entry.isDateKnown ? 1 : 0)
+                SQLiteBinding.text(statement, index: 15, now)
             }
         }
         try tombstoneRows(in: "diary_entry", keyExpression: "id", keeping: ids, now: now)

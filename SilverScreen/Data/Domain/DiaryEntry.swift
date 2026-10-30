@@ -120,7 +120,8 @@ struct DiaryEntry: Sendable, Equatable, Hashable, Identifiable {
     /// Release year when the watch was logged (Letterboxd `Year`). Importers match on it.
     var releaseYear: Int?
     var posterPath: String?
-    /// Day of this viewing (Letterboxd `Watched Date`).
+    /// Day of this viewing (Letterboxd `Watched Date`). When `isDateKnown` is false this
+    /// is only a sort anchor, and the app must not show it.
     var watchedOn: DiaryDay
     /// Half-point score from 0.5 through 10 for this viewing, or nil when unrated.
     /// The title's own rating (`MediaAnnotation`) is separate and is not changed by it.
@@ -131,6 +132,9 @@ struct DiaryEntry: Sendable, Equatable, Hashable, Identifiable {
     /// When the entry was logged (Letterboxd `Date`). An import keeps the original day,
     /// while the row's own `created_at` records when it reached this device.
     let loggedAt: Date
+    /// False for "Don't remember": seen, but on no particular day. Such a watch stays off
+    /// the diary timeline and sorts as the oldest.
+    var isDateKnown: Bool
 
     init(
         id: UUID,
@@ -142,7 +146,8 @@ struct DiaryEntry: Sendable, Equatable, Hashable, Identifiable {
         score: Double?,
         review: String?,
         isRewatch: Bool,
-        loggedAt: Date
+        loggedAt: Date,
+        isDateKnown: Bool = true
     ) {
         self.id = id
         self.subject = subject
@@ -154,6 +159,7 @@ struct DiaryEntry: Sendable, Equatable, Hashable, Identifiable {
         self.review = review
         self.isRewatch = isRewatch
         self.loggedAt = loggedAt
+        self.isDateKnown = isDateKnown
     }
 
     /// Drops an invalid score and a blank review, so the store never compares two
