@@ -11,6 +11,8 @@ import SwiftUI
 struct LibraryHomeView: View {
     @Bindable var viewModel: LibraryHomeViewModel
     let imageLoader: ImageLoader
+    /// Opens a list from a multi-column row; see `columnLink(_:)`.
+    let router: NavigationRouter
     let settings: SettingsContext
     /// Reopens onboarding from the empty state.
     let onGetStarted: () -> Void
@@ -227,7 +229,8 @@ struct LibraryHomeView: View {
 
     /// Two or three lists per row on a wide screen. A swipe would act on the whole
     /// row, so custom lists offer Rename and Delete from their context menu and as
-    /// VoiceOver actions. A plain button style keeps each link's tap to its own cell.
+    /// VoiceOver actions. Cells are buttons, not `NavigationLink`s: a `List` row fires
+    /// every link inside it, which pushed all of the row's lists at once.
     private func columnRows(
         _ lists: [LibraryList],
         columns: Int,
@@ -236,8 +239,7 @@ struct LibraryHomeView: View {
     ) -> some View {
         ForEach(CatalogGrid.rows(lists, columns: columns, id: \.id)) { row in
             CatalogColumnsRow(row: row, columns: columns, id: \.id) { list in
-                listLink(list)
-                    .buttonStyle(.plain)
+                columnLink(list)
                     .contextMenu {
                         if !list.isSystem {
                             customListActions(list)
@@ -266,28 +268,50 @@ struct LibraryHomeView: View {
     }
 
     private func listLink(_ list: LibraryList) -> some View {
-        NavigationLink(value: Route.libraryList(id: list.id)) {
-            HStack(alignment: .center, spacing: DesignSpacing.md) {
-                LibraryListCoverView(
-                    artwork: viewModel.artwork(for: list),
-                    segment: list.segment,
-                    imageLoader: imageLoader
-                )
-                VStack(alignment: .leading, spacing: DesignSpacing.xs) {
-                    Text(list.name)
-                        .font(DesignTypography.section)
-                        .foregroundStyle(DesignTheme.textPrimary)
-                    Text(countText(for: list))
-                        .font(DesignTypography.metadata)
-                        .foregroundStyle(DesignTheme.textSecondary)
-                }
-                Spacer(minLength: 0)
-            }
-            .contentShape(Rectangle())
-            .accessibilityElement(children: .combine)
+        NavigationLink(value: viewModel.route(for: list)) {
+            listLabel(list)
         }
         .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
         .tourAnchor(Self.tourAnchor(for: list))
+    }
+
+    /// One cell of a multi-column row. Draws its own chevron, since only a
+    /// `NavigationLink` gets one from the list.
+    private func columnLink(_ list: LibraryList) -> some View {
+        Button {
+            router.push(viewModel.route(for: list))
+        } label: {
+            HStack(spacing: DesignSpacing.sm) {
+                listLabel(list)
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(DesignTheme.textMuted)
+                    .accessibilityHidden(true)
+            }
+        }
+        .buttonStyle(.borderless)
+        .tourAnchor(Self.tourAnchor(for: list))
+    }
+
+    private func listLabel(_ list: LibraryList) -> some View {
+        HStack(alignment: .center, spacing: DesignSpacing.md) {
+            LibraryListCoverView(
+                artwork: viewModel.artwork(for: list),
+                segment: list.segment,
+                imageLoader: imageLoader
+            )
+            VStack(alignment: .leading, spacing: DesignSpacing.xs) {
+                Text(list.name)
+                    .font(DesignTypography.section)
+                    .foregroundStyle(DesignTheme.textPrimary)
+                Text(countText(for: list))
+                    .font(DesignTypography.metadata)
+                    .foregroundStyle(DesignTheme.textSecondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
     }
 
     /// The pinned Movies & TV lists the tour's first stop highlights.
