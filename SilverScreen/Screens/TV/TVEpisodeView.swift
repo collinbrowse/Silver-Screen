@@ -23,6 +23,7 @@ struct TVEpisodeView: View {
     @State private var playingTrailer: MediaTrailer?
     @State private var pendingRemoval: WatchRemovalRequest?
     @State private var titleWatch: TitleWatchViewModel?
+    @State private var watchHistory: WatchHistoryCardViewModel?
     @State private var loadingTrailerID: String?
 
     @Namespace private var heroTransition
@@ -145,6 +146,11 @@ struct TVEpisodeView: View {
                 title: episodeTitle,
                 context: diaryContext
             )
+            watchHistory = await WatchHistoryCardViewModel.refreshed(
+                watchHistory,
+                subject: episodeTitle.subject,
+                context: diaryContext
+            )
         }
         .onChange(of: notice.ratingKey) { _, key in
             if key == nil {
@@ -205,6 +211,7 @@ struct TVEpisodeView: View {
         var shown: Set<TVEpisodeLayout.Section> = [
             .hero(.all), .hero(.backdrop), .hero(.identity), .ratingAndOverview,
         ]
+        if watchHistory?.hasHistory == true { shown.insert(.watchHistory) }
         if !viewModel.awardRows.isEmpty { shown.insert(.awards) }
         if !content.otherEpisodes.isEmpty { shown.insert(.otherEpisodes) }
         if !content.cast.isEmpty || !content.guestStars.isEmpty || !content.directorsAndWriters.isEmpty {
@@ -237,6 +244,18 @@ struct TVEpisodeView: View {
                         notedOn: titleWatch?.formattedReviewDay ?? content.formattedNotedOn,
                         onEdit: { titleWatch?.openReview() },
                         scrollTo: scrollTo
+                    )
+                }
+            case .watchHistory:
+                if let watchHistory {
+                    WatchHistoryCard(
+                        viewModel: watchHistory,
+                        route: .titleHistory(
+                            kind: .tv,
+                            id: seriesID,
+                            title: content.title,
+                            episode: TVEpisodeRef(seasonNumber: seasonNumber, episodeNumber: episodeNumber)
+                        )
                     )
                 }
             case .awards:
@@ -364,6 +383,7 @@ enum TVEpisodeLayout {
     enum Section: DetailPageSection {
         case hero(DetailHeroPart)
         case ratingAndOverview
+        case watchHistory
         case awards
         /// The season's other episodes.
         case otherEpisodes
@@ -375,7 +395,7 @@ enum TVEpisodeLayout {
             switch self {
                 case .hero, .otherEpisodes, .credits:
                     true
-                case .ratingAndOverview, .awards, .attribution:
+                case .ratingAndOverview, .watchHistory, .awards, .attribution:
                     false
             }
         }
@@ -392,14 +412,14 @@ enum TVEpisodeLayout {
             case .stacked, .columns:
                 DetailPagePlan<Section>(
                     top: [.hero(.all)],
-                    main: [.ratingAndOverview],
+                    main: [.ratingAndOverview, .watchHistory],
                     side: [.awards],
                     below: [.otherEpisodes, .credits, .attribution]
                 )
             case .panes:
                 DetailPagePlan<Section>(
                     top: [.hero(.backdrop)],
-                    main: [.hero(.identity), .ratingAndOverview],
+                    main: [.hero(.identity), .ratingAndOverview, .watchHistory],
                     side: [.otherEpisodes, .awards, .credits],
                     below: [.attribution]
                 )
