@@ -17,6 +17,7 @@
 		FFC75DCB06DD8F7F23C02B44 /* DiaryEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 650BB0C2EB6D4099886910E1 /* DiaryEntryTests.swift */; };
 		4C55741F9A2DE50D49F01662 /* WatchHistoryCardViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02476714651AB893CCAB6D3F /* WatchHistoryCardViewModelTests.swift */; };
 		86B2AA82BF669148123D4971 /* EpisodeRewatchViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48A52439EDF91D2395437803 /* EpisodeRewatchViewModelTests.swift */; };
+		B321D92FA7BDA87EEEF14CF9 /* WindowTopInsetReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB1535D16882F3227DE417BD /* WindowTopInsetReaderTests.swift */; };
 		6DE5DB92977A2DEBF2E5ACC3 /* DiaryViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5ADABC67BF9955D8F523573 /* DiaryViewModelTests.swift */; };
 		5CC25101B272073620C28D7C /* DiaryRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22899E2AE667CC1109104922 /* DiaryRepositoryTests.swift */; };
 		9C8A7CEDCD98A7B9B78E3851 /* DiaryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF25DCB2CB677BCE2694175A /* DiaryStoreTests.swift */; };
@@ -350,6 +351,7 @@
 		650BB0C2EB6D4099886910E1 /* DiaryEntryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryEntryTests.swift; sourceTree = "<group>"; };
 		02476714651AB893CCAB6D3F /* WatchHistoryCardViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchHistoryCardViewModelTests.swift; sourceTree = "<group>"; };
 		48A52439EDF91D2395437803 /* EpisodeRewatchViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EpisodeRewatchViewModelTests.swift; sourceTree = "<group>"; };
+		EB1535D16882F3227DE417BD /* WindowTopInsetReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowTopInsetReaderTests.swift; sourceTree = "<group>"; };
 		A5ADABC67BF9955D8F523573 /* DiaryViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryViewModelTests.swift; sourceTree = "<group>"; };
 		22899E2AE667CC1109104922 /* DiaryRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryRepositoryTests.swift; sourceTree = "<group>"; };
 		AF25DCB2CB677BCE2694175A /* DiaryStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryStoreTests.swift; sourceTree = "<group>"; };
@@ -1169,6 +1171,7 @@
 				L1B0001E2788B823003D8011 /* LibraryViewModelTests.swift */,
 				02476714651AB893CCAB6D3F /* WatchHistoryCardViewModelTests.swift */,
 				48A52439EDF91D2395437803 /* EpisodeRewatchViewModelTests.swift */,
+				EB1535D16882F3227DE417BD /* WindowTopInsetReaderTests.swift */,
 				A5ADABC67BF9955D8F523573 /* DiaryViewModelTests.swift */,
 				B10002132788B823003D8011 /* MovieDetailViewModelTests.swift */,
 				B10003192788B823003D8011 /* PersonDetailViewModelTests.swift */,
@@ -1693,6 +1696,7 @@
 				L1B0001D2788B823003D8011 /* LibraryViewModelTests.swift in Sources */,
 				4C55741F9A2DE50D49F01662 /* WatchHistoryCardViewModelTests.swift in Sources */,
 				86B2AA82BF669148123D4971 /* EpisodeRewatchViewModelTests.swift in Sources */,
+				B321D92FA7BDA87EEEF14CF9 /* WindowTopInsetReaderTests.swift in Sources */,
 				6DE5DB92977A2DEBF2E5ACC3 /* DiaryViewModelTests.swift in Sources */,
 				LC0000022788B823003D8011 /* ListChangeNoticeTests.swift in Sources */,
 				WT0000082788B823003D8011 /* TVWatchConfirmTests.swift in Sources */,

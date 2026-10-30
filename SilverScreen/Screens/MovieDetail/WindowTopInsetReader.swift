@@ -24,6 +24,8 @@ struct WindowTopInsetReader: UIViewRepresentable {
 
     final class ProbeView: UIView {
         var onChange: ((CGFloat) -> Void)?
+        /// The last inset passed on, so a re-render with the same inset stays quiet.
+        private var lastReported: CGFloat?
 
         override func didMoveToWindow() {
             super.didMoveToWindow()
@@ -36,9 +38,18 @@ struct WindowTopInsetReader: UIViewRepresentable {
         }
 
         func report() {
-            let top = window?.safeAreaInsets.top ?? 0
-            guard top > 0 else { return }
-            onChange?(top)
+            report(top: window?.safeAreaInsets.top ?? 0)
+        }
+
+        /// Delivers a changed inset after the current pass. `updateUIView` runs inside a
+        /// SwiftUI view update, and the owner writes `@State` from `onChange`, so calling
+        /// it directly is "Modifying state during view update".
+        func report(top: CGFloat) {
+            guard top > 0, top != lastReported else { return }
+            lastReported = top
+            Task { @MainActor [weak self] in
+                self?.onChange?(top)
+            }
         }
     }
 }
