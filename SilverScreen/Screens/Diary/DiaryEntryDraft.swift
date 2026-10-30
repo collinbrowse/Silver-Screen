@@ -8,20 +8,18 @@
 
 import Foundation
 
-/// Editable fields of one watch, as the sheet shows them.
+/// Editable fields of one watch, as the sheet shows them. Rewatch is not one of them:
+/// the diary works it out from the title's history (`DiaryContent.rewatchIDs(in:)`).
 struct DiaryEntryDraft: Sendable, Equatable {
     var watchedOn: Date
     var score: Double?
     var review: String
-    var isRewatch: Bool
-    /// Comma-separated, the way Letterboxd writes tags.
-    var tagsText: String
 }
 
 /// One presentation of the editor, for a new watch or an existing entry.
 struct DiaryEditorSession: Sendable, Equatable, Identifiable {
     let id: UUID
-    /// Movie or series name shown as the sheet title.
+    /// The sheet title: the movie or series name, or "S1 · E2" for one episode.
     let title: String
     /// The entry being edited, or a template carrying the title's identity for a new one.
     let base: DiaryEntry
@@ -34,26 +32,22 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
     static func editing(_ entry: DiaryEntry, calendar: Calendar = .current) -> DiaryEditorSession {
         DiaryEditorSession(
             id: UUID(),
-            title: entry.title,
+            title: Self.sheetTitle(for: entry.subject, name: entry.title),
             base: entry,
             isNew: false,
             draft: DiaryEntryDraft(
                 watchedOn: entry.watchedOn.date(in: calendar),
                 score: entry.score,
-                review: entry.review ?? "",
-                isRewatch: entry.isRewatch,
-                tagsText: DiaryTags.joined(entry.tags)
+                review: entry.review ?? ""
             )
         )
     }
 
     /// Opens a new watch of `title` dated today. The current title rating is prefilled
-    /// so a person who already rated it only picks a date; a title that already has
-    /// entries starts as a rewatch.
+    /// so a person who already rated it only picks a date.
     static func logging(
         _ title: LogWatchTitle,
         currentScore: Double?,
-        hasEarlierWatch: Bool,
         now: Date
     ) -> DiaryEditorSession {
         let base = DiaryEntry(
@@ -66,22 +60,25 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
             score: nil,
             review: nil,
             isRewatch: false,
-            tags: [],
             loggedAt: now
         )
         return DiaryEditorSession(
             id: UUID(),
-            title: title.title,
+            title: Self.sheetTitle(for: title.subject, name: title.title),
             base: base,
             isNew: true,
             draft: DiaryEntryDraft(
                 watchedOn: now,
                 score: currentScore.flatMap { UserScore.isValid($0) ? $0 : nil },
-                review: "",
-                isRewatch: hasEarlierWatch,
-                tagsText: ""
+                review: ""
             )
         )
+    }
+
+    /// A show's name is often too long for the sheet's bar and does not say which
+    /// episode, so an episode's sheet is titled by the episode.
+    private static func sheetTitle(for subject: DiarySubject, name: String) -> String {
+        subject.episode.map { DiaryContent.episodesText([$0]) } ?? name
     }
 
     /// The entry to store for `draft`. A new entry is stamped as logged at `now`;
@@ -96,20 +93,20 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
             watchedOn: DiaryDay(draft.watchedOn, calendar: calendar),
             score: draft.score,
             review: draft.review,
-            isRewatch: draft.isRewatch,
-            tags: DiaryTags.parse(draft.tagsText),
+            // An imported rewatch flag survives an edit; a new log stores none.
+            isRewatch: base.isRewatch,
             loggedAt: isNew ? now : base.loggedAt
         ).normalized()
     }
 }
 
-/// The title a "Log a watch" control belongs to.
+/// The title a new diary watch is logged for (a rewatch from a movie's history).
 struct LogWatchTitle: Sendable, Equatable {
     let subject: DiarySubject
     let title: String
     let releaseYear: Int?
     let posterPath: String?
-    /// Snapshot used to put the title on Watched after the first log.
+    /// Snapshot used to put the title on Watched when a watch is logged.
     let listItem: ListItemDraft
 
     init(subject: DiarySubject, title: String, releaseYear: Int?, posterPath: String?, listItem: ListItemDraft) {
@@ -118,6 +115,14 @@ struct LogWatchTitle: Sendable, Equatable {
         self.releaseYear = releaseYear
         self.posterPath = posterPath
         self.listItem = listItem
+    }
+
+    init(series: TVSeriesDetail) {
+        subject = .series(series.id)
+        title = series.name
+        releaseYear = DisplayDate.year(series.firstAirDate).flatMap(Int.init)
+        posterPath = series.posterPath
+        listItem = series.listItem()
     }
 
     init(movie: MovieDetail) {

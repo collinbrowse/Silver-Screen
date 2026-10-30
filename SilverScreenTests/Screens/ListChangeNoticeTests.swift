@@ -164,6 +164,56 @@ final class ListChangeNoticeTests: XCTestCase {
         XCTAssertEqual(notice.message, "Added to In Progress")
     }
 
+    func test_dismiss_clearsBannerAndUndo() async throws {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        let notice = ListChangeNotice(annotations: annotations)
+        let draft = ListItemDraft(
+            id: 15,
+            kind: .movie,
+            title: "Heat",
+            imagePath: nil,
+            releaseDate: nil,
+            genreNames: [],
+            voteAverage: 0,
+            popularity: 0
+        )
+        let change = try await lists.addToWatched(draft)
+        notice.show(change, using: lists)
+        await waitForRatingKey(notice)
+
+        notice.dismiss()
+
+        XCTAssertNil(notice.message)
+        XCTAssertNil(notice.ratingKey)
+        XCTAssertFalse(notice.canUndo)
+    }
+
+    func test_dismiss_whileRatingSheetOpen_keepsBanner() async throws {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        let notice = ListChangeNotice(annotations: annotations)
+        let draft = ListItemDraft(
+            id: 7,
+            kind: .tv,
+            title: "Severance",
+            imagePath: nil,
+            releaseDate: nil,
+            genreNames: [],
+            voteAverage: 0,
+            popularity: 0
+        )
+        let change = try await lists.addToInProgress(draft)
+        notice.show(change, using: lists)
+        await waitForRatingKey(notice)
+        await notice.openRatingEditor()
+
+        notice.dismiss()
+
+        XCTAssertNotNil(notice.annotationEditor)
+        XCTAssertEqual(notice.message, "Added to In Progress")
+    }
+
     func test_presentWatch_withoutMembership_offersEpisodeRatingAndLedgerUndo() async throws {
         let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
         let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
@@ -300,6 +350,138 @@ final class ListChangeNoticeTests: XCTestCase {
         let after = try await lists.snapshot()
         let inProgress = try XCTUnwrap(after.list(.inProgress))
         XCTAssertTrue(after.entries.contains { $0.listID == inProgress.id && $0.itemID == 12 })
+    }
+
+    // MARK: - Movie eye logs a diary watch
+
+    func test_showMovieWatch_marking_logsOneUnratedWatchTodayAndOffersRating() async throws {
+        let (notice, lists, store, context) = makeMovieWatchNotice()
+        let change = try await lists.toggleWatched(heat)
+
+        await notice.showMovieWatch(change, draft: heat, using: lists)
+
+        let stored = await store.entries
+        XCTAssertEqual(stored.count, 1)
+        XCTAssertEqual(stored.first?.subject, .movie(15))
+        XCTAssertEqual(stored.first?.title, "Heat")
+        XCTAssertEqual(stored.first?.watchedOn, DiaryDay(Date()))
+        XCTAssertNil(stored.first?.score)
+        XCTAssertEqual(notice.loggedWatch?.id, stored.first?.id)
+        XCTAssertTrue(notice.offersRating)
+        XCTAssertEqual(context.revision, 1)
+    }
+
+    func test_addRating_afterMovieWatch_editsThatSameEntry() async throws {
+        let (notice, lists, store, _) = makeMovieWatchNotice()
+        let change = try await lists.toggleWatched(heat)
+        await notice.showMovieWatch(change, draft: heat, using: lists)
+        let loggedID = try XCTUnwrap(notice.loggedWatch?.id)
+
+        await notice.openRatingEditor()
+        let session = try XCTUnwrap(notice.diaryEditor)
+        XCTAssertNil(notice.annotationEditor)
+        XCTAssertFalse(session.isNew)
+        XCTAssertEqual(session.base.id, loggedID)
+        var draft = session.draft
+        draft.score = 8.5
+        draft.review = "Still great."
+        let result = await notice.saveDiaryEntry(draft)
+
+        XCTAssertEqual(result, .succeeded)
+        XCTAssertNil(notice.diaryEditor)
+        let stored = await store.entries
+        XCTAssertEqual(stored.count, 1)
+        XCTAssertEqual(stored.first?.id, loggedID)
+        XCTAssertEqual(stored.first?.score, 8.5)
+        XCTAssertEqual(stored.first?.review, "Still great.")
+    }
+
+    func test_showMovieWatch_alreadyLoggedToday_reusesEntry() async throws {
+        let existing = DiaryFixtures.entry(subject: .movie(15), title: "Heat", watchedOn: DiaryDay(Date()))
+        let (notice, lists, store, _) = makeMovieWatchNotice(entries: [existing])
+        let change = try await lists.toggleWatched(heat)
+
+        await notice.showMovieWatch(change, draft: heat, using: lists)
+
+        let stored = await store.entries
+        XCTAssertEqual(stored.map(\.id), [existing.id])
+        XCTAssertEqual(notice.loggedWatch?.id, existing.id)
+    }
+
+    func test_undo_afterMovieWatch_removesTheLoggedWatch() async throws {
+        let (notice, lists, store, _) = makeMovieWatchNotice()
+        let change = try await lists.toggleWatched(heat)
+        await notice.showMovieWatch(change, draft: heat, using: lists)
+
+        await notice.undo()
+
+        let stored = await store.entries
+        XCTAssertTrue(stored.isEmpty)
+        let snapshot = try await lists.snapshot()
+        XCTAssertFalse(snapshot.entries.contains { $0.itemKey == heat.itemKey })
+    }
+
+    func test_undo_afterReusedWatch_keepsTheEarlierEntry() async throws {
+        let existing = DiaryFixtures.entry(subject: .movie(15), title: "Heat", watchedOn: DiaryDay(Date()))
+        let (notice, lists, store, _) = makeMovieWatchNotice(entries: [existing])
+        let change = try await lists.toggleWatched(heat)
+        await notice.showMovieWatch(change, draft: heat, using: lists)
+
+        await notice.undo()
+
+        let stored = await store.entries
+        XCTAssertEqual(stored.map(\.id), [existing.id])
+    }
+
+    func test_showMovieWatch_unmarking_leavesDiaryAlone() async throws {
+        let (notice, lists, store, _) = makeMovieWatchNotice()
+        let added = try await lists.toggleWatched(heat)
+        await notice.showMovieWatch(added, draft: heat, using: lists)
+        let removed = try await lists.toggleWatched(heat)
+
+        await notice.showMovieWatch(removed, draft: heat, using: lists)
+
+        let stored = await store.entries
+        XCTAssertEqual(stored.count, 1)
+        XCTAssertNil(notice.loggedWatch)
+    }
+
+    func test_dismiss_whileDiarySheetOpen_keepsBanner() async throws {
+        let (notice, lists, _, _) = makeMovieWatchNotice()
+        let change = try await lists.toggleWatched(heat)
+        await notice.showMovieWatch(change, draft: heat, using: lists)
+        await notice.openRatingEditor()
+
+        notice.dismiss()
+
+        XCTAssertNotNil(notice.diaryEditor)
+        XCTAssertNotNil(notice.message)
+        XCTAssertFalse(notice.offersRating)
+    }
+
+    private let heat = ListItemDraft(
+        id: 15,
+        kind: .movie,
+        title: "Heat",
+        imagePath: "/heat.jpg",
+        releaseDate: nil,
+        genreNames: [],
+        voteAverage: 0,
+        popularity: 0
+    )
+
+    private func makeMovieWatchNotice(
+        entries: [DiaryEntry] = []
+    ) -> (ListChangeNotice, ListsRepository, InMemoryDiaryStore, DiaryContext) {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let store = InMemoryDiaryStore(entries: entries)
+        let context = DiaryContext(
+            diary: DiaryRepository(store: store, logger: SilentLogger()),
+            lists: lists,
+            logger: SilentLogger()
+        )
+        let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        return (ListChangeNotice(annotations: annotations, diary: context), lists, store, context)
     }
 
     private func waitForRatingKey(_ notice: ListChangeNotice) async {

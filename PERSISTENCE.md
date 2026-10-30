@@ -224,18 +224,54 @@ CREATE INDEX diary_entry_watched_on ON diary_entry(watched_on);
 CREATE INDEX diary_entry_subject ON diary_entry(kind, tmdb_id);
 ```
 
+Schema v5 lets an entry be about one TV episode (an episode rewatch):
+
+```sql
+ALTER TABLE diary_entry ADD COLUMN season_number INTEGER;  -- NULL for a movie or whole series
+ALTER TABLE diary_entry ADD COLUMN episode_number INTEGER; -- NULL for a movie or whole series
+CREATE INDEX diary_entry_episode ON diary_entry(kind, tmdb_id, season_number, episode_number);
+```
+
 Decisions:
 
-- **Movies and whole series, not episodes or seasons.** Episode history already lives
-  in `tv_episode_completed.completed_at`, one row per episode; copying it into the diary
-  would bury the movies under hundreds of rows. A series entry means "watched the show".
-  Seasons are not logged. The UI logs movies from movie detail today; series rows come
-  from the backfill and can get a "Log a watch" button when the TV screens settle.
-- **The watch's rating is a snapshot.** `diary_entry.score` and `review` describe that
-  viewing. The title's rating (`annotation`) stays the one badges and Watched use, and
-  logging a watch never changes it. The editor prefills the current title rating.
-- **Logging a watch puts the title on Watched.** Removing it from Watched later does not
-  delete diary entries; history stays.
+- **Rows are movies; TV is episodes.** Episode history already lives in
+  `tv_episode_completed.completed_at`, one row per episode; copying it into the diary
+  would bury the movies under hundreds of rows. The app no longer logs a whole series
+  (a show page has no log control); series rows come only from the backfill or a
+  Letterboxd import. Seasons are not logged. The diary screen still *shows* episode
+  history: it reads `tv_episode_completed` joined to the series' `media_item`
+  (`fetchEpisodeWatches`) and draws one read-only row per show per day ("S2 · E3–E5"),
+  which opens the show.
+- **An episode rewatch is a diary row about that episode.** `tv_episode_completed` holds
+  one completion per episode, so it cannot record a second viewing. A watched episode's
+  page offers Log a Rewatch, which writes a `diary_entry` with `kind = 'tv'`, the series'
+  `tmdb_id`, and that episode's `season_number`/`episode_number`
+  (`DiarySubject.episode`). It never changes TV progress or lists. It gets its own diary
+  row ("S2 · E3", badged Rewatch), not a place in the day's episodes row, because it has
+  its own rating, review, edit, and delete. A series' history includes its episode rows.
+- **The eye is how a movie watch is logged.** Marking a movie Watched with the eye
+  inserts an unrated `diary_entry` dated today (`ListChangeNotice.showMovieWatch`), and
+  the toast's Add rating edits that same row, so one viewing is one row. A movie already
+  logged today reuses its row. Undo deletes the row only if that toast created it.
+  Un-marking the movie leaves its history. A rewatch is logged from the movie's Watch
+  History screen (Log a Rewatch), which also puts the movie back on Watched. Onboarding's
+  "seen it" picks add to Watched without a diary row, since the day is unknown.
+- **The title's rating follows its newest watch.** `diary_entry.score` and `review`
+  describe that viewing. Saving a scored entry that is the title's newest watch (latest
+  `watched_on`, then latest `logged_at`) also writes that score to `annotation.score`,
+  keeping the note, the way Letterboxd's film rating follows your latest log
+  (`DiaryContext.save`). Rating an older watch, or saving an unrated one, leaves the
+  title's rating alone. Deleting a watch never changes it. An episode entry sets that
+  episode's `annotation` (`kind = tvEpisode`), never the series', and "newest" compares
+  only entries for the exact same movie, series, or episode.
+- **No tags.** The app has no tags: nothing reads or writes `tags_json`, and the log
+  sheet has no field for them. The column stays at its default `'[]'` because schema v4
+  already created it on development installs; a later schema version can drop it.
+- **Rewatches are worked out, not switched.** The diary badges every watch of a title
+  after its earliest entry as a rewatch. `is_rewatch` is only set by a Letterboxd import
+  (or kept through an edit), which covers a first log of something seen before the app;
+  a new log stores `0`. Deleting the first watch makes the next one the first. An
+  episode entry is also a rewatch when that episode was checked off on or before its day.
 - **`watched_on` is a calendar day.** It is computed on the device calendar when logged,
   so a late-night watch keeps its day when the phone changes timezone.
 
@@ -248,7 +284,7 @@ Backfill (in Swift, inside the v4 migration transaction, because ids come from
 | `watched_on`, `logged_at`, `created_at`, `updated_at` | Earliest of the title's `annotation.watched_at` and its Watched `added_at` |
 | `score`, `review` | The title's current `annotation.score` and `note` (series use the series annotation) |
 | `title`, `release_year`, `image_path` | `media_item` |
-| `is_rewatch`, `tags_json` | `0`, `[]` |
+| `is_rewatch` | `0` (`tags_json` is left at its default) |
 
 Tombstoned Watched rows and Watchlist-only titles get no entry. The legacy JSON import
 runs the same backfill after it writes lists, because v4 ran before those lists existed;
@@ -267,7 +303,7 @@ Watched Date) and `reviews.csv` (the same plus Review). Each row maps to one ent
 | `Letterboxd URI` | `id` | `LibraryStableID.uuid("diary:letterboxd:<uri>")`; re-importing the same file upserts the same rows |
 | `Rating` | `score` | `LetterboxdRating.score(fromStars:)`: stars × 2, exact. Empty means unrated |
 | `Rewatch` | `is_rewatch` | `Yes` → 1, empty → 0 |
-| `Tags` | `tags_json` | `DiaryTags.parse`: comma-separated, trimmed, case-insensitive dedupe |
+| `Tags` | — | Not imported; the app has no tags |
 | `Watched Date` | `watched_on` | Already `yyyy-MM-dd`; `DiaryDay(iso:)` |
 | `Review` (reviews.csv) | `review` | Join to the diary row on `Letterboxd URI` |
 | — | `kind`, `tmdb_id`, `image_path` | `movie`, then the TMDB match for Name + Year |

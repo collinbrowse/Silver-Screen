@@ -192,6 +192,19 @@ final class TVRepository: Sendable {
         }
     }
 
+    /// Poster path by season number, for a show's watch history. Seasons with no poster
+    /// are left out, so a caller falls back to the series poster.
+    func seasonPosters(seriesID: Int, locale: Locale = .current) async throws -> [Int: String] {
+        let seasons = try await seriesCatalog(id: seriesID, locale: locale).seasons
+        var posters: [Int: String] = [:]
+        for season in seasons {
+            if let path = season.posterPath {
+                posters[season.seasonNumber] = path
+            }
+        }
+        return posters
+    }
+
     func season(seriesID: Int, seasonNumber: Int, locale: Locale = .current) async throws -> TVSeasonDetail {
         try await fetch(
             path: "tv/\(seriesID)/season/\(seasonNumber)",

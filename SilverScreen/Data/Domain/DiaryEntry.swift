@@ -3,10 +3,11 @@
 //  SilverScreen
 //
 //  One logged watch of a movie or a whole series: the day it was watched, and the
-//  rating, review, tags, and rewatch flag for that viewing. A title can have many
-//  entries. Episode-by-episode history stays in TV progress (`completed_at`), so the
-//  diary is not flooded with one row per episode. Columns line up with Letterboxd's
-//  diary CSV; see PERSISTENCE.md.
+//  rating, review, and rewatch flag for that viewing. A title can have many
+//  entries. Episode-by-episode history stays in TV progress (`completed_at`); the diary
+//  reads it back as `EpisodeWatch` and shows one row per show per day, so it is not
+//  flooded with one row per episode. Columns line up with Letterboxd's diary CSV; see
+//  PERSISTENCE.md.
 //
 
 import Foundation
@@ -63,10 +64,20 @@ struct DiaryDay: Sendable, Hashable, Comparable, Codable {
     }
 }
 
-/// The title a diary entry is about. People cannot be logged.
+/// The title a diary entry is about: a movie, a whole series, or one episode of a
+/// series (an episode rewatch). People cannot be logged.
 struct DiarySubject: Sendable, Hashable {
     let kind: ListItemKind
+    /// The movie, or the series an episode belongs to.
     let tmdbID: Int
+    /// Set only for an episode entry; nil for a movie or a whole series.
+    let episode: TVEpisodeRef?
+
+    init(kind: ListItemKind, tmdbID: Int, episode: TVEpisodeRef? = nil) {
+        self.kind = kind
+        self.tmdbID = tmdbID
+        self.episode = episode
+    }
 
     static func movie(_ id: Int) -> DiarySubject {
         DiarySubject(kind: .movie, tmdbID: id)
@@ -74,6 +85,17 @@ struct DiarySubject: Sendable, Hashable {
 
     static func series(_ id: Int) -> DiarySubject {
         DiarySubject(kind: .tv, tmdbID: id)
+    }
+
+    static func episode(seriesID: Int, season: Int, episode: Int) -> DiarySubject {
+        DiarySubject(kind: .tv, tmdbID: seriesID, episode: TVEpisodeRef(seasonNumber: season, episodeNumber: episode))
+    }
+
+    /// Whether `other` belongs on this subject's watch history: the same title, and for an
+    /// episode subject the same episode. A series' history includes its episode entries.
+    func contains(_ other: DiarySubject) -> Bool {
+        guard kind == other.kind, tmdbID == other.tmdbID else { return false }
+        return episode == nil || episode == other.episode
     }
 
     /// Same key the lists use (`movie-550`), so a diary row can join to a list entry.
@@ -98,7 +120,6 @@ struct DiaryEntry: Sendable, Equatable, Hashable, Identifiable {
     /// Review written for this viewing (Letterboxd `Review`, in reviews.csv).
     var review: String?
     var isRewatch: Bool
-    var tags: [String]
     /// When the entry was logged (Letterboxd `Date`). An import keeps the original day,
     /// while the row's own `created_at` records when it reached this device.
     let loggedAt: Date
@@ -113,7 +134,6 @@ struct DiaryEntry: Sendable, Equatable, Hashable, Identifiable {
         score: Double?,
         review: String?,
         isRewatch: Bool,
-        tags: [String],
         loggedAt: Date
     ) {
         self.id = id
@@ -125,46 +145,32 @@ struct DiaryEntry: Sendable, Equatable, Hashable, Identifiable {
         self.score = score
         self.review = review
         self.isRewatch = isRewatch
-        self.tags = tags
         self.loggedAt = loggedAt
     }
 
-    /// Drops an invalid score, a blank review, and blank or repeated tags (case-insensitive,
-    /// first spelling wins), so the store never compares two spellings of "nothing".
+    /// Drops an invalid score and a blank review, so the store never compares two
+    /// spellings of "nothing".
     func normalized() -> DiaryEntry {
         var copy = self
         copy.title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         copy.score = score.flatMap { UserScore.isValid($0) ? $0 : nil }
         let trimmedReview = review?.trimmingCharacters(in: .whitespacesAndNewlines)
         copy.review = (trimmedReview?.isEmpty == false) ? trimmedReview : nil
-        copy.tags = DiaryTags.normalized(tags)
         return copy
     }
 }
 
-/// Tag cleanup shared by the editor and the store.
-enum DiaryTags {
-    /// Trims each tag, drops empties, and keeps the first of any case-insensitive repeat.
-    static func normalized(_ tags: [String]) -> [String] {
-        var seen = Set<String>()
-        var result: [String] = []
-        for tag in tags {
-            let trimmed = tag.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty, seen.insert(trimmed.lowercased()).inserted else { continue }
-            result.append(trimmed)
-        }
-        return result
-    }
-
-    /// Splits comma-separated text, the way Letterboxd writes its `Tags` column.
-    static func parse(_ text: String) -> [String] {
-        normalized(text.components(separatedBy: ","))
-    }
-
-    /// Joins tags back into the editor and CSV form.
-    static func joined(_ tags: [String]) -> String {
-        tags.joined(separator: ", ")
-    }
+/// One episode checked off in TV progress, read back for the diary. It is not a diary
+/// entry: it has no rating or review, and unmarking the episode removes it.
+struct EpisodeWatch: Sendable, Equatable {
+    let seriesID: Int
+    /// The series name stored with the show's list entry.
+    let seriesTitle: String
+    let posterPath: String?
+    let episode: TVEpisodeRef
+    /// When the episode was marked watched. Marking a whole season stamps every episode
+    /// with the same moment.
+    let completedAt: Date
 }
 
 /// Converts between this app's 0.5–10 score and Letterboxd's 0.5–5 star rating.

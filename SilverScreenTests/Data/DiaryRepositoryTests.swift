@@ -10,12 +10,11 @@ final class DiaryRepositoryTests: XCTestCase {
     func test_save_newEntry_storesNormalizedEntry() async throws {
         let store = InMemoryDiaryStore()
         let repository = DiaryRepository(store: store, logger: SilentLogger())
-        let entry = DiaryFixtures.entry(review: "  Loved it  ", tags: ["a", " A "])
+        let entry = DiaryFixtures.entry(review: "  Loved it  ")
 
         let saved = try await repository.save(entry)
 
         XCTAssertEqual(saved.review, "Loved it")
-        XCTAssertEqual(saved.tags, ["a"])
         let stored = await store.entries
         XCTAssertEqual(stored, [saved])
     }
@@ -54,6 +53,39 @@ final class DiaryRepositoryTests: XCTestCase {
         } catch {
             XCTAssertEqual(error as? AppError, .persistence)
         }
+    }
+
+    func test_episodeWatches_whenStoreFails_throwsPersistence() async {
+        let store = InMemoryDiaryStore()
+        await store.setEpisodeLoadError(CocoaError(.fileReadCorruptFile))
+        let repository = DiaryRepository(store: store, logger: SilentLogger())
+
+        do {
+            _ = try await repository.episodeWatches()
+            XCTFail("Expected a persistence error")
+        } catch {
+            XCTAssertEqual(error as? AppError, .persistence)
+        }
+    }
+
+    func test_episodeWatches_seriesID_filtersToThatShow() async throws {
+        let watch = { (series: Int) in
+            EpisodeWatch(
+                seriesID: series,
+                seriesTitle: "Show",
+                posterPath: nil,
+                episode: TVEpisodeRef(seasonNumber: 1, episodeNumber: 1),
+                completedAt: Date(timeIntervalSince1970: 1_792_000_000)
+            )
+        }
+        let repository = DiaryRepository(
+            store: InMemoryDiaryStore(episodeWatches: [watch(1), watch(2)]),
+            logger: SilentLogger()
+        )
+
+        let watches = try await repository.episodeWatches(seriesID: 2)
+
+        XCTAssertEqual(watches.map(\.seriesID), [2])
     }
 
     func test_save_whenStoreFails_throwsPersistenceAndKeepsCache() async throws {
@@ -141,6 +173,20 @@ final class DiaryRepositoryTests: XCTestCase {
         let saves = await store.saveCount
         XCTAssertEqual(saves, 0)
     }
+
+    func test_entriesForSeries_includeItsEpisodeEntries_episodeSubjectOnlyItsOwn() async throws {
+        let series = DiaryFixtures.entry(subject: .series(42))
+        let e23 = DiaryFixtures.entry(subject: .episode(seriesID: 42, season: 2, episode: 3))
+        let e24 = DiaryFixtures.entry(subject: .episode(seriesID: 42, season: 2, episode: 4))
+        let other = DiaryFixtures.entry(subject: .episode(seriesID: 7, season: 2, episode: 3))
+        let repository = DiaryRepository(store: InMemoryDiaryStore(entries: [series, e23, e24, other]), logger: SilentLogger())
+
+        let show = try await repository.entries(for: .series(42))
+        let episode = try await repository.entries(for: .episode(seriesID: 42, season: 2, episode: 3))
+
+        XCTAssertEqual(Set(show.map(\.id)), [series.id, e23.id, e24.id])
+        XCTAssertEqual(episode.map(\.id), [e23.id])
+    }
 }
 
 /// Diary entries for tests, dated 16 Oct 2026 unless told otherwise.
@@ -152,7 +198,6 @@ enum DiaryFixtures {
         score: Double? = nil,
         review: String? = nil,
         isRewatch: Bool = false,
-        tags: [String] = [],
         loggedAt: Date = Date(timeIntervalSince1970: 1_792_000_000)
     ) -> DiaryEntry {
         DiaryEntry(
@@ -165,7 +210,6 @@ enum DiaryFixtures {
             score: score,
             review: review,
             isRewatch: isRewatch,
-            tags: tags,
             loggedAt: loggedAt
         )
     }

@@ -34,7 +34,7 @@ final class DiaryStoreTests: XCTestCase {
 
         let db = try SQLiteDatabase(fileURL: databaseURL())
         defer { db.close() }
-        XCTAssertEqual(try db.scalarInt("SELECT MAX(version) FROM schema_migrations;"), 4)
+        XCTAssertEqual(try db.scalarInt("SELECT MAX(version) FROM schema_migrations;"), LibrarySchema.currentVersion)
         XCTAssertEqual(try db.scalarInt("SELECT COUNT(*) FROM library_list;"), 2)
         XCTAssertEqual(try db.scalarInt("SELECT COUNT(*) FROM media_item;"), 5)
         XCTAssertEqual(try db.scalarInt("SELECT COUNT(*) FROM list_membership;"), 5)
@@ -63,7 +63,7 @@ final class DiaryStoreTests: XCTestCase {
             Set(entries.map(\.id)),
             Set([DiarySubject.movie(550), .movie(600), .series(42)].map(SQLiteLibraryStore.backfilledDiaryID))
         )
-        XCTAssertTrue(entries.allSatisfy { !$0.isRewatch && $0.tags.isEmpty })
+        XCTAssertTrue(entries.allSatisfy { !$0.isRewatch })
     }
 
     func test_migrate_fromV3_backfillUsesEarliestOfRatingAndWatchedDates() async throws {
@@ -192,14 +192,56 @@ final class DiaryStoreTests: XCTestCase {
             watchedOn: DiaryDay(year: 2026, month: 10, day: 16),
             score: 7.5,
             review: "Better the second time.",
-            isRewatch: true,
-            tags: ["cozy", "rainy day"]
+            isRewatch: true
         )
 
         try await store.apply(.replaceDiary([entry]))
 
         let loaded = try await store.fetchDiaryEntries()
         XCTAssertEqual(loaded, [entry])
+    }
+
+    func test_fetchEpisodeWatches_joinsSeriesTitleAndSkipsUnmarkedEpisodes() async throws {
+        let store = try makeStore()
+        try await store.bootstrap()
+        let list = LibraryList.system(.inProgress)
+        let series = ListItemDraft(
+            id: 42,
+            kind: .tv,
+            title: "Severance",
+            imagePath: "/sev.jpg",
+            releaseDate: nil,
+            genreNames: [],
+            voteAverage: 8,
+            popularity: 10
+        )
+        try await store.apply(
+            .replaceLists(
+                LibrarySnapshot(lists: [list], entries: [ListEntry(listID: list.id, draft: series, addedAt: Date(), position: 0)])
+            )
+        )
+        let first = TVEpisodeRef(seasonNumber: 1, episodeNumber: 1)
+        let second = TVEpisodeRef(seasonNumber: 1, episodeNumber: 2)
+        try await store.apply(.replaceTVWatch([TVSeriesWatchState(seriesID: 42, completed: [first, second])]))
+        try await store.apply(.replaceTVWatch([TVSeriesWatchState(seriesID: 42, completed: [first])]))
+        // An episode of a series with no stored title has nothing to show.
+        try await store.apply(
+            .replaceTVWatch([
+                TVSeriesWatchState(seriesID: 42, completed: [first]),
+                TVSeriesWatchState(seriesID: 99, completed: [first]),
+            ])
+        )
+
+        let watches = try await store.fetchEpisodeWatches()
+
+        XCTAssertEqual(watches.map(\.seriesID), [42])
+        XCTAssertEqual(watches.first?.seriesTitle, "Severance")
+        XCTAssertEqual(watches.first?.posterPath, "/sev.jpg")
+        XCTAssertEqual(watches.first?.episode, first)
+        let narrowed = try await store.fetchEpisodeWatches(seriesID: 42)
+        XCTAssertEqual(narrowed, watches)
+        let other = try await store.fetchEpisodeWatches(seriesID: 7)
+        XCTAssertEqual(other, [])
     }
 
     func test_replaceDiary_savingOneEntry_leavesOtherRowsUntouched() async throws {
@@ -320,17 +362,27 @@ final class DiaryStoreTests: XCTestCase {
         XCTAssertEqual(try db.scalarInt("SELECT MAX(revision) FROM list_membership;"), 1)
     }
 
+    func test_replaceDiary_leavesUnusedTagsColumnAtItsDefault() async throws {
+        let store = try makeStore()
+        try await store.bootstrap()
+
+        try await store.apply(.replaceDiary([makeEntry(subject: .movie(1)), makeEntry(subject: .series(2))]))
+
+        let db = try SQLiteDatabase(fileURL: databaseURL())
+        defer { db.close() }
+        XCTAssertEqual(try db.scalarInt("SELECT COUNT(*) FROM diary_entry WHERE tags_json = '[]';"), 2)
+    }
+
     func test_replaceDiary_storesNormalizedEntry() async throws {
         let store = try makeStore()
         try await store.bootstrap()
-        let entry = makeEntry(subject: .movie(1), score: 11, review: "   ", tags: [" a ", "A", ""])
+        let entry = makeEntry(subject: .movie(1), score: 11, review: "   ")
 
         try await store.apply(.replaceDiary([entry]))
 
         let loaded = try await store.fetchDiaryEntries()
         XCTAssertNil(loaded.first?.score)
         XCTAssertNil(loaded.first?.review)
-        XCTAssertEqual(loaded.first?.tags, ["a"])
     }
 
     func test_fetchDiaryEntries_ordersNewestWatchFirst() async throws {
@@ -431,8 +483,7 @@ final class DiaryStoreTests: XCTestCase {
         watchedOn: DiaryDay = DiaryDay(year: 2026, month: 10, day: 16),
         score: Double? = nil,
         review: String? = nil,
-        isRewatch: Bool = false,
-        tags: [String] = []
+        isRewatch: Bool = false
     ) -> DiaryEntry {
         DiaryEntry(
             id: UUID(),
@@ -444,7 +495,6 @@ final class DiaryStoreTests: XCTestCase {
             score: score,
             review: review,
             isRewatch: isRewatch,
-            tags: tags,
             loggedAt: date("2026-10-16T20:15:00.000Z")
         )
     }
@@ -464,6 +514,36 @@ final class DiaryStoreTests: XCTestCase {
 
     private func date(_ iso: String) -> Date {
         LibrarySQLDate.decode(iso)!
+    }
+
+    // MARK: - Episode entries (v5)
+
+    func test_bootstrap_v5AddsEpisodeColumnsToDiary() async throws {
+        let store = try makeStore()
+        try await store.bootstrap()
+
+        let db = try SQLiteDatabase(fileURL: databaseURL())
+        defer { db.close() }
+        XCTAssertEqual(
+            try db.scalarInt(
+                "SELECT COUNT(*) FROM pragma_table_info('diary_entry') WHERE name IN ('season_number', 'episode_number');"
+            ),
+            2
+        )
+    }
+
+    func test_replaceDiary_roundTripsEpisodeAndKeepsSeriesEntriesWhole() async throws {
+        let store = try makeStore()
+        try await store.bootstrap()
+        let episode = makeEntry(subject: .episode(seriesID: 42, season: 2, episode: 3), score: 8)
+        let series = makeEntry(subject: .series(42))
+
+        try await store.apply(.replaceDiary([episode, series]))
+
+        let loaded = try await store.fetchDiaryEntries()
+        XCTAssertEqual(loaded.first { $0.id == episode.id }?.subject, .episode(seriesID: 42, season: 2, episode: 3))
+        XCTAssertEqual(loaded.first { $0.id == series.id }?.subject, .series(42))
+        XCTAssertNil(loaded.first { $0.id == series.id }?.subject.episode)
     }
 
     private func databaseURL() -> URL {

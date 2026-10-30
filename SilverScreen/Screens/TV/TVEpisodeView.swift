@@ -18,6 +18,8 @@ struct TVEpisodeView: View {
     var router: NavigationRouter?
 
     @Environment(ListChangeNotice.self) private var notice
+    /// Told when a rewatch is logged here; its rating can become the episode's rating.
+    @Environment(DiaryContext.self) private var diaryContext: DiaryContext?
     @State private var playingTrailer: MediaTrailer?
     @State private var loadingTrailerID: String?
 
@@ -136,6 +138,9 @@ struct TVEpisodeView: View {
         .onChange(of: notice.watchRevision) { _, _ in
             Task { await viewModel.reloadEpisodeCompleted() }
         }
+        .onChange(of: diaryContext?.revision) { _, _ in
+            Task { await viewModel.reloadPersonalFromStore() }
+        }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
         .sheet(item: annotationEditorBinding) { session in
             AnnotationEditorSheet(
@@ -222,6 +227,17 @@ struct TVEpisodeView: View {
                         userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
                         onEdit: { viewModel.openAnnotationEditor() }
                     )
+                    // The first viewing is the check-off; later ones are diary rewatches.
+                    if viewModel.isEpisodeCompleted {
+                        EpisodeRewatchCard(
+                            title: LogWatchTitle(
+                                episode: TVEpisodeRef(seasonNumber: seasonNumber, episodeNumber: episodeNumber),
+                                seriesID: seriesID,
+                                seriesName: seriesName,
+                                posterPath: viewModel.seriesSnapshot.posterPath
+                            )
+                        )
+                    }
                     MediaDescriptionSection(
                         overview: content.overview,
                         note: content.userNote,

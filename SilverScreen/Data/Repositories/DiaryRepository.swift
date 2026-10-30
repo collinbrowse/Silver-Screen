@@ -26,13 +26,28 @@ actor DiaryRepository {
         Self.sorted(try await loadCache())
     }
 
-    /// Entries for one title, newest watch first.
+    /// Entries for one title, newest watch first. A series includes its episode entries;
+    /// an episode subject returns only that episode's.
     func entries(for subject: DiarySubject) async throws -> [DiaryEntry] {
-        try await entries().filter { $0.subject == subject }
+        try await entries().filter { subject.contains($0.subject) }
+    }
+
+    /// Episodes checked off in TV progress, newest first; one show's when `seriesID` is
+    /// set. Read fresh every time rather than cached, because the TV screens write
+    /// progress without going through here.
+    func episodeWatches(seriesID: Int? = nil) async throws -> [EpisodeWatch] {
+        do {
+            return try await store.loadEpisodeWatches(seriesID: seriesID)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            logger.error("Diary episode history load failed", category: .persistence)
+            throw AppError.persistence
+        }
     }
 
     /// Inserts `entry`, or replaces the entry with the same id. Returns what was stored
-    /// (normalized: blank review and tags dropped, invalid score cleared).
+    /// (normalized: blank review dropped, invalid score cleared).
     @discardableResult
     func save(_ entry: DiaryEntry) async throws -> DiaryEntry {
         guard entry.subject.kind != .person else {

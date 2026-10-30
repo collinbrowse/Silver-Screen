@@ -91,6 +91,18 @@ struct RootTabView: View {
         )
     }
 
+    /// The diary sheet a movie watch toast's Add rating opens.
+    private var toastDiaryEditorBinding: Binding<DiaryEditorSession?> {
+        Binding(
+            get: { listChanges.diaryEditor },
+            set: { newValue in
+                if newValue == nil {
+                    listChanges.dismissRatingEditor()
+                }
+            }
+        )
+    }
+
     var body: some View {
         // Read `message` here so RootTabView observes ListChangeNotice. The overlay
         // alone (child @Bindable) can miss updates when only the notice changes.
@@ -99,6 +111,10 @@ struct RootTabView: View {
             .environment(listChanges)
             .environment(tour)
             // The list-change banner is hosted by each tab; see `ListChangeBannerHost`.
+            // Its Undo is about the tab it appeared on, so leaving that tab drops it.
+            .onChange(of: router.selectedTab) { _, _ in
+                listChanges.dismiss()
+            }
             // Over the tab bar and any pushed screen, under sheets.
             .overlay {
                 if tour.isActive {
@@ -113,6 +129,13 @@ struct RootTabView: View {
                     canClear: session.canClear,
                     onSave: { await listChanges.saveRatingAnnotation(score: $0, note: $1) },
                     onClear: { await listChanges.clearRatingAnnotation() }
+                )
+            }
+            .sheet(item: toastDiaryEditorBinding) { session in
+                DiaryEntryEditorSheet(
+                    session: session,
+                    onSave: { await listChanges.saveDiaryEntry($0) },
+                    onDelete: { await listChanges.deleteDiaryEntry() }
                 )
             }
             .modifier(ReviewPromptPresenter(prompter: reviewPrompter))

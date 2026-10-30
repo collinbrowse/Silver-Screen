@@ -18,6 +18,9 @@ struct MovieDetailView: View {
     @State private var selectedBackdropID: String?
     @State private var playingTrailer: MediaTrailer?
     @State private var loadingTrailerID: String?
+    @Environment(DiaryContext.self) private var diaryContext: DiaryContext?
+    /// The Watch History card's summary; the card shows only once it has history.
+    @State private var watchHistory: WatchHistoryCardViewModel?
 
     private let portraitCardWidth: CGFloat = 140
 
@@ -94,6 +97,18 @@ struct MovieDetailView: View {
                 await viewModel.load()
             }
         }
+        // Reloads when the movie finishes loading and whenever a screen writes the diary.
+        .task(id: WatchHistoryLoadKey(subject: loadedSubject, revision: diaryContext?.revision)) {
+            watchHistory = await WatchHistoryCardViewModel.refreshed(
+                watchHistory,
+                subject: loadedSubject,
+                context: diaryContext
+            )
+        }
+        // A rated newest watch also sets the movie's rating, so the rating card re-reads it.
+        .onChange(of: diaryContext?.revision) { _, _ in
+            Task { await viewModel.reloadPersonalDetail() }
+        }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
         .sheet(item: annotationEditorBinding) { session in
             AnnotationEditorSheet(
@@ -116,6 +131,14 @@ struct MovieDetailView: View {
             }
             .navigationTransition(.zoom(sourceID: selection.initialID, in: heroTransition))
         }
+    }
+
+    /// The movie once its details have loaded, for Watch History.
+    private var loadedSubject: DiarySubject? {
+        if case .loaded(let content, _) = viewModel.state {
+            return .movie(content.detail.id)
+        }
+        return nil
     }
 
     private var navigationTitle: String {
@@ -171,8 +194,9 @@ struct MovieDetailView: View {
 
     private func shownSections(_ content: MovieDetailContent) -> Set<MovieDetailLayout.Section> {
         var shown: Set<MovieDetailLayout.Section> = [
-            .hero(.all), .hero(.backdrop), .hero(.identity), .rating, .logWatch, .storyline, .facts,
+            .hero(.all), .hero(.backdrop), .hero(.identity), .rating, .storyline, .facts,
         ]
+        if watchHistory?.hasHistory == true { shown.insert(.watchHistory) }
         if !viewModel.awardRows.isEmpty { shown.insert(.awards) }
         if content.cast != nil { shown.insert(.cast) }
         if content.crew != nil { shown.insert(.crew) }
@@ -196,8 +220,13 @@ struct MovieDetailView: View {
                 hero(content, layout: layout, part: part)
             case .rating:
                 ratingCard(content)
-            case .logWatch:
-                LogWatchButton(title: LogWatchTitle(movie: content.detail), currentScore: content.userScore)
+            case .watchHistory:
+                if let watchHistory {
+                    WatchHistoryCard(
+                        viewModel: watchHistory,
+                        route: .titleHistory(kind: .movie, id: content.detail.id, title: content.detail.title)
+                    )
+                }
             case .storyline:
                 storyline(content, scrollTo: scrollTo)
             case .facts:
@@ -586,8 +615,8 @@ enum MovieDetailLayout {
     enum Section: DetailPageSection {
         case hero(DetailHeroPart)
         case rating
-        /// The diary's Log watch button, under the rating card.
-        case logWatch
+        /// Watch History, under the rating card, once the movie has diary watches.
+        case watchHistory
         case storyline
         case facts
         case awards
@@ -602,7 +631,7 @@ enum MovieDetailLayout {
             switch self {
                 case .hero, .cast, .crew, .similar, .collection, .reviews:
                     true
-                case .rating, .logWatch, .storyline, .facts, .awards, .attribution:
+                case .rating, .watchHistory, .storyline, .facts, .awards, .attribution:
                     false
             }
         }
@@ -622,14 +651,14 @@ enum MovieDetailLayout {
             case .stacked, .columns:
                 DetailPagePlan<Section>(
                     top: [.hero(.all)],
-                    main: hasAwards ? [.rating, .logWatch, .storyline, .facts] : [.rating, .logWatch, .storyline],
+                    main: hasAwards ? [.rating, .watchHistory, .storyline, .facts] : [.rating, .watchHistory, .storyline],
                     side: hasAwards ? [.awards] : [.facts],
                     below: [.cast, .crew, .similar, .collection, .reviews, .attribution]
                 )
             case .panes:
                 DetailPagePlan<Section>(
                     top: [.hero(.backdrop)],
-                    main: [.hero(.identity), .facts, .rating, .logWatch, .storyline, .reviews],
+                    main: [.hero(.identity), .facts, .rating, .watchHistory, .storyline, .reviews],
                     side: [.awards, .cast, .crew, .similar, .collection],
                     below: [.attribution]
                 )

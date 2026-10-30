@@ -2,8 +2,9 @@
 //  DiaryEntryEditorSheet.swift
 //  SilverScreen
 //
-//  Editor for one watch: the day (never in the future), an optional rating and review
-//  for that viewing, a rewatch switch, and tags. Save keeps the sheet open on failure.
+//  Editor for one watch: the day (never in the future), an optional rating (the same
+//  slider as the Rate sheet) and review for that viewing. Whether it is a
+//  rewatch comes from the title's history, so there is no switch for it. Save keeps the sheet open on failure.
 //  Editing an existing entry also offers Delete, behind a confirmation. Sized as a form
 //  sheet so it reads the same on iPhone and iPad.
 //
@@ -51,31 +52,25 @@ struct DiaryEntryEditorSheet: View {
                         in: ...Date(),
                         displayedComponents: .date
                     )
-                    Toggle("Rewatch", isOn: $draft.isRewatch)
                 }
 
                 Section {
-                    Picker("Rating", selection: $draft.score) {
-                        Text("No rating").tag(Double?.none)
-                        ForEach(UserScore.options, id: \.self) { option in
-                            Text(UserScore.formatted(option)).tag(Double?.some(option))
+                    ScoreSlider(score: $draft.score, isDisabled: isSaving)
+                    if draft.score != nil {
+                        Button("Clear Rating") {
+                            draft.score = nil
                         }
+                        .tint(DesignTheme.accent)
+                        .disabled(isSaving)
                     }
-                    .accessibilityValue(draft.score.map(UserScore.formatted) ?? "No rating")
                 } footer: {
-                    Text("This rating is for this watch. Your rating for the title stays as it is.")
+                    Text("Your newest watch's rating is also your rating for this title. Rating an older watch leaves it as it is.")
                 }
 
                 Section("Review") {
                     TextField("What did you think? (optional)", text: $draft.review, axis: .vertical)
                         .lineLimit(4...)
                         .accessibilityLabel("Review")
-                }
-
-                Section {
-                    TextField("Tags, separated by commas", text: $draft.tagsText)
-                        .textInputAutocapitalization(.never)
-                        .accessibilityLabel("Tags")
                 }
 
                 if session.canDelete {

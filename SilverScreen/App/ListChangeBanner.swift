@@ -20,7 +20,7 @@ struct ListChangeBanner: View {
                     .foregroundStyle(DesignTheme.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: DesignSpacing.sm)
-                if notice.ratingKey != nil, notice.annotationEditor == nil {
+                if notice.offersRating {
                     Button {
                         Task { await notice.openRatingEditor() }
                     } label: {
@@ -56,13 +56,15 @@ struct ListChangeBanner: View {
 /// already ends above the tab bar when the bar is at the bottom (iPhone), and at the
 /// home indicator when the tabs are a sidebar or side bar (iPad, iPhone Duo), so the
 /// banner sits just above whichever is there instead of a fixed tab-bar height.
+/// It is a safe-area inset rather than an overlay so lists can scroll the rows it would
+/// cover (like the next episode's watched toggle) up above it.
 struct ListChangeBannerHost: ViewModifier {
     let notice: ListChangeNotice
     /// Read by the caller's `body`, so the host updates when only the notice changes.
     let isShowing: Bool
 
     func body(content: Content) -> some View {
-        content.overlay(alignment: .bottom) {
+        content.safeAreaInset(edge: .bottom, spacing: 0) {
             if isShowing {
                 ListChangeBanner(notice: notice)
                     .id(notice.presentationID)
