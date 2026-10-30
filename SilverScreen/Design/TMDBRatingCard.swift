@@ -16,6 +16,8 @@ struct TMDBRatingCard: View {
     /// Says where the score came from, e.g. "from your Oct 16 watch".
     var userScoreCaption: String? = nil
     var showsUserSide = true
+    /// The prompt with no score yet: "Rate season" and "Rate show" on those pages.
+    var addRatingTitle = "Add rating"
     let onEdit: () -> Void
 
     var body: some View {
@@ -92,7 +94,7 @@ struct TMDBRatingCard: View {
                 Image(systemName: "plus")
                     .font(DesignTypography.metadata.weight(.semibold))
                     .accessibilityHidden(true)
-                Text("Add rating")
+                Text(addRatingTitle)
                     .font(DesignTypography.metadata.weight(.semibold))
             }
             .foregroundStyle(DesignTheme.accent)

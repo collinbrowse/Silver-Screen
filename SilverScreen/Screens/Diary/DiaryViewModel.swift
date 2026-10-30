@@ -18,8 +18,6 @@ final class DiaryViewModel {
     private(set) var state: LoadState<[DiaryMonth]> = .idle
     /// Open editor for an existing entry or a new rewatch, or nil.
     var editor: DiaryEditorSession?
-    /// The movie a new rewatch is for while its sheet is open, so saving can put it back
-    /// on Watched.
 
     /// Poster path by season number, on a show's history.
     private(set) var seasonPosters: [Int: String] = [:]

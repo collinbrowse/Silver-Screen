@@ -17,6 +17,8 @@ struct DiaryEntryEditorSheet: View {
     let onDelete: () async -> AnnotationEditorWriteResult
 
     @Environment(\.dismiss) private var dismiss
+    /// Nil in previews and anywhere the root did not install one.
+    @Environment(ReviewPrompter.self) private var reviewPrompter: ReviewPrompter?
     @State private var draft: DiaryEntryDraft
     @State private var isSaving = false
     @State private var saveError: AppError?
@@ -99,7 +101,7 @@ struct DiaryEntryEditorSheet: View {
                     Button("Save") {
                         guard !isSaving else { return }
                         isSaving = true
-                        Task { finish(await onSave(draft)) }
+                        Task { await save() }
                     }
                     .disabled(isSaving)
                 }
@@ -117,6 +119,16 @@ struct DiaryEntryEditorSheet: View {
         }
         .presentationSizing(.form)
         .interactiveDismissDisabled(isSaving)
+    }
+
+    /// A saved rating goes to the review prompter, which decides whether this is a good
+    /// moment to ask. A watch saved without a rating is not a rating moment.
+    private func save() async {
+        let result = await onSave(draft)
+        finish(result)
+        if draft.score != nil {
+            await reviewPrompter?.ratingSaveFinished(result)
+        }
     }
 
     private func finish(_ result: AnnotationEditorWriteResult) {

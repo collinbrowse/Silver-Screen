@@ -352,6 +352,18 @@ final class ListChangeNoticeTests: XCTestCase {
         XCTAssertTrue(after.entries.contains { $0.listID == inProgress.id && $0.itemID == 12 })
     }
 
+    func test_ratingActionTitle_followsWhatIsBeingRated() async throws {
+        let (notice, lists, _, _) = makeMovieWatchNotice()
+
+        notice.offerRating(for: .series(1), message: "Watched", using: lists)
+        await waitForRatingKey(notice)
+        XCTAssertEqual(notice.ratingActionTitle, "Rate show")
+
+        notice.offerRating(for: .season(seriesID: 1, seasonNumber: 2), message: "Watched", using: lists)
+        await waitForRatingKey(notice)
+        XCTAssertEqual(notice.ratingActionTitle, "Rate season")
+    }
+
     // MARK: - Movie eye
 
     func test_logMovie_logsOneUnratedWatchAndOffersRateAndReview() async throws {

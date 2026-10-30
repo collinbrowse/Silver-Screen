@@ -132,7 +132,7 @@ struct TVSeriesView: View {
         }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
         .sheet(item: annotationEditorBinding) { session in
-            AnnotationEditorSheet(
+            VerdictEditorSheet(
                 title: session.title,
                 score: session.score,
                 note: session.note,
@@ -231,10 +231,13 @@ struct TVSeriesView: View {
                         formattedRating: content.formattedRating,
                         accessibilityLabel: content.ratingAccessibilityLabel,
                         formattedUserScore: content.formattedUserScore,
-                        userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+                        userScoreAccessibilityLabel: content.formattedUserScore == nil
+                            ? "Rate show"
+                            : content.userScoreAccessibilityLabel,
+                        addRatingTitle: "Rate show",
                         onEdit: { viewModel.openAnnotationEditor() }
                     )
-                    // Episodes are logged with their eyes; the show itself is not logged.
+                    // Your rating here is a verdict on the show. Watches belong to its episodes.
                     if let watchHistory, watchHistory.hasHistory {
                         WatchHistoryCard(
                             viewModel: watchHistory,

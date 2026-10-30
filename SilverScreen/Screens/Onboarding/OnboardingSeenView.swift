@@ -62,7 +62,7 @@ struct OnboardingSeenView: View {
                 OnboardingBottomBar(title: "Continue", action: onContinue)
             }
             .sheet(item: $rating) { title in
-                AnnotationEditorSheet(
+                VerdictEditorSheet(
                     title: title.draft.title,
                     score: viewModel.score(for: title),
                     note: viewModel.note(for: title) ?? "",

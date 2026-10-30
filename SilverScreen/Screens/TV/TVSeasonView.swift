@@ -186,7 +186,7 @@ struct TVSeasonView: View {
         }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
         .sheet(item: annotationEditorBinding) { session in
-            AnnotationEditorSheet(
+            VerdictEditorSheet(
                 title: session.title,
                 score: session.score,
                 note: session.note,
@@ -377,7 +377,10 @@ struct TVSeasonView: View {
             formattedRating: content.formattedRating,
             accessibilityLabel: content.ratingAccessibilityLabel,
             formattedUserScore: content.formattedUserScore,
-            userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+            userScoreAccessibilityLabel: content.formattedUserScore == nil
+                ? "Rate season"
+                : content.userScoreAccessibilityLabel,
+            addRatingTitle: "Rate season",
             onEdit: { viewModel.openAnnotationEditor() }
         )
         MediaDescriptionSection(

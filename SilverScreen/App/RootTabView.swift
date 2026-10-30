@@ -125,7 +125,7 @@ struct RootTabView: View {
                 }
             }
             .sheet(item: toastAnnotationEditorBinding) { session in
-                AnnotationEditorSheet(
+                VerdictEditorSheet(
                     title: session.title,
                     score: session.score,
                     note: session.note,

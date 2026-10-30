@@ -40,8 +40,15 @@ final class ListChangeNotice {
     private(set) var watchRevision = 0
     /// True when membership Undo and/or a ledger restore is available.
     var canUndo: Bool { change != nil || watchUndo != nil || movieUndo != nil }
-    /// "Rate & review" on a watch just logged, "Add rating" otherwise.
-    var ratingActionTitle: String { loggedWatch == nil ? "Add rating" : "Rate & review" }
+    /// "Rate & review" on a watch just logged; a season or show gets a verdict instead.
+    var ratingActionTitle: String {
+        guard loggedWatch == nil else { return "Rate & review" }
+        switch ratingKey?.kind {
+            case .tvSeries: return "Rate show"
+            case .tvSeason: return "Rate season"
+            case .movie, .tvEpisode, nil: return "Add rating"
+        }
+    }
     /// Whether the banner shows its rating action: a title without a score, or a watch
     /// just logged. Hidden while either sheet is up.
     var offersRating: Bool {
