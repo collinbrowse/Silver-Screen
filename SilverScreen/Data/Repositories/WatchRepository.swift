@@ -13,6 +13,8 @@ import Foundation
 struct LoggedWatch: Sendable, Equatable {
     let entry: DiaryEntry
     let membership: MembershipChange
+    /// What the watch adopted from the title's annotation, restored on Undo.
+    var priorAnnotation: MediaAnnotation? = nil
 }
 
 /// Everything a removal took away, kept so Undo can put it back with the same ids.
@@ -27,6 +29,8 @@ actor WatchRepository {
     private let lists: ListsRepository
     /// The title ratings kept in step with the watches. Nil in tests that skip it.
     private let annotations: AnnotationsRepository?
+    /// Takes an episode out of progress when its last watch goes. Nil in tests that skip it.
+    private let tvWatch: TVWatchRepository?
     private let logger: any AppLogging
     private let now: @Sendable () -> Date
     private let calendar: Calendar
@@ -35,6 +39,7 @@ actor WatchRepository {
         diary: DiaryRepository,
         lists: ListsRepository,
         annotations: AnnotationsRepository? = nil,
+        tvWatch: TVWatchRepository? = nil,
         logger: any AppLogging,
         now: @escaping @Sendable () -> Date = { Date() },
         calendar: Calendar = .current
@@ -42,6 +47,7 @@ actor WatchRepository {
         self.diary = diary
         self.lists = lists
         self.annotations = annotations
+        self.tvWatch = tvWatch
         self.logger = logger
         self.now = now
         self.calendar = calendar
@@ -56,7 +62,7 @@ actor WatchRepository {
     /// Logs a watch of a movie dated today and puts it on Watched.
     func logMovie(_ draft: ListItemDraft) async throws -> LoggedWatch {
         let date = now()
-        let entry = DiaryEntry(
+        let blank = DiaryEntry(
             id: UUID(),
             subject: .movie(draft.id),
             title: draft.title,
@@ -68,12 +74,14 @@ actor WatchRepository {
             isRewatch: false,
             loggedAt: date
         )
-        let saved = try await diary.save(entry)
+        let adopted = try await annotations?.adopt(into: blank)
+        let saved = try await diary.save(adopted?.entry ?? blank)
         do {
             let membership = try await lists.addToWatched(draft, at: date)
-            return LoggedWatch(entry: saved, membership: membership)
+            return LoggedWatch(entry: saved, membership: membership, priorAnnotation: adopted?.prior)
         } catch {
             await rollBack("logged watch") { try await self.diary.delete(id: saved.id) }
+            await restoreAnnotation(adopted?.prior, for: saved.subject)
             throw error
         }
     }
@@ -98,6 +106,7 @@ actor WatchRepository {
         try await diary.delete(id: logged.entry.id)
         try await lists.undo(logged.membership)
         await syncTitleRating(for: logged.entry.subject)
+        await restoreAnnotation(logged.priorAnnotation, for: logged.entry.subject)
     }
 
     /// Puts back what `removed` took away. A tombstoned id is revived, so a restored
@@ -116,10 +125,25 @@ actor WatchRepository {
     /// it off Watched too, since a title is watched exactly when it has a watch.
     func deleteWatch(_ entry: DiaryEntry) async throws {
         try await diary.delete(id: entry.id)
-        if entry.subject.kind == .movie, try await watches(of: entry.subject).isEmpty {
-            _ = try await removeFromWatched(itemKey: entry.subject.itemKey)
+        if try await watches(of: entry.subject).isEmpty {
+            if let episode = entry.subject.episode {
+                try await tvWatch?.lastWatchDeleted(of: episode, seriesID: entry.subject.tmdbID)
+            } else if entry.subject.kind == .movie {
+                _ = try await removeFromWatched(itemKey: entry.subject.itemKey)
+            }
         }
         await syncTitleRating(for: entry.subject)
+    }
+
+    /// Puts an annotation back as it was. Only called with a record that was adopted, so a
+    /// failure costs that one note; it is logged, and the caller's outcome stands.
+    private func restoreAnnotation(_ record: MediaAnnotation?, for subject: DiarySubject) async {
+        guard let record, let annotations else { return }
+        do {
+            try await annotations.restore(record, for: subject.annotationKey)
+        } catch {
+            logger.error("Title annotation was not restored", category: .persistence)
+        }
     }
 
     /// Points the title's rating at `ratedWatch`. If only this fails it is logged, and

@@ -320,10 +320,35 @@ actor TVWatchRepository {
         }
     }
 
+    /// An episode's last watch was deleted from Watch History or the diary, so it is no
+    /// longer watched. This has no catalog to hand, so Next up heals on the show's next
+    /// `syncNextUp`. With nothing left the show leaves Watched and In Progress; a show that
+    /// was finished goes back to In Progress.
+    func lastWatchDeleted(of episode: TVEpisodeRef, seriesID: Int) async throws {
+        try await serializeWrite { [self] in
+            guard var state = try await loadCache()[seriesID] else { return }
+            state.unmark(seasonNumber: episode.seasonNumber, episodeNumber: episode.episodeNumber)
+            let itemKey = ListEntry.itemKey(id: seriesID, kind: .tv)
+            guard !state.completed.isEmpty else {
+                try await removeState(seriesID: seriesID)
+                _ = try await removeFromSystemLists(itemKey: itemKey)
+                return
+            }
+            state.clearCatalogSnapshot()
+            try await persist(state)
+            let snapshot = try await lists.snapshot()
+            if let watched = snapshot.list(.watched),
+               let row = snapshot.entries.first(where: { $0.listID == watched.id && $0.itemKey == itemKey }) {
+                _ = try await lists.addToInProgress(row.listItem())
+            }
+        }
+    }
+
     /// Restores the episode ledger captured before a toasted watch mutation (Story 6 Undo).
     func restore(_ undo: TVWatchUndo) async throws {
         try await serializeWrite { [self] in
             try await deleteWatches(undo.addedWatches)
+            try await restoreAnnotations(undo.adoptedAnnotations)
             try await restoreWatches(undo.removedWatches)
             if let prior = undo.priorState, !prior.completed.isEmpty {
                 try await persist(prior)
@@ -478,6 +503,7 @@ actor TVWatchRepository {
         newly: Int,
         prior: TVSeriesWatchState?,
         addedWatches: [DiaryEntry] = [],
+        adoptedAnnotations: [MediaAnnotation] = [],
         removedWatches: [DiaryEntry] = []
     ) -> TVWatchOutcome {
         // Always capture ledger undo — binge marks that stay on In Progress still need it.
@@ -485,6 +511,7 @@ actor TVWatchRepository {
             seriesID: state.seriesID,
             priorState: prior,
             addedWatches: addedWatches,
+            adoptedAnnotations: adoptedAnnotations,
             removedWatches: removedWatches
         )
         return TVWatchOutcome(
@@ -513,7 +540,7 @@ actor TVWatchRepository {
     ) async throws -> TVWatchOutcome {
         let priorCompleted = Set(prior?.completed ?? [])
         let added = state.completed.filter { !priorCompleted.contains($0) }
-        let logged = try await logWatches(of: added, draft: draft, dateKnown: dateKnown)
+        let (logged, adopted) = try await logWatches(of: added, draft: draft, dateKnown: dateKnown)
         do {
             try await deleteWatches(removing)
             try await commitLedger(state)
@@ -530,12 +557,14 @@ actor TVWatchRepository {
                 newly: newly,
                 prior: prior,
                 addedWatches: logged,
+                adoptedAnnotations: adopted,
                 removedWatches: removing
             )
         } catch {
             do {
                 try await diary?.delete(ids: Set(logged.map(\.id)))
                 try await restoreWatches(removing)
+                try await restoreAnnotations(adopted)
             } catch {
                 logger.error("TV watch diary rollback failed for series \(state.seriesID)", category: .persistence)
             }
@@ -543,15 +572,16 @@ actor TVWatchRepository {
         }
     }
 
-    /// One unrated watch per episode, dated today, or undated for "seen it" picks.
+    /// One watch per episode, dated today, or undated for "seen it" picks. Each takes over
+    /// any score or note already saved on its episode; those records come back for Undo.
     private func logWatches(
         of episodes: [TVEpisodeRef],
         draft: ListItemDraft,
         dateKnown: Bool
-    ) async throws -> [DiaryEntry] {
-        guard let diary, !episodes.isEmpty else { return [] }
+    ) async throws -> (entries: [DiaryEntry], adopted: [MediaAnnotation]) {
+        guard let diary, !episodes.isEmpty else { return ([], []) }
         let date = now()
-        let entries = episodes.map { ref in
+        var entries = episodes.map { ref in
             DiaryEntry(
                 id: UUID(),
                 subject: .episode(seriesID: draft.id, season: ref.seasonNumber, episode: ref.episodeNumber),
@@ -566,7 +596,23 @@ actor TVWatchRepository {
                 isDateKnown: dateKnown
             )
         }
-        return try await diary.save(contentsOf: entries)
+        var adopted: [MediaAnnotation] = []
+        if let annotations {
+            for index in entries.indices {
+                let result = try await annotations.adopt(into: entries[index])
+                entries[index] = result.entry
+                if let prior = result.prior {
+                    adopted.append(prior)
+                }
+            }
+        }
+        return (try await diary.save(contentsOf: entries), adopted)
+    }
+
+    private func restoreAnnotations(_ records: [MediaAnnotation]) async throws {
+        for record in records {
+            try await annotations?.restore(record, for: record.key)
+        }
     }
 
     /// Every watch of the show's episodes that `matches` picks.

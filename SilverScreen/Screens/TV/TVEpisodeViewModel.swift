@@ -50,7 +50,6 @@ final class TVEpisodeViewModel {
     private(set) var catalogSeasons: [TVSeasonSummary] = []
     private(set) var isEpisodeCompleted = false
     /// Combined rating and note editor. Cleared on save, delete, or dismiss.
-    private(set) var annotationEditor: AnnotationEditorSession?
 
     private let seriesID: Int
     private let seasonNumber: Int
@@ -193,89 +192,6 @@ final class TVEpisodeViewModel {
 
     func retry() async {
         await load()
-    }
-
-    /// Opens the combined rating and note editor from the current personal values.
-    /// Does not invent a score; the sheet requires an explicit rating before Save.
-    func openAnnotationEditor() {
-        guard case .loaded(let content, _) = state else { return }
-        annotationEditor = DetailAnnotationWriter.session(
-            title: content.title,
-            score: content.userScore,
-            note: content.userNote
-        )
-    }
-
-    /// Clears the editor after cancel or swipe-to-dismiss.
-    func dismissAnnotationEditor() {
-        annotationEditor = nil
-    }
-
-    /// Saves score and note together. Episode ratings do not auto-add Watched.
-    @discardableResult
-    func saveUserAnnotation(score: Double, note: String) async -> AnnotationEditorWriteResult {
-        guard case .loaded = state else { return .failed }
-        let key = AnnotationKey.episode(
-            seriesID: seriesID,
-            seasonNumber: seasonNumber,
-            episodeNumber: episodeNumber
-        )
-        let (result, saved) = await DetailAnnotationWriter.save(
-            score: score,
-            note: note,
-            for: key,
-            annotations: annotations
-        )
-        return finishAnnotationWrite(result, annotation: saved)
-    }
-
-    /// Removes the note and leaves the score.
-    @discardableResult
-    func deleteUserNote() async -> AnnotationEditorWriteResult {
-        guard case .loaded = state else { return .failed }
-        let key = AnnotationKey.episode(
-            seriesID: seriesID,
-            seasonNumber: seasonNumber,
-            episodeNumber: episodeNumber
-        )
-        let (result, saved) = await DetailAnnotationWriter.deleteNote(
-            for: key,
-            annotations: annotations
-        )
-        return finishAnnotationWrite(result, annotation: saved)
-    }
-
-    /// Removes the score and note.
-    @discardableResult
-    func clearUserAnnotation() async -> AnnotationEditorWriteResult {
-        guard case .loaded = state else { return .failed }
-        let key = AnnotationKey.episode(
-            seriesID: seriesID,
-            seasonNumber: seasonNumber,
-            episodeNumber: episodeNumber
-        )
-        let result = await DetailAnnotationWriter.clear(
-            for: key,
-            annotations: annotations
-        )
-        return finishAnnotationWrite(result, annotation: nil, cleared: true)
-    }
-
-    private func finishAnnotationWrite(
-        _ result: AnnotationEditorWriteResult,
-        annotation: MediaAnnotation?,
-        cleared: Bool = false
-    ) -> AnnotationEditorWriteResult {
-        switch result {
-            case .succeeded:
-                apply(cleared ? .empty : PersonalDetail(annotation: annotation))
-                annotationEditor = nil
-            case .cancelled:
-                break
-            case .failed:
-                markPersistenceFailure()
-        }
-        return result
     }
 
     private func personalDetail() async throws -> (detail: PersonalDetail, activity: LoadActivity) {

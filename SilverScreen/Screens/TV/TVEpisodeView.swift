@@ -22,6 +22,7 @@ struct TVEpisodeView: View {
     @Environment(DiaryContext.self) private var diaryContext: DiaryContext?
     @State private var playingTrailer: MediaTrailer?
     @State private var pendingRemoval: WatchRemovalRequest?
+    @State private var titleWatch: TitleWatchViewModel?
     @State private var loadingTrailerID: String?
 
     @Namespace private var heroTransition
@@ -43,14 +44,12 @@ struct TVEpisodeView: View {
         )
     }
 
-    private var annotationEditorBinding: Binding<AnnotationEditorSession?> {
-        Binding(
-            get: { viewModel.annotationEditor },
-            set: { newValue in
-                if newValue == nil {
-                    viewModel.dismissAnnotationEditor()
-                }
-            }
+    private var episodeTitle: LogWatchTitle {
+        LogWatchTitle(
+            episode: TVEpisodeRef(seasonNumber: seasonNumber, episodeNumber: episodeNumber),
+            seriesID: seriesID,
+            seriesName: seriesName,
+            posterPath: viewModel.seriesSnapshot.posterPath
         )
     }
 
@@ -140,6 +139,13 @@ struct TVEpisodeView: View {
             }
         }
         .removeWatchesAlert($pendingRemoval)
+        .task(id: WatchHistoryLoadKey(subject: episodeTitle.subject, revision: diaryContext?.revision)) {
+            titleWatch = await TitleWatchViewModel.refreshed(
+                titleWatch,
+                title: episodeTitle,
+                context: diaryContext
+            )
+        }
         .onChange(of: notice.ratingKey) { _, key in
             if key == nil {
                 Task { await viewModel.reloadPersonalFromStore() }
@@ -152,16 +158,6 @@ struct TVEpisodeView: View {
             Task { await viewModel.reloadPersonalFromStore() }
         }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
-        .sheet(item: annotationEditorBinding) { session in
-            AnnotationEditorSheet(
-                title: session.title,
-                score: session.score,
-                note: session.note,
-                canClear: session.canClear,
-                onSave: { await viewModel.saveUserAnnotation(score: $0, note: $1) },
-                onClear: { await viewModel.clearUserAnnotation() }
-            )
-        }
         .fullScreenCover(item: fullscreenBinding) { selection in
             FullscreenImageViewer(
                 images: selection.images,
@@ -230,29 +226,16 @@ struct TVEpisodeView: View {
                 episodeHero(content, images: content.heroImages, layout: layout, part: part)
             case .ratingAndOverview:
                 VStack(alignment: .leading, spacing: DesignSpacing.md) {
-                    TMDBRatingCard(
+                    TitleWatchSection(
+                        viewModel: titleWatch,
                         formattedRating: content.formattedRating,
-                        accessibilityLabel: content.ratingAccessibilityLabel,
-                        formattedUserScore: content.formattedUserScore,
-                        userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
-                        onEdit: { viewModel.openAnnotationEditor() }
+                        ratingAccessibilityLabel: content.ratingAccessibilityLabel
                     )
-                    // The first viewing is the check-off; later ones are diary rewatches.
-                    if viewModel.isEpisodeCompleted {
-                        EpisodeRewatchCard(
-                            title: LogWatchTitle(
-                                episode: TVEpisodeRef(seasonNumber: seasonNumber, episodeNumber: episodeNumber),
-                                seriesID: seriesID,
-                                seriesName: seriesName,
-                                posterPath: viewModel.seriesSnapshot.posterPath
-                            )
-                        )
-                    }
                     MediaDescriptionSection(
                         overview: content.overview,
-                        note: content.userNote,
-                        notedOn: content.formattedNotedOn,
-                        onEdit: { viewModel.openAnnotationEditor() },
+                        note: titleWatch?.reviewWatch?.review ?? content.userNote,
+                        notedOn: titleWatch?.formattedReviewDay ?? content.formattedNotedOn,
+                        onEdit: { titleWatch?.openReview() },
                         scrollTo: scrollTo
                     )
                 }

@@ -14,7 +14,6 @@ final class MovieDetailViewModel {
     /// Personal scores for similar / collection posters (carousel badges).
     private(set) var relatedUserScores: [Int: String] = [:]
     /// Combined rating and note editor. Cleared on save, delete, or dismiss.
-    private(set) var annotationEditor: AnnotationEditorSession?
 
     private let movieID: Int
     private let movies: MovieRepository
@@ -62,9 +61,6 @@ final class MovieDetailViewModel {
             state = .loaded(content, activity: personal.activity)
             await reloadRelatedUserScores(content)
             await enrichListSnapshots(detail.listItem())
-            if personal.detail.formattedUserScore != nil {
-                await ensureOnWatched(detail.listItem(), at: personal.watchedAt ?? Date())
-            }
         } catch is CancellationError {
             // The view only starts a load from `.idle`, so a load cancelled by a tab switch must
             // go back to `.idle` or the screen keeps its spinner forever.
@@ -85,152 +81,14 @@ final class MovieDetailViewModel {
         relatedUserScores[id]
     }
 
-    /// Opens the combined rating and note editor from the current personal values.
-    /// Does not invent a score; the sheet requires an explicit rating before Save.
-    func openAnnotationEditor() {
-        guard case .loaded(let content, _) = state else { return }
-        annotationEditor = DetailAnnotationWriter.session(
-            title: content.detail.title,
-            score: content.userScore,
-            note: content.userNote
-        )
-    }
-
-    /// Clears the editor after cancel or swipe-to-dismiss.
-    func dismissAnnotationEditor() {
-        annotationEditor = nil
-    }
-
-    /// Saves score and note together and puts the movie on Watched as one unit of work.
-    /// If Watched fails, the annotation write is rolled back. UI is re-read from disk after
-    /// any rollback attempt so a failed restore cannot leave the screen lying.
-    @discardableResult
-    func saveUserAnnotation(score: Double, note: String) async -> AnnotationEditorWriteResult {
-        guard case .loaded(let content, _) = state else { return .failed }
-        let key = AnnotationKey.movie(movieID)
-        let previous: MediaAnnotation?
-        do {
-            previous = try await annotations.annotation(for: key)
-        } catch is CancellationError {
-            return .cancelled
-        } catch {
-            markPersistenceFailure()
-            return .failed
-        }
-
-        let saved: MediaAnnotation
-        do {
-            saved = try await annotations.save(score: score, note: note, for: key)
-        } catch is CancellationError {
-            await rollBackAnnotation(previous, for: key)
-            return .cancelled
-        } catch {
-            markPersistenceFailure()
-            return .failed
-        }
-
-        do {
-            _ = try await lists.addToWatched(
-                content.detail.listItem(),
-                at: saved.watchedAt ?? Date()
-            )
-        } catch is CancellationError {
-            await rollBackAnnotation(previous, for: key)
-            return .cancelled
-        } catch {
-            await rollBackAnnotation(previous, for: key)
-            markPersistenceFailure()
-            return .failed
-        }
-
-        apply(PersonalDetail(annotation: saved))
-        annotationEditor = nil
-        return .succeeded
-    }
-
-    /// Removes the note and leaves the score.
-    @discardableResult
-    func deleteUserNote() async -> AnnotationEditorWriteResult {
-        guard case .loaded = state else { return .failed }
-        let (result, saved) = await DetailAnnotationWriter.deleteNote(
-            for: .movie(movieID),
-            annotations: annotations
-        )
-        switch result {
-            case .succeeded:
-                apply(PersonalDetail(annotation: saved))
-                annotationEditor = nil
-            case .cancelled:
-                break
-            case .failed:
-                markPersistenceFailure()
-        }
-        return result
-    }
-
-    /// Removes the score and note. Leaves Watched membership alone.
-    @discardableResult
-    func clearUserAnnotation() async -> AnnotationEditorWriteResult {
-        guard case .loaded = state else { return .failed }
-        let result = await DetailAnnotationWriter.clear(
-            for: .movie(movieID),
-            annotations: annotations
-        )
-        switch result {
-            case .succeeded:
-                apply(.empty)
-                annotationEditor = nil
-            case .cancelled:
-                break
-            case .failed:
-                markPersistenceFailure()
-        }
-        return result
-    }
-
-    /// Restores the prior annotation when possible, then applies whatever is on disk.
-    private func rollBackAnnotation(_ previous: MediaAnnotation?, for key: AnnotationKey) async {
-        do {
-            try await annotations.restore(previous, for: key)
-        } catch is CancellationError {
-            return
-        } catch {
-            // Disk may still hold the new write; applyFromDisk surfaces that truth.
-        }
-        await applyPersonalFromDisk(key)
-    }
-
-    private func applyPersonalFromDisk(_ key: AnnotationKey) async {
-        do {
-            let record = try await annotations.annotation(for: key)
-            apply(PersonalDetail(annotation: record))
-        } catch is CancellationError {
-            return
-        } catch {
-            markPersistenceFailure()
-        }
-    }
-
-    private func personalDetail() async throws -> (detail: PersonalDetail, activity: LoadActivity, watchedAt: Date?) {
+    private func personalDetail() async throws -> (detail: PersonalDetail, activity: LoadActivity) {
         do {
             let record = try await annotations.annotation(for: .movie(movieID))
-            let watchedAt = record?.score == nil ? nil : record?.watchedAt
-            return (PersonalDetail(annotation: record), .none, watchedAt)
+            return (PersonalDetail(annotation: record), .none)
         } catch is CancellationError {
             throw CancellationError()
         } catch {
-            return (.empty, .failed(.persistence), nil)
-        }
-    }
-
-    /// A scored movie belongs on Watched. A title already there keeps its row and date.
-    private func ensureOnWatched(_ draft: ListItemDraft, at date: Date) async {
-        do {
-            _ = try await lists.addToWatched(draft, at: date)
-        } catch is CancellationError {
-            return
-        } catch {
-            markPersistenceFailure()
+            return (.empty, .failed(.persistence))
         }
     }
 

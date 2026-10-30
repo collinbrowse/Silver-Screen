@@ -30,6 +30,8 @@ final class DiaryContext {
     let annotations: AnnotationsRepository?
     /// Season posters for a show's watch history. Nil in tests that skip it.
     let shows: TVRepository?
+    /// Deletes a watch and anything that depended on it. Nil in tests that skip it.
+    let watches: WatchRepository?
     private(set) var revision = 0
     /// Fetched season posters by series, so reopening a history skips the network.
     private var seasonPosterCache: [Int: [Int: String]] = [:]
@@ -39,13 +41,15 @@ final class DiaryContext {
         lists: ListsRepository,
         logger: any AppLogging,
         annotations: AnnotationsRepository? = nil,
-        shows: TVRepository? = nil
+        shows: TVRepository? = nil,
+        watches: WatchRepository? = nil
     ) {
         self.diary = diary
         self.lists = lists
         self.logger = logger
         self.annotations = annotations
         self.shows = shows
+        self.watches = watches
     }
 
     /// Poster path by season number for one show. A failed fetch (offline, say) returns
@@ -74,6 +78,16 @@ final class DiaryContext {
             logger.error("Newest watch's rating was not copied to the title", category: .persistence)
         }
         return saved
+    }
+
+    /// Deletes one watch. A title's last watch takes it off Watched, and an episode's
+    /// takes it out of TV progress, because a title is watched exactly when it has a watch.
+    func deleteWatch(_ entry: DiaryEntry) async throws {
+        if let watches {
+            try await watches.deleteWatch(entry)
+        } else {
+            try await diary.delete(id: entry.id)
+        }
     }
 
     func noteChange() {

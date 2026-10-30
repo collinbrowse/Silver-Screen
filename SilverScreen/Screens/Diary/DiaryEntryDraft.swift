@@ -100,7 +100,7 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
     }
 }
 
-/// The title a new diary watch is logged for (a rewatch from a movie's history).
+/// The title a new watch is logged for.
 struct LogWatchTitle: Sendable, Equatable {
     let subject: DiarySubject
     let title: String
@@ -131,5 +131,26 @@ struct LogWatchTitle: Sendable, Equatable {
         releaseYear = DisplayDate.year(movie.releaseDate).flatMap(Int.init)
         posterPath = movie.posterPath
         listItem = movie.listItem()
+    }
+
+    /// One episode of a series, logged under the series' name and poster so the diary row
+    /// reads like the show's other rows. `listItem` is the series.
+    init(episode: TVEpisodeRef, seriesID: Int, seriesName: String, posterPath: String?) {
+        self.init(
+            subject: .episode(seriesID: seriesID, season: episode.seasonNumber, episode: episode.episodeNumber),
+            title: seriesName,
+            releaseYear: nil,
+            posterPath: posterPath,
+            listItem: ListItemDraft(
+                id: seriesID,
+                kind: .tv,
+                title: seriesName,
+                imagePath: posterPath,
+                releaseDate: nil,
+                genreNames: [],
+                voteAverage: 0,
+                popularity: 0
+            )
+        )
     }
 }

@@ -101,6 +101,67 @@ final class WatchRepositoryTests: XCTestCase {
         XCTAssertEqual(watches, [series])
     }
 
+    func test_logMovie_adoptsScoreAndNote_andUndoPutsThemBack() async throws {
+        let harness = Harness()
+        try await harness.annotations.save(score: 7, note: "Saw it in theaters", for: .movie(550))
+
+        let logged = try await harness.watches.logMovie(draft)
+
+        XCTAssertEqual(logged.entry.score, 7)
+        XCTAssertEqual(logged.entry.review, "Saw it in theaters")
+        let adopted = try await harness.annotations.annotation(for: .movie(550))
+        XCTAssertEqual(adopted?.score, 7)
+        XCTAssertNil(adopted?.note)
+
+        try await harness.watches.undo(logged)
+
+        let restored = try await harness.annotations.annotation(for: .movie(550))
+        XCTAssertEqual(restored?.score, 7)
+        XCTAssertEqual(restored?.note, "Saw it in theaters")
+    }
+
+    func test_deleteWatch_lastEpisodeWatch_unmarksProgress() async throws {
+        let tvStore = InMemoryTVWatchStore()
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let diary = DiaryRepository(store: InMemoryDiaryStore(), logger: SilentLogger())
+        let tvWatch = TVWatchRepository(store: tvStore, lists: lists, diary: diary, logger: SilentLogger())
+        let watches = WatchRepository(diary: diary, lists: lists, tvWatch: tvWatch, logger: SilentLogger())
+        let show = ListItemDraft(
+            id: 42,
+            kind: .tv,
+            title: "Severance",
+            imagePath: nil,
+            releaseDate: nil,
+            genreNames: [],
+            voteAverage: 8,
+            popularity: 1
+        )
+        let season = TVSeasonSummary(
+            id: 1,
+            name: "Season 1",
+            seasonNumber: 1,
+            episodeCount: 2,
+            airDate: nil,
+            posterPath: nil
+        )
+        try await tvWatch.markSeries(seriesID: 42, seasons: [season], draft: show)
+        let entries = try await diary.entries()
+
+        try await watches.deleteWatch(try XCTUnwrap(entries.first))
+
+        let completed = try await tvWatch.completedEpisodeCount(seriesID: 42)
+        XCTAssertEqual(completed, 1)
+        let snapshot = try await lists.snapshot()
+        XCTAssertEqual(snapshot.entries.first?.listID, snapshot.list(.inProgress)?.id)
+
+        try await watches.deleteWatch(try XCTUnwrap(entries.last))
+
+        let cleared = try await tvWatch.state(seriesID: 42)
+        XCTAssertNil(cleared)
+        let after = try await lists.snapshot()
+        XCTAssertTrue(after.entries.isEmpty)
+    }
+
     func test_ratedWatch_skipsNewerUnratedWatch() {
         let unrated = DiaryFixtures.entry()
         let rated = DiaryFixtures.entry(score: 8.5)

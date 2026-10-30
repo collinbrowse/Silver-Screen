@@ -21,6 +21,7 @@ struct MovieDetailView: View {
     @Environment(DiaryContext.self) private var diaryContext: DiaryContext?
     /// The Watch History card's summary; the card shows only once it has history.
     @State private var watchHistory: WatchHistoryCardViewModel?
+    @State private var titleWatch: TitleWatchViewModel?
 
     private let portraitCardWidth: CGFloat = 140
 
@@ -35,17 +36,6 @@ struct MovieDetailView: View {
             set: { newValue in
                 if newValue == nil {
                     viewModel.dismissImages()
-                }
-            }
-        )
-    }
-
-    private var annotationEditorBinding: Binding<AnnotationEditorSession?> {
-        Binding(
-            get: { viewModel.annotationEditor },
-            set: { newValue in
-                if newValue == nil {
-                    viewModel.dismissAnnotationEditor()
                 }
             }
         )
@@ -104,22 +94,17 @@ struct MovieDetailView: View {
                 subject: loadedSubject,
                 context: diaryContext
             )
+            titleWatch = await TitleWatchViewModel.refreshed(
+                titleWatch,
+                title: loadedTitle,
+                context: diaryContext
+            )
         }
         // A rated newest watch also sets the movie's rating, so the rating card re-reads it.
         .onChange(of: diaryContext?.revision) { _, _ in
             Task { await viewModel.reloadPersonalDetail() }
         }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
-        .sheet(item: annotationEditorBinding) { session in
-            AnnotationEditorSheet(
-                title: session.title,
-                score: session.score,
-                note: session.note,
-                canClear: session.canClear,
-                onSave: { await viewModel.saveUserAnnotation(score: $0, note: $1) },
-                onClear: { await viewModel.clearUserAnnotation() }
-            )
-        }
         .fullScreenCover(item: showsToolbarFavorite ? fullscreenBinding : .constant(nil)) { selection in
             FullscreenImageViewer(
                 images: selection.images,
@@ -134,6 +119,13 @@ struct MovieDetailView: View {
     }
 
     /// The movie once its details have loaded, for Watch History.
+    private var loadedTitle: LogWatchTitle? {
+        if case .loaded(let content, _) = viewModel.state {
+            return LogWatchTitle(movie: content.detail)
+        }
+        return nil
+    }
+
     private var loadedSubject: DiarySubject? {
         if case .loaded(let content, _) = viewModel.state {
             return .movie(content.detail.id)
@@ -293,12 +285,10 @@ struct MovieDetailView: View {
 
     /// The rating card, which the feature tour points at and scrolls to.
     private func ratingCard(_ content: MovieDetailContent) -> some View {
-        TMDBRatingCard(
+        TitleWatchSection(
+            viewModel: titleWatch,
             formattedRating: content.formattedRating,
-            accessibilityLabel: content.ratingAccessibilityLabel,
-            formattedUserScore: content.formattedUserScore,
-            userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
-            onEdit: { viewModel.openAnnotationEditor() }
+            ratingAccessibilityLabel: content.ratingAccessibilityLabel
         )
         .id(TourAnchor.ratingCard.scrollID)
         .tourAnchor(.ratingCard)
@@ -307,9 +297,9 @@ struct MovieDetailView: View {
     private func storyline(_ content: MovieDetailContent, scrollTo: @escaping (String) -> Void) -> some View {
         MediaDescriptionSection(
             overview: content.detail.overview,
-            note: content.userNote,
-            notedOn: content.formattedNotedOn,
-            onEdit: { viewModel.openAnnotationEditor() },
+            note: titleWatch?.reviewWatch?.review ?? content.userNote,
+            notedOn: titleWatch?.formattedReviewDay ?? content.formattedNotedOn,
+            onEdit: { titleWatch?.openReview() },
             scrollTo: scrollTo
         )
     }

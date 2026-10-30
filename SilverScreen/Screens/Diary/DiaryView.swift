@@ -96,25 +96,11 @@ struct DiaryView: View {
         }
     }
 
-    /// Full-width, filled button that opens the sheet for a new watch dated today.
+    /// Opens the sheet for a new watch dated today.
     private var logRewatchButton: some View {
-        Button {
+        LogRewatchButton {
             Task { await viewModel.beginRewatch() }
-        } label: {
-            Label("Log a Rewatch", systemImage: "arrow.counterclockwise")
-                .font(DesignTypography.section)
-                .foregroundStyle(DesignTheme.accentOnFill)
-                .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.borderedProminent)
-        .tint(DesignTheme.accent)
-        .controlSize(.large)
-        .accessibilityHint("Adds a new watch of this movie, dated today")
-        .frame(maxWidth: DiaryLayout.readableWidth)
-        .padding(.horizontal, DesignSpacing.lg)
-        .padding(.vertical, DesignSpacing.sm)
-        .frame(maxWidth: .infinity)
-        .background(DesignTheme.canvas)
     }
 
     private func list(_ months: [DiaryMonth]) -> some View {

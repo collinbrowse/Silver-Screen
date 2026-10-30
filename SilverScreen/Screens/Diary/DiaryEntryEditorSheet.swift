@@ -64,7 +64,7 @@ struct DiaryEntryEditorSheet: View {
                         .disabled(isSaving)
                     }
                 } footer: {
-                    Text("Your newest watch's rating is also your rating for this title. Rating an older watch leaves it as it is.")
+                    Text("Your rating for this title is the one from your newest rated watch.")
                 }
 
                 Section("Review") {
@@ -112,7 +112,7 @@ struct DiaryEntryEditorSheet: View {
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("This removes this watch from your diary. Your rating for the title is not changed.")
+                Text("This removes this watch from your diary, with its rating and review.")
             }
         }
         .presentationSizing(.form)

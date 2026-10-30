@@ -91,28 +91,31 @@ struct AppDependencies {
             logger: logger,
             analytics: analytics
         )
-        let diary = DiaryContext(
-            diary: DiaryRepository(store: LibraryDiaryStoreAdapter(library: libraryStore), logger: logger),
-            lists: lists,
-            logger: logger,
-            annotations: annotations,
-            shows: shows
-        )
-        let watches = WatchRepository(
-            diary: diary.diary,
-            lists: lists,
-            annotations: annotations,
-            logger: logger
-        )
-        // The toast reports what the eye did, and its Undo and Rate & review act on that watch.
-        let listChanges = ListChangeNotice(annotations: annotations, diary: diary, watches: watches)
+        let diaryRepository = DiaryRepository(store: LibraryDiaryStoreAdapter(library: libraryStore), logger: logger)
         let tvWatch = TVWatchRepository(
             store: LibraryTVWatchStoreAdapter(library: libraryStore),
             lists: lists,
-            diary: diary.diary,
+            diary: diaryRepository,
             annotations: annotations,
             logger: logger
         )
+        let watches = WatchRepository(
+            diary: diaryRepository,
+            lists: lists,
+            annotations: annotations,
+            tvWatch: tvWatch,
+            logger: logger
+        )
+        let diary = DiaryContext(
+            diary: diaryRepository,
+            lists: lists,
+            logger: logger,
+            annotations: annotations,
+            shows: shows,
+            watches: watches
+        )
+        // The toast reports what the eye did, and its Undo and Rate & review act on that watch.
+        let listChanges = ListChangeNotice(annotations: annotations, diary: diary, watches: watches)
         let imageLoader = ImageLoader(client: URLSessionHTTPClient.images(), logger: logger)
         let awards = AwardsRepository(
             client: httpClient,

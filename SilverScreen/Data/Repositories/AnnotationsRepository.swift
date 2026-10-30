@@ -126,6 +126,21 @@ actor AnnotationsRepository {
         }
     }
 
+    /// Moves what was saved on a title before it was watched onto its first watch: the
+    /// score and note become the watch's rating and review. The note leaves the annotation,
+    /// and the score stays as the title's rating. Returns the record as it was, for Undo.
+    func adopt(into entry: DiaryEntry) async throws -> (entry: DiaryEntry, prior: MediaAnnotation?) {
+        let key = entry.subject.annotationKey
+        guard let record = try await annotation(for: key) else { return (entry, nil) }
+        var adopted = entry
+        adopted.score = record.score
+        adopted.review = record.note
+        if record.note != nil {
+            try await deleteNote(for: key)
+        }
+        return (adopted, record)
+    }
+
     /// Removes the note and leaves the score. Returns nil when the title has no score left.
     /// Legacy note-only rows are removed entirely.
     @discardableResult

@@ -55,9 +55,12 @@ final class DiaryViewModel {
     /// opened from that title.
     var showsTitleLinks: Bool { scope == nil }
 
-    /// Log a Rewatch shows on a movie's own history. A show is logged episode by episode
-    /// with its eyes, so its history has no button.
-    var canLogRewatch: Bool { scope?.subject.kind == .movie }
+    /// Log a Rewatch shows on a movie's or episode's own history. A show is rewatched
+    /// through its episodes, so its history has no button.
+    var canLogRewatch: Bool {
+        guard let subject = scope?.subject else { return false }
+        return !subject.isWholeSeries
+    }
 
     /// A show's history leads each row with its season's poster, since the rows of one
     /// show would otherwise look the same.
@@ -188,7 +191,7 @@ final class DiaryViewModel {
     func deleteEditorEntry() async -> AnnotationEditorWriteResult {
         guard let session = editor, !session.isNew else { return .cancelled }
         do {
-            try await context.diary.delete(id: session.base.id)
+            try await context.deleteWatch(session.base)
         } catch is CancellationError {
             return .cancelled
         } catch {
@@ -203,7 +206,7 @@ final class DiaryViewModel {
     /// Deletes from a swipe or context menu. Failure leaves the list with a failed activity.
     func delete(_ row: DiaryRow) async {
         do {
-            try await context.diary.delete(id: row.id)
+            try await context.deleteWatch(row.entry)
         } catch is CancellationError {
             return
         } catch {

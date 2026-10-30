@@ -390,6 +390,8 @@ struct TVWatchUndo: Sendable, Equatable {
     let priorState: TVSeriesWatchState?
     /// Watches this action logged; undo deletes them.
     var addedWatches: [DiaryEntry] = []
+    /// Annotations those watches took over; undo puts them back as they were.
+    var adoptedAnnotations: [MediaAnnotation] = []
     /// Watches this action deleted; undo puts them back with the same ids.
     var removedWatches: [DiaryEntry] = []
 }
