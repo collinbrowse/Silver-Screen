@@ -22,6 +22,9 @@ final class DiaryViewModel {
     /// on Watched.
     private var pendingRewatch: LogWatchTitle?
 
+    /// Poster path by season number, on a show's history.
+    private(set) var seasonPosters: [Int: String] = [:]
+
     /// Nil for the whole diary.
     let scope: DiaryScope?
     private let context: DiaryContext
@@ -56,6 +59,21 @@ final class DiaryViewModel {
     /// with its eyes, so its history has no button.
     var canLogRewatch: Bool { scope?.subject.kind == .movie }
 
+    /// A show's history leads each row with its season's poster, since the rows of one
+    /// show would otherwise look the same.
+    var showsSeasonPosters: Bool { scope?.subject.kind == .tv }
+
+    /// The poster leading an entry on a show's history: its episode's season, or the
+    /// series poster for a whole-series entry or a season with none.
+    func historyPoster(for row: DiaryRow) -> String? {
+        row.entry.subject.episode.flatMap { seasonPosters[$0.seasonNumber] } ?? row.entry.posterPath
+    }
+
+    /// The poster leading an episodes row. A row spanning seasons uses its first.
+    func historyPoster(for group: DiaryEpisodeGroup) -> String? {
+        group.episodes.first.flatMap { seasonPosters[$0.seasonNumber] } ?? group.posterPath
+    }
+
     /// Rows show their poster and title only in the full diary; on one title's history
     /// the screen's name already says which title every row is.
     var showsRowTitles: Bool { scope == nil }
@@ -83,6 +101,9 @@ final class DiaryViewModel {
             let episodes = try await episodeWatches()
             let months = DiaryContent.months(from: entries, episodes: episodes, calendar: calendar, locale: locale)
             state = months.isEmpty ? .empty : .loaded(months)
+            if showsSeasonPosters, let seriesID = scope?.subject.tmdbID {
+                seasonPosters = await context.seasonPosters(seriesID: seriesID)
+            }
         } catch is CancellationError {
             return
         } catch let error as AppError {

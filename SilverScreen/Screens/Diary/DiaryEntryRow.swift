@@ -15,9 +15,23 @@ struct DiaryEntryRow: View {
     /// False on one title's history, where every row would repeat the same poster and
     /// title as the screen's name.
     var showsTitle = true
+    /// Set on a show's history: the season poster, drawn left of the date.
+    var leadingPoster: DiaryLeadingPoster?
 
     var body: some View {
         HStack(alignment: .top, spacing: DesignSpacing.md) {
+            if let leadingPoster {
+                RemoteImageView(
+                    path: leadingPoster.path,
+                    kind: .poster,
+                    width: layout.posterWidth,
+                    aspectRatio: 2 / 3,
+                    imageLoader: imageLoader,
+                    placeholderSystemImage: "tv",
+                    cornerRadius: DesignSpacing.sm
+                )
+            }
+
             DiaryDayColumn(weekday: row.weekday, dayNumber: row.dayNumber)
 
             if showsTitle {

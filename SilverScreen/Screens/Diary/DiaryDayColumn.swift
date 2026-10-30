@@ -7,6 +7,12 @@
 
 import SwiftUI
 
+/// The poster a row on a show's history leads with. `path` is nil when neither the season
+/// nor the series has one, and the row draws a placeholder so the columns stay aligned.
+struct DiaryLeadingPoster: Equatable {
+    let path: String?
+}
+
 struct DiaryDayColumn: View {
     /// "Thu"
     let weekday: String

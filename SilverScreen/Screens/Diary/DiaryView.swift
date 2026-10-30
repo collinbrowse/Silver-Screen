@@ -131,7 +131,10 @@ struct DiaryView: View {
                                         row: row,
                                         layout: layout,
                                         imageLoader: imageLoader,
-                                        showsTitle: viewModel.showsRowTitles
+                                        showsTitle: viewModel.showsRowTitles,
+                                        leadingPoster: viewModel.showsSeasonPosters
+                                            ? DiaryLeadingPoster(path: viewModel.historyPoster(for: row))
+                                            : nil
                                     )
                                 }
                                 .buttonStyle(.plain)
@@ -186,7 +189,10 @@ struct DiaryView: View {
                                         group: group,
                                         layout: layout,
                                         imageLoader: imageLoader,
-                                        showsTitle: viewModel.showsRowTitles
+                                        showsTitle: viewModel.showsRowTitles,
+                                        leadingPoster: viewModel.showsSeasonPosters
+                                            ? DiaryLeadingPoster(path: viewModel.historyPoster(for: group))
+                                            : nil
                                     )
                                 }
                         }

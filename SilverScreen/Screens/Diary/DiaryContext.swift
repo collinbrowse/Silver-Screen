@@ -28,18 +28,33 @@ final class DiaryContext {
     let logger: any AppLogging
     /// The title ratings a newest watch's score is copied to. Nil in tests that skip it.
     let annotations: AnnotationsRepository?
+    /// Season posters for a show's watch history. Nil in tests that skip it.
+    let shows: TVRepository?
     private(set) var revision = 0
+    /// Fetched season posters by series, so reopening a history skips the network.
+    private var seasonPosterCache: [Int: [Int: String]] = [:]
 
     init(
         diary: DiaryRepository,
         lists: ListsRepository,
         logger: any AppLogging,
-        annotations: AnnotationsRepository? = nil
+        annotations: AnnotationsRepository? = nil,
+        shows: TVRepository? = nil
     ) {
         self.diary = diary
         self.lists = lists
         self.logger = logger
         self.annotations = annotations
+        self.shows = shows
+    }
+
+    /// Poster path by season number for one show. A failed fetch (offline, say) returns
+    /// none and is retried next time, so rows fall back to the series poster.
+    func seasonPosters(seriesID: Int) async -> [Int: String] {
+        if let cached = seasonPosterCache[seriesID] { return cached }
+        guard let shows, let posters = try? await shows.seasonPosters(seriesID: seriesID) else { return [:] }
+        seasonPosterCache[seriesID] = posters
+        return posters
     }
 
     /// Saves `entry`. When it has a score and is now the title's newest watch, that score

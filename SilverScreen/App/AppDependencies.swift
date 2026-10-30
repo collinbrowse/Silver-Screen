@@ -95,7 +95,8 @@ struct AppDependencies {
             diary: DiaryRepository(store: LibraryDiaryStoreAdapter(library: libraryStore), logger: logger),
             lists: lists,
             logger: logger,
-            annotations: annotations
+            annotations: annotations,
+            shows: shows
         )
         // The eye on a movie logs a diary watch, so the toast needs the diary.
         let listChanges = ListChangeNotice(annotations: annotations, diary: diary)

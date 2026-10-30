@@ -521,6 +521,97 @@ final class DiaryContextRatingTests: XCTestCase {
     }
 }
 
+/// A show's history leads each row with its season's poster.
+@MainActor
+final class DiarySeasonPosterTests: XCTestCase {
+    private let scope = DiaryScope(subject: .series(1396), title: "Breaking Bad")
+
+    func test_load_showHistory_usesSeasonPosterForEpisodeRows() async throws {
+        let entry = DiaryFixtures.entry(subject: .episode(seriesID: 1396, season: 2, episode: 3), title: "Breaking Bad")
+        let viewModel = makeViewModel(
+            store: InMemoryDiaryStore(entries: [entry], episodeWatches: [watch(season: 1)]),
+            client: FakeHTTPClient(stub: .success(TMDBFixtures.tvSeriesBreakingBad))
+        )
+
+        await viewModel.load()
+
+        XCTAssertTrue(viewModel.showsSeasonPosters)
+        let row = try XCTUnwrap(months(viewModel).flatMap(\.rows).first)
+        let group = try XCTUnwrap(groups(viewModel).first)
+        XCTAssertEqual(viewModel.historyPoster(for: row), "/s2.jpg")
+        XCTAssertEqual(viewModel.historyPoster(for: group), "/s1.jpg")
+    }
+
+    func test_load_seasonWithNoPoster_fallsBackToSeriesPoster() async throws {
+        let viewModel = makeViewModel(
+            store: InMemoryDiaryStore(episodeWatches: [watch(season: 9)]),
+            client: FakeHTTPClient(stub: .success(TMDBFixtures.tvSeriesBreakingBad))
+        )
+
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.historyPoster(for: try XCTUnwrap(groups(viewModel).first)), "/series.jpg")
+    }
+
+    func test_load_postersFailToLoad_keepsRowsWithSeriesPoster() async throws {
+        let viewModel = makeViewModel(
+            store: InMemoryDiaryStore(episodeWatches: [watch(season: 1)]),
+            client: FakeHTTPClient(result: .failure(URLError(.notConnectedToInternet)))
+        )
+
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.historyPoster(for: try XCTUnwrap(groups(viewModel).first)), "/series.jpg")
+    }
+
+    func test_showsSeasonPosters_notOnAMoviesHistoryOrFullDiary() {
+        let context = DiaryContext(
+            diary: DiaryRepository(store: InMemoryDiaryStore(), logger: SilentLogger()),
+            lists: ListsRepository.empty(),
+            logger: SilentLogger()
+        )
+
+        XCTAssertFalse(DiaryViewModel(context: context).showsSeasonPosters)
+        XCTAssertFalse(DiaryViewModel(context: context, scope: DiaryScope(subject: .movie(1), title: "Heat")).showsSeasonPosters)
+    }
+
+    private func watch(season: Int) -> EpisodeWatch {
+        EpisodeWatch(
+            seriesID: 1396,
+            seriesTitle: "Breaking Bad",
+            posterPath: "/series.jpg",
+            episode: TVEpisodeRef(seasonNumber: season, episodeNumber: 1),
+            completedAt: Date(timeIntervalSince1970: 1_792_000_000)
+        )
+    }
+
+    private func makeViewModel(store: InMemoryDiaryStore, client: FakeHTTPClient) -> DiaryViewModel {
+        DiaryViewModel(
+            context: DiaryContext(
+                diary: DiaryRepository(store: store, logger: SilentLogger()),
+                lists: ListsRepository.empty(),
+                logger: SilentLogger(),
+                shows: TVRepository.test(client: client)
+            ),
+            scope: scope,
+            calendar: DiaryFixtures.utcCalendar,
+            locale: Locale(identifier: "en_US")
+        )
+    }
+
+    private func months(_ viewModel: DiaryViewModel) -> [DiaryMonth] {
+        guard case .loaded(let months, _) = viewModel.state else { return [] }
+        return months
+    }
+
+    private func groups(_ viewModel: DiaryViewModel) -> [DiaryEpisodeGroup] {
+        months(viewModel).flatMap(\.items).compactMap { item in
+            if case .episodes(let group) = item { return group }
+            return nil
+        }
+    }
+}
+
 /// Episode rewatches: their own diary rows, badged Rewatch after the episode's check-off.
 final class DiaryEpisodeRewatchContentTests: XCTestCase {
     private let utc = DiaryFixtures.utcCalendar
