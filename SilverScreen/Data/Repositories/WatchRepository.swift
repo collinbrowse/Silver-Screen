@@ -25,6 +25,8 @@ struct RemovedWatches: Sendable, Equatable {
 actor WatchRepository {
     private let diary: DiaryRepository
     private let lists: ListsRepository
+    /// The title ratings kept in step with the watches. Nil in tests that skip it.
+    private let annotations: AnnotationsRepository?
     private let logger: any AppLogging
     private let now: @Sendable () -> Date
     private let calendar: Calendar
@@ -32,12 +34,14 @@ actor WatchRepository {
     init(
         diary: DiaryRepository,
         lists: ListsRepository,
+        annotations: AnnotationsRepository? = nil,
         logger: any AppLogging,
         now: @escaping @Sendable () -> Date = { Date() },
         calendar: Calendar = .current
     ) {
         self.diary = diary
         self.lists = lists
+        self.annotations = annotations
         self.logger = logger
         self.now = now
         self.calendar = calendar
@@ -80,6 +84,7 @@ actor WatchRepository {
         try await diary.delete(ids: Set(entries.map(\.id)))
         do {
             let membership = try await removeFromWatched(itemKey: draft.itemKey)
+            await syncTitleRating(for: .movie(draft.id))
             return RemovedWatches(entries: entries, membership: membership)
         } catch {
             await rollBack("removed watches") { try await self.diary.save(contentsOf: entries) }
@@ -94,6 +99,41 @@ actor WatchRepository {
         if let membership = removed.membership {
             try await lists.undo(membership)
         }
+        if let subject = removed.entries.first?.subject {
+            await syncTitleRating(for: subject)
+        }
+    }
+
+    /// Deletes one watch, as Watch History and the diary do. The title's last watch takes
+    /// it off Watched too, since a title is watched exactly when it has a watch.
+    func deleteWatch(id: UUID, of draft: ListItemDraft) async throws {
+        let subject = DiarySubject.movie(draft.id)
+        try await diary.delete(id: id)
+        if try await watches(of: subject).isEmpty {
+            _ = try await removeFromWatched(itemKey: draft.itemKey)
+        }
+        await syncTitleRating(for: subject)
+    }
+
+    /// Points the title's rating at `ratedWatch`. If only this fails it is logged, and
+    /// the watch change stands; the next write to the title repairs it.
+    private func syncTitleRating(for subject: DiarySubject) async {
+        guard let annotations else { return }
+        do {
+            let entries = try await watches(of: subject)
+            try await annotations.syncRating(from: Self.ratedWatch(in: entries), for: subject)
+        } catch is CancellationError {
+            return
+        } catch {
+            logger.error("Title rating was not updated after a watch change", category: .persistence)
+        }
+    }
+
+    /// The watch whose score is the title's rating on detail pages and list rows, and
+    /// the one the rating card names and opens. Nil when no watch has a score.
+    /// `entries` are one subject's watches, newest first.
+    nonisolated static func ratedWatch(in entries: [DiaryEntry]) -> DiaryEntry? {
+        entries.first { $0.score != nil }
     }
 
     private func removeFromWatched(itemKey: String) async throws -> MembershipChange? {

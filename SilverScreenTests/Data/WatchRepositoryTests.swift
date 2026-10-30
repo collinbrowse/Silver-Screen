@@ -101,6 +101,53 @@ final class WatchRepositoryTests: XCTestCase {
         XCTAssertEqual(watches, [series])
     }
 
+    func test_ratedWatch_skipsNewerUnratedWatch() {
+        let unrated = DiaryFixtures.entry()
+        let rated = DiaryFixtures.entry(score: 8.5)
+
+        XCTAssertEqual(WatchRepository.ratedWatch(in: [unrated, rated]), rated)
+    }
+
+    func test_ratedWatch_noScores_isNil() {
+        XCTAssertNil(WatchRepository.ratedWatch(in: [DiaryFixtures.entry()]))
+    }
+
+    func test_deleteWatch_ratingFallsBackToOlderRatedWatch() async throws {
+        let harness = Harness()
+        let older = DiaryFixtures.entry(watchedOn: DiaryDay(year: 2026, month: 1, day: 1), score: 6)
+        let newer = DiaryFixtures.entry(watchedOn: DiaryDay(year: 2026, month: 2, day: 1), score: 9)
+        try await harness.diary.save(contentsOf: [older, newer])
+        try await harness.annotations.saveScore(9, for: .movie(550))
+
+        try await harness.watches.deleteWatch(id: newer.id, of: draft)
+
+        let rating = try await harness.annotations.annotation(for: .movie(550))
+        XCTAssertEqual(rating?.score, 6)
+    }
+
+    func test_deleteWatch_lastWatch_leavesWatchedAndClearsRating() async throws {
+        let harness = Harness()
+        let logged = try await harness.watches.logMovie(draft)
+        try await harness.annotations.saveScore(7, for: .movie(550))
+
+        try await harness.watches.deleteWatch(id: logged.entry.id, of: draft)
+
+        let onWatched = try await harness.isOnWatched(draft)
+        XCTAssertFalse(onWatched)
+        let rating = try await harness.annotations.annotation(for: .movie(550))
+        XCTAssertNil(rating)
+    }
+
+    func test_syncRating_seriesSubject_leavesVerdictAlone() async throws {
+        let harness = Harness()
+        try await harness.annotations.saveScore(7, for: .series(9))
+
+        try await harness.annotations.syncRating(from: nil, for: .series(9))
+
+        let verdict = try await harness.annotations.annotation(for: .series(9))
+        XCTAssertEqual(verdict?.score, 7)
+    }
+
     func test_diarySaveContentsOf_writesOnceAndReplacesByID() async throws {
         var existing = DiaryFixtures.entry(score: 6)
         let store = InMemoryDiaryStore(entries: [existing])
@@ -138,12 +185,14 @@ private struct Harness {
     let listsStore = InMemoryListsStore()
     let diary: DiaryRepository
     let lists: ListsRepository
+    let annotations: AnnotationsRepository
     let watches: WatchRepository
 
     init() {
         diary = DiaryRepository(store: diaryStore, logger: SilentLogger())
         lists = ListsRepository(store: listsStore, logger: SilentLogger())
-        watches = WatchRepository(diary: diary, lists: lists, logger: SilentLogger())
+        annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
+        watches = WatchRepository(diary: diary, lists: lists, annotations: annotations, logger: SilentLogger())
     }
 
     func isOnWatched(_ draft: ListItemDraft) async throws -> Bool {

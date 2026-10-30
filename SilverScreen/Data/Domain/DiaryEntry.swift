@@ -98,6 +98,14 @@ struct DiarySubject: Sendable, Hashable {
         return episode == nil || episode == other.episode
     }
 
+    /// The annotation row holding this subject's rating.
+    var annotationKey: AnnotationKey {
+        if let episode {
+            return .episode(seriesID: tmdbID, seasonNumber: episode.seasonNumber, episodeNumber: episode.episodeNumber)
+        }
+        return kind == .tv ? .series(tmdbID) : .movie(tmdbID)
+    }
+
     /// Same key the lists use (`movie-550`), so a diary row can join to a list entry.
     var itemKey: String {
         ListEntry.itemKey(id: tmdbID, kind: kind)
