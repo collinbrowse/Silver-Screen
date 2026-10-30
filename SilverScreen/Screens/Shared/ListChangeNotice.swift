@@ -389,10 +389,10 @@ final class ListChangeNotice {
         }
     }
 
-    /// Saves score and note from the toast sheet. Movies with a score stay on Watched.
+    /// Saves score and note from the toast sheet.
     func saveRatingAnnotation(score: Double, note: String) async -> AnnotationEditorWriteResult {
         guard let ratingKey, let annotations else { return .failed }
-        let (result, saved) = await DetailAnnotationWriter.save(
+        let (result, _) = await DetailAnnotationWriter.save(
             score: score,
             note: note,
             for: ratingKey,
@@ -400,13 +400,6 @@ final class ListChangeNotice {
         )
         switch result {
             case .succeeded:
-                if ratingKey.kind == .movie, let lists {
-                    await ensureMovieOnWatched(
-                        subjectID: ratingKey.subjectID,
-                        at: saved?.watchedAt,
-                        lists: lists
-                    )
-                }
                 annotationEditor = nil
                 self.ratingKey = nil
                 ratingTitle = nil
@@ -497,22 +490,6 @@ final class ListChangeNotice {
     private func resetLoggedWatch() {
         loggedWatch = nil
         diaryEditor = nil
-    }
-
-    private func ensureMovieOnWatched(subjectID: Int, at watchedAt: Date?, lists: ListsRepository) async {
-        do {
-            let snapshot = try await lists.snapshot()
-            let itemKey = ListEntry.itemKey(id: subjectID, kind: .movie)
-            let draft: ListItemDraft
-            if let entry = snapshot.entries.first(where: { $0.itemKey == itemKey }) {
-                draft = entry.listItem()
-            } else {
-                return
-            }
-            _ = try await lists.addToWatched(draft, at: watchedAt ?? Date())
-        } catch {
-            return
-        }
     }
 
     /// Drops the toast when the person leaves the screen it was about, e.g. by switching

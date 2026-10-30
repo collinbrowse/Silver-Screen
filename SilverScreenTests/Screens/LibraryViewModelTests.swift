@@ -479,7 +479,7 @@ final class LibraryViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.progressCaptions[entry.itemKey], "2 seasons")
     }
 
-    func test_detail_removeWatchedTV_clearsProgressLedger() async throws {
+    func test_detail_removeShowWatches_clearsProgressAndRow() async throws {
         let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
         let tvWatch = TVWatchRepository(
             store: InMemoryTVWatchStore(),
@@ -509,8 +509,10 @@ final class LibraryViewModelTests: XCTestCase {
         await viewModel.load()
         let entry = try XCTUnwrap(viewModel.displayedEntries.first)
 
-        _ = await viewModel.remove(entry)
+        XCTAssertTrue(viewModel.removesWatches(entry))
+        let outcome = await viewModel.removeShowWatches(entry)
 
+        XCTAssertNotNil(outcome?.watchUndo)
         let progress = try await tvWatch.state(seriesID: 11)
         XCTAssertNil(progress)
         XCTAssertTrue(viewModel.displayedEntries.isEmpty)

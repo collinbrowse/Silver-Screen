@@ -126,23 +126,12 @@ final class TitleWatchViewModelTests: XCTestCase {
     }
 
     private func makeViewModel(store: InMemoryDiaryStore) -> TitleWatchViewModel {
-        let draft = ListItemDraft(
-            id: 550,
-            kind: .movie,
-            title: "Fight Club",
-            imagePath: nil,
-            releaseDate: nil,
-            genreNames: [],
-            voteAverage: 8,
-            popularity: 1
-        )
-        return TitleWatchViewModel(
+        TitleWatchViewModel(
             title: LogWatchTitle(
                 subject: .movie(550),
                 title: "Fight Club",
                 releaseYear: 1999,
-                posterPath: nil,
-                listItem: draft
+                posterPath: nil
             ),
             context: DiaryContext(
                 diary: DiaryRepository(store: store, logger: SilentLogger()),

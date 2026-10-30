@@ -74,14 +74,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             }
             Task { try? await dependencies.lists.loadIndex() }
             Task { await dependencies.awards.prepare() }
-            Task {
-                await WatchedRatings.sync(
-                    annotations: dependencies.annotations,
-                    lists: dependencies.lists,
-                    movies: dependencies.movies,
-                    logger: dependencies.logger
-                )
-            }
             // Silent cold-launch catalog check. Must not delay first frame.
             Task {
                 await TVWatchReconcile.refreshWatchedCatalogs(
@@ -102,6 +94,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 listChanges: dependencies.listChanges,
                 annotations: dependencies.annotations,
                 tvWatch: dependencies.tvWatch,
+                watches: dependencies.watches,
                 awards: dependencies.awards,
                 imageLoader: dependencies.imageLoader,
                 libraryHomeViewModel: libraryHomeViewModel,
@@ -166,6 +159,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             let seed = try DemoLibrarySeed.load(from: url)
             try await seed.apply(lists: dependencies.lists, annotations: dependencies.annotations)
             try await dependencies.libraryStore.backfillDiaryFromWatchedNow()
+            try await dependencies.libraryStore.reconcileWatchesNow()
         } catch {
             dependencies.logger.error("Demo library seed failed: \(error)", category: .persistence)
         }

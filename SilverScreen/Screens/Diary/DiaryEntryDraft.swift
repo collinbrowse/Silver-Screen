@@ -106,15 +106,12 @@ struct LogWatchTitle: Sendable, Equatable {
     let title: String
     let releaseYear: Int?
     let posterPath: String?
-    /// Snapshot used to put the title on Watched when a watch is logged.
-    let listItem: ListItemDraft
 
-    init(subject: DiarySubject, title: String, releaseYear: Int?, posterPath: String?, listItem: ListItemDraft) {
+    init(subject: DiarySubject, title: String, releaseYear: Int?, posterPath: String?) {
         self.subject = subject
         self.title = title
         self.releaseYear = releaseYear
         self.posterPath = posterPath
-        self.listItem = listItem
     }
 
     init(series: TVSeriesDetail) {
@@ -122,7 +119,6 @@ struct LogWatchTitle: Sendable, Equatable {
         title = series.name
         releaseYear = DisplayDate.year(series.firstAirDate).flatMap(Int.init)
         posterPath = series.posterPath
-        listItem = series.listItem()
     }
 
     init(movie: MovieDetail) {
@@ -130,27 +126,16 @@ struct LogWatchTitle: Sendable, Equatable {
         title = movie.title
         releaseYear = DisplayDate.year(movie.releaseDate).flatMap(Int.init)
         posterPath = movie.posterPath
-        listItem = movie.listItem()
     }
 
     /// One episode of a series, logged under the series' name and poster so the diary row
-    /// reads like the show's other rows. `listItem` is the series.
+    /// reads like the show's other rows.
     init(episode: TVEpisodeRef, seriesID: Int, seriesName: String, posterPath: String?) {
         self.init(
             subject: .episode(seriesID: seriesID, season: episode.seasonNumber, episode: episode.episodeNumber),
             title: seriesName,
             releaseYear: nil,
-            posterPath: posterPath,
-            listItem: ListItemDraft(
-                id: seriesID,
-                kind: .tv,
-                title: seriesName,
-                imagePath: posterPath,
-                releaseDate: nil,
-                genreNames: [],
-                voteAverage: 0,
-                popularity: 0
-            )
+            posterPath: posterPath
         )
     }
 }

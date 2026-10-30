@@ -31,6 +31,7 @@ final class OnboardingViewModel {
         lists: ListsRepository,
         annotations: AnnotationsRepository,
         tvWatch: TVWatchRepository,
+        watches: WatchRepository,
         awards: AwardsRepository,
         gate: OnboardingGate
     ) {
@@ -40,6 +41,7 @@ final class OnboardingViewModel {
             lists: lists,
             annotations: annotations,
             tvWatch: tvWatch,
+            watches: watches,
             awards: awards
         )
         self.watchlist = OnboardingWatchlistViewModel(movies: movies, shows: shows, lists: lists)

@@ -69,9 +69,25 @@ final class OnboardingSeenViewModelTests: XCTestCase {
         let result = await viewModel.rate(title, score: 7.5, note: "Rewatch with friends")
 
         XCTAssertEqual(result, .succeeded)
-        let saved = try await annotations.annotation(for: .movie(278))
-        XCTAssertEqual(saved?.note, "Rewatch with friends")
+        let watches = try await diary.entries(for: .movie(278))
+        XCTAssertEqual(watches.first?.review, "Rewatch with friends")
+        XCTAssertEqual(watches.first?.score, 7.5)
         XCTAssertEqual(viewModel.note(for: title), "Rewatch with friends")
+    }
+
+    func test_toggle_movie_logsAnUndatedWatch_andUnpickingRemovesIt() async throws {
+        let viewModel = makeViewModel()
+        let title = OnboardingTitle(draft: OnboardingFixtures.movieDraft(id: 278))
+
+        await viewModel.toggle(title)
+
+        let logged = try await diary.entries(for: .movie(278))
+        XCTAssertEqual(logged.map(\.isDateKnown), [false])
+
+        await viewModel.toggle(title)
+
+        let removed = try await diary.entries(for: .movie(278))
+        XCTAssertTrue(removed.isEmpty)
     }
 
     func test_rate_unpickedTitle_fails() async {
@@ -252,6 +268,8 @@ final class OnboardingSeenViewModelTests: XCTestCase {
 
     // MARK: - Helpers
 
+    private let diary = DiaryRepository(store: InMemoryDiaryStore(), logger: SilentLogger())
+
     private func makeViewModel(
         client: any HTTPClient = FakeHTTPClient(stub: .failure(URLError(.notConnectedToInternet))),
         awards: AwardsRepository = AwardsRepository(catalog: .empty)
@@ -262,6 +280,12 @@ final class OnboardingSeenViewModelTests: XCTestCase {
             lists: lists,
             annotations: annotations,
             tvWatch: tvWatch,
+            watches: WatchRepository(
+                diary: diary,
+                lists: lists,
+                annotations: annotations,
+                logger: SilentLogger()
+            ),
             awards: awards
         )
     }

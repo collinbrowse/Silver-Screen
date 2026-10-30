@@ -81,36 +81,6 @@ actor ListsRepository {
         }
     }
 
-    /// Adds many titles to Watched in one serialized write / one disk transaction.
-    /// Used by launch-time `WatchedRatings.sync` so N scores are not N full saves.
-    func addToWatched(
-        _ items: [(draft: ListItemDraft, date: Date)]
-    ) async throws {
-        guard !items.isEmpty else { return }
-        try await serializeWrite { [self] in
-            var snapshot = try await loadCache()
-            guard let watched = snapshot.list(.watched) else {
-                throw ListEditError.missingList
-            }
-            var didChange = false
-            for item in items {
-                let before = snapshot
-                snapshot = try Self.addingToWatched(
-                    draft: item.draft,
-                    at: item.date,
-                    watchedID: watched.id,
-                    snapshot: snapshot
-                )
-                if snapshot != before {
-                    didChange = true
-                }
-            }
-            if didChange {
-                try await persist(snapshot)
-            }
-        }
-    }
-
     /// Puts a TV series on In Progress. Removes it from Watched and Watchlist.
     /// Movies and people are rejected — In Progress is TV-only.
     func addToInProgress(

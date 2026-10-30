@@ -299,7 +299,7 @@ final class DiaryViewModelTests: XCTestCase {
         XCTAssertEqual(session.draft.watchedOn, Date(timeIntervalSince1970: 1_792_000_000))
     }
 
-    func test_saveRewatch_addsSecondEntryAndPutsMovieOnWatched() async throws {
+    func test_saveRewatch_addsSecondEntry() async throws {
         let earlier = DiaryFixtures.entry(subject: .movie(550), title: "Fight Club")
         let store = InMemoryDiaryStore(entries: [earlier])
         let lists = ListsRepository.empty()
@@ -318,9 +318,6 @@ final class DiaryViewModelTests: XCTestCase {
         XCTAssertEqual(stored.count, 2)
         XCTAssertTrue(stored.contains { $0.id == earlier.id })
         XCTAssertTrue(stored.contains { $0.id != earlier.id && $0.score == 7 })
-        let snapshot = try await lists.snapshot()
-        let watchedID = try XCTUnwrap(snapshot.list(.watched)?.id)
-        XCTAssertTrue(snapshot.entries.contains { $0.listID == watchedID && $0.itemKey == "movie-550" })
         XCTAssertEqual(loadedMonths(viewModel).flatMap(\.rows).count, 2)
     }
 

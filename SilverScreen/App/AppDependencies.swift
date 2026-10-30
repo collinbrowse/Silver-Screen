@@ -15,6 +15,7 @@ struct AppDependencies {
     let listChanges: ListChangeNotice
     let annotations: AnnotationsRepository
     let tvWatch: TVWatchRepository
+    let watches: WatchRepository
     let diary: DiaryContext
     let awards: AwardsRepository
     let imageLoader: ImageLoader
@@ -145,6 +146,7 @@ struct AppDependencies {
             listChanges: listChanges,
             annotations: annotations,
             tvWatch: tvWatch,
+            watches: watches,
             diary: diary,
             awards: awards,
             imageLoader: imageLoader,

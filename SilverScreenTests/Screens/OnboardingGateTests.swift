@@ -320,6 +320,11 @@ enum OnboardingFixtures {
             lists: lists,
             annotations: .empty(),
             tvWatch: TVWatchRepository(store: InMemoryTVWatchStore(), lists: lists, logger: SilentLogger()),
+            watches: WatchRepository(
+                diary: DiaryRepository(store: InMemoryDiaryStore(), logger: SilentLogger()),
+                lists: lists,
+                logger: SilentLogger()
+            ),
             awards: AwardsRepository(catalog: .empty),
             gate: gate
         )

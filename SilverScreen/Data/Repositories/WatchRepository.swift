@@ -59,8 +59,9 @@ actor WatchRepository {
         try await diary.entries(for: subject).filter { $0.subject == subject }
     }
 
-    /// Logs a watch of a movie dated today and puts it on Watched.
-    func logMovie(_ draft: ListItemDraft) async throws -> LoggedWatch {
+    /// Logs a watch of a movie dated today and puts it on Watched. `dateKnown` is false
+    /// for onboarding's "seen it" picks, which were seen on no particular day.
+    func logMovie(_ draft: ListItemDraft, dateKnown: Bool = true) async throws -> LoggedWatch {
         let date = now()
         let blank = DiaryEntry(
             id: UUID(),
@@ -72,7 +73,8 @@ actor WatchRepository {
             score: nil,
             review: nil,
             isRewatch: false,
-            loggedAt: date
+            loggedAt: date,
+            isDateKnown: dateKnown
         )
         let adopted = try await annotations?.adopt(into: blank)
         let saved = try await diary.save(adopted?.entry ?? blank)
@@ -119,6 +121,17 @@ actor WatchRepository {
         if let subject = removed.entries.first?.subject {
             await syncTitleRating(for: subject)
         }
+    }
+
+    /// Sets the rating and review of a title's newest rated watch, or its newest watch.
+    /// Onboarding uses this, because its picks have no Log sheet. No-op with no watch.
+    func rate(_ subject: DiarySubject, score: Double?, review: String?) async throws {
+        let entries = try await watches(of: subject)
+        guard var watch = Self.ratedWatch(in: entries) ?? entries.first else { return }
+        watch.score = score
+        watch.review = review
+        try await diary.save(watch)
+        await syncTitleRating(for: subject)
     }
 
     /// Deletes one watch, as Watch History and the diary do. The title's last watch takes
