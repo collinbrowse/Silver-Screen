@@ -47,6 +47,17 @@ final class LibraryViewModelTests: XCTestCase {
         XCTAssertTrue(viewModel.canReorderLists)
     }
 
+    func test_routeForList_opensOnlyThatList() async throws {
+        let viewModel = LibraryHomeViewModel(lists: ListsRepository(store: InMemoryListsStore(), logger: SilentLogger()))
+        await viewModel.load()
+        let watched = try XCTUnwrap(viewModel.displayedLists.first)
+        let router = NavigationRouter()
+
+        router.push(viewModel.route(for: watched))
+
+        XCTAssertEqual(router.path, [.libraryList(id: watched.id)])
+    }
+
     func test_showsGetStarted_emptyMoviesAndTV_isTrue() async {
         let viewModel = LibraryHomeViewModel(lists: .empty())
 

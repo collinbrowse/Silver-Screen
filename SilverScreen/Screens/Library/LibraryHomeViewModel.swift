@@ -43,6 +43,11 @@ final class LibraryHomeViewModel {
         return !snapshot.entries.contains { listIDs.contains($0.listID) }
     }
 
+    /// The screen a list row opens.
+    func route(for list: LibraryList) -> Route {
+        .libraryList(id: list.id)
+    }
+
     func membershipCount(for listID: UUID) -> Int {
         guard case .loaded(let snapshot, _) = state else { return 0 }
         return snapshot.entries.filter { $0.listID == listID }.count

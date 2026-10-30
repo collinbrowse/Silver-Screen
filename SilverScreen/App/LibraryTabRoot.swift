@@ -26,6 +26,7 @@ struct LibraryTabRoot: View {
             LibraryHomeView(
                 viewModel: viewModel,
                 imageLoader: imageLoader,
+                router: router,
                 settings: settings,
                 onGetStarted: onGetStarted
             )
