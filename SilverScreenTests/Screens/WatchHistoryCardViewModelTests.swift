@@ -62,7 +62,7 @@ final class WatchHistoryCardViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.summary, "2 episodes watched · last Oct 16, 2026")
     }
 
-    func test_load_seriesWithEpisodeRewatch_stillSummarizesByEpisodes() async {
+    func test_load_seriesWithEpisodeRewatch_summaryCountsTheRewatch() async {
         let store = InMemoryDiaryStore(
             entries: [DiaryFixtures.entry(subject: .episode(seriesID: 42, season: 1, episode: 2))],
             episodeWatches: [episodeWatch(series: 42, episode: 1, at: now), episodeWatch(series: 42, episode: 2, at: now)]
@@ -72,7 +72,18 @@ final class WatchHistoryCardViewModelTests: XCTestCase {
         await viewModel.load()
 
         XCTAssertEqual(viewModel.watchCount, 1)
-        XCTAssertEqual(viewModel.summary, "2 episodes watched · last Oct 16, 2026")
+        XCTAssertEqual(viewModel.summary, "2 episodes watched · 1 rewatch · last Oct 16, 2026")
+    }
+
+    func test_episodesSummary_twoRewatches_usesNewestDayAcrossBoth() {
+        let summary = WatchHistoryCardViewModel.episodesSummary(
+            for: [episodeWatch(series: 42, episode: 1, at: now)],
+            rewatches: [DiaryDay(year: 2026, month: 10, day: 20), DiaryDay(year: 2026, month: 10, day: 18)],
+            calendar: DiaryFixtures.utcCalendar,
+            locale: Locale(identifier: "en_US")
+        )
+
+        XCTAssertEqual(summary, "1 episode watched · 2 rewatches · last Oct 20, 2026")
     }
 
     func test_load_movie_ignoresEpisodeHistory() async {

@@ -72,11 +72,16 @@ final class WatchHistoryCardViewModel {
             let episodes = try await episodeWatches()
             watchCount = entries.count
             episodeCount = episodes.count
-            // A show reads by its episodes; its diary entries (episode rewatches, an
-            // imported whole-series log) only speak when nothing was checked off.
+            // A show reads by its episodes plus their rewatches; a whole-series entry
+            // (imported) only speaks when nothing was checked off.
             if subject.kind == .tv {
-                summary = Self.episodesSummary(for: episodes, calendar: calendar, locale: locale)
-                    ?? Self.summary(for: entries, calendar: calendar, locale: locale)
+                let rewatches = entries.filter { $0.subject.episode != nil }
+                summary = Self.episodesSummary(
+                    for: episodes,
+                    rewatches: rewatches.map(\.watchedOn),
+                    calendar: calendar,
+                    locale: locale
+                ) ?? Self.summary(for: entries, calendar: calendar, locale: locale)
             } else {
                 summary = Self.summary(for: entries, calendar: calendar, locale: locale)
             }
@@ -100,17 +105,29 @@ final class WatchHistoryCardViewModel {
         }
     }
 
-    /// "1 episode watched · Oct 16, 2026" or "12 episodes watched · last Oct 16, 2026",
-    /// for a show with check-offs but no logged watch.
-    static func episodesSummary(for episodes: [EpisodeWatch], calendar: Calendar, locale: Locale) -> String? {
-        guard let latest = episodes.map(\.completedAt).max() else { return nil }
-        let day = DiaryDay(latest, calendar: calendar).date(in: calendar).formatted(
+    /// "1 episode watched · Oct 16, 2026" or "12 episodes watched · last Oct 16, 2026".
+    /// With rewatches: "12 episodes watched · 2 rewatches · last Oct 20, 2026", where the
+    /// last day counts them too. Nil when nothing was checked off.
+    static func episodesSummary(
+        for episodes: [EpisodeWatch],
+        rewatches: [DiaryDay] = [],
+        calendar: Calendar,
+        locale: Locale
+    ) -> String? {
+        let days = episodes.map { DiaryDay($0.completedAt, calendar: calendar) } + rewatches
+        guard !episodes.isEmpty, let latest = days.max() else { return nil }
+        let day = latest.date(in: calendar).formatted(
             Date.FormatStyle(date: .abbreviated, time: .omitted, locale: locale, calendar: calendar, timeZone: calendar.timeZone)
         )
-        if episodes.count == 1 {
-            return "1 episode watched · \(day)"
+        let watched = episodes.count == 1 ? "1 episode watched" : "\(episodes.count) episodes watched"
+        switch rewatches.count {
+            case 0:
+                return episodes.count == 1 ? "\(watched) · \(day)" : "\(watched) · last \(day)"
+            case 1:
+                return "\(watched) · 1 rewatch · last \(day)"
+            default:
+                return "\(watched) · \(rewatches.count) rewatches · last \(day)"
         }
-        return "\(episodes.count) episodes watched · last \(day)"
     }
 
     /// "Watched once · Oct 16, 2026" or "Watched 3 times · last Oct 16, 2026".

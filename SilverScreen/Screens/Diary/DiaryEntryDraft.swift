@@ -19,7 +19,7 @@ struct DiaryEntryDraft: Sendable, Equatable {
 /// One presentation of the editor, for a new watch or an existing entry.
 struct DiaryEditorSession: Sendable, Equatable, Identifiable {
     let id: UUID
-    /// Movie or series name shown as the sheet title.
+    /// The sheet title: the movie or series name, or "S1 · E2" for one episode.
     let title: String
     /// The entry being edited, or a template carrying the title's identity for a new one.
     let base: DiaryEntry
@@ -32,7 +32,7 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
     static func editing(_ entry: DiaryEntry, calendar: Calendar = .current) -> DiaryEditorSession {
         DiaryEditorSession(
             id: UUID(),
-            title: entry.title,
+            title: Self.sheetTitle(for: entry.subject, name: entry.title),
             base: entry,
             isNew: false,
             draft: DiaryEntryDraft(
@@ -64,7 +64,7 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
         )
         return DiaryEditorSession(
             id: UUID(),
-            title: title.title,
+            title: Self.sheetTitle(for: title.subject, name: title.title),
             base: base,
             isNew: true,
             draft: DiaryEntryDraft(
@@ -73,6 +73,12 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
                 review: ""
             )
         )
+    }
+
+    /// A show's name is often too long for the sheet's bar and does not say which
+    /// episode, so an episode's sheet is titled by the episode.
+    private static func sheetTitle(for subject: DiarySubject, name: String) -> String {
+        subject.episode.map { DiaryContent.episodesText([$0]) } ?? name
     }
 
     /// The entry to store for `draft`. A new entry is stamped as logged at `now`;

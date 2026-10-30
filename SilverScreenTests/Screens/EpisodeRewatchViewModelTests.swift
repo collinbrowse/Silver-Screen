@@ -22,7 +22,8 @@ final class EpisodeRewatchViewModelTests: XCTestCase {
         XCTAssertNil(session.draft.score)
         XCTAssertEqual(session.draft.watchedOn, now)
         XCTAssertEqual(session.base.subject, .episode(seriesID: 42, season: 2, episode: 3))
-        XCTAssertEqual(session.title, "Severance")
+        XCTAssertEqual(session.title, "S2 · E3")
+        XCTAssertEqual(session.base.title, "Severance")
     }
 
     func test_save_storesEpisodeEntryAndLeavesListsAlone() async throws {
