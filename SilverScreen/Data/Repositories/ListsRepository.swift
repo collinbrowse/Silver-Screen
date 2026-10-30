@@ -111,20 +111,6 @@ actor ListsRepository {
         }
     }
 
-    /// Eye-toggle for movies (and any direct Watched membership flip). Adds or removes Watched.
-    func toggleWatched(_ draft: ListItemDraft, at date: Date = Date()) async throws -> MembershipChange {
-        try await serializeWrite { [self] in
-            let snapshot = try await loadCache()
-            guard let watched = snapshot.list(.watched) else {
-                throw ListEditError.missingList
-            }
-            if snapshot.entries.contains(where: { $0.listID == watched.id && $0.itemKey == draft.itemKey }) {
-                return try await performRemove(itemKey: draft.itemKey, listID: watched.id)
-            }
-            return try await performAdd(draft: draft, listID: watched.id, at: date)
-        }
-    }
-
     /// Puts a TV series on In Progress. Removes it from Watched and Watchlist.
     /// Movies and people are rejected — In Progress is TV-only.
     func addToInProgress(

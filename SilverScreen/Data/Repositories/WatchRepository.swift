@@ -92,6 +92,14 @@ actor WatchRepository {
         }
     }
 
+    /// Reverses `logMovie`: deletes the watch, including anything since added to it, and
+    /// restores the lists as they were.
+    func undo(_ logged: LoggedWatch) async throws {
+        try await diary.delete(id: logged.entry.id)
+        try await lists.undo(logged.membership)
+        await syncTitleRating(for: logged.entry.subject)
+    }
+
     /// Puts back what `removed` took away. A tombstoned id is revived, so a restored
     /// watch keeps its identity.
     func restore(_ removed: RemovedWatches) async throws {
@@ -106,13 +114,12 @@ actor WatchRepository {
 
     /// Deletes one watch, as Watch History and the diary do. The title's last watch takes
     /// it off Watched too, since a title is watched exactly when it has a watch.
-    func deleteWatch(id: UUID, of draft: ListItemDraft) async throws {
-        let subject = DiarySubject.movie(draft.id)
-        try await diary.delete(id: id)
-        if try await watches(of: subject).isEmpty {
-            _ = try await removeFromWatched(itemKey: draft.itemKey)
+    func deleteWatch(_ entry: DiaryEntry) async throws {
+        try await diary.delete(id: entry.id)
+        if entry.subject.kind == .movie, try await watches(of: entry.subject).isEmpty {
+            _ = try await removeFromWatched(itemKey: entry.subject.itemKey)
         }
-        await syncTitleRating(for: subject)
+        await syncTitleRating(for: entry.subject)
     }
 
     /// Points the title's rating at `ratedWatch`. If only this fails it is logged, and

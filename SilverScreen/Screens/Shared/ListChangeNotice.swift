@@ -8,11 +8,18 @@
 //  Adding to Watched or In Progress without a personal score also offers “Add rating,”
 //  which opens the combined rating and note sheet. Callers can pass an explicit rating
 //  key (e.g. episode) when the list row is the series.
-//  Marking a movie watched with the eye also logs today's watch in the diary, and that
-//  toast's Add rating opens the diary sheet on that same entry instead.
+//  The eye logs and removes watches through `WatchRepository` and `TVWatchRepository`,
+//  and this shows what happened: "Watched" with Rate & review on the watch just logged,
+//  or "Removed". This type never writes a watch itself, other than saving that sheet.
 //
 
 import Foundation
+
+/// What Undo reverses on a movie's watch toast.
+enum MovieWatchUndo: Sendable, Equatable {
+    case logged(LoggedWatch)
+    case removed(RemovedWatches)
+}
 
 @Observable
 @MainActor
@@ -22,10 +29,9 @@ final class ListChangeNotice {
     private(set) var ratingKey: AnnotationKey?
     /// Sheet opened from the banner’s Add rating control.
     private(set) var annotationEditor: AnnotationEditorSession?
-    /// Diary sheet opened from a movie watch toast's Add rating, editing `loggedWatch`.
+    /// Log sheet opened from a watch toast's Rate & review, editing `loggedWatch`.
     private(set) var diaryEditor: DiaryEditorSession?
-    /// Today's diary watch behind a movie watch toast. Add rating edits it rather than
-    /// logging a second one.
+    /// The watch behind a "Watched" toast. Rate & review edits it.
     private(set) var loggedWatch: DiaryEntry?
     /// Bumps on every presentation so the banner refreshes even when copy is unchanged.
     private(set) var presentationID = 0
@@ -33,8 +39,10 @@ final class ListChangeNotice {
     /// season/series screens observe this and reload completed / Next up chrome.
     private(set) var watchRevision = 0
     /// True when membership Undo and/or a ledger restore is available.
-    var canUndo: Bool { change != nil || watchUndo != nil }
-    /// Whether the banner shows Add rating: a title without a score, or a movie watch
+    var canUndo: Bool { change != nil || watchUndo != nil || movieUndo != nil }
+    /// "Rate & review" on a watch just logged, "Add rating" otherwise.
+    var ratingActionTitle: String { loggedWatch == nil ? "Add rating" : "Rate & review" }
+    /// Whether the banner shows its rating action: a title without a score, or a watch
     /// just logged. Hidden while either sheet is up.
     var offersRating: Bool {
         (ratingKey != nil || loggedWatch != nil) && annotationEditor == nil && diaryEditor == nil
@@ -43,34 +51,122 @@ final class ListChangeNotice {
     private var lists: ListsRepository?
     private var tvWatch: TVWatchRepository?
     private var watchUndo: TVWatchUndo?
+    private var movieUndo: MovieWatchUndo?
     private let annotations: AnnotationsRepository?
     private var generation = 0
     /// Title for the rating sheet (series/movie name from the list row when known).
     private var ratingTitle: String?
-    /// Where a movie watch is logged. Nil in previews and tests that do not need it.
+    /// Saves the Log sheet and tells open screens. Nil in previews and tests that skip it.
     private let diary: DiaryContext?
-    /// Set only when this toast's watch created a new diary entry, so Undo removes that
-    /// entry and never one that was already there.
-    private var createdWatchID: UUID?
+    /// Logs and removes a movie's watches. Nil in previews and tests that skip it.
+    private let watches: WatchRepository?
 
-    init(annotations: AnnotationsRepository? = nil, diary: DiaryContext? = nil) {
+    init(
+        annotations: AnnotationsRepository? = nil,
+        diary: DiaryContext? = nil,
+        watches: WatchRepository? = nil
+    ) {
         self.annotations = annotations
         self.diary = diary
+        self.watches = watches
     }
 
-    /// The eye on a movie. Marking it watched also logs a diary watch dated today, with no
-    /// rating, so the toast's Add rating can fill that watch in. A movie already logged
-    /// today reuses that entry instead of adding a second. Un-marking leaves the diary
-    /// alone. A diary failure is logged and the list change still shows.
-    func showMovieWatch(_ change: MembershipChange, draft: ListItemDraft, using lists: ListsRepository) async {
-        guard change.action == .added, draft.kind == .movie, let diary else {
-            show(change, using: lists)
+    /// How long a toast with something to act on stays up.
+    private static let actionSeconds: Double = 10
+
+    /// How many watches `subject` has, so the eye can ask before removing several.
+    func watchCount(of subject: DiarySubject) async throws -> Int {
+        guard let watches else { throw AppError.persistence }
+        return try await watches.watches(of: subject).count
+    }
+
+    /// The grey eye on a movie: logs a watch dated today.
+    func logMovie(_ draft: ListItemDraft, using lists: ListsRepository) async throws {
+        guard let watches else { throw AppError.persistence }
+        let logged = try await watches.logMovie(draft)
+        diary?.noteChange()
+        present(message: "Watched", using: lists, movieUndo: .logged(logged), loggedWatch: logged.entry)
+    }
+
+    /// The orange eye on a movie: removes every watch, after any confirmation.
+    func removeMovie(_ draft: ListItemDraft, using lists: ListsRepository) async throws {
+        guard let watches else { throw AppError.persistence }
+        let removed = try await watches.removeMovie(draft)
+        diary?.noteChange()
+        present(message: "Removed", using: lists, movieUndo: .removed(removed))
+    }
+
+    /// An episode's eye just logged its watch. A mark that logged several, like a whole
+    /// season, has no one watch to rate, so it offers the verdict for `ratingKey` instead.
+    func presentEpisodeLogged(
+        _ outcome: TVWatchOutcome,
+        ratingKey: AnnotationKey,
+        fallbackMessage: String,
+        using lists: ListsRepository,
+        tvWatch: TVWatchRepository
+    ) {
+        diary?.noteChange()
+        guard let added = outcome.watchUndo?.addedWatches, added.count == 1 else {
+            presentWatch(
+                outcome,
+                ratingKey: ratingKey,
+                fallbackMessage: fallbackMessage,
+                using: lists,
+                tvWatch: tvWatch
+            )
             return
         }
-        let logged = await logTodaysWatch(of: draft, in: diary)
-        show(change, using: lists)
-        loggedWatch = logged?.entry
-        createdWatchID = (logged?.isNew == true) ? logged?.entry.id : nil
+        present(
+            message: "Watched",
+            using: lists,
+            change: outcome.membershipChange,
+            tvWatch: tvWatch,
+            watchUndo: outcome.watchUndo,
+            loggedWatch: added.first
+        )
+    }
+
+    /// An episode, season, or show's eye just removed watches.
+    func presentRemoved(_ outcome: TVWatchOutcome, using lists: ListsRepository, tvWatch: TVWatchRepository) {
+        diary?.noteChange()
+        present(
+            message: "Removed",
+            using: lists,
+            change: outcome.membershipChange,
+            tvWatch: tvWatch,
+            watchUndo: outcome.watchUndo
+        )
+    }
+
+    /// Shows a watch toast and starts its clock.
+    private func present(
+        message: String,
+        using lists: ListsRepository,
+        change: MembershipChange? = nil,
+        tvWatch: TVWatchRepository? = nil,
+        watchUndo: TVWatchUndo? = nil,
+        movieUndo: MovieWatchUndo? = nil,
+        loggedWatch: DiaryEntry? = nil
+    ) {
+        generation += 1
+        let token = generation
+        presentationID += 1
+        self.message = message
+        self.change = change
+        self.lists = lists
+        self.tvWatch = tvWatch
+        self.watchUndo = watchUndo
+        self.movieUndo = movieUndo
+        self.loggedWatch = loggedWatch
+        self.ratingKey = nil
+        self.ratingTitle = nil
+        self.annotationEditor = nil
+        self.diaryEditor = nil
+        Task {
+            try? await Task.sleep(for: .seconds(Self.actionSeconds))
+            guard !Task.isCancelled, generation == token else { return }
+            clear()
+        }
     }
 
     /// Membership toast when the list actually changed; otherwise a watch confirmation
@@ -137,6 +233,7 @@ final class ListChangeNotice {
         self.lists = lists
         self.tvWatch = tvWatch
         self.watchUndo = watchUndo
+        self.movieUndo = nil
         self.message = message
         self.ratingKey = nil
         self.ratingTitle = nil
@@ -155,7 +252,7 @@ final class ListChangeNotice {
             if let key {
                 ratingTitle = await Self.editorTitle(for: key, lists: lists)
             }
-            let seconds: Double = key == nil && loggedWatch == nil ? 4 : 6
+            let seconds = key == nil && loggedWatch == nil ? 4 : Self.actionSeconds
             try? await Task.sleep(for: .seconds(seconds))
             guard !Task.isCancelled, generation == token else { return }
             clear()
@@ -178,6 +275,7 @@ final class ListChangeNotice {
         self.lists = lists
         self.tvWatch = tvWatch
         self.watchUndo = watchUndo
+        self.movieUndo = nil
         self.message = message
         self.ratingKey = nil
         self.ratingTitle = nil
@@ -198,7 +296,7 @@ final class ListChangeNotice {
             if let key {
                 ratingTitle = await Self.editorTitle(for: key, lists: lists)
             }
-            let seconds: Double = key == nil && loggedWatch == nil ? 4 : 6
+            let seconds = key == nil && loggedWatch == nil ? 4 : Self.actionSeconds
             try? await Task.sleep(for: .seconds(seconds))
             guard !Task.isCancelled, generation == token else { return }
             clear()
@@ -206,12 +304,12 @@ final class ListChangeNotice {
     }
 
     func undo() async {
-        guard change != nil || watchUndo != nil else { return }
+        guard canUndo else { return }
         let undoToken = watchUndo
         let watch = tvWatch
         let membership = change
         let listsRef = lists
-        let createdWatch = createdWatchID
+        let movie = movieUndo
         clear()
         do {
             // Restore the episode ledger before list membership so In Progress captions stay valid.
@@ -221,11 +319,12 @@ final class ListChangeNotice {
             if let membership, let listsRef {
                 try await listsRef.undo(membership)
             }
-            // The diary watch this toast logged goes with the Watched mark it came from.
-            if let createdWatch, let diary {
-                try await diary.diary.delete(id: createdWatch)
-                diary.noteChange()
+            switch movie {
+                case .logged(let logged): try await watches?.undo(logged)
+                case .removed(let removed): try await watches?.restore(removed)
+                case nil: break
             }
+            diary?.noteChange()
             watchRevision += 1
         } catch is CancellationError {
             return
@@ -245,7 +344,7 @@ final class ListChangeNotice {
         }
     }
 
-    /// Opens the banner's rating sheet: the diary sheet on a movie watch this toast logged,
+    /// Opens the banner's rating sheet: the Log sheet on a watch this toast logged,
     /// otherwise the combined rating and note sheet for the banner's rating key.
     /// Cancels the auto-dismiss timer while the sheet is up.
     func openRatingEditor() async {
@@ -282,7 +381,7 @@ final class ListChangeNotice {
         guard message != nil else { return }
         generation += 1
         let token = generation
-        let seconds: Double = ratingKey == nil && loggedWatch == nil ? 3 : 6
+        let seconds = ratingKey == nil && loggedWatch == nil ? 3 : Self.actionSeconds
         Task {
             try? await Task.sleep(for: .seconds(seconds))
             guard !Task.isCancelled, generation == token else { return }
@@ -347,9 +446,8 @@ final class ListChangeNotice {
         return result
     }
 
-    /// Saves the diary sheet opened from a movie watch toast: the same entry the eye
-    /// logged, so the diary never gets a second row for one viewing. Undo stays briefly
-    /// available afterward, as it does after a toast rating.
+    /// Saves the Log sheet opened from a watch toast: the same entry the eye logged, so
+    /// one viewing never gets a second row. Undo stays briefly available afterward.
     func saveDiaryEntry(_ draft: DiaryEntryDraft) async -> AnnotationEditorWriteResult {
         guard let session = diaryEditor, let diary else { return .failed }
         do {
@@ -364,20 +462,20 @@ final class ListChangeNotice {
         return .succeeded
     }
 
-    /// Deletes the toast's diary watch from its sheet. The Watched mark stays; this only
-    /// removes the diary row, the same as deleting it from the diary.
+    /// Deletes the toast's watch from its sheet, the same as deleting it from Watch History.
+    /// That already undid the toast's action, so Undo goes with it.
     func deleteDiaryEntry() async -> AnnotationEditorWriteResult {
-        guard let session = diaryEditor, let diary else { return .failed }
+        guard let session = diaryEditor, let diary, let watches else { return .failed }
         do {
-            try await diary.diary.delete(id: session.base.id)
+            try await watches.deleteWatch(session.base)
         } catch is CancellationError {
             return .cancelled
         } catch {
             return .failed
         }
         diary.noteChange()
-        createdWatchID = nil
-        finishDiaryEdit()
+        watchRevision += 1
+        clear()
         return .succeeded
     }
 
@@ -396,44 +494,8 @@ final class ListChangeNotice {
         }
     }
 
-    /// The movie's diary watch for today: an existing one when it was already logged
-    /// today, otherwise a new unrated one. Nil when the diary cannot be read or written;
-    /// the repository logs that, and the Watched mark still stands.
-    private func logTodaysWatch(
-        of draft: ListItemDraft,
-        in diary: DiaryContext
-    ) async -> (entry: DiaryEntry, isNew: Bool)? {
-        let now = Date()
-        let today = DiaryDay(now)
-        let subject = DiarySubject.movie(draft.id)
-        do {
-            if let existing = try await diary.diary.entries(for: subject).first(where: { $0.watchedOn == today }) {
-                return (existing, false)
-            }
-            let entry = DiaryEntry(
-                id: UUID(),
-                subject: subject,
-                title: draft.title,
-                releaseYear: DisplayDate.year(draft.releaseDate).flatMap(Int.init),
-                posterPath: draft.imagePath,
-                watchedOn: today,
-                score: nil,
-                review: nil,
-                isRewatch: false,
-                loggedAt: now
-            )
-            let saved = try await diary.diary.save(entry)
-            diary.noteChange()
-            return (saved, true)
-        } catch {
-            diary.logger.error("Movie watch was not logged in the diary", category: .persistence)
-            return nil
-        }
-    }
-
     private func resetLoggedWatch() {
         loggedWatch = nil
-        createdWatchID = nil
         diaryEditor = nil
     }
 
@@ -472,6 +534,7 @@ final class ListChangeNotice {
         lists = nil
         tvWatch = nil
         watchUndo = nil
+        movieUndo = nil
     }
 
     /// Watched / In Progress adds without a score get a rating prompt. Removals and other lists do not.

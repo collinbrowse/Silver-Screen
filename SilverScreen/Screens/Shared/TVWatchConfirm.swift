@@ -10,10 +10,10 @@ import Foundation
 enum TVWatchConfirm {
     static let seriesTitle = "Mark as Watched?"
     static let seasonTitle = "Mark Season as Watched?"
-    static let clearSeriesTitle = "Clear Watch Progress?"
-    static let clearSeasonTitle = "Clear Season Progress?"
+    static let clearSeriesTitle = "Remove Watches?"
+    static let clearSeasonTitle = "Remove Season Watches?"
     static let confirmButtonTitle = "Mark Watched"
-    static let clearButtonTitle = "Clear Progress"
+    static let clearButtonTitle = "Remove"
 
     /// Body copy for the confirm alert when `count` episodes would be newly completed.
     static func message(episodeCount count: Int) -> String {
@@ -23,11 +23,11 @@ enum TVWatchConfirm {
         return "This marks \(count) episodes as watched."
     }
 
-    /// Body copy when clearing completed episodes.
+    /// Body copy when removing the watches of completed episodes.
     static func clearMessage(episodeCount count: Int) -> String {
         if count == 1 {
-            return "This clears 1 watched episode."
+            return "This removes 1 watched episode and its ratings and reviews."
         }
-        return "This clears \(count) watched episodes."
+        return "This removes \(count) watched episodes and their ratings and reviews."
     }
 }

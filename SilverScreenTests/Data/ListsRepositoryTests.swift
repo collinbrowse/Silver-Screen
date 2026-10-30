@@ -297,21 +297,6 @@ final class ListsRepositoryTests: XCTestCase {
         XCTAssertTrue(snapshot.entries.contains { $0.listID == custom.id && $0.itemID == 15 })
     }
 
-    func test_toggleWatched_addsThenRemoves() async throws {
-        let repository = makeRepository()
-        let draft = movie(id: 22, title: "Heat")
-
-        let added = try await repository.toggleWatched(draft)
-        XCTAssertEqual(added.action, .added)
-        XCTAssertEqual(added.confirmation, "Added to Watched")
-
-        let removed = try await repository.toggleWatched(draft)
-        XCTAssertEqual(removed.action, .removed)
-        let snapshot = try await repository.snapshot()
-        let watched = try XCTUnwrap(snapshot.list(.watched))
-        XCTAssertFalse(snapshot.entries.contains { $0.listID == watched.id && $0.itemID == 22 })
-    }
-
     func test_addToWatched_again_keepsTheAddedDate() async throws {
         let repository = makeRepository()
         let draft = movie(id: 15, title: "Heat")
@@ -465,7 +450,7 @@ final class ListsRepositoryTests: XCTestCase {
             defaults: defaults
         )
         let watched = try await systemList(.watched, repository: lists)
-        _ = try await lists.toggleWatched(movie(id: 278, title: "The Shawshank Redemption"))
+        _ = try await lists.remove(itemKey: movie(id: 278, title: "The Shawshank Redemption").itemKey, listID: watched.id)
 
         await WatchedRatings.sync(
             annotations: annotations,

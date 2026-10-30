@@ -276,6 +276,7 @@
 		TW0000122788B823003D8011 /* TVWatchRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = TW0000112788B823003D8011 /* TVWatchRepositoryTests.swift */; };
 		W1R000022788B823003D8011 /* WatchedRatings.swift in Sources */ = {isa = PBXBuildFile; fileRef = W1R000012788B823003D8011 /* WatchedRatings.swift */; };
 		WR0000022788B823003D8011 /* WatchRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000012788B823003D8011 /* WatchRepository.swift */; };
+		WR00000A2788B823003D8011 /* RemoveWatchesAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000092788B823003D8011 /* RemoveWatchesAlert.swift */; };
 		WR0000062788B823003D8011 /* SQLiteLibraryStore+WatchReconcile.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000052788B823003D8011 /* SQLiteLibraryStore+WatchReconcile.swift */; };
 		WR0000082788B823003D8011 /* WatchReconcileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000072788B823003D8011 /* WatchReconcileTests.swift */; };
 		WR0000042788B823003D8011 /* WatchRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000032788B823003D8011 /* WatchRepositoryTests.swift */; };
@@ -617,6 +618,7 @@
 		TW00000F2788B823003D8011 /* TVWatchProgressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchProgressTests.swift; sourceTree = "<group>"; };
 		TW0000112788B823003D8011 /* TVWatchRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVWatchRepositoryTests.swift; sourceTree = "<group>"; };
 		W1R000012788B823003D8011 /* WatchedRatings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchedRatings.swift; sourceTree = "<group>"; };
+		WR0000092788B823003D8011 /* RemoveWatchesAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoveWatchesAlert.swift; sourceTree = "<group>"; };
 		WR0000012788B823003D8011 /* WatchRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRepository.swift; sourceTree = "<group>"; };
 		WR0000052788B823003D8011 /* SQLiteLibraryStore+WatchReconcile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SQLiteLibraryStore+WatchReconcile.swift"; sourceTree = "<group>"; };
 		WR0000072788B823003D8011 /* WatchReconcileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchReconcileTests.swift; sourceTree = "<group>"; };
@@ -829,6 +831,7 @@
 				A1B000012788B823003D8011 /* AwardRowsSection.swift */,
 				L1B000102788B823003D8011 /* ListMembershipButton.swift */,
 				WT0000012788B823003D8011 /* WatchedToggleButton.swift */,
+				WR0000092788B823003D8011 /* RemoveWatchesAlert.swift */,
 				WT0000032788B823003D8011 /* CarouselRatingBadge.swift */,
 				WT0000052788B823003D8011 /* TVWatchConfirm.swift */,
 				TW00000B2788B823003D8011 /* EpisodeWatchButton.swift */,
@@ -1614,6 +1617,7 @@
 				L1B0000B2788B823003D8011 /* ListsRepository.swift in Sources */,
 				W1R000022788B823003D8011 /* WatchedRatings.swift in Sources */,
 				WR0000022788B823003D8011 /* WatchRepository.swift in Sources */,
+				WR00000A2788B823003D8011 /* RemoveWatchesAlert.swift in Sources */,
 				WR0000062788B823003D8011 /* SQLiteLibraryStore+WatchReconcile.swift in Sources */,
 				TW00000A2788B823003D8011 /* TVWatchReconcile.swift in Sources */,
 				L1B0000D2788B823003D8011 /* ListsIndex.swift in Sources */,

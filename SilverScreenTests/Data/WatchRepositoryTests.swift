@@ -119,7 +119,7 @@ final class WatchRepositoryTests: XCTestCase {
         try await harness.diary.save(contentsOf: [older, newer])
         try await harness.annotations.saveScore(9, for: .movie(550))
 
-        try await harness.watches.deleteWatch(id: newer.id, of: draft)
+        try await harness.watches.deleteWatch(newer)
 
         let rating = try await harness.annotations.annotation(for: .movie(550))
         XCTAssertEqual(rating?.score, 6)
@@ -130,7 +130,7 @@ final class WatchRepositoryTests: XCTestCase {
         let logged = try await harness.watches.logMovie(draft)
         try await harness.annotations.saveScore(7, for: .movie(550))
 
-        try await harness.watches.deleteWatch(id: logged.entry.id, of: draft)
+        try await harness.watches.deleteWatch(logged.entry)
 
         let onWatched = try await harness.isOnWatched(draft)
         XCTAssertFalse(onWatched)

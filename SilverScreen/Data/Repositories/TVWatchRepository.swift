@@ -323,7 +323,7 @@ actor TVWatchRepository {
     /// Restores the episode ledger captured before a toasted watch mutation (Story 6 Undo).
     func restore(_ undo: TVWatchUndo) async throws {
         try await serializeWrite { [self] in
-            try await diary?.delete(ids: undo.addedWatchIDs)
+            try await deleteWatches(undo.addedWatches)
             try await restoreWatches(undo.removedWatches)
             if let prior = undo.priorState, !prior.completed.isEmpty {
                 try await persist(prior)
@@ -484,7 +484,7 @@ actor TVWatchRepository {
         let undo = TVWatchUndo(
             seriesID: state.seriesID,
             priorState: prior,
-            addedWatchIDs: Set(addedWatches.map(\.id)),
+            addedWatches: addedWatches,
             removedWatches: removedWatches
         )
         return TVWatchOutcome(

@@ -389,7 +389,7 @@ struct TVWatchUndo: Sendable, Equatable {
     /// Nil means there was no progress before the action — undo clears the series ledger.
     let priorState: TVSeriesWatchState?
     /// Watches this action logged; undo deletes them.
-    var addedWatchIDs: Set<UUID> = []
+    var addedWatches: [DiaryEntry] = []
     /// Watches this action deleted; undo puts them back with the same ids.
     var removedWatches: [DiaryEntry] = []
 }

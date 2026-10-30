@@ -98,8 +98,14 @@ struct AppDependencies {
             annotations: annotations,
             shows: shows
         )
-        // The eye on a movie logs a diary watch, so the toast needs the diary.
-        let listChanges = ListChangeNotice(annotations: annotations, diary: diary)
+        let watches = WatchRepository(
+            diary: diary.diary,
+            lists: lists,
+            annotations: annotations,
+            logger: logger
+        )
+        // The toast reports what the eye did, and its Undo and Rate & review act on that watch.
+        let listChanges = ListChangeNotice(annotations: annotations, diary: diary, watches: watches)
         let tvWatch = TVWatchRepository(
             store: LibraryTVWatchStoreAdapter(library: libraryStore),
             lists: lists,

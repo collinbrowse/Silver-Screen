@@ -21,11 +21,11 @@ final class TVWatchConfirmTests: XCTestCase {
     func test_clearMessage_usesSingularAndPlural() {
         XCTAssertEqual(
             TVWatchConfirm.clearMessage(episodeCount: 1),
-            "This clears 1 watched episode."
+            "This removes 1 watched episode and its ratings and reviews."
         )
         XCTAssertEqual(
             TVWatchConfirm.clearMessage(episodeCount: 12),
-            "This clears 12 watched episodes."
+            "This removes 12 watched episodes and their ratings and reviews."
         )
     }
 }

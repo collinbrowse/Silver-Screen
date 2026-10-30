@@ -21,6 +21,7 @@ struct TVEpisodeView: View {
     /// Told when a rewatch is logged here; its rating can become the episode's rating.
     @Environment(DiaryContext.self) private var diaryContext: DiaryContext?
     @State private var playingTrailer: MediaTrailer?
+    @State private var pendingRemoval: WatchRemovalRequest?
     @State private var loadingTrailerID: String?
 
     @Namespace private var heroTransition
@@ -51,6 +52,42 @@ struct TVEpisodeView: View {
                 }
             }
         )
+    }
+
+    /// Logs an unwatched episode. A watched one is removed, asking first when it has
+    /// more than one watch.
+    private func toggleEpisodeWatch() async {
+        guard viewModel.isEpisodeCompleted else {
+            await changeEpisodeWatch()
+            return
+        }
+        let subject = DiarySubject.episode(seriesID: seriesID, season: seasonNumber, episode: episodeNumber)
+        let count = (try? await notice.watchCount(of: subject)) ?? 1
+        guard count > 1 else {
+            await changeEpisodeWatch()
+            return
+        }
+        pendingRemoval = WatchRemovalRequest(
+            title: navigationTitle.isEmpty ? "this episode" : navigationTitle,
+            watchCount: count,
+            remove: { await changeEpisodeWatch() }
+        )
+    }
+
+    private func changeEpisodeWatch() async {
+        let wasCompleted = viewModel.isEpisodeCompleted
+        guard let outcome = await viewModel.toggleEpisodeWatched(seriesTitle: seriesName) else { return }
+        if wasCompleted {
+            notice.presentRemoved(outcome, using: lists, tvWatch: tvWatch)
+        } else {
+            notice.presentEpisodeLogged(
+                outcome,
+                ratingKey: .episode(seriesID: seriesID, seasonNumber: seasonNumber, episodeNumber: episodeNumber),
+                fallbackMessage: "Episode watched",
+                using: lists,
+                tvWatch: tvWatch
+            )
+        }
     }
 
     var body: some View {
@@ -84,35 +121,7 @@ struct TVEpisodeView: View {
                         accessibilityTitle: navigationTitle.isEmpty ? "episode" : navigationTitle,
                         idleColor: DesignTheme.textPrimary
                     ) {
-                        Task {
-                            let wasCompleted = viewModel.isEpisodeCompleted
-                            let ratingKey = AnnotationKey.episode(
-                                seriesID: seriesID,
-                                seasonNumber: seasonNumber,
-                                episodeNumber: episodeNumber
-                            )
-                            guard let outcome = await viewModel.toggleEpisodeWatched(
-                                seriesTitle: seriesName
-                            ) else { return }
-                            if wasCompleted {
-                                if let change = outcome.membershipChange, change.confirmation != nil {
-                                    notice.show(
-                                        change,
-                                        using: lists,
-                                        tvWatch: tvWatch,
-                                        watchUndo: outcome.watchUndo
-                                    )
-                                }
-                            } else {
-                                notice.presentWatch(
-                                    outcome,
-                                    ratingKey: ratingKey,
-                                    fallbackMessage: "Episode watched",
-                                    using: lists,
-                                    tvWatch: tvWatch
-                                )
-                            }
-                        }
+                        Task { await toggleEpisodeWatch() }
                     }
 
                     ListMembershipButton(
@@ -130,6 +139,7 @@ struct TVEpisodeView: View {
                 await viewModel.load()
             }
         }
+        .removeWatchesAlert($pendingRemoval)
         .onChange(of: notice.ratingKey) { _, key in
             if key == nil {
                 Task { await viewModel.reloadPersonalFromStore() }
