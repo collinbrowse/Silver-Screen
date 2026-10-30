@@ -204,7 +204,7 @@ Schema v4 adds the diary: one row per logged watch, many per title.
 ```sql
 CREATE TABLE diary_entry (
   id TEXT PRIMARY KEY,               -- UUID; deterministic for backfilled and imported rows
-  kind TEXT NOT NULL,                -- 'movie' or 'tv' (a whole series)
+  kind TEXT NOT NULL,                -- 'movie' or 'tv'
   tmdb_id INTEGER NOT NULL,
   title TEXT NOT NULL,               -- snapshot when logged
   release_year INTEGER,              -- snapshot when logged
@@ -224,7 +224,7 @@ CREATE INDEX diary_entry_watched_on ON diary_entry(watched_on);
 CREATE INDEX diary_entry_subject ON diary_entry(kind, tmdb_id);
 ```
 
-Schema v5 lets an entry be about one TV episode (an episode rewatch):
+Schema v5 lets an entry be about one TV episode:
 
 ```sql
 ALTER TABLE diary_entry ADD COLUMN season_number INTEGER;  -- NULL for a movie or whole series
@@ -232,46 +232,60 @@ ALTER TABLE diary_entry ADD COLUMN episode_number INTEGER; -- NULL for a movie o
 CREATE INDEX diary_entry_episode ON diary_entry(kind, tmdb_id, season_number, episode_number);
 ```
 
+Schema v6 lets a watch have no known day, and reconciles the data so the rules below hold:
+
+```sql
+ALTER TABLE diary_entry ADD COLUMN date_known INTEGER NOT NULL DEFAULT 1; -- 0 = "Don't remember"
+```
+
+`watched_on` stays `NOT NULL` as a sort anchor because SQLite cannot relax that without
+rebuilding the table. A row with `date_known = 0` is shown as undated, sorts as the oldest,
+stays off the diary timeline, and appears under "Earlier" in Watch History.
+
+The v6 data pass runs in Swift in the migration's transaction
+(`SQLiteLibraryStore+WatchReconcile.swift`), and again after the legacy JSON import, so it is
+idempotent. In order, it: gives each completed episode an entry dated `completed_at`; retires
+whole-series entries of shows with episodes, moving their score and review into the empty
+parts of the show's verdict; gives an undated watch to each movie on Watched or with a score
+but no entry; puts every movie with an entry on Watched and off the Watchlist; and moves each
+movie and episode annotation's score and note onto its newest watch. The saved score wins
+over that watch's own, so every page shows the rating it showed before. A note already in the
+review is not repeated. A note on an unwatched title stays on its annotation.
+
 Decisions:
 
-- **Rows are movies; TV is episodes.** Episode history already lives in
-  `tv_episode_completed.completed_at`, one row per episode; copying it into the diary
-  would bury the movies under hundreds of rows. The app no longer logs a whole series
-  (a show page has no log control); series rows come only from the backfill or a
-  Letterboxd import. Seasons are not logged. The diary screen still *shows* episode
-  history: it reads `tv_episode_completed` joined to the series' `media_item`
-  (`fetchEpisodeWatches`) and draws one read-only row per show per day ("S2 · E3–E5"),
-  which opens the show.
-- **An episode rewatch is a diary row about that episode.** `tv_episode_completed` holds
-  one completion per episode, so it cannot record a second viewing. A watched episode's
-  page offers Log a Rewatch, which writes a `diary_entry` with `kind = 'tv'`, the series'
-  `tmdb_id`, and that episode's `season_number`/`episode_number`
-  (`DiarySubject.episode`). It never changes TV progress or lists. It gets its own diary
-  row ("S2 · E3", badged Rewatch), not a place in the day's episodes row, because it has
-  its own rating, review, edit, and delete. A series' history includes its episode rows.
-- **The eye is how a movie watch is logged.** Marking a movie Watched with the eye
-  inserts an unrated `diary_entry` dated today (`ListChangeNotice.showMovieWatch`), and
-  the toast's Add rating edits that same row, so one viewing is one row. A movie already
-  logged today reuses its row. Undo deletes the row only if that toast created it.
-  Un-marking the movie leaves its history. A rewatch is logged from the movie's Watch
-  History screen (Log a Rewatch), which also puts the movie back on Watched. Onboarding's
-  "seen it" picks add to Watched without a diary row, since the day is unknown.
-- **The title's rating follows its newest watch.** `diary_entry.score` and `review`
-  describe that viewing. Saving a scored entry that is the title's newest watch (latest
-  `watched_on`, then latest `logged_at`) also writes that score to `annotation.score`,
-  keeping the note, the way Letterboxd's film rating follows your latest log
-  (`DiaryContext.save`). Rating an older watch, or saving an unrated one, leaves the
-  title's rating alone. Deleting a watch never changes it. An episode entry sets that
-  episode's `annotation` (`kind = tvEpisode`), never the series', and "newest" compares
-  only entries for the exact same movie, series, or episode.
+- **A title is watched exactly when it has a watch.** `diary_entry` is the one store of
+  watches. Movies and episodes are watched; a season or show counts when all its episodes do.
+  `WatchRepository` and `TVWatchRepository` are the only writers, so the diary, Watched, In
+  Progress, and ratings change together, and each rolls back its first write if a later one
+  fails. Removing a title's last watch takes it off Watched, or out of TV progress.
+- **`tv_episode_completed` is a progress cache.** It stays because next up, In Progress, and
+  the catalog snapshot read it, and it is written beside the entries. A TMDB catalog prune
+  only changes progress: removals are always explicit, so a prune never deletes a watch.
+- **The eye logs and removes; Log a Rewatch logs again.** The grey eye inserts a `diary_entry`
+  dated today, and the orange eye deletes every watch of the title, asking first when there
+  is more than one. Undo revives the same ids. Onboarding's "seen it" picks are undated.
+- **A first watch adopts what was saved before it.** Any score and note on the title's
+  annotation move onto the watch (`AnnotationsRepository.adopt`), and Undo puts them back.
+- **The diary groups plain watches.** First watches of one show's episodes on one day, with
+  no rating or review, share one row ("S2 · E3–E5") that opens the show. A rated, reviewed, or
+  rewatched episode gets its own row with its own edit and delete. A season rewatch is one
+  entry per episode with a shared `logged_at`, which is how the diary shows it as one row.
+- **The title's rating is its newest rated watch.** `diary_entry.score` and `review` describe
+  that viewing, and `annotation.score` is a cached copy for list rows
+  (`WatchRepository.ratedWatch`, `AnnotationsRepository.syncRating`). Every save, delete, and
+  undo repoints it, so an unrated rewatch keeps your rating and deleting a watch falls back to
+  the next rated one. Rating never records a watch: an unwatched title shows only its TMDB score.
+- **Seasons and shows get a verdict, not a watch.** Their score and review stay on
+  `annotation` (`kind = tvSeason` or `tvSeries`, the review in `note`) and stay out of the diary.
 - **No tags.** The app has no tags: nothing reads or writes `tags_json`, and the log
   sheet has no field for them. The column stays at its default `'[]'` because schema v4
   already created it on development installs; a later schema version can drop it.
 - **Rewatches are worked out, not switched.** The diary badges every watch of a title
   after its earliest entry as a rewatch. `is_rewatch` is only set by a Letterboxd import
   (or kept through an edit), which covers a first log of something seen before the app;
-  a new log stores `0`. Deleting the first watch makes the next one the first. An
-  episode entry is also a rewatch when that episode was checked off on or before its day.
+  a new log stores `0`. Deleting the first watch makes the next one the first. An undated
+  watch counts as the first.
 - **`watched_on` is a calendar day.** It is computed on the device calendar when logged,
   so a late-night watch keeps its day when the phone changes timezone.
 

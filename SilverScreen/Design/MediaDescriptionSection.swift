@@ -143,7 +143,7 @@ struct MediaDescriptionSection: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Edit rating and note. \(noteAccessibilityLabel(note))")
+            .accessibilityLabel("Edit rating and review. \(noteAccessibilityLabel(note))")
 
             // Outside the edit button so Show More does not open the editor.
             ExpandableTextToggle(
