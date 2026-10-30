@@ -103,6 +103,8 @@ struct AppDependencies {
         let tvWatch = TVWatchRepository(
             store: LibraryTVWatchStoreAdapter(library: libraryStore),
             lists: lists,
+            diary: diary.diary,
+            annotations: annotations,
             logger: logger
         )
         let imageLoader = ImageLoader(client: URLSessionHTTPClient.images(), logger: logger)

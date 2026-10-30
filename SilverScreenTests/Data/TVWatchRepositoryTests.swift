@@ -386,14 +386,166 @@ final class TVWatchRepositoryTests: XCTestCase {
 
     // MARK: - Helpers
 
+    // MARK: - Watches
+
+    func test_markEpisode_logsOneWatchAndKeepsProgress() async throws {
+        let (tvWatch, diary) = makeTVWatchWithDiary()
+        let draft = tvDraft(id: 42, title: "Severance")
+
+        let outcome = try await tvWatch.markEpisode(
+            seriesID: 42,
+            seasonNumber: 1,
+            episodeNumber: 1,
+            title: nil,
+            draft: draft,
+            seasons: [season(1, episodes: 3)]
+        )
+
+        let entries = try await diary.entries()
+        XCTAssertEqual(entries.map(\.subject), [.episode(seriesID: 42, season: 1, episode: 1)])
+        XCTAssertEqual(outcome.state.nextUp, TVEpisodeRef(seasonNumber: 1, episodeNumber: 2))
+    }
+
+    func test_markEpisode_alreadyCompleted_logsNoSecondWatch() async throws {
+        let (tvWatch, diary) = makeTVWatchWithDiary()
+        let draft = tvDraft(id: 42, title: "Severance")
+        let seasons = [season(1, episodes: 3)]
+
+        for _ in 0..<2 {
+            try await tvWatch.markEpisode(
+                seriesID: 42,
+                seasonNumber: 1,
+                episodeNumber: 1,
+                title: nil,
+                draft: draft,
+                seasons: seasons
+            )
+        }
+
+        let entries = try await diary.entries()
+        XCTAssertEqual(entries.count, 1)
+    }
+
+    func test_markSeries_writesDiaryOnce_andUndatedWhenAsked() async throws {
+        let store = InMemoryDiaryStore()
+        let diary = DiaryRepository(store: store, logger: SilentLogger())
+        let tvWatch = makeTVWatch(lists: makeLists(), diary: diary)
+
+        try await tvWatch.markSeries(
+            seriesID: 42,
+            seasons: [season(1, episodes: 3), season(2, episodes: 2)],
+            draft: tvDraft(id: 42, title: "Severance"),
+            dateKnown: false
+        )
+
+        let entries = await store.entries
+        XCTAssertEqual(entries.count, 5)
+        XCTAssertTrue(entries.allSatisfy { !$0.isDateKnown })
+        let saves = await store.saveCount
+        XCTAssertEqual(saves, 1)
+    }
+
+    func test_unmarkEpisode_deletesItsRewatchesToo_andUndoRestoresThem() async throws {
+        let (tvWatch, diary) = makeTVWatchWithDiary()
+        let draft = tvDraft(id: 42, title: "Severance")
+        let seasons = [season(1, episodes: 3)]
+        let subject = DiarySubject.episode(seriesID: 42, season: 1, episode: 1)
+        try await tvWatch.markEpisode(
+            seriesID: 42,
+            seasonNumber: 1,
+            episodeNumber: 1,
+            title: nil,
+            draft: draft,
+            seasons: seasons
+        )
+        try await diary.save(DiaryFixtures.entry(subject: subject, score: 8))
+
+        let outcome = try await tvWatch.unmarkEpisode(
+            seriesID: 42,
+            seasonNumber: 1,
+            episodeNumber: 1,
+            draft: draft,
+            seasons: seasons
+        )
+
+        let afterRemove = try await diary.entries()
+        XCTAssertTrue(afterRemove.isEmpty)
+        try await tvWatch.restore(try XCTUnwrap(outcome.watchUndo))
+        let afterUndo = try await diary.entries()
+        XCTAssertEqual(afterUndo.count, 2)
+        XCTAssertEqual(afterUndo.compactMap(\.score), [8])
+    }
+
+    func test_undoOfMark_deletesTheLoggedWatch() async throws {
+        let (tvWatch, diary) = makeTVWatchWithDiary()
+        let outcome = try await tvWatch.markEpisode(
+            seriesID: 42,
+            seasonNumber: 1,
+            episodeNumber: 1,
+            title: nil,
+            draft: tvDraft(id: 42, title: "Severance"),
+            seasons: [season(1, episodes: 3)]
+        )
+
+        try await tvWatch.restore(try XCTUnwrap(outcome.watchUndo))
+
+        let entries = try await diary.entries()
+        XCTAssertTrue(entries.isEmpty)
+    }
+
+    func test_catalogShrink_prunesProgressButKeepsTheWatch() async throws {
+        let (tvWatch, diary) = makeTVWatchWithDiary()
+        let draft = tvDraft(id: 42, title: "Severance")
+        try await tvWatch.markEpisode(
+            seriesID: 42,
+            seasonNumber: 1,
+            episodeNumber: 5,
+            title: nil,
+            draft: draft,
+            seasons: [season(1, episodes: 5)]
+        )
+
+        try await tvWatch.markEpisode(
+            seriesID: 42,
+            seasonNumber: 1,
+            episodeNumber: 1,
+            title: nil,
+            draft: draft,
+            seasons: [season(1, episodes: 3)]
+        )
+
+        let completed = try await tvWatch.completedEpisodeCount(seriesID: 42)
+        XCTAssertEqual(completed, 1)
+        let entries = try await diary.entries()
+        XCTAssertTrue(entries.contains { $0.subject == .episode(seriesID: 42, season: 1, episode: 5) })
+    }
+
+    func test_clearSeries_deletesEveryWatchOfTheShow() async throws {
+        let (tvWatch, diary) = makeTVWatchWithDiary()
+        let draft = tvDraft(id: 42, title: "Severance")
+        try await tvWatch.markSeries(seriesID: 42, seasons: [season(1, episodes: 2)], draft: draft)
+        let other = try await diary.save(DiaryFixtures.entry(subject: .movie(1)))
+
+        try await tvWatch.clearSeries(seriesID: 42, draft: draft)
+
+        let entries = try await diary.entries()
+        XCTAssertEqual(entries, [other])
+    }
+
+    private func makeTVWatchWithDiary() -> (TVWatchRepository, DiaryRepository) {
+        let diary = DiaryRepository(store: InMemoryDiaryStore(), logger: SilentLogger())
+        return (makeTVWatch(lists: makeLists(), diary: diary), diary)
+    }
+
     private func makeLists() -> ListsRepository {
         ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
     }
 
-    private func makeTVWatch(lists: ListsRepository) -> TVWatchRepository {
+    private func makeTVWatch(lists: ListsRepository, diary: DiaryRepository? = nil) -> TVWatchRepository {
         TVWatchRepository(
             store: InMemoryTVWatchStore(),
             lists: lists,
+            diary: diary,
             logger: SilentLogger()
         )
     }

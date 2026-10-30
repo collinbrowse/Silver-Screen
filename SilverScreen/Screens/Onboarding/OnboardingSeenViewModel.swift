@@ -252,7 +252,8 @@ final class OnboardingSeenViewModel {
                 try await tvWatch.markSeries(
                     seriesID: title.draft.id,
                     seasons: detail.seasons,
-                    draft: title.draft
+                    draft: title.draft,
+                    dateKnown: false
                 )
             case .movie, .person:
                 // An unrated movie lands on Watched too; a score added later keeps it there.

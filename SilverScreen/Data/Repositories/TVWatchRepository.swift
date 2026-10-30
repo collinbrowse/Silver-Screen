@@ -11,15 +11,33 @@ import Foundation
 actor TVWatchRepository {
     private let store: any TVWatchStore
     private let lists: ListsRepository
+    /// Where an episode's watches live. Nil in tests that only cover progress.
+    private let diary: DiaryRepository?
+    /// The episode ratings kept in step with those watches. Nil in tests that skip it.
+    private let annotations: AnnotationsRepository?
     private let logger: any AppLogging
+    private let now: @Sendable () -> Date
+    private let calendar: Calendar
     private var cached: [Int: TVSeriesWatchState]?
     private var loadTask: Task<[Int: TVSeriesWatchState], Error>?
     private var writeBarrier: Task<Void, Never>?
 
-    init(store: any TVWatchStore, lists: ListsRepository, logger: any AppLogging) {
+    init(
+        store: any TVWatchStore,
+        lists: ListsRepository,
+        diary: DiaryRepository? = nil,
+        annotations: AnnotationsRepository? = nil,
+        logger: any AppLogging,
+        now: @escaping @Sendable () -> Date = { Date() },
+        calendar: Calendar = .current
+    ) {
         self.store = store
         self.lists = lists
+        self.diary = diary
+        self.annotations = annotations
         self.logger = logger
+        self.now = now
+        self.calendar = calendar
     }
 
     func state(seriesID: Int) async throws -> TVSeriesWatchState? {
@@ -65,6 +83,7 @@ actor TVWatchRepository {
     /// reconcile cannot resurrect the title from a leftover catalog freeze.
     func clearProgress(seriesID: Int) async throws {
         try await serializeWrite { [self] in
+            try await deleteWatches(try await seriesWatches(seriesID: seriesID))
             try await removeState(seriesID: seriesID)
         }
     }
@@ -119,19 +138,13 @@ actor TVWatchRepository {
             }
             state.refreshNextUp(against: seasons, episodeTitles: titles)
             Self.alignCatalogSnapshot(state: &state, seasons: seasons)
-            try await commitLedger(state)
-            let change = try await syncListsCompensating(
+            return try await commit(
                 state: &state,
+                prior: prior,
                 draft: draft,
                 seasons: seasons,
                 preferSilentComplete: newly > 0,
-                prior: prior
-            )
-            return Self.makeOutcome(
-                state: state,
-                change: change,
-                newly: newly,
-                prior: prior
+                newly: newly
             )
         }
     }
@@ -150,19 +163,16 @@ actor TVWatchRepository {
             state.unmark(seasonNumber: seasonNumber, episodeNumber: episodeNumber)
             state.refreshNextUp(against: seasons)
             Self.alignCatalogSnapshot(state: &state, seasons: seasons)
-            try await commitLedger(state)
-            let change = try await syncListsCompensating(
+            return try await commit(
                 state: &state,
+                prior: prior,
                 draft: draft,
                 seasons: seasons,
                 preferSilentComplete: false,
-                prior: prior
-            )
-            return Self.makeOutcome(
-                state: state,
-                change: change,
                 newly: 0,
-                prior: prior
+                removing: try await episodeWatches(seriesID: seriesID, matching: {
+                    $0 == TVEpisodeRef(seasonNumber: seasonNumber, episodeNumber: episodeNumber)
+                })
             )
         }
     }
@@ -190,19 +200,13 @@ actor TVWatchRepository {
             }
             state.refreshNextUp(against: seasons, episodeTitles: titles)
             Self.alignCatalogSnapshot(state: &state, seasons: seasons)
-            try await commitLedger(state)
-            let change = try await syncListsCompensating(
+            return try await commit(
                 state: &state,
+                prior: prior,
                 draft: draft,
                 seasons: seasons,
                 preferSilentComplete: true,
-                prior: prior
-            )
-            return Self.makeOutcome(
-                state: state,
-                change: change,
-                newly: newly,
-                prior: prior
+                newly: newly
             )
         }
     }
@@ -221,19 +225,14 @@ actor TVWatchRepository {
             _ = state.unmarkSeason(seasonNumber: seasonNumber, episodeCount: episodeCount)
             state.refreshNextUp(against: seasons)
             Self.alignCatalogSnapshot(state: &state, seasons: seasons)
-            try await commitLedger(state)
-            let change = try await syncListsCompensating(
+            return try await commit(
                 state: &state,
+                prior: prior,
                 draft: draft,
                 seasons: seasons,
                 preferSilentComplete: false,
-                prior: prior
-            )
-            return Self.makeOutcome(
-                state: state,
-                change: change,
                 newly: 0,
-                prior: prior
+                removing: try await episodeWatches(seriesID: seriesID, matching: { $0.seasonNumber == seasonNumber })
             )
         }
     }
@@ -243,7 +242,8 @@ actor TVWatchRepository {
         seriesID: Int,
         seasons: [TVSeasonSummary],
         episodeTitles: [TVEpisodeRef: String] = [:],
-        draft: ListItemDraft
+        draft: ListItemDraft,
+        dateKnown: Bool = true
     ) async throws -> TVWatchOutcome {
         try await serializeWrite { [self] in
             let prior = try await loadCache()[seriesID]
@@ -251,19 +251,14 @@ actor TVWatchRepository {
             let newly = state.markSeries(seasons: seasons, episodeTitles: episodeTitles)
             state.refreshNextUp(against: seasons, episodeTitles: episodeTitles)
             Self.alignCatalogSnapshot(state: &state, seasons: seasons)
-            try await commitLedger(state)
-            let change = try await syncListsCompensating(
+            return try await commit(
                 state: &state,
+                prior: prior,
                 draft: draft,
                 seasons: seasons,
                 preferSilentComplete: true,
-                prior: prior
-            )
-            return Self.makeOutcome(
-                state: state,
-                change: change,
                 newly: newly,
-                prior: prior
+                dateKnown: dateKnown
             )
         }
     }
@@ -297,11 +292,14 @@ actor TVWatchRepository {
         }
     }
 
-    /// Clears every completed episode and removes the series from Watched / In Progress.
+    /// Clears every completed episode, deletes every watch of the show, and removes it
+    /// from Watched / In Progress.
     @discardableResult
     func clearSeries(seriesID: Int, draft: ListItemDraft) async throws -> TVWatchOutcome {
         try await serializeWrite { [self] in
             let prior = try await loadCache()[seriesID]
+            let removed = try await seriesWatches(seriesID: seriesID)
+            try await deleteWatches(removed)
             try await removeState(seriesID: seriesID)
             do {
                 let change = try await removeFromSystemLists(itemKey: draft.itemKey)
@@ -310,11 +308,13 @@ actor TVWatchRepository {
                     state: empty,
                     change: change,
                     newly: 0,
-                    prior: prior
+                    prior: prior,
+                    removedWatches: removed
                 )
             } catch {
                 // List write failed after clearing the ledger — put progress back.
                 try await restoreLedger(prior, seriesID: seriesID)
+                try await restoreWatches(removed)
                 throw error
             }
         }
@@ -323,6 +323,8 @@ actor TVWatchRepository {
     /// Restores the episode ledger captured before a toasted watch mutation (Story 6 Undo).
     func restore(_ undo: TVWatchUndo) async throws {
         try await serializeWrite { [self] in
+            try await diary?.delete(ids: undo.addedWatchIDs)
+            try await restoreWatches(undo.removedWatches)
             if let prior = undo.priorState, !prior.completed.isEmpty {
                 try await persist(prior)
             } else {
@@ -474,16 +476,140 @@ actor TVWatchRepository {
         state: TVSeriesWatchState,
         change: MembershipChange?,
         newly: Int,
-        prior: TVSeriesWatchState?
+        prior: TVSeriesWatchState?,
+        addedWatches: [DiaryEntry] = [],
+        removedWatches: [DiaryEntry] = []
     ) -> TVWatchOutcome {
         // Always capture ledger undo — binge marks that stay on In Progress still need it.
-        let undo = TVWatchUndo(seriesID: state.seriesID, priorState: prior)
+        let undo = TVWatchUndo(
+            seriesID: state.seriesID,
+            priorState: prior,
+            addedWatchIDs: Set(addedWatches.map(\.id)),
+            removedWatches: removedWatches
+        )
         return TVWatchOutcome(
             state: state,
             membershipChange: change,
             episodesNewlyMarked: newly,
             watchUndo: undo
         )
+    }
+
+    // MARK: - Watches
+
+    /// The tail of every episode write: logs a watch for each newly completed episode,
+    /// deletes `removing`, then saves the ledger and aligns the lists, undoing the diary
+    /// writes if either fails. Watches are diffed from the ledger only for additions.
+    /// Removals are always explicit, so a TMDB prune never deletes a person's watch.
+    private func commit(
+        state: inout TVSeriesWatchState,
+        prior: TVSeriesWatchState?,
+        draft: ListItemDraft,
+        seasons: [TVSeasonSummary],
+        preferSilentComplete: Bool,
+        newly: Int,
+        dateKnown: Bool = true,
+        removing: [DiaryEntry] = []
+    ) async throws -> TVWatchOutcome {
+        let priorCompleted = Set(prior?.completed ?? [])
+        let added = state.completed.filter { !priorCompleted.contains($0) }
+        let logged = try await logWatches(of: added, draft: draft, dateKnown: dateKnown)
+        do {
+            try await deleteWatches(removing)
+            try await commitLedger(state)
+            let change = try await syncListsCompensating(
+                state: &state,
+                draft: draft,
+                seasons: seasons,
+                preferSilentComplete: preferSilentComplete,
+                prior: prior
+            )
+            return Self.makeOutcome(
+                state: state,
+                change: change,
+                newly: newly,
+                prior: prior,
+                addedWatches: logged,
+                removedWatches: removing
+            )
+        } catch {
+            do {
+                try await diary?.delete(ids: Set(logged.map(\.id)))
+                try await restoreWatches(removing)
+            } catch {
+                logger.error("TV watch diary rollback failed for series \(state.seriesID)", category: .persistence)
+            }
+            throw error
+        }
+    }
+
+    /// One unrated watch per episode, dated today, or undated for "seen it" picks.
+    private func logWatches(
+        of episodes: [TVEpisodeRef],
+        draft: ListItemDraft,
+        dateKnown: Bool
+    ) async throws -> [DiaryEntry] {
+        guard let diary, !episodes.isEmpty else { return [] }
+        let date = now()
+        let entries = episodes.map { ref in
+            DiaryEntry(
+                id: UUID(),
+                subject: .episode(seriesID: draft.id, season: ref.seasonNumber, episode: ref.episodeNumber),
+                title: draft.title,
+                releaseYear: DisplayDate.year(draft.releaseDate).flatMap(Int.init),
+                posterPath: draft.imagePath,
+                watchedOn: DiaryDay(date, calendar: calendar),
+                score: nil,
+                review: nil,
+                isRewatch: false,
+                loggedAt: date,
+                isDateKnown: dateKnown
+            )
+        }
+        return try await diary.save(contentsOf: entries)
+    }
+
+    /// Every watch of the show's episodes that `matches` picks.
+    private func episodeWatches(
+        seriesID: Int,
+        matching matches: (TVEpisodeRef) -> Bool
+    ) async throws -> [DiaryEntry] {
+        try await seriesWatches(seriesID: seriesID).filter { entry in
+            entry.subject.episode.map(matches) ?? false
+        }
+    }
+
+    /// Every entry filed under the show: its episodes' watches and any whole-series entry.
+    private func seriesWatches(seriesID: Int) async throws -> [DiaryEntry] {
+        try await diary?.entries(for: .series(seriesID)) ?? []
+    }
+
+    private func deleteWatches(_ entries: [DiaryEntry]) async throws {
+        guard let diary, !entries.isEmpty else { return }
+        try await diary.delete(ids: Set(entries.map(\.id)))
+        await syncEpisodeRatings(for: entries)
+    }
+
+    private func restoreWatches(_ entries: [DiaryEntry]) async throws {
+        guard let diary, !entries.isEmpty else { return }
+        try await diary.save(contentsOf: entries)
+        await syncEpisodeRatings(for: entries)
+    }
+
+    /// Repoints each touched episode's rating. A failure is logged and the watch change
+    /// stands; the next write to that episode repairs it.
+    private func syncEpisodeRatings(for entries: [DiaryEntry]) async {
+        guard let diary, let annotations else { return }
+        for subject in Set(entries.map(\.subject)) {
+            do {
+                let watches = try await diary.entries(for: subject).filter { $0.subject == subject }
+                try await annotations.syncRating(from: WatchRepository.ratedWatch(in: watches), for: subject)
+            } catch is CancellationError {
+                return
+            } catch {
+                logger.error("Episode rating was not updated after a watch change", category: .persistence)
+            }
+        }
     }
 
     // MARK: - Persistence
