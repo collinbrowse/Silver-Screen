@@ -154,6 +154,38 @@ final class ReelLoaderTests: XCTestCase {
         XCTAssertEqual(ReelLoaderMotion.phase(after: -period * 0.25), 0.75, accuracy: 1e-6)
     }
 
+    func test_phaseSinceAppearing_onAppear_startsWindingWithoutResting() throws {
+        let phase = ReelLoaderMotion.phase(sinceAppearing: 0)
+
+        XCTAssertEqual(phase, ReelLoaderMotion.restShare, accuracy: 1e-9)
+        XCTAssertFalse(ReelLoaderMotion.isAtRest(at: ReelLoaderMotion.phase(sinceAppearing: 0.01)))
+        let winding = try XCTUnwrap(ReelLoaderMotion.winding(at: ReelLoaderMotion.phase(sinceAppearing: 0.01)))
+        XCTAssertEqual(winding.morph, 0, accuracy: 0.01, "still lands on the icon artwork")
+    }
+
+    func test_phaseSinceAppearing_afterFirstLoop_restsAsTheIcon() {
+        let secondLoopRest = ReelLoaderMotion.period * (1 - ReelLoaderMotion.restShare) + 0.1
+
+        XCTAssertTrue(ReelLoaderMotion.isAtRest(at: ReelLoaderMotion.phase(sinceAppearing: secondLoopRest)))
+    }
+
+    func test_travel_acrossTheMotion_risesFromZeroToOneAndMirrors() {
+        XCTAssertEqual(ReelEase.travel(0), 0, accuracy: 1e-9)
+        XCTAssertEqual(ReelEase.travel(1), 1, accuracy: 1e-9)
+        var previous = 0.0
+        for t in stride(from: 0.0, through: 1, by: 0.01) {
+            let travelled = ReelEase.travel(t)
+            XCTAssertGreaterThanOrEqual(travelled, previous, "at \(t)")
+            XCTAssertEqual(travelled, 1 - ReelEase.travel(1 - t), accuracy: 1e-9, "at \(t)")
+            previous = travelled
+        }
+    }
+
+    func test_travel_earlyInTheMotion_isVisiblyUnderway() {
+        // The old cubic ease had covered only 0.4% of the path by here.
+        XCTAssertGreaterThan(ReelEase.travel(0.1), 0.02)
+    }
+
     private func square(side: CGFloat) -> [CGPoint] {
         [CGPoint(x: 0, y: 0), CGPoint(x: side, y: 0), CGPoint(x: side, y: side), CGPoint(x: 0, y: side)]
     }
