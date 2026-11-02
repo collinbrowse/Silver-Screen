@@ -434,7 +434,11 @@ struct TVSeasonView: View {
 
     private func requestMarkSeasonWatched() async {
         let unmarked = await viewModel.unmarkedEpisodeCountForSeason()
-        guard unmarked > 0 else { return }
+        guard unmarked > 0 else {
+            // The ledger already has every episode, so the eye was stale: show the truth.
+            await viewModel.reloadWatchChrome()
+            return
+        }
         pendingConfirm = .markSeason(episodeCount: unmarked)
         isSeasonConfirmPresented = true
     }
@@ -465,10 +469,11 @@ struct TVSeasonView: View {
     }
 
     private func performMarkSeasonWatched() async {
-        guard let outcome = await viewModel.markSeasonWatched(),
-              outcome.episodesNewlyMarked > 0
-                || outcome.membershipChange?.confirmation != nil
-        else { return }
+        guard let outcome = await viewModel.markSeasonWatched() else { return }
+        guard outcome.episodesNewlyMarked > 0 || outcome.membershipChange?.confirmation != nil else {
+            notice.noteWatchChange()
+            return
+        }
         notice.presentWatch(
             outcome,
             ratingKey: ratingKey(for: outcome),

@@ -385,6 +385,25 @@ final class ListChangeNoticeTests: XCTestCase {
         XCTAssertEqual(context.revision, 1)
     }
 
+    func test_logMovie_bumpsWatchRevisionSoOpenScreensReload() async throws {
+        let (notice, lists, _, _) = makeMovieWatchNotice()
+        let prior = notice.watchRevision
+
+        try await notice.logMovie(heat, using: lists)
+
+        XCTAssertGreaterThan(notice.watchRevision, prior)
+    }
+
+    func test_offerRating_afterAnEpisodeMark_bumpsWatchRevision() {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let notice = ListChangeNotice()
+        let prior = notice.watchRevision
+
+        notice.offerRating(for: .season(seriesID: 9, seasonNumber: 1), message: "Season watched", using: lists)
+
+        XCTAssertGreaterThan(notice.watchRevision, prior)
+    }
+
     func test_rateAndReview_afterMovieWatch_editsThatSameEntry() async throws {
         let (notice, lists, store, _) = makeMovieWatchNotice()
         try await notice.logMovie(heat, using: lists)

@@ -103,9 +103,22 @@ actor TVWatchRepository {
         seasonNumber: Int,
         episodeCount: Int
     ) async throws -> Int {
+        try await unmarkedEpisodeCount(
+            seriesID: seriesID,
+            seasonNumber: seasonNumber,
+            episodeNumbers: episodeCount > 0 ? Array(1...episodeCount) : []
+        )
+    }
+
+    /// Unmarked episodes among those a season page lists.
+    func unmarkedEpisodeCount(
+        seriesID: Int,
+        seasonNumber: Int,
+        episodeNumbers: [Int]
+    ) async throws -> Int {
         let existing = try await state(seriesID: seriesID)
             ?? TVSeriesWatchState(seriesID: seriesID)
-        return existing.unmarkedCount(seasonNumber: seasonNumber, episodeCount: episodeCount)
+        return existing.unmarkedCount(seasonNumber: seasonNumber, episodeNumbers: episodeNumbers)
     }
 
     func unmarkedEpisodeCount(seriesID: Int, seasons: [TVSeasonSummary]) async throws -> Int {
@@ -177,11 +190,14 @@ actor TVWatchRepository {
         }
     }
 
+    /// Marks a season watched. `episodeNumbers`, when given, are the episodes the season
+    /// page lists and win over `episodeCount`, which assumes episodes 1 through N.
     @discardableResult
     func markSeason(
         seriesID: Int,
         seasonNumber: Int,
         episodeCount: Int,
+        episodeNumbers: [Int]? = nil,
         episodeTitles: [Int: String] = [:],
         draft: ListItemDraft,
         seasons: [TVSeasonSummary]
@@ -189,11 +205,15 @@ actor TVWatchRepository {
         try await serializeWrite { [self] in
             let prior = try await loadCache()[seriesID]
             var state = prior ?? TVSeriesWatchState(seriesID: seriesID)
-            let newly = state.markSeason(
-                seasonNumber: seasonNumber,
-                episodeCount: episodeCount,
-                episodeTitles: episodeTitles
-            )
+            let newly = if let episodeNumbers {
+                state.markSeason(seasonNumber: seasonNumber, episodeNumbers: episodeNumbers)
+            } else {
+                state.markSeason(
+                    seasonNumber: seasonNumber,
+                    episodeCount: episodeCount,
+                    episodeTitles: episodeTitles
+                )
+            }
             var titles: [TVEpisodeRef: String] = [:]
             for (number, name) in episodeTitles {
                 titles[TVEpisodeRef(seasonNumber: seasonNumber, episodeNumber: number)] = name

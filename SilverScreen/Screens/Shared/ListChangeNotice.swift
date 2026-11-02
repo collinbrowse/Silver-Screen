@@ -36,8 +36,8 @@ final class ListChangeNotice {
     private(set) var loggedWatch: DiaryEntry?
     /// Bumps on every presentation so the banner refreshes even when copy is unchanged.
     private(set) var presentationID = 0
-    /// Bumps after a successful Undo that may have restored TV watch progress — open
-    /// season/series screens observe this and reload completed / Next up chrome.
+    /// Bumps after every watch change, including Undo. Open series, season, episode and
+    /// list screens observe it and reload their eyes, so no screen acts on a stale copy.
     private(set) var watchRevision = 0
     /// True when membership Undo and/or a ledger restore is available.
     var canUndo: Bool { change != nil || watchUndo != nil || diaryUndo != nil }
@@ -81,6 +81,12 @@ final class ListChangeNotice {
 
     /// How long a toast with something to act on stays up.
     private static let actionSeconds: Double = 10
+
+    /// Tells open screens that watches changed. Every toast calls it; a change that shows
+    /// no toast calls it directly.
+    func noteWatchChange() {
+        watchRevision += 1
+    }
 
     /// How many watches `subject` has, so the eye can ask before removing several.
     func watchCount(of subject: DiarySubject) async throws -> Int {
@@ -181,6 +187,7 @@ final class ListChangeNotice {
         diaryUndo: DiaryWatchUndo? = nil,
         loggedWatch: DiaryEntry? = nil
     ) {
+        noteWatchChange()
         generation += 1
         let token = generation
         presentationID += 1
@@ -259,6 +266,7 @@ final class ListChangeNotice {
         watchUndo: TVWatchUndo? = nil
     ) {
         guard let message = change.confirmation else { return }
+        noteWatchChange()
         generation += 1
         let token = generation
         presentationID += 1
@@ -301,6 +309,7 @@ final class ListChangeNotice {
         tvWatch: TVWatchRepository? = nil,
         watchUndo: TVWatchUndo? = nil
     ) {
+        noteWatchChange()
         generation += 1
         let token = generation
         presentationID += 1

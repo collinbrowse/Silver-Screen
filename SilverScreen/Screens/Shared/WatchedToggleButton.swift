@@ -247,6 +247,8 @@ struct WatchedToggleButton: View {
                     tvWatch: tvWatch,
                     watchUndo: outcome.watchUndo
                 )
+            } else {
+                notice.noteWatchChange()
             }
             optimisticWatched = nil
             onToggleComplete()
