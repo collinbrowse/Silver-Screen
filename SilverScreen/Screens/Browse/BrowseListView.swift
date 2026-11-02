@@ -113,7 +113,9 @@ struct BrowseListView: View {
             case .empty:
                 EmptyStateView(
                     title: "Nothing to Browse",
-                    message: "No titles match \(viewModel.media.title), \(viewModel.window.title).",
+                    message: viewModel.window == .newTrailers
+                        ? "No new trailers came out this week."
+                        : "No titles match \(viewModel.media.title), \(viewModel.window.title).",
                     systemImage: "film"
                 )
             case .loaded(let rows, let activity):

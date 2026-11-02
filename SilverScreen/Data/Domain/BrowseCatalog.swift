@@ -14,12 +14,15 @@ enum BrowseWindow: String, CaseIterable, Sendable, Equatable {
     case all
     case nowPlaying
     case upcoming
+    /// Titles whose official trailer came out this week. See `RecentTrailerScan`.
+    case newTrailers
 
     var title: String {
         switch self {
             case .all: "All"
             case .nowPlaying: "Now Playing"
             case .upcoming: "Upcoming"
+            case .newTrailers: "New Trailers"
         }
     }
 
@@ -28,6 +31,7 @@ enum BrowseWindow: String, CaseIterable, Sendable, Equatable {
             case .all: "square.grid.2x2"
             case .nowPlaying: "ticket"
             case .upcoming: "calendar"
+            case .newTrailers: "play.rectangle"
         }
     }
 }
