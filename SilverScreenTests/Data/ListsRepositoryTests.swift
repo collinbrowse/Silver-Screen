@@ -297,6 +297,20 @@ final class ListsRepositoryTests: XCTestCase {
         XCTAssertTrue(snapshot.entries.contains { $0.listID == custom.id && $0.itemID == 15 })
     }
 
+    func test_add_movieToInProgress_throwsWrongSegment() async throws {
+        let repository = makeRepository()
+        let inProgress = try await systemList(.inProgress, repository: repository)
+
+        do {
+            _ = try await repository.add(draft: movie(id: 15, title: "Heat", imagePath: nil), listID: inProgress.id)
+            XCTFail("A movie should not land on In Progress")
+        } catch {
+            XCTAssertEqual(error as? ListEditError, .wrongSegment)
+        }
+        let snapshot = try await repository.snapshot()
+        XCTAssertFalse(snapshot.entries.contains { $0.listID == inProgress.id })
+    }
+
     func test_addToWatched_again_keepsTheAddedDate() async throws {
         let repository = makeRepository()
         let draft = movie(id: 15, title: "Heat")

@@ -4,6 +4,7 @@
 //
 //  Titles on one list. Sort is only offered for Watched and Watchlist.
 //  Reorder is off while search or the Movies / TV filter is hiding rows.
+//  In Progress holds only TV, so it has no Movies / TV filter.
 //
 
 import SwiftUI
@@ -105,7 +106,7 @@ struct LibraryDetailView: View {
             }
         }
         .safeAreaInset(edge: .top, spacing: 0) {
-            if detail.list.segment == .moviesAndTV {
+            if viewModel.showsMediaFilter {
                 mediaFilter
                     .background(DesignTheme.canvas)
             }
@@ -249,7 +250,7 @@ struct LibraryDetailView: View {
 
     private func emptyTitle(_ detail: LibraryListDetail) -> String {
         let query = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !query.isEmpty || (detail.list.segment == .moviesAndTV && viewModel.mediaFilter != .all) {
+        if !query.isEmpty || (viewModel.showsMediaFilter && viewModel.mediaFilter != .all) {
             return "No Matches"
         }
         return "Nothing Here"
@@ -260,10 +261,10 @@ struct LibraryDetailView: View {
         if !query.isEmpty {
             return "Nothing matches \"\(query)\"."
         }
-        if detail.list.segment == .moviesAndTV, viewModel.mediaFilter == .movies {
+        if viewModel.showsMediaFilter, viewModel.mediaFilter == .movies {
             return "No movies on this list."
         }
-        if detail.list.segment == .moviesAndTV, viewModel.mediaFilter == .tv {
+        if viewModel.showsMediaFilter, viewModel.mediaFilter == .tv {
             return "No TV on this list."
         }
         if detail.list.segment == .people {

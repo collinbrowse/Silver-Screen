@@ -211,6 +211,10 @@ actor ListsRepository {
         guard draft.kind.segment == list.segment else {
             throw ListEditError.wrongSegment
         }
+        // In Progress is TV-only on every path, not just `addToInProgress`.
+        guard list.system != .inProgress || draft.kind == .tv else {
+            throw ListEditError.wrongSegment
+        }
         if snapshot.entries.contains(where: { $0.listID == listID && $0.itemKey == draft.itemKey }) {
             try await performEnrich(draft: draft)
             return MembershipChange(
