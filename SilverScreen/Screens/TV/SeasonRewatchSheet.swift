@@ -15,7 +15,7 @@ struct SeasonRewatchSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var watchedOn = Date()
-    @State private var dontRemember = false
+    @State private var isDateKnown = true
     @State private var isSaving = false
     @State private var saveError: AppError?
 
@@ -31,16 +31,7 @@ struct SeasonRewatchSheet: View {
                     }
                 }
                 Section {
-                    if !dontRemember {
-                        DatePicker(
-                            "Watched on",
-                            selection: $watchedOn,
-                            in: ...Date(),
-                            displayedComponents: .date
-                        )
-                    }
-                    Toggle("Don't remember", isOn: $dontRemember)
-                        .tint(DesignTheme.accent)
+                    WatchDateRow(watchedOn: $watchedOn, isDateKnown: $isDateKnown)
                 } footer: {
                     Text("Adds a rewatch of every episode in this season.")
                 }
@@ -73,7 +64,7 @@ struct SeasonRewatchSheet: View {
     }
 
     private func save() async {
-        switch await onSave(watchedOn, !dontRemember) {
+        switch await onSave(watchedOn, isDateKnown) {
             case .succeeded:
                 dismiss()
             case .cancelled:

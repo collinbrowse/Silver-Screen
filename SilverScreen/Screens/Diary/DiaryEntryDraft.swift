@@ -14,7 +14,7 @@ struct DiaryEntryDraft: Sendable, Equatable {
     var watchedOn: Date
     var score: Double?
     var review: String
-    /// False for "Don't remember": the watch then has no day, and `watchedOn` is ignored.
+    /// False for an unknown watch date: the watch then has no day, and `watchedOn` is ignored.
     var isDateKnown = true
 }
 
