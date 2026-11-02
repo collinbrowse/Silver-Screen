@@ -458,8 +458,10 @@ extension SQLiteLibraryStore {
                score, note, watched_at, created_at, updated_at, revision, deleted_at)
             VALUES (?1, ?2, 'tvSeries', ?3, 0, 0, ?4, ?5, ?6, ?6, ?6, 1, NULL)
             ON CONFLICT(kind, subject_id, season_number, episode_number) DO UPDATE SET
-              score = COALESCE(annotation.score, excluded.score),
-              note = COALESCE(annotation.note, excluded.note),
+              score = CASE WHEN annotation.deleted_at IS NOT NULL THEN excluded.score
+                           ELSE COALESCE(annotation.score, excluded.score) END,
+              note = CASE WHEN annotation.deleted_at IS NOT NULL THEN excluded.note
+                          ELSE COALESCE(annotation.note, excluded.note) END,
               updated_at = excluded.updated_at,
               revision = annotation.revision + 1,
               deleted_at = NULL

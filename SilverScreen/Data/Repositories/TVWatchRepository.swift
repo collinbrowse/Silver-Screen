@@ -561,12 +561,19 @@ actor TVWatchRepository {
                 removedWatches: removing
             )
         } catch {
-            do {
-                try await diary?.delete(ids: Set(logged.map(\.id)))
-                try await restoreWatches(removing)
-                try await restoreAnnotations(adopted)
-            } catch {
-                logger.error("TV watch diary rollback failed for series \(state.seriesID)", category: .persistence)
+            // Each step runs even when an earlier one fails, so one failure costs only its own part.
+            let seriesID = state.seriesID
+            let steps: [@Sendable () async throws -> Void] = [
+                { try await self.diary?.delete(ids: Set(logged.map(\.id))) },
+                { try await self.restoreWatches(removing) },
+                { try await self.restoreAnnotations(adopted) },
+            ]
+            for step in steps {
+                do {
+                    try await step()
+                } catch {
+                    logger.error("TV watch diary rollback failed for series \(seriesID)", category: .persistence)
+                }
             }
             throw error
         }
@@ -597,16 +604,26 @@ actor TVWatchRepository {
             )
         }
         var adopted: [MediaAnnotation] = []
-        if let annotations {
-            for index in entries.indices {
-                let result = try await annotations.adopt(into: entries[index])
-                entries[index] = result.entry
-                if let prior = result.prior {
-                    adopted.append(prior)
+        do {
+            if let annotations {
+                for index in entries.indices {
+                    let result = try await annotations.adopt(into: entries[index])
+                    entries[index] = result.entry
+                    if let prior = result.prior {
+                        adopted.append(prior)
+                    }
                 }
             }
+            return (try await diary.save(contentsOf: entries), adopted)
+        } catch {
+            // Adopting already took notes off their annotations.
+            do {
+                try await restoreAnnotations(adopted)
+            } catch {
+                logger.error("Episode annotations were not restored after a failed log", category: .persistence)
+            }
+            throw error
         }
-        return (try await diary.save(contentsOf: entries), adopted)
     }
 
     private func restoreAnnotations(_ records: [MediaAnnotation]) async throws {

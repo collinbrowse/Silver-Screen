@@ -120,6 +120,74 @@ final class WatchRepositoryTests: XCTestCase {
         XCTAssertEqual(restored?.note, "Saw it in theaters")
     }
 
+    func test_logMovie_diaryFailure_keepsTheAnnotationNote() async throws {
+        let harness = Harness()
+        try await harness.annotations.save(score: 7, note: "Saw it in theaters", for: .movie(550))
+        await harness.diaryStore.setSaveError(AppError.persistence)
+
+        do {
+            _ = try await harness.watches.logMovie(draft)
+            XCTFail("Expected the diary failure to propagate")
+        } catch {
+            let annotation = try await harness.annotations.annotation(for: .movie(550))
+            XCTAssertEqual(annotation?.note, "Saw it in theaters")
+        }
+    }
+
+    func test_undo_afterARewatch_keepsTheMovieOnWatched() async throws {
+        let harness = Harness()
+        let logged = try await harness.watches.logMovie(draft)
+        try await harness.diary.save(DiaryFixtures.entry(subject: .movie(550)))
+
+        try await harness.watches.undo(logged)
+
+        let onWatched = try await harness.isOnWatched(draft)
+        XCTAssertTrue(onWatched)
+    }
+
+    func test_deleteWatch_lastWholeSeriesWatch_takesShowOffWatched() async throws {
+        let harness = Harness()
+        let show = ListItemDraft(
+            id: 9,
+            kind: .tv,
+            title: "Severance",
+            imagePath: nil,
+            releaseDate: nil,
+            genreNames: [],
+            voteAverage: 8,
+            popularity: 1
+        )
+        _ = try await harness.lists.addToWatched(show)
+        let series = try await harness.diary.save(DiaryFixtures.entry(subject: .series(9)))
+
+        try await harness.watches.deleteWatch(series)
+
+        let onWatched = try await harness.isOnWatched(show)
+        XCTAssertFalse(onWatched)
+    }
+
+    func test_deleteWatch_wholeSeriesWatchWithEpisodeWatches_keepsShowOnWatched() async throws {
+        let harness = Harness()
+        let show = ListItemDraft(
+            id: 9,
+            kind: .tv,
+            title: "Severance",
+            imagePath: nil,
+            releaseDate: nil,
+            genreNames: [],
+            voteAverage: 8,
+            popularity: 1
+        )
+        _ = try await harness.lists.addToWatched(show)
+        let series = try await harness.diary.save(DiaryFixtures.entry(subject: .series(9)))
+        try await harness.diary.save(DiaryFixtures.entry(subject: .episode(seriesID: 9, season: 1, episode: 1)))
+
+        try await harness.watches.deleteWatch(series)
+
+        let onWatched = try await harness.isOnWatched(show)
+        XCTAssertTrue(onWatched)
+    }
+
     func test_deleteWatch_lastEpisodeWatch_unmarksProgress() async throws {
         let tvStore = InMemoryTVWatchStore()
         let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())

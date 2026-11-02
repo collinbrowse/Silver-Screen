@@ -162,6 +162,21 @@ final class WatchReconcileTests: XCTestCase {
         XCTAssertEqual(annotations.first { $0.key == .series(42) }?.score, 9)
     }
 
+    func test_seriesEntry_clearedVerdict_takesEntryValuesNotTheClearedOnes() async throws {
+        try writeV5 { db in
+            try self.insertShowProgress(db, seriesID: 42, season: 1, episode: 1)
+            try self.insertEntry(db, id: "s", kind: "tv", tmdbID: 42, score: 7)
+            try self.insertAnnotation(db, kind: "tvSeries", subject: 42, score: 3, note: "Old take")
+            try db.execute("UPDATE annotation SET deleted_at = '\(Self.stamp)' WHERE kind = 'tvSeries';")
+        }
+
+        let annotations = try await migrate().fetchAnnotations()
+
+        let verdict = annotations.first { $0.key == .series(42) }
+        XCTAssertEqual(verdict?.score, 7)
+        XCTAssertNil(verdict?.note)
+    }
+
     func test_seriesEntry_withNoEpisodes_stays() async throws {
         try writeV5 { db in
             try self.insertEntry(db, id: "s", kind: "tv", tmdbID: 42)

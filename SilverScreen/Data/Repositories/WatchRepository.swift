@@ -77,7 +77,14 @@ actor WatchRepository {
             isDateKnown: dateKnown
         )
         let adopted = try await annotations?.adopt(into: blank)
-        let saved = try await diary.save(adopted?.entry ?? blank)
+        let saved: DiaryEntry
+        do {
+            saved = try await diary.save(adopted?.entry ?? blank)
+        } catch {
+            // Adopting already took the note off the annotation.
+            await restoreAnnotation(adopted?.prior, for: blank.subject)
+            throw error
+        }
         do {
             let membership = try await lists.addToWatched(draft, at: date)
             return LoggedWatch(entry: saved, membership: membership, priorAnnotation: adopted?.prior)
@@ -103,10 +110,12 @@ actor WatchRepository {
     }
 
     /// Reverses `logMovie`: deletes the watch, including anything since added to it, and
-    /// restores the lists as they were.
+    /// restores the lists as they were. A rewatch logged since keeps the movie on Watched.
     func undo(_ logged: LoggedWatch) async throws {
         try await diary.delete(id: logged.entry.id)
-        try await lists.undo(logged.membership)
+        if try await watches(of: logged.entry.subject).isEmpty {
+            try await lists.undo(logged.membership)
+        }
         await syncTitleRating(for: logged.entry.subject)
         await restoreAnnotation(logged.priorAnnotation, for: logged.entry.subject)
     }
@@ -177,7 +186,9 @@ actor WatchRepository {
         if try await watches(of: entry.subject).isEmpty {
             if let episode = entry.subject.episode {
                 try await tvWatch?.lastWatchDeleted(of: episode, seriesID: entry.subject.tmdbID)
-            } else if entry.subject.kind == .movie {
+            } else if try await diary.entries(for: entry.subject).isEmpty {
+                // A show's whole-series watch only counts as its last when no episode
+                // watches remain either.
                 _ = try await removeFromWatched(itemKey: entry.subject.itemKey)
             }
         }
