@@ -13,6 +13,8 @@ struct MediaTrailer: Sendable, Equatable, Hashable, Identifiable {
     let youtubeID: String
     /// Pill title. A blank TMDB name becomes "Trailer", then "Trailer 2", and so on.
     let title: String
+    /// When the video went up on YouTube. Nil when TMDB omitted it.
+    var publishedAt: Date? = nil
 
     var id: String { youtubeID }
 

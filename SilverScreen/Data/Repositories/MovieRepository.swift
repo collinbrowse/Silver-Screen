@@ -29,6 +29,10 @@ final class MovieRepository: Sendable {
         self.sleeper = sleeper
     }
 
+    private var trailerScan: RecentTrailerScan {
+        RecentTrailerScan(client: client, requests: requests, logger: logger, sleeper: sleeper)
+    }
+
     func topMovies(page: Int) async throws -> MoviePage {
         try await fetchMoviePage(
             path: "discover/movie",
@@ -86,6 +90,27 @@ final class MovieRepository: Sendable {
             context: "Upcoming",
             queryItems: TMDBLocale.queryItems(locale: locale, page: page)
         )
+    }
+
+    /// Upcoming and now-playing movies with an official trailer in the New Trailers window,
+    /// newest trailer first. One unpaged list; see `RecentTrailerScan` for the request cost.
+    func newTrailers(
+        locale: Locale = .current,
+        today: Date = Date(),
+        timeZone: TimeZone = .current
+    ) async throws -> MoviePage {
+        async let upcomingPage = upcoming(page: 1, locale: locale)
+        async let nowPlayingPage = nowPlaying(page: 1, locale: locale)
+        let candidates = try await upcomingPage.movies + nowPlayingPage.movies
+        let movies = try await trailerScan.newest(
+            candidates,
+            kind: .movie,
+            id: \.id,
+            locale: locale,
+            today: today,
+            timeZone: timeZone
+        )
+        return MoviePage(movies: movies, page: 1, hasMore: false)
     }
 
     /// Popular movies, used as the Search tab's landing list.
