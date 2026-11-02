@@ -67,7 +67,7 @@ enum ReelLoaderMotion {
         let progress = (phase - restShare) / (1 - restShare)
         guard progress > 0, progress < 1 else { return nil }
         let total = exitTurn + entryTurn
-        let travelled = total * ReelEase.inOut(progress)
+        let travelled = total * ReelEase.travel(progress)
         return ReelWinding(
             turn: travelled < exitTurn ? travelled : travelled - total,
             level: ReelEase.smooth(progress / leveling) * ReelEase.smooth((1 - progress) / leveling),
@@ -83,7 +83,11 @@ enum ReelEase {
         return clamped * clamped * (3 - 2 * clamped)
     }
 
-    static func inOut(_ t: Double) -> Double {
-        t < 0.5 ? 4 * t * t * t : 1 - pow(-2 * t + 2, 3) / 2
+    /// Share of its path the film has covered at `t` of the motion. Rises from 0 to 1, and
+    /// mirrors around the midpoint so landing on the icon reads like leaving it. Smoothstep
+    /// rather than a cubic ease, so the film is visibly moving within the first moments a
+    /// loader is on screen.
+    static func travel(_ t: Double) -> Double {
+        smooth(t)
     }
 }

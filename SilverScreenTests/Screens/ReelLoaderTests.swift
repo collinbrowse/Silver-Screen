@@ -169,6 +169,23 @@ final class ReelLoaderTests: XCTestCase {
         XCTAssertTrue(ReelLoaderMotion.isAtRest(at: ReelLoaderMotion.phase(sinceAppearing: secondLoopRest)))
     }
 
+    func test_travel_acrossTheMotion_risesFromZeroToOneAndMirrors() {
+        XCTAssertEqual(ReelEase.travel(0), 0, accuracy: 1e-9)
+        XCTAssertEqual(ReelEase.travel(1), 1, accuracy: 1e-9)
+        var previous = 0.0
+        for t in stride(from: 0.0, through: 1, by: 0.01) {
+            let travelled = ReelEase.travel(t)
+            XCTAssertGreaterThanOrEqual(travelled, previous, "at \(t)")
+            XCTAssertEqual(travelled, 1 - ReelEase.travel(1 - t), accuracy: 1e-9, "at \(t)")
+            previous = travelled
+        }
+    }
+
+    func test_travel_earlyInTheMotion_isVisiblyUnderway() {
+        // The old cubic ease had covered only 0.4% of the path by here.
+        XCTAssertGreaterThan(ReelEase.travel(0.1), 0.02)
+    }
+
     private func square(side: CGFloat) -> [CGPoint] {
         [CGPoint(x: 0, y: 0), CGPoint(x: side, y: 0), CGPoint(x: side, y: side), CGPoint(x: 0, y: side)]
     }
