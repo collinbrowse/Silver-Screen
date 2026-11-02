@@ -88,10 +88,7 @@ actor ListsRepository {
         at date: Date = Date(),
         messageOverride: String? = nil
     ) async throws -> MembershipChange {
-        guard draft.kind == .tv else {
-            throw ListEditError.wrongSegment
-        }
-        return try await serializeWrite { [self] in
+        try await serializeWrite { [self] in
             let snapshot = try await loadCache()
             guard let inProgress = snapshot.list(.inProgress) else {
                 throw ListEditError.missingList
@@ -209,6 +206,10 @@ actor ListsRepository {
             throw ListEditError.missingList
         }
         guard draft.kind.segment == list.segment else {
+            throw ListEditError.wrongSegment
+        }
+        // In Progress is TV-only on every path, not just `addToInProgress`.
+        guard list.system != .inProgress || draft.kind == .tv else {
             throw ListEditError.wrongSegment
         }
         if snapshot.entries.contains(where: { $0.listID == listID && $0.itemKey == draft.itemKey }) {

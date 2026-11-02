@@ -40,8 +40,14 @@ final class LibraryDetailViewModel {
 
     var displayedEntries: [ListEntry] {
         guard case .loaded(let detail, _) = state else { return [] }
-        let filter = detail.list.segment == .people ? TitleMediaFilter.all : mediaFilter
+        let filter = showsMediaFilter ? mediaFilter : .all
         return LibraryQuery.entries(detail.entries, matching: searchText, filter: filter)
+    }
+
+    /// All / Movies / TV picker. Hidden on People lists and on In Progress, which only holds TV.
+    var showsMediaFilter: Bool {
+        guard case .loaded(let detail, _) = state else { return false }
+        return detail.list.segment == .moviesAndTV && detail.list.system != .inProgress
     }
 
     /// Dragging is off for system lists and while a filter is hiding rows.

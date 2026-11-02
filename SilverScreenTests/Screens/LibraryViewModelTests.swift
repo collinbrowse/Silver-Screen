@@ -234,7 +234,7 @@ final class LibraryViewModelTests: XCTestCase {
         _ = try await repository.add(draft: draft(id: 1, title: "Heat", imagePath: "/heat.jpg"), listID: watched.id)
         _ = try await repository.add(draft: draft(id: 2, title: "Alien", imagePath: "/alien.jpg"), listID: watchlist.id)
         _ = try await repository.add(
-            draft: draft(id: 3, title: "Severance", imagePath: "/sev.jpg"),
+            draft: draft(id: 3, title: "Severance", imagePath: "/sev.jpg", kind: .tv),
             listID: inProgress.id
         )
         await viewModel.load()
@@ -390,6 +390,36 @@ final class LibraryViewModelTests: XCTestCase {
         let entry = try XCTUnwrap(viewModel.displayedEntries.first)
 
         XCTAssertEqual(viewModel.route(for: entry), .tvSeries(id: 7))
+    }
+
+    func test_detail_inProgress_hidesMediaFilter() async throws {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let snapshot = try await lists.snapshot()
+        let inProgress = try XCTUnwrap(snapshot.list(.inProgress))
+        let viewModel = LibraryDetailViewModel(
+            listID: inProgress.id,
+            lists: lists,
+            annotations: AnnotationsRepository.empty()
+        )
+
+        await viewModel.load()
+
+        XCTAssertFalse(viewModel.showsMediaFilter)
+    }
+
+    func test_detail_watched_showsMediaFilter() async throws {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let snapshot = try await lists.snapshot()
+        let watched = try XCTUnwrap(snapshot.list(.watched))
+        let viewModel = LibraryDetailViewModel(
+            listID: watched.id,
+            lists: lists,
+            annotations: AnnotationsRepository.empty()
+        )
+
+        await viewModel.load()
+
+        XCTAssertTrue(viewModel.showsMediaFilter)
     }
 
     func test_detail_inProgressCaption_usesProgressSubtitle() async throws {
