@@ -13,7 +13,7 @@ import SwiftUI
 /// when Reduce Motion is on.
 struct ReelLoader: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// When this loader appeared, so its first loop starts at the icon pose.
+    /// When this loader appeared, so its first loop starts winding from the icon pose.
     @State private var start = Date()
 
     var body: some View {
