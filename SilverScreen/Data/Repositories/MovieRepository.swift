@@ -16,6 +16,7 @@ final class MovieRepository: Sendable {
     private let requests: TMDBRequestBuilder
     private let logger: any AppLogging
     private let sleeper: any Sleeper
+    private let trailerScan: RecentTrailerScan
 
     init(
         client: any HTTPClient,
@@ -27,10 +28,7 @@ final class MovieRepository: Sendable {
         self.requests = TMDBRequestBuilder(connection: connection)
         self.logger = logger
         self.sleeper = sleeper
-    }
-
-    private var trailerScan: RecentTrailerScan {
-        RecentTrailerScan(client: client, requests: requests, logger: logger, sleeper: sleeper)
+        self.trailerScan = RecentTrailerScan(client: client, requests: requests, logger: logger, sleeper: sleeper)
     }
 
     func topMovies(page: Int) async throws -> MoviePage {
@@ -550,17 +548,7 @@ final class MovieRepository: Sendable {
     }
 
     static func parseReviewDate(_ raw: String?) -> Date? {
-        guard let raw else { return nil }
-        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
-        let withFraction = ISO8601DateFormatter()
-        withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = withFraction.date(from: trimmed) {
-            return date
-        }
-        let plain = ISO8601DateFormatter()
-        plain.formatOptions = [.withInternetDateTime]
-        return plain.date(from: trimmed)
+        TMDBTimestamp.date(from: raw)
     }
 
     static func decodeMovies(from data: Data, logger: any AppLogging) throws -> [Movie] {

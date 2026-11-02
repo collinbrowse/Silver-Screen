@@ -122,7 +122,13 @@ struct RecentTrailerScan: Sendable {
                 context: "New trailers",
                 sleeper: sleeper
             )
-            let videos = (try? JSONDecoder().decode(VideosDTO.self, from: data))?.results ?? []
+            let videos: [TMDBVideoDTO]
+            do {
+                videos = try JSONDecoder().decode(VideosDTO.self, from: data).results ?? []
+            } catch {
+                logger.error("New trailers skipped malformed videos", category: .networking)
+                videos = []
+            }
             let newest = OfficialYouTubeTrailers.make(from: videos)
                 .compactMap(\.publishedAt)
                 .filter { NewTrailerWindow.contains($0, today: today, timeZone: timeZone) }

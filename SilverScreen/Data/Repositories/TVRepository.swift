@@ -13,6 +13,7 @@ final class TVRepository: Sendable {
     private let requests: TMDBRequestBuilder
     private let logger: any AppLogging
     private let sleeper: any Sleeper
+    private let trailerScan: RecentTrailerScan
 
     init(
         client: any HTTPClient,
@@ -24,10 +25,7 @@ final class TVRepository: Sendable {
         self.requests = TMDBRequestBuilder(connection: connection)
         self.logger = logger
         self.sleeper = sleeper
-    }
-
-    private var trailerScan: RecentTrailerScan {
-        RecentTrailerScan(client: client, requests: requests, logger: logger, sleeper: sleeper)
+        self.trailerScan = RecentTrailerScan(client: client, requests: requests, logger: logger, sleeper: sleeper)
     }
 
     /// Upcoming and on-the-air series with an official trailer in the New Trailers window,

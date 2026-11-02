@@ -23,20 +23,16 @@ struct TMDBVideoDTO: Decodable, Sendable, Equatable {
     }
 }
 
-/// Parses TMDB's video timestamps. A missing or malformed value is nil, not an error.
+/// Parses TMDB's ISO 8601 timestamps (videos, reviews). A missing or malformed value is nil, not an error.
 enum TMDBTimestamp {
+    private static let withFraction = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
+    private static let plain = Date.ISO8601FormatStyle()
+
     static func date(from raw: String?) -> Date? {
         guard let trimmed = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
             return nil
         }
-        let withFraction = ISO8601DateFormatter()
-        withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = withFraction.date(from: trimmed) {
-            return date
-        }
-        let plain = ISO8601DateFormatter()
-        plain.formatOptions = [.withInternetDateTime]
-        return plain.date(from: trimmed)
+        return (try? withFraction.parse(trimmed)) ?? (try? plain.parse(trimmed))
     }
 }
 
