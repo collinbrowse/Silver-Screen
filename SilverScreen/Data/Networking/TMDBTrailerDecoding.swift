@@ -14,6 +14,26 @@ struct TMDBVideoDTO: Decodable, Sendable, Equatable {
     let site: String?
     let type: String?
     let official: Bool?
+    /// ISO 8601 timestamp, such as `2024-06-12T16:00:11.000Z`.
+    var publishedAt: String? = nil
+
+    enum CodingKeys: String, CodingKey {
+        case name, key, site, type, official
+        case publishedAt = "published_at"
+    }
+}
+
+/// Parses TMDB's ISO 8601 timestamps (videos, reviews). A missing or malformed value is nil, not an error.
+enum TMDBTimestamp {
+    private static let withFraction = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
+    private static let plain = Date.ISO8601FormatStyle()
+
+    static func date(from raw: String?) -> Date? {
+        guard let trimmed = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
+            return nil
+        }
+        return (try? withFraction.parse(trimmed)) ?? (try? plain.parse(trimmed))
+    }
 }
 
 /// Selects the official YouTube trailers a detail screen can offer.
@@ -23,16 +43,20 @@ enum OfficialYouTubeTrailers {
     /// A TMDB name replaces that fallback.
     static func make(from videos: [TMDBVideoDTO]) -> [MediaTrailer] {
         var seen: Set<String> = []
-        let selected: [(id: String, name: String)] = videos.compactMap { video in
+        let selected: [(id: String, name: String, publishedAt: Date?)] = videos.compactMap { video in
             guard video.official == true else { return nil }
             guard video.site?.caseInsensitiveCompare("YouTube") == .orderedSame else { return nil }
             guard video.type?.caseInsensitiveCompare("Trailer") == .orderedSame else { return nil }
             guard let id = youtubeID(from: video.key), seen.insert(id).inserted else { return nil }
             let name = video.name?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            return (id, name)
+            return (id, name, TMDBTimestamp.date(from: video.publishedAt))
         }
         return selected.enumerated().map { index, video in
-            MediaTrailer(youtubeID: video.id, title: pillTitle(name: video.name, index: index))
+            MediaTrailer(
+                youtubeID: video.id,
+                title: pillTitle(name: video.name, index: index),
+                publishedAt: video.publishedAt
+            )
         }
     }
 

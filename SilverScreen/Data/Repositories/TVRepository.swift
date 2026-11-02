@@ -13,6 +13,7 @@ final class TVRepository: Sendable {
     private let requests: TMDBRequestBuilder
     private let logger: any AppLogging
     private let sleeper: any Sleeper
+    private let trailerScan: RecentTrailerScan
 
     init(
         client: any HTTPClient,
@@ -24,6 +25,28 @@ final class TVRepository: Sendable {
         self.requests = TMDBRequestBuilder(connection: connection)
         self.logger = logger
         self.sleeper = sleeper
+        self.trailerScan = RecentTrailerScan(client: client, requests: requests, logger: logger, sleeper: sleeper)
+    }
+
+    /// Upcoming and on-the-air series with an official trailer in the New Trailers window,
+    /// newest trailer first. One unpaged list; see `RecentTrailerScan` for the request cost.
+    func newTrailers(
+        locale: Locale = .current,
+        today: Date = Date(),
+        timeZone: TimeZone = .current
+    ) async throws -> TVSeriesPage {
+        async let upcomingPage = upcoming(page: 1, locale: locale, today: today, timeZone: timeZone)
+        async let onTheAirPage = onTheAir(page: 1, locale: locale)
+        let candidates = try await upcomingPage.series + onTheAirPage.series
+        let series = try await trailerScan.newest(
+            candidates,
+            kind: .tv,
+            id: \.id,
+            locale: locale,
+            today: today,
+            timeZone: timeZone
+        )
+        return TVSeriesPage(series: series, page: 1, hasMore: false)
     }
 
     /// One Discover page, already sorted. Browse merges this with the movie stream.

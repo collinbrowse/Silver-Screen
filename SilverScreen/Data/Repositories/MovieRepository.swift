@@ -16,6 +16,7 @@ final class MovieRepository: Sendable {
     private let requests: TMDBRequestBuilder
     private let logger: any AppLogging
     private let sleeper: any Sleeper
+    private let trailerScan: RecentTrailerScan
 
     init(
         client: any HTTPClient,
@@ -27,6 +28,7 @@ final class MovieRepository: Sendable {
         self.requests = TMDBRequestBuilder(connection: connection)
         self.logger = logger
         self.sleeper = sleeper
+        self.trailerScan = RecentTrailerScan(client: client, requests: requests, logger: logger, sleeper: sleeper)
     }
 
     func topMovies(page: Int) async throws -> MoviePage {
@@ -86,6 +88,27 @@ final class MovieRepository: Sendable {
             context: "Upcoming",
             queryItems: TMDBLocale.queryItems(locale: locale, page: page)
         )
+    }
+
+    /// Upcoming and now-playing movies with an official trailer in the New Trailers window,
+    /// newest trailer first. One unpaged list; see `RecentTrailerScan` for the request cost.
+    func newTrailers(
+        locale: Locale = .current,
+        today: Date = Date(),
+        timeZone: TimeZone = .current
+    ) async throws -> MoviePage {
+        async let upcomingPage = upcoming(page: 1, locale: locale)
+        async let nowPlayingPage = nowPlaying(page: 1, locale: locale)
+        let candidates = try await upcomingPage.movies + nowPlayingPage.movies
+        let movies = try await trailerScan.newest(
+            candidates,
+            kind: .movie,
+            id: \.id,
+            locale: locale,
+            today: today,
+            timeZone: timeZone
+        )
+        return MoviePage(movies: movies, page: 1, hasMore: false)
     }
 
     /// Popular movies, used as the Search tab's landing list.
@@ -525,17 +548,7 @@ final class MovieRepository: Sendable {
     }
 
     static func parseReviewDate(_ raw: String?) -> Date? {
-        guard let raw else { return nil }
-        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
-        let withFraction = ISO8601DateFormatter()
-        withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = withFraction.date(from: trimmed) {
-            return date
-        }
-        let plain = ISO8601DateFormatter()
-        plain.formatOptions = [.withInternetDateTime]
-        return plain.date(from: trimmed)
+        TMDBTimestamp.date(from: raw)
     }
 
     static func decodeMovies(from data: Data, logger: any AppLogging) throws -> [Movie] {

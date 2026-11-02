@@ -76,6 +76,29 @@ final class BrowseListViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.window, .all)
     }
 
+    func test_setWindow_newTrailers_showsScannedTitlesWithoutPaging() async {
+        let client = RoutingHTTPClient(routes: [
+            "movie/popular": .success(TMDBFixtures.topMoviesPage1),
+            "movie/upcoming": .success(NewTrailersTests.moviePage(ids: [1, 2])),
+            "movie/now_playing": .success(NewTrailersTests.moviePage(ids: [])),
+            "movie/1/videos": .success(NewTrailersTests.videos([("old", "2024-05-01T00:00:00.000Z")])),
+            "movie/2/videos": .success(NewTrailersTests.videos([("new", "2024-06-14T00:00:00.000Z")])),
+            ])
+        let viewModel = makeViewModel(
+            movies: MovieRepository.test(client: client),
+            shows: TVRepository.test(client: client)
+        )
+
+        await viewModel.load()
+        await viewModel.setWindow(.newTrailers)
+
+        guard case .loaded(let rows, .none) = viewModel.state else {
+            return XCTFail("Expected loaded rows, got \(viewModel.state)")
+        }
+        XCTAssertEqual(rows.map(\.mediaID), [2])
+        XCTAssertFalse(viewModel.hasMore)
+    }
+
     func test_merge_popularAlternatesMovieThenShow() {
         var merge = BrowseMerge()
         merge.appendMovies([

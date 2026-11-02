@@ -253,6 +253,7 @@ final class BrowseListViewModel {
 
     /// Popular with the All window is the Search landing list.
     /// Now Playing and Upcoming are TMDB's own lists and ignore sort.
+    /// New Trailers is one unpaged list, newest trailer first.
 
     private func movieList(page: Int) async throws -> MoviePage {
         switch window {
@@ -260,6 +261,8 @@ final class BrowseListViewModel {
                 return try await movies.nowPlaying(page: page, locale: locale)
             case .upcoming:
                 return try await movies.upcoming(page: page, locale: locale)
+            case .newTrailers:
+                return try await movies.newTrailers(locale: locale, today: today(), timeZone: timeZone)
             case .all:
                 if sort == .popular {
                 return try await movies.popular(page: page, locale: locale)
@@ -286,6 +289,8 @@ final class BrowseListViewModel {
                     today: today(),
                     timeZone: timeZone
                 )
+            case .newTrailers:
+                return try await shows.newTrailers(locale: locale, today: today(), timeZone: timeZone)
             case .all:
                 if sort == .popular {
                 return try await shows.popular(page: page, locale: locale)
