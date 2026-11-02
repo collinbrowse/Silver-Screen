@@ -82,7 +82,7 @@ struct LibraryDetailView: View {
         return Group {
             if entries.isEmpty {
                 EmptyStateView(
-                    title: emptyTitle(detail),
+                    title: emptyTitle(),
                     message: emptyMessage(detail),
                     systemImage: "line.3.horizontal.decrease.circle"
                 )
@@ -248,7 +248,7 @@ struct LibraryDetailView: View {
         }
     }
 
-    private func emptyTitle(_ detail: LibraryListDetail) -> String {
+    private func emptyTitle() -> String {
         let query = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !query.isEmpty || (viewModel.showsMediaFilter && viewModel.mediaFilter != .all) {
             return "No Matches"

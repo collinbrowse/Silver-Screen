@@ -88,10 +88,7 @@ actor ListsRepository {
         at date: Date = Date(),
         messageOverride: String? = nil
     ) async throws -> MembershipChange {
-        guard draft.kind == .tv else {
-            throw ListEditError.wrongSegment
-        }
-        return try await serializeWrite { [self] in
+        try await serializeWrite { [self] in
             let snapshot = try await loadCache()
             guard let inProgress = snapshot.list(.inProgress) else {
                 throw ListEditError.missingList
