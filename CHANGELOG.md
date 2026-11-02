@@ -7,6 +7,42 @@ list.
 
 ## [Unreleased]
 
+## [0.1.1+9] - 2026-11-02
+
+- Upgrade Sentry Cocoa to 9.30.2.
+- Movie/TV tag on full-screen lists, and stack the watched eye at accessibility sizes.
+- Marketing pipeline: App Store screenshots and website demo clips.
+- Keep every library change history-safe: diffed writes and schema v3.
+- Add a daily TMDB health check and a weekly digest.
+- Add Settings with in-app feedback, privacy declarations, support pages, and the launch plan.
+- Move the TMDB token off the device behind a Cloudflare Worker proxy.
+- Add the TMDB logo to Settings and an App Store review prompt.
+- Analytics: anonymous TelemetryDeck events with no new dependency.
+- Add first-launch onboarding that fills Watched and Watchlist.
+- Check off Analytics in LAUNCH.md.
+- Review fixes: keep search text out of Sentry, tag debug runs.
+- Review fixes: stale image assignment and size-keyed image cache.
+- Review fixes: Worker path allow-list, CI supply chain, digest resilience.
+- Review fixes: networking cancellation, 4xx retry, and lossy decoding.
+- Launch-readiness review (CODE_REVIEW.md) and persistence fixes.
+- Onboarding: favor widely seen titles and show the cover from the first frame.
+- Diary: log watch dates and rewatches (schema v4).
+- Lay out every screen for large screens (iPhone Duo inner screen, iPad).
+- Use the app icon's film strip as the loading animation.
+- Return a cancelled first load to idle so detail screens don't spin forever.
+- Move the agent harness from Cursor to Claude Code, and enforce formatting and pre-PR review with hooks.
+- Drop stale award-titles pages when Winners/Nominees changes (S2).
+- Fix TMDB health proxy check blocked by Cloudflare Error 1010.
+- Keep infinite scroll working after a failure, and stop score stamps reverting pages (S3, S4).
+- Make startup failures visible and recoverable (O3).
+- Fix two crash traps: duplicate episode numbers and corrupt stored scores (S8, N11).
+- Watch logging and diary: rating slider, TV episodes, title history, automatic rewatches.
+- Library: open only the tapped list on a multi-column row.
+- Start the loading animation the moment it appears.
+- One way to log watches.
+- Add a New Trailers filter to Browse.
+- Remove the Movies / TV picker from In Progress.
+
 ## [0.1.1+8] - 2026-10-14
 
 - Reuse one development certificate and fix the TestFlight upload key.
