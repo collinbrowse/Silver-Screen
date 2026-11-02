@@ -17,6 +17,8 @@ struct DiaryEntryEditorSheet: View {
     let onDelete: () async -> AnnotationEditorWriteResult
 
     @Environment(\.dismiss) private var dismiss
+    /// Nil in previews and anywhere the root did not install one.
+    @Environment(ReviewPrompter.self) private var reviewPrompter: ReviewPrompter?
     @State private var draft: DiaryEntryDraft
     @State private var isSaving = false
     @State private var saveError: AppError?
@@ -46,12 +48,7 @@ struct DiaryEntryEditorSheet: View {
                 }
 
                 Section {
-                    DatePicker(
-                        "Watched on",
-                        selection: $draft.watchedOn,
-                        in: ...Date(),
-                        displayedComponents: .date
-                    )
+                    WatchDateRow(watchedOn: $draft.watchedOn, isDateKnown: $draft.isDateKnown)
                 }
 
                 Section {
@@ -64,7 +61,7 @@ struct DiaryEntryEditorSheet: View {
                         .disabled(isSaving)
                     }
                 } footer: {
-                    Text("Your newest watch's rating is also your rating for this title. Rating an older watch leaves it as it is.")
+                    Text("Your rating for this title is the one from your newest rated watch.")
                 }
 
                 Section("Review") {
@@ -99,7 +96,7 @@ struct DiaryEntryEditorSheet: View {
                     Button("Save") {
                         guard !isSaving else { return }
                         isSaving = true
-                        Task { finish(await onSave(draft)) }
+                        Task { await save() }
                     }
                     .disabled(isSaving)
                 }
@@ -112,11 +109,21 @@ struct DiaryEntryEditorSheet: View {
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("This removes this watch from your diary. Your rating for the title is not changed.")
+                Text("This removes this watch from your diary, with its rating and review.")
             }
         }
         .presentationSizing(.form)
         .interactiveDismissDisabled(isSaving)
+    }
+
+    /// A saved rating goes to the review prompter, which decides whether this is a good
+    /// moment to ask. A watch saved without a rating is not a rating moment.
+    private func save() async {
+        let result = await onSave(draft)
+        finish(result)
+        if draft.score != nil {
+            await reviewPrompter?.ratingSaveFinished(result)
+        }
     }
 
     private func finish(_ result: AnnotationEditorWriteResult) {

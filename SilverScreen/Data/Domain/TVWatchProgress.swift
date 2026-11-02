@@ -247,17 +247,26 @@ struct TVSeriesWatchState: Codable, Sendable, Equatable {
         return before - completed.count
     }
 
-    /// Marks every episode in a season. Returns how many were newly added.
+    /// Marks every episode in a season, assumed numbered 1 through `episodeCount`.
+    /// Returns how many were newly added.
     @discardableResult
     mutating func markSeason(
         seasonNumber: Int,
         episodeCount: Int,
         episodeTitles: [Int: String] = [:]
     ) -> Int {
-        guard seasonNumber > 0, episodeCount > 0 else { return 0 }
+        guard episodeCount > 0 else { return 0 }
+        return markSeason(seasonNumber: seasonNumber, episodeNumbers: Array(1...episodeCount))
+    }
+
+    /// Marks these episodes of a season, as the season page lists them. TMDB does not
+    /// always number a season 1 through N. Returns how many were newly added.
+    @discardableResult
+    mutating func markSeason(seasonNumber: Int, episodeNumbers: [Int]) -> Int {
+        guard seasonNumber > 0 else { return 0 }
         var set = completedSet
         var newly = 0
-        for number in 1...episodeCount {
+        for number in episodeNumbers where number > 0 {
             let ref = TVEpisodeRef(seasonNumber: seasonNumber, episodeNumber: number)
             if set.insert(ref).inserted {
                 newly += 1
@@ -312,10 +321,16 @@ struct TVSeriesWatchState: Codable, Sendable, Equatable {
 
     /// Episodes still unmarked when completing a season (for confirm copy).
     func unmarkedCount(seasonNumber: Int, episodeCount: Int) -> Int {
-        guard seasonNumber > 0, episodeCount > 0 else { return 0 }
+        guard episodeCount > 0 else { return 0 }
+        return unmarkedCount(seasonNumber: seasonNumber, episodeNumbers: Array(1...episodeCount))
+    }
+
+    /// Episodes among `episodeNumbers` still unmarked, for a season page's confirm copy.
+    func unmarkedCount(seasonNumber: Int, episodeNumbers: [Int]) -> Int {
+        guard seasonNumber > 0 else { return 0 }
         let set = completedSet
-        return (1...episodeCount).filter { number in
-            !set.contains(TVEpisodeRef(seasonNumber: seasonNumber, episodeNumber: number))
+        return episodeNumbers.filter { number in
+            number > 0 && !set.contains(TVEpisodeRef(seasonNumber: seasonNumber, episodeNumber: number))
         }.count
     }
 
@@ -388,6 +403,12 @@ struct TVWatchUndo: Sendable, Equatable {
     let seriesID: Int
     /// Nil means there was no progress before the action — undo clears the series ledger.
     let priorState: TVSeriesWatchState?
+    /// Watches this action logged; undo deletes them.
+    var addedWatches: [DiaryEntry] = []
+    /// Annotations those watches took over; undo puts them back as they were.
+    var adoptedAnnotations: [MediaAnnotation] = []
+    /// Watches this action deleted; undo puts them back with the same ids.
+    var removedWatches: [DiaryEntry] = []
 }
 
 /// Result of a watch mutation, including the list membership change to toast (if any).

@@ -96,25 +96,11 @@ struct DiaryView: View {
         }
     }
 
-    /// Full-width, filled button that opens the sheet for a new watch dated today.
+    /// Opens the sheet for a new watch dated today.
     private var logRewatchButton: some View {
-        Button {
+        LogRewatchButton {
             Task { await viewModel.beginRewatch() }
-        } label: {
-            Label("Log a Rewatch", systemImage: "arrow.counterclockwise")
-                .font(DesignTypography.section)
-                .foregroundStyle(DesignTheme.accentOnFill)
-                .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.borderedProminent)
-        .tint(DesignTheme.accent)
-        .controlSize(.large)
-        .accessibilityHint("Adds a new watch of this movie, dated today")
-        .frame(maxWidth: DiaryLayout.readableWidth)
-        .padding(.horizontal, DesignSpacing.lg)
-        .padding(.vertical, DesignSpacing.sm)
-        .frame(maxWidth: .infinity)
-        .background(DesignTheme.canvas)
     }
 
     private func list(_ months: [DiaryMonth]) -> some View {
@@ -124,52 +110,7 @@ struct DiaryView: View {
                     ForEach(month.items) { item in
                         switch item {
                             case .entry(let row):
-                                Button {
-                                    viewModel.edit(row)
-                                } label: {
-                                    DiaryEntryRow(
-                                        row: row,
-                                        layout: layout,
-                                        imageLoader: imageLoader,
-                                        showsTitle: viewModel.showsRowTitles,
-                                        leadingPoster: viewModel.showsSeasonPosters
-                                            ? DiaryLeadingPoster(path: viewModel.historyPoster(for: row))
-                                            : nil
-                                    )
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityHint("Edits this entry")
-                                .accessibilityAction(named: "Delete") {
-                                    Task { await viewModel.delete(row) }
-                                }
-                                .accessibilityActions {
-                                    if viewModel.showsTitleLinks {
-                                        Button("Open title") {
-                                            router.push(viewModel.route(for: row))
-                                        }
-                                    }
-                                }
-                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                    Button("Delete", role: .destructive) {
-                                        Task { await viewModel.delete(row) }
-                                    }
-                                }
-                                .contextMenu {
-                                    Button("Edit Entry", systemImage: "pencil") {
-                                        viewModel.edit(row)
-                                    }
-                                    if viewModel.showsTitleLinks {
-                                        Button(
-                                            row.entry.subject.kind == .tv ? "Go to Show" : "Go to Movie",
-                                            systemImage: row.entry.subject.kind == .tv ? "tv" : "film"
-                                        ) {
-                                            router.push(viewModel.route(for: row))
-                                        }
-                                    }
-                                    Button("Delete", systemImage: "trash", role: .destructive) {
-                                        Task { await viewModel.delete(row) }
-                                    }
-                                }
+                                entryRow(row, layout: layout)
                             case .episodes(let group):
                                 if viewModel.showsTitleLinks {
                                     Button {
@@ -204,8 +145,71 @@ struct DiaryView: View {
                         .accessibilityAddTraits(.isHeader)
                 }
             }
+            if !viewModel.earlierRows.isEmpty {
+                Section {
+                    ForEach(viewModel.earlierRows) { row in
+                        entryRow(row, layout: layout)
+                    }
+                } header: {
+                    Text("Earlier")
+                        .font(DesignTypography.section)
+                        .foregroundStyle(DesignTheme.textPrimary)
+                        .accessibilityAddTraits(.isHeader)
+                }
+            }
         }
         .listStyle(.plain)
         .contentMargins(.horizontal, layout.horizontalMargin, for: .scrollContent)
+    }
+
+    /// A watch's row: tap to edit, with delete and, on the full diary, a link to the title.
+    @ViewBuilder
+    private func entryRow(_ row: DiaryRow, layout: DiaryLayout) -> some View {
+        Button {
+            viewModel.edit(row)
+        } label: {
+            DiaryEntryRow(
+                row: row,
+                layout: layout,
+                imageLoader: imageLoader,
+                showsTitle: viewModel.showsRowTitles,
+                leadingPoster: viewModel.showsSeasonPosters
+                    ? DiaryLeadingPoster(path: viewModel.historyPoster(for: row))
+                    : nil
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("Edits this entry")
+        .accessibilityAction(named: "Delete") {
+            Task { await viewModel.delete(row) }
+        }
+        .accessibilityActions {
+            if viewModel.showsTitleLinks {
+                Button("Open title") {
+                    router.push(viewModel.route(for: row))
+                }
+            }
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button("Delete", role: .destructive) {
+                Task { await viewModel.delete(row) }
+            }
+        }
+        .contextMenu {
+            Button("Edit Entry", systemImage: "pencil") {
+                viewModel.edit(row)
+            }
+            if viewModel.showsTitleLinks {
+                Button(
+                    row.entry.subject.kind == .tv ? "Go to Show" : "Go to Movie",
+                    systemImage: row.entry.subject.kind == .tv ? "tv" : "film"
+                ) {
+                    router.push(viewModel.route(for: row))
+                }
+            }
+            Button("Delete", systemImage: "trash", role: .destructive) {
+                Task { await viewModel.delete(row) }
+            }
+        }
     }
 }

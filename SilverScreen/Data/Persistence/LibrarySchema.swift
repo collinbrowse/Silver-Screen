@@ -9,7 +9,7 @@
 import Foundation
 
 enum LibrarySchema {
-    static let currentVersion = 5
+    static let currentVersion = 6
 
     static let v1Statements: [String] = [
         """
@@ -218,6 +218,14 @@ enum LibrarySchema {
         "CREATE INDEX diary_entry_episode ON diary_entry(kind, tmdb_id, season_number, episode_number);",
     ]
 
+    /// v6 lets a watch have no known day. `watched_on` stays NOT NULL as the watch's sort
+    /// anchor, because SQLite cannot relax that without rebuilding the table; a row with
+    /// `date_known = 0` is shown as undated. The data pass runs in Swift in the same
+    /// transaction; see `SQLiteLibraryStore+WatchReconcile.swift`.
+    static let v6Statements: [String] = [
+        "ALTER TABLE diary_entry ADD COLUMN date_known INTEGER NOT NULL DEFAULT 1;",
+    ]
+
     /// SQL for a single schema version. Unknown versions fail instead of no-op.
     static func statements(for version: Int) throws -> [String] {
         switch version {
@@ -226,6 +234,7 @@ enum LibrarySchema {
             case 3: return v3Statements
             case 4: return v4Statements
             case 5: return v5Statements
+            case 6: return v6Statements
             default:
                 throw SQLiteDatabaseError.executionFailed(
                     message: "unknown library schema version \(version)"

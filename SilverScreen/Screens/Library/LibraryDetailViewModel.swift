@@ -24,7 +24,7 @@ final class LibraryDetailViewModel {
     let listID: UUID
     private let lists: ListsRepository
     private let annotations: AnnotationsRepository
-    private let tvWatch: TVWatchRepository?
+    let tvWatch: TVWatchRepository?
 
     init(
         listID: UUID,
@@ -90,22 +90,41 @@ final class LibraryDetailViewModel {
         }
     }
 
-    func remove(_ entry: ListEntry) async -> MembershipChange? {
-        let systemKind: SystemListKind?
-        if case .loaded(let detail, _) = state {
-            systemKind = detail.list.system
-        } else {
-            systemKind = nil
+    /// Whether removing `entry` here means removing its watches, not just a list row: a
+    /// title is watched exactly when it has a watch, so it cannot leave Watched alone.
+    func removesWatches(_ entry: ListEntry) -> Bool {
+        guard case .loaded(let detail, _) = state else { return false }
+        switch entry.kind {
+            case .movie: return detail.list.system == .watched
+            case .tv: return tvWatch != nil && (detail.list.system == .watched || detail.list.system == .inProgress)
+            case .person: return false
         }
+    }
+
+    /// Removes every watch of the show and takes it off Watched and In Progress. The
+    /// outcome carries the Undo. Nil after a failure, which shows on the list.
+    func removeShowWatches(_ entry: ListEntry) async -> TVWatchOutcome? {
+        guard let tvWatch else { return nil }
+        do {
+            let outcome = try await tvWatch.clearSeries(seriesID: entry.itemID, draft: entry.listItem())
+            await load()
+            return outcome
+        } catch is CancellationError {
+            return nil
+        } catch {
+            fail(with: .persistence)
+            return nil
+        }
+    }
+
+    /// Shows a failed watch removal the view ran through the toast.
+    func noteRemovalFailed() {
+        fail(with: .persistence)
+    }
+
+    func remove(_ entry: ListEntry) async -> MembershipChange? {
         do {
             let change = try await lists.remove(itemKey: entry.itemKey, listID: listID)
-            // Drop the episode ledger when pruning Watched / In Progress so cold-launch
-            // reconcile cannot resurrect a title the user just deleted.
-            if entry.kind == .tv,
-               let tvWatch,
-               systemKind == .watched || systemKind == .inProgress {
-                try? await tvWatch.clearProgress(seriesID: entry.itemID)
-            }
             await load()
             return change
         } catch is CancellationError {

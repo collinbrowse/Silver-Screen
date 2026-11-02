@@ -137,11 +137,11 @@ struct AppRouteDestination: View {
                 )
             case .diary:
                 DiaryRouteView(imageLoader: imageLoader, router: router)
-            case .titleHistory(let kind, let id, let title):
+            case .titleHistory(let kind, let id, let title, let episode):
                 DiaryRouteView(
                     imageLoader: imageLoader,
                     router: router,
-                    scope: DiaryScope(subject: DiarySubject(kind: kind, tmdbID: id), title: title)
+                    scope: DiaryScope(subject: DiarySubject(kind: kind, tmdbID: id, episode: episode), title: title)
                 )
             case .genreBrowse(let genre):
                 GenreBrowseView(

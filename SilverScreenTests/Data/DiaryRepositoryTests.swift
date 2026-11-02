@@ -55,39 +55,6 @@ final class DiaryRepositoryTests: XCTestCase {
         }
     }
 
-    func test_episodeWatches_whenStoreFails_throwsPersistence() async {
-        let store = InMemoryDiaryStore()
-        await store.setEpisodeLoadError(CocoaError(.fileReadCorruptFile))
-        let repository = DiaryRepository(store: store, logger: SilentLogger())
-
-        do {
-            _ = try await repository.episodeWatches()
-            XCTFail("Expected a persistence error")
-        } catch {
-            XCTAssertEqual(error as? AppError, .persistence)
-        }
-    }
-
-    func test_episodeWatches_seriesID_filtersToThatShow() async throws {
-        let watch = { (series: Int) in
-            EpisodeWatch(
-                seriesID: series,
-                seriesTitle: "Show",
-                posterPath: nil,
-                episode: TVEpisodeRef(seasonNumber: 1, episodeNumber: 1),
-                completedAt: Date(timeIntervalSince1970: 1_792_000_000)
-            )
-        }
-        let repository = DiaryRepository(
-            store: InMemoryDiaryStore(episodeWatches: [watch(1), watch(2)]),
-            logger: SilentLogger()
-        )
-
-        let watches = try await repository.episodeWatches(seriesID: 2)
-
-        XCTAssertEqual(watches.map(\.seriesID), [2])
-    }
-
     func test_save_whenStoreFails_throwsPersistenceAndKeepsCache() async throws {
         let existing = DiaryFixtures.entry()
         let store = InMemoryDiaryStore(entries: [existing])
@@ -211,6 +178,29 @@ enum DiaryFixtures {
             review: review,
             isRewatch: isRewatch,
             loggedAt: loggedAt
+        )
+    }
+
+    /// An unrated first watch of an episode, logged at `date` (a UTC day).
+    static func episodeWatch(
+        series: Int,
+        season: Int = 1,
+        episode: Int,
+        at date: Date,
+        title: String? = nil,
+        posterPath: String? = nil
+    ) -> DiaryEntry {
+        DiaryEntry(
+            id: UUID(),
+            subject: .episode(seriesID: series, season: season, episode: episode),
+            title: title ?? "Show \(series)",
+            releaseYear: nil,
+            posterPath: posterPath,
+            watchedOn: DiaryDay(date, calendar: utcCalendar),
+            score: nil,
+            review: nil,
+            isRewatch: false,
+            loggedAt: date
         )
     }
 

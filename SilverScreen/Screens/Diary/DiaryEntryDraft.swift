@@ -14,6 +14,8 @@ struct DiaryEntryDraft: Sendable, Equatable {
     var watchedOn: Date
     var score: Double?
     var review: String
+    /// False for an unknown watch date: the watch then has no day, and `watchedOn` is ignored.
+    var isDateKnown = true
 }
 
 /// One presentation of the editor, for a new watch or an existing entry.
@@ -38,7 +40,8 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
             draft: DiaryEntryDraft(
                 watchedOn: entry.watchedOn.date(in: calendar),
                 score: entry.score,
-                review: entry.review ?? ""
+                review: entry.review ?? "",
+                isDateKnown: entry.isDateKnown
             )
         )
     }
@@ -95,26 +98,24 @@ struct DiaryEditorSession: Sendable, Equatable, Identifiable {
             review: draft.review,
             // An imported rewatch flag survives an edit; a new log stores none.
             isRewatch: base.isRewatch,
-            loggedAt: isNew ? now : base.loggedAt
+            loggedAt: isNew ? now : base.loggedAt,
+            isDateKnown: draft.isDateKnown
         ).normalized()
     }
 }
 
-/// The title a new diary watch is logged for (a rewatch from a movie's history).
+/// The title a new watch is logged for.
 struct LogWatchTitle: Sendable, Equatable {
     let subject: DiarySubject
     let title: String
     let releaseYear: Int?
     let posterPath: String?
-    /// Snapshot used to put the title on Watched when a watch is logged.
-    let listItem: ListItemDraft
 
-    init(subject: DiarySubject, title: String, releaseYear: Int?, posterPath: String?, listItem: ListItemDraft) {
+    init(subject: DiarySubject, title: String, releaseYear: Int?, posterPath: String?) {
         self.subject = subject
         self.title = title
         self.releaseYear = releaseYear
         self.posterPath = posterPath
-        self.listItem = listItem
     }
 
     init(series: TVSeriesDetail) {
@@ -122,7 +123,6 @@ struct LogWatchTitle: Sendable, Equatable {
         title = series.name
         releaseYear = DisplayDate.year(series.firstAirDate).flatMap(Int.init)
         posterPath = series.posterPath
-        listItem = series.listItem()
     }
 
     init(movie: MovieDetail) {
@@ -130,6 +130,16 @@ struct LogWatchTitle: Sendable, Equatable {
         title = movie.title
         releaseYear = DisplayDate.year(movie.releaseDate).flatMap(Int.init)
         posterPath = movie.posterPath
-        listItem = movie.listItem()
+    }
+
+    /// One episode of a series, logged under the series' name and poster so the diary row
+    /// reads like the show's other rows.
+    init(episode: TVEpisodeRef, seriesID: Int, seriesName: String, posterPath: String?) {
+        self.init(
+            subject: .episode(seriesID: seriesID, season: episode.seasonNumber, episode: episode.episodeNumber),
+            title: seriesName,
+            releaseYear: nil,
+            posterPath: posterPath
+        )
     }
 }

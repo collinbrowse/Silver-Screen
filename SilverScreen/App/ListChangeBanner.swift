@@ -7,8 +7,8 @@ import SwiftUI
 
 /// Confirmation after adding or removing a title. Undo sits just above the bottom
 /// chrome; see `ListChangeBannerHost`.
-/// Watched / In Progress adds without a score also offer Add rating, which opens
-/// the combined rating and note sheet.
+/// A logged watch offers Rate & review, which opens the Log sheet on it. Other Watched /
+/// In Progress adds without a score offer Add rating.
 struct ListChangeBanner: View {
     @Bindable var notice: ListChangeNotice
 
@@ -24,12 +24,12 @@ struct ListChangeBanner: View {
                     Button {
                         Task { await notice.openRatingEditor() }
                     } label: {
-                        Text("Add rating")
+                        Text(notice.ratingActionTitle)
                             .font(DesignTypography.metadata.weight(.semibold))
                             .foregroundStyle(DesignTheme.accent)
                             .frame(minHeight: 44)
                     }
-                    .accessibilityLabel("Add rating")
+                    .accessibilityLabel(notice.ratingActionTitle)
                 }
                 if notice.canUndo {
                     Button("Undo") {

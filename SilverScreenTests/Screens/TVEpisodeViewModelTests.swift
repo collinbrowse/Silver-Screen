@@ -168,35 +168,6 @@ final class TVEpisodeViewModelTests: XCTestCase {
                     ).showsNotesFirst)
                 }
 
-                func test_saveUserAnnotation_whenPersistenceFails_keepsPreviousNote() async throws {
-                let store = InMemoryAnnotationsStore()
-                let annotations = AnnotationsRepository(store: store, logger: SilentLogger())
-                _ = try await annotations.save(
-                    score: 9,
-                    note: "Keep",
-                    for: .episode(seriesID: 1396, seasonNumber: 1, episodeNumber: 1)
-                )
-                let viewModel = TVEpisodeViewModel(
-                    seriesID: 1396,
-                    seasonNumber: 1,
-                    episodeNumber: 1,
-                    shows: TVRepository.test(client: FakeHTTPClient(stub: .success(TMDBFixtures.tvEpisodePilot))),
-                    annotations: annotations
-                    )
-                await viewModel.load()
-                viewModel.openAnnotationEditor()
-                await store.setSaveError(CocoaError(.fileWriteUnknown))
-
-                let saved = await viewModel.saveUserAnnotation(score: 7, note: "Nope")
-
-                XCTAssertEqual(saved, .failed)
-                XCTAssertNotNil(viewModel.annotationEditor)
-                guard case .loaded(let content, activity: .failed(.persistence)) = viewModel.state else {
-                return XCTFail("Expected loaded with persistence failure, got \(viewModel.state)")
-                }
-                XCTAssertEqual(content.userNote, "Keep")
-                }
-
                 func test_openImages_includesTheStillWhenTheGalleryOmitsIt() async {
                 let viewModel = TVEpisodeViewModel(
                     seriesID: 1396,

@@ -15,6 +15,7 @@ struct AppDependencies {
     let listChanges: ListChangeNotice
     let annotations: AnnotationsRepository
     let tvWatch: TVWatchRepository
+    let watches: WatchRepository
     let diary: DiaryContext
     let awards: AwardsRepository
     let imageLoader: ImageLoader
@@ -91,20 +92,31 @@ struct AppDependencies {
             logger: logger,
             analytics: analytics
         )
-        let diary = DiaryContext(
-            diary: DiaryRepository(store: LibraryDiaryStoreAdapter(library: libraryStore), logger: logger),
-            lists: lists,
-            logger: logger,
-            annotations: annotations,
-            shows: shows
-        )
-        // The eye on a movie logs a diary watch, so the toast needs the diary.
-        let listChanges = ListChangeNotice(annotations: annotations, diary: diary)
+        let diaryRepository = DiaryRepository(store: LibraryDiaryStoreAdapter(library: libraryStore), logger: logger)
         let tvWatch = TVWatchRepository(
             store: LibraryTVWatchStoreAdapter(library: libraryStore),
             lists: lists,
+            diary: diaryRepository,
+            annotations: annotations,
             logger: logger
         )
+        let watches = WatchRepository(
+            diary: diaryRepository,
+            lists: lists,
+            annotations: annotations,
+            tvWatch: tvWatch,
+            logger: logger
+        )
+        let diary = DiaryContext(
+            diary: diaryRepository,
+            lists: lists,
+            logger: logger,
+            annotations: annotations,
+            shows: shows,
+            watches: watches
+        )
+        // The toast reports what the eye did, and its Undo and Rate & review act on that watch.
+        let listChanges = ListChangeNotice(annotations: annotations, diary: diary, watches: watches)
         let imageLoader = ImageLoader(client: URLSessionHTTPClient.images(), logger: logger)
         let awards = AwardsRepository(
             client: httpClient,
@@ -134,6 +146,7 @@ struct AppDependencies {
             listChanges: listChanges,
             annotations: annotations,
             tvWatch: tvWatch,
+            watches: watches,
             diary: diary,
             awards: awards,
             imageLoader: imageLoader,

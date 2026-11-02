@@ -17,6 +17,7 @@ struct LibraryDetailView: View {
     let lists: ListsRepository
 
     @State private var editMode: EditMode = .inactive
+    @State private var pendingRemoval: WatchRemovalRequest?
 
     var body: some View {
         Group {
@@ -62,6 +63,7 @@ struct LibraryDetailView: View {
         .onAppear {
             Task { await viewModel.load() }
         }
+        .removeWatchesAlert($pendingRemoval)
         .onChange(of: notice.watchRevision) { _, _ in
             Task { await viewModel.load() }
         }
@@ -271,7 +273,48 @@ struct LibraryDetailView: View {
     }
 
     private func remove(_ entry: ListEntry) async {
-        guard let change = await viewModel.remove(entry) else { return }
-        notice.show(change, using: lists)
+        guard viewModel.removesWatches(entry) else {
+            guard let change = await viewModel.remove(entry) else { return }
+            notice.show(change, using: lists)
+            return
+        }
+        let count = await watchCount(of: entry)
+        guard count > 1 else {
+            await removeWatches(of: entry)
+            return
+        }
+        pendingRemoval = WatchRemovalRequest(
+            title: entry.title,
+            watchCount: count,
+            remove: { await removeWatches(of: entry) }
+        )
+    }
+
+    /// A movie's watches, or a show's completed episodes.
+    private func watchCount(of entry: ListEntry) async -> Int {
+        switch entry.kind {
+            case .tv:
+                return (try? await viewModel.tvWatch?.completedEpisodeCount(seriesID: entry.itemID)) ?? 1
+            case .movie, .person:
+                return (try? await notice.watchCount(of: .movie(entry.itemID))) ?? 1
+        }
+    }
+
+    /// Goes through the toast so Undo brings the watches back, not just the row.
+    private func removeWatches(of entry: ListEntry) async {
+        if entry.kind == .tv {
+            guard let tvWatch = viewModel.tvWatch,
+                  let outcome = await viewModel.removeShowWatches(entry) else { return }
+            notice.presentRemoved(outcome, using: lists, tvWatch: tvWatch)
+            return
+        }
+        do {
+            try await notice.removeMovie(entry.listItem(), using: lists)
+            await viewModel.load()
+        } catch is CancellationError {
+            return
+        } catch {
+            viewModel.noteRemovalFailed()
+        }
     }
 }

@@ -30,6 +30,8 @@ final class DiaryContext {
     let annotations: AnnotationsRepository?
     /// Season posters for a show's watch history. Nil in tests that skip it.
     let shows: TVRepository?
+    /// Deletes a watch and anything that depended on it. Nil in tests that skip it.
+    let watches: WatchRepository?
     private(set) var revision = 0
     /// Fetched season posters by series, so reopening a history skips the network.
     private var seasonPosterCache: [Int: [Int: String]] = [:]
@@ -39,13 +41,15 @@ final class DiaryContext {
         lists: ListsRepository,
         logger: any AppLogging,
         annotations: AnnotationsRepository? = nil,
-        shows: TVRepository? = nil
+        shows: TVRepository? = nil,
+        watches: WatchRepository? = nil
     ) {
         self.diary = diary
         self.lists = lists
         self.logger = logger
         self.annotations = annotations
         self.shows = shows
+        self.watches = watches
     }
 
     /// Poster path by season number for one show. A failed fetch (offline, say) returns
@@ -57,21 +61,17 @@ final class DiaryContext {
         return posters
     }
 
-    /// Saves `entry`. When it has a score and is now the title's newest watch, that score
-    /// also becomes the title's rating, the way Letterboxd's film rating follows your
-    /// latest log. Older watches keep their own scores and never change the title's.
-    /// An episode entry sets that episode's rating, never the series'; "newest" compares
-    /// only entries for the exact same subject.
-    /// An unrated watch leaves the title's rating alone. If only the rating copy fails,
-    /// it is logged and the saved entry stands.
+    /// Saves `entry`, then points the title's rating at its newest rated watch, the way
+    /// Letterboxd's film rating follows your latest log. Older watches keep their own
+    /// scores. An episode entry sets that episode's rating, never the series'.
+    /// If only the rating update fails, it is logged and the saved entry stands.
     @discardableResult
     func save(_ entry: DiaryEntry) async throws -> DiaryEntry {
         let saved = try await diary.save(entry)
-        guard let score = saved.score, let annotations else { return saved }
+        guard let annotations else { return saved }
         do {
             let sameSubject = try await diary.entries(for: saved.subject).filter { $0.subject == saved.subject }
-            guard sameSubject.first?.id == saved.id else { return saved }
-            _ = try await annotations.saveScore(score, for: Self.annotationKey(for: saved.subject))
+            try await annotations.syncRating(from: WatchRepository.ratedWatch(in: sameSubject), for: saved.subject)
         } catch is CancellationError {
             throw CancellationError()
         } catch {
@@ -80,14 +80,17 @@ final class DiaryContext {
         return saved
     }
 
-    func noteChange() {
-        revision += 1
+    /// Deletes one watch. A title's last watch takes it off Watched, and an episode's
+    /// takes it out of TV progress, because a title is watched exactly when it has a watch.
+    func deleteWatch(_ entry: DiaryEntry) async throws {
+        if let watches {
+            try await watches.deleteWatch(entry)
+        } else {
+            try await diary.delete(id: entry.id)
+        }
     }
 
-    private static func annotationKey(for subject: DiarySubject) -> AnnotationKey {
-        if let episode = subject.episode {
-            return .episode(seriesID: subject.tmdbID, seasonNumber: episode.seasonNumber, episodeNumber: episode.episodeNumber)
-        }
-        return subject.kind == .tv ? .series(subject.tmdbID) : .movie(subject.tmdbID)
+    func noteChange() {
+        revision += 1
     }
 }

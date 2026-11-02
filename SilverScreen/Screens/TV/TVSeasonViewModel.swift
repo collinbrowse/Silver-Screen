@@ -223,7 +223,7 @@ final class TVSeasonViewModel {
             return try await tvWatch.unmarkedEpisodeCount(
                 seriesID: seriesID,
                 seasonNumber: seasonNumber,
-                episodeCount: content.episodes.count
+                episodeNumbers: content.episodes.map(\.episodeNumber)
             )
         } catch {
             return 0
@@ -306,6 +306,7 @@ final class TVSeasonViewModel {
                 seriesID: seriesID,
                 seasonNumber: seasonNumber,
                 episodeCount: content.episodes.count,
+                episodeNumbers: content.episodes.map(\.episodeNumber),
                 episodeTitles: titles,
                 draft: seriesSnapshot.listItem(id: seriesID, title: seriesName),
                 seasons: catalogSeasons

@@ -391,7 +391,7 @@ final class SQLiteLibraryStoreTests: XCTestCase {
     }
 
     @MainActor
-    func test_listsRepository_toggleWatched_throughSQLiteAdapters() async throws {
+    func test_listsRepository_addThenRemoveWatched_throughSQLiteAdapters() async throws {
         let library = try makeStore()
         try await library.bootstrap()
         let lists = ListsRepository(
@@ -408,11 +408,11 @@ final class SQLiteLibraryStoreTests: XCTestCase {
             voteAverage: 8.4,
             popularity: 40
         )
-        let added = try await lists.toggleWatched(draft)
+        let added = try await lists.addToWatched(draft)
         XCTAssertEqual(added.action, .added)
         let snapshot = try await lists.snapshot()
         XCTAssertTrue(snapshot.entries.contains(where: { $0.itemKey == draft.itemKey }))
-        let removed = try await lists.toggleWatched(draft)
+        let removed = try await lists.remove(itemKey: draft.itemKey, listID: added.listID)
         XCTAssertEqual(removed.action, .removed)
     }
 

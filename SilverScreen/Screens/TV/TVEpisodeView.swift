@@ -21,6 +21,9 @@ struct TVEpisodeView: View {
     /// Told when a rewatch is logged here; its rating can become the episode's rating.
     @Environment(DiaryContext.self) private var diaryContext: DiaryContext?
     @State private var playingTrailer: MediaTrailer?
+    @State private var pendingRemoval: WatchRemovalRequest?
+    @State private var titleWatch: TitleWatchViewModel?
+    @State private var watchHistory: WatchHistoryCardViewModel?
     @State private var loadingTrailerID: String?
 
     @Namespace private var heroTransition
@@ -42,15 +45,49 @@ struct TVEpisodeView: View {
         )
     }
 
-    private var annotationEditorBinding: Binding<AnnotationEditorSession?> {
-        Binding(
-            get: { viewModel.annotationEditor },
-            set: { newValue in
-                if newValue == nil {
-                    viewModel.dismissAnnotationEditor()
-                }
-            }
+    private var episodeTitle: LogWatchTitle {
+        LogWatchTitle(
+            episode: TVEpisodeRef(seasonNumber: seasonNumber, episodeNumber: episodeNumber),
+            seriesID: seriesID,
+            seriesName: seriesName,
+            posterPath: viewModel.seriesSnapshot.posterPath
         )
+    }
+
+    /// Logs an unwatched episode. A watched one is removed, asking first when it has
+    /// more than one watch.
+    private func toggleEpisodeWatch() async {
+        guard viewModel.isEpisodeCompleted else {
+            await changeEpisodeWatch()
+            return
+        }
+        let subject = DiarySubject.episode(seriesID: seriesID, season: seasonNumber, episode: episodeNumber)
+        let count = (try? await notice.watchCount(of: subject)) ?? 1
+        guard count > 1 else {
+            await changeEpisodeWatch()
+            return
+        }
+        pendingRemoval = WatchRemovalRequest(
+            title: navigationTitle.isEmpty ? "this episode" : navigationTitle,
+            watchCount: count,
+            remove: { await changeEpisodeWatch() }
+        )
+    }
+
+    private func changeEpisodeWatch() async {
+        let wasCompleted = viewModel.isEpisodeCompleted
+        guard let outcome = await viewModel.toggleEpisodeWatched(seriesTitle: seriesName) else { return }
+        if wasCompleted {
+            notice.presentRemoved(outcome, using: lists, tvWatch: tvWatch)
+        } else {
+            notice.presentEpisodeLogged(
+                outcome,
+                ratingKey: .episode(seriesID: seriesID, seasonNumber: seasonNumber, episodeNumber: episodeNumber),
+                fallbackMessage: "Episode watched",
+                using: lists,
+                tvWatch: tvWatch
+            )
+        }
     }
 
     var body: some View {
@@ -84,35 +121,7 @@ struct TVEpisodeView: View {
                         accessibilityTitle: navigationTitle.isEmpty ? "episode" : navigationTitle,
                         idleColor: DesignTheme.textPrimary
                     ) {
-                        Task {
-                            let wasCompleted = viewModel.isEpisodeCompleted
-                            let ratingKey = AnnotationKey.episode(
-                                seriesID: seriesID,
-                                seasonNumber: seasonNumber,
-                                episodeNumber: episodeNumber
-                            )
-                            guard let outcome = await viewModel.toggleEpisodeWatched(
-                                seriesTitle: seriesName
-                            ) else { return }
-                            if wasCompleted {
-                                if let change = outcome.membershipChange, change.confirmation != nil {
-                                    notice.show(
-                                        change,
-                                        using: lists,
-                                        tvWatch: tvWatch,
-                                        watchUndo: outcome.watchUndo
-                                    )
-                                }
-                            } else {
-                                notice.presentWatch(
-                                    outcome,
-                                    ratingKey: ratingKey,
-                                    fallbackMessage: "Episode watched",
-                                    using: lists,
-                                    tvWatch: tvWatch
-                                )
-                            }
-                        }
+                        Task { await toggleEpisodeWatch() }
                     }
 
                     ListMembershipButton(
@@ -130,6 +139,19 @@ struct TVEpisodeView: View {
                 await viewModel.load()
             }
         }
+        .removeWatchesAlert($pendingRemoval)
+        .task(id: WatchHistoryLoadKey(subject: episodeTitle.subject, revision: diaryContext?.revision)) {
+            titleWatch = await TitleWatchViewModel.refreshed(
+                titleWatch,
+                title: episodeTitle,
+                context: diaryContext
+            )
+            watchHistory = await WatchHistoryCardViewModel.refreshed(
+                watchHistory,
+                subject: episodeTitle.subject,
+                context: diaryContext
+            )
+        }
         .onChange(of: notice.ratingKey) { _, key in
             if key == nil {
                 Task { await viewModel.reloadPersonalFromStore() }
@@ -142,16 +164,6 @@ struct TVEpisodeView: View {
             Task { await viewModel.reloadPersonalFromStore() }
         }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
-        .sheet(item: annotationEditorBinding) { session in
-            AnnotationEditorSheet(
-                title: session.title,
-                score: session.score,
-                note: session.note,
-                canClear: session.canClear,
-                onSave: { await viewModel.saveUserAnnotation(score: $0, note: $1) },
-                onClear: { await viewModel.clearUserAnnotation() }
-            )
-        }
         .fullScreenCover(item: fullscreenBinding) { selection in
             FullscreenImageViewer(
                 images: selection.images,
@@ -199,6 +211,7 @@ struct TVEpisodeView: View {
         var shown: Set<TVEpisodeLayout.Section> = [
             .hero(.all), .hero(.backdrop), .hero(.identity), .ratingAndOverview,
         ]
+        if watchHistory?.hasHistory == true { shown.insert(.watchHistory) }
         if !viewModel.awardRows.isEmpty { shown.insert(.awards) }
         if !content.otherEpisodes.isEmpty { shown.insert(.otherEpisodes) }
         if !content.cast.isEmpty || !content.guestStars.isEmpty || !content.directorsAndWriters.isEmpty {
@@ -220,30 +233,29 @@ struct TVEpisodeView: View {
                 episodeHero(content, images: content.heroImages, layout: layout, part: part)
             case .ratingAndOverview:
                 VStack(alignment: .leading, spacing: DesignSpacing.md) {
-                    TMDBRatingCard(
+                    TitleWatchSection(
+                        viewModel: titleWatch,
                         formattedRating: content.formattedRating,
-                        accessibilityLabel: content.ratingAccessibilityLabel,
-                        formattedUserScore: content.formattedUserScore,
-                        userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
-                        onEdit: { viewModel.openAnnotationEditor() }
+                        ratingAccessibilityLabel: content.ratingAccessibilityLabel
                     )
-                    // The first viewing is the check-off; later ones are diary rewatches.
-                    if viewModel.isEpisodeCompleted {
-                        EpisodeRewatchCard(
-                            title: LogWatchTitle(
-                                episode: TVEpisodeRef(seasonNumber: seasonNumber, episodeNumber: episodeNumber),
-                                seriesID: seriesID,
-                                seriesName: seriesName,
-                                posterPath: viewModel.seriesSnapshot.posterPath
-                            )
-                        )
-                    }
                     MediaDescriptionSection(
                         overview: content.overview,
-                        note: content.userNote,
-                        notedOn: content.formattedNotedOn,
-                        onEdit: { viewModel.openAnnotationEditor() },
+                        note: titleWatch?.reviewWatch?.review ?? content.userNote,
+                        notedOn: titleWatch?.formattedReviewDay ?? content.formattedNotedOn,
+                        onEdit: { titleWatch?.openReview() },
                         scrollTo: scrollTo
+                    )
+                }
+            case .watchHistory:
+                if let watchHistory {
+                    WatchHistoryCard(
+                        viewModel: watchHistory,
+                        route: .titleHistory(
+                            kind: .tv,
+                            id: seriesID,
+                            title: content.title,
+                            episode: TVEpisodeRef(seasonNumber: seasonNumber, episodeNumber: episodeNumber)
+                        )
                     )
                 }
             case .awards:
@@ -371,6 +383,7 @@ enum TVEpisodeLayout {
     enum Section: DetailPageSection {
         case hero(DetailHeroPart)
         case ratingAndOverview
+        case watchHistory
         case awards
         /// The season's other episodes.
         case otherEpisodes
@@ -382,7 +395,7 @@ enum TVEpisodeLayout {
             switch self {
                 case .hero, .otherEpisodes, .credits:
                     true
-                case .ratingAndOverview, .awards, .attribution:
+                case .ratingAndOverview, .watchHistory, .awards, .attribution:
                     false
             }
         }
@@ -399,14 +412,14 @@ enum TVEpisodeLayout {
             case .stacked, .columns:
                 DetailPagePlan<Section>(
                     top: [.hero(.all)],
-                    main: [.ratingAndOverview],
+                    main: [.ratingAndOverview, .watchHistory],
                     side: [.awards],
                     below: [.otherEpisodes, .credits, .attribution]
                 )
             case .panes:
                 DetailPagePlan<Section>(
                     top: [.hero(.backdrop)],
-                    main: [.hero(.identity), .ratingAndOverview],
+                    main: [.hero(.identity), .ratingAndOverview, .watchHistory],
                     side: [.otherEpisodes, .awards, .credits],
                     below: [.attribution]
                 )

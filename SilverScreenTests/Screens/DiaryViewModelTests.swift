@@ -175,7 +175,7 @@ final class DiaryViewModelTests: XCTestCase {
     }
 
     func test_load_groupsEpisodesByShowAndDay() async {
-        let store = InMemoryDiaryStore(episodeWatches: [
+        let store = InMemoryDiaryStore(entries: [
             episodeWatch(series: 7, season: 2, episode: 3, at: "2026-10-16T20:00:00.000Z"),
             episodeWatch(series: 7, season: 2, episode: 4, at: "2026-10-16T21:00:00.000Z"),
             episodeWatch(series: 7, season: 2, episode: 5, at: "2026-10-17T20:00:00.000Z"),
@@ -194,8 +194,7 @@ final class DiaryViewModelTests: XCTestCase {
     func test_load_mergesEpisodesAndEntriesByDayNewestFirst() async {
         let entry = DiaryFixtures.entry(title: "Movie", watchedOn: DiaryDay(year: 2026, month: 10, day: 15))
         let store = InMemoryDiaryStore(
-            entries: [entry],
-            episodeWatches: [episodeWatch(series: 7, season: 1, episode: 1, at: "2026-10-16T20:00:00.000Z")]
+            entries: [entry, episodeWatch(series: 7, season: 1, episode: 1, at: "2026-10-16T20:00:00.000Z")]
         )
         let viewModel = makeViewModel(store: store)
 
@@ -207,7 +206,7 @@ final class DiaryViewModelTests: XCTestCase {
     }
 
     func test_load_onlyEpisodes_isLoadedNotEmpty() async {
-        let store = InMemoryDiaryStore(episodeWatches: [
+        let store = InMemoryDiaryStore(entries: [
             episodeWatch(series: 7, season: 1, episode: 1, at: "2026-10-16T20:00:00.000Z"),
         ])
         let viewModel = makeViewModel(store: store)
@@ -217,18 +216,8 @@ final class DiaryViewModelTests: XCTestCase {
         XCTAssertEqual(episodeGroups(viewModel).count, 1)
     }
 
-    func test_load_whenEpisodeHistoryFails_stillShowsEntries() async {
-        let store = InMemoryDiaryStore(entries: [DiaryFixtures.entry(title: "Kept")])
-        await store.setEpisodeLoadError(CocoaError(.fileReadCorruptFile))
-        let viewModel = makeViewModel(store: store)
-
-        await viewModel.load()
-
-        XCTAssertEqual(loadedMonths(viewModel).flatMap(\.rows).map(\.title), ["Kept"])
-    }
-
     func test_route_episodeGroup_opensSeries() async throws {
-        let store = InMemoryDiaryStore(episodeWatches: [
+        let store = InMemoryDiaryStore(entries: [
             episodeWatch(series: 7, season: 1, episode: 1, at: "2026-10-16T20:00:00.000Z"),
         ])
         let viewModel = makeViewModel(store: store)
@@ -244,8 +233,8 @@ final class DiaryViewModelTests: XCTestCase {
             entries: [
                 DiaryFixtures.entry(subject: .movie(550), title: "Fight Club"),
                 DiaryFixtures.entry(subject: .movie(1), title: "Other"),
-            ],
-            episodeWatches: [episodeWatch(series: 550, season: 1, episode: 1, at: "2026-10-16T20:00:00.000Z")]
+                episodeWatch(series: 550, season: 1, episode: 1, at: "2026-10-16T20:00:00.000Z"),
+            ]
         )
         let viewModel = makeViewModel(store: store, scope: DiaryScope(subject: .movie(550), title: "Fight Club"))
 
@@ -259,8 +248,8 @@ final class DiaryViewModelTests: XCTestCase {
 
     func test_load_scopedToSeries_includesItsEpisodesOnly() async {
         let store = InMemoryDiaryStore(
-            entries: [DiaryFixtures.entry(subject: .series(7), title: "Show 7")],
-            episodeWatches: [
+            entries: [
+                DiaryFixtures.entry(subject: .series(7), title: "Show 7"),
                 episodeWatch(series: 7, season: 1, episode: 1, at: "2026-10-16T20:00:00.000Z"),
                 episodeWatch(series: 8, season: 1, episode: 1, at: "2026-10-16T20:00:00.000Z"),
             ]
@@ -310,7 +299,41 @@ final class DiaryViewModelTests: XCTestCase {
         XCTAssertEqual(session.draft.watchedOn, Date(timeIntervalSince1970: 1_792_000_000))
     }
 
-    func test_saveRewatch_addsSecondEntryAndPutsMovieOnWatched() async throws {
+    func test_load_titleWithOnlyAnUndatedWatch_isLoadedWithEarlierRow() async throws {
+        var undated = DiaryFixtures.entry(subject: .movie(550))
+        undated.isDateKnown = false
+        let viewModel = makeViewModel(
+            store: InMemoryDiaryStore(entries: [undated]),
+            scope: DiaryScope(subject: .movie(550), title: "Fight Club")
+        )
+
+        await viewModel.load()
+
+        XCTAssertEqual(viewModel.earlierRows.map(\.id), [undated.id])
+        XCTAssertEqual(viewModel.state, .loaded([]))
+    }
+
+    func test_load_fullDiary_hidesUndatedWatches() async {
+        var undated = DiaryFixtures.entry(subject: .movie(550))
+        undated.isDateKnown = false
+        let viewModel = makeViewModel(store: InMemoryDiaryStore(entries: [undated]))
+
+        await viewModel.load()
+
+        XCTAssertTrue(viewModel.earlierRows.isEmpty)
+        XCTAssertEqual(viewModel.state, .empty)
+    }
+
+    func test_session_dontRemember_savesAnUndatedWatch() {
+        let entry = DiaryFixtures.entry()
+        let session = DiaryEditorSession.editing(entry)
+        var draft = session.draft
+        draft.isDateKnown = false
+
+        XCTAssertFalse(session.entry(from: draft, now: Date()).isDateKnown)
+    }
+
+    func test_saveRewatch_addsSecondEntry() async throws {
         let earlier = DiaryFixtures.entry(subject: .movie(550), title: "Fight Club")
         let store = InMemoryDiaryStore(entries: [earlier])
         let lists = ListsRepository.empty()
@@ -329,9 +352,6 @@ final class DiaryViewModelTests: XCTestCase {
         XCTAssertEqual(stored.count, 2)
         XCTAssertTrue(stored.contains { $0.id == earlier.id })
         XCTAssertTrue(stored.contains { $0.id != earlier.id && $0.score == 7 })
-        let snapshot = try await lists.snapshot()
-        let watchedID = try XCTUnwrap(snapshot.list(.watched)?.id)
-        XCTAssertTrue(snapshot.entries.contains { $0.listID == watchedID && $0.itemKey == "movie-550" })
         XCTAssertEqual(loadedMonths(viewModel).flatMap(\.rows).count, 2)
     }
 
@@ -381,14 +401,8 @@ final class DiaryViewModelTests: XCTestCase {
 
     // MARK: - Helpers
 
-    private func episodeWatch(series: Int, season: Int, episode: Int, at iso: String) -> EpisodeWatch {
-        EpisodeWatch(
-            seriesID: series,
-            seriesTitle: "Show \(series)",
-            posterPath: nil,
-            episode: TVEpisodeRef(seasonNumber: season, episodeNumber: episode),
-            completedAt: LibrarySQLDate.decode(iso)!
-        )
+    private func episodeWatch(series: Int, season: Int, episode: Int, at iso: String) -> DiaryEntry {
+        DiaryFixtures.episodeWatch(series: series, season: season, episode: episode, at: LibrarySQLDate.decode(iso)!)
     }
 
     private func episodeGroups(_ viewModel: DiaryViewModel) -> [DiaryEpisodeGroup] {
@@ -444,9 +458,9 @@ final class DiaryContextRatingTests: XCTestCase {
         XCTAssertEqual(rating?.score, 7.5)
     }
 
-    func test_save_ratedOlderWatch_leavesTitleRating() async throws {
+    func test_save_ratedOlderWatch_leavesRatingOnNewerRatedWatch() async throws {
         let (context, annotations) = makeContext(entries: [
-            DiaryFixtures.entry(subject: .movie(550), watchedOn: DiaryDay(year: 2026, month: 10, day: 1)),
+            DiaryFixtures.entry(subject: .movie(550), watchedOn: DiaryDay(year: 2026, month: 10, day: 1), score: 9),
         ])
         _ = try await annotations.saveScore(9, for: .movie(550))
 
@@ -456,14 +470,39 @@ final class DiaryContextRatingTests: XCTestCase {
         XCTAssertEqual(rating?.score, 9)
     }
 
-    func test_save_unratedNewestWatch_leavesTitleRating() async throws {
-        let (context, annotations) = makeContext(entries: [])
+    func test_save_ratedOlderWatch_withNoNewerRating_becomesTheRating() async throws {
+        let (context, annotations) = makeContext(entries: [
+            DiaryFixtures.entry(subject: .movie(550), watchedOn: DiaryDay(year: 2026, month: 10, day: 1)),
+        ])
+
+        try await context.save(DiaryFixtures.entry(subject: .movie(550), watchedOn: DiaryDay(year: 2024, month: 5, day: 1), score: 4))
+
+        let rating = try await annotations.annotation(for: .movie(550))
+        XCTAssertEqual(rating?.score, 4)
+    }
+
+    func test_save_unratedNewestWatch_keepsOlderRating() async throws {
+        let (context, annotations) = makeContext(entries: [
+            DiaryFixtures.entry(subject: .movie(550), watchedOn: DiaryDay(year: 2024, month: 5, day: 1), score: 8),
+        ])
         _ = try await annotations.saveScore(8, for: .movie(550))
 
-        try await context.save(DiaryFixtures.entry(subject: .movie(550), score: nil))
+        try await context.save(DiaryFixtures.entry(subject: .movie(550), watchedOn: DiaryDay(year: 2026, month: 10, day: 1)))
 
         let rating = try await annotations.annotation(for: .movie(550))
         XCTAssertEqual(rating?.score, 8)
+    }
+
+    func test_save_clearingTheOnlyRating_clearsTheTitleRating() async throws {
+        var entry = DiaryFixtures.entry(subject: .movie(550), score: 8)
+        let (context, annotations) = makeContext(entries: [entry])
+        _ = try await annotations.saveScore(8, for: .movie(550))
+
+        entry.score = nil
+        try await context.save(entry)
+
+        let rating = try await annotations.annotation(for: .movie(550))
+        XCTAssertNil(rating)
     }
 
     func test_save_keepsTitleNote() async throws {
@@ -477,13 +516,14 @@ final class DiaryContextRatingTests: XCTestCase {
         XCTAssertEqual(rating?.note, "Rewatch with friends")
     }
 
-    func test_save_ratedShowWatch_setsSeriesRating() async throws {
+    func test_save_ratedSeriesEntry_leavesTheVerdictAlone() async throws {
         let (context, annotations) = makeContext(entries: [])
+        _ = try await annotations.saveScore(6, for: .series(42))
 
         try await context.save(DiaryFixtures.entry(subject: .series(42), score: 9))
 
-        let rating = try await annotations.annotation(for: .series(42))
-        XCTAssertEqual(rating?.score, 9)
+        let verdict = try await annotations.annotation(for: .series(42))
+        XCTAssertEqual(verdict?.score, 6)
     }
 
     func test_save_ratedEpisodeRewatch_setsEpisodeRatingNotSeries() async throws {
@@ -496,17 +536,6 @@ final class DiaryContextRatingTests: XCTestCase {
         let series = try await annotations.annotation(for: .series(42))
         XCTAssertEqual(episode?.score, 9.5)
         XCTAssertEqual(series?.score, 6)
-    }
-
-    func test_save_ratedSeriesEntry_isNewestEvenWithANewerEpisodeEntry() async throws {
-        let (context, annotations) = makeContext(entries: [
-            DiaryFixtures.entry(subject: .episode(seriesID: 42, season: 1, episode: 1), watchedOn: DiaryDay(year: 2026, month: 12, day: 1)),
-        ])
-
-        try await context.save(DiaryFixtures.entry(subject: .series(42), score: 7))
-
-        let series = try await annotations.annotation(for: .series(42))
-        XCTAssertEqual(series?.score, 7)
     }
 
     private func makeContext(entries: [DiaryEntry]) -> (DiaryContext, AnnotationsRepository) {
@@ -527,9 +556,9 @@ final class DiarySeasonPosterTests: XCTestCase {
     private let scope = DiaryScope(subject: .series(1396), title: "Breaking Bad")
 
     func test_load_showHistory_usesSeasonPosterForEpisodeRows() async throws {
-        let entry = DiaryFixtures.entry(subject: .episode(seriesID: 1396, season: 2, episode: 3), title: "Breaking Bad")
+        let entry = DiaryFixtures.entry(subject: .episode(seriesID: 1396, season: 2, episode: 3), title: "Breaking Bad", score: 8)
         let viewModel = makeViewModel(
-            store: InMemoryDiaryStore(entries: [entry], episodeWatches: [watch(season: 1)]),
+            store: InMemoryDiaryStore(entries: [entry, watch(season: 1)]),
             client: FakeHTTPClient(stub: .success(TMDBFixtures.tvSeriesBreakingBad))
         )
 
@@ -544,7 +573,7 @@ final class DiarySeasonPosterTests: XCTestCase {
 
     func test_load_seasonWithNoPoster_fallsBackToSeriesPoster() async throws {
         let viewModel = makeViewModel(
-            store: InMemoryDiaryStore(episodeWatches: [watch(season: 9)]),
+            store: InMemoryDiaryStore(entries: [watch(season: 9)]),
             client: FakeHTTPClient(stub: .success(TMDBFixtures.tvSeriesBreakingBad))
         )
 
@@ -555,7 +584,7 @@ final class DiarySeasonPosterTests: XCTestCase {
 
     func test_load_postersFailToLoad_keepsRowsWithSeriesPoster() async throws {
         let viewModel = makeViewModel(
-            store: InMemoryDiaryStore(episodeWatches: [watch(season: 1)]),
+            store: InMemoryDiaryStore(entries: [watch(season: 1)]),
             client: FakeHTTPClient(result: .failure(URLError(.notConnectedToInternet)))
         )
 
@@ -575,13 +604,14 @@ final class DiarySeasonPosterTests: XCTestCase {
         XCTAssertFalse(DiaryViewModel(context: context, scope: DiaryScope(subject: .movie(1), title: "Heat")).showsSeasonPosters)
     }
 
-    private func watch(season: Int) -> EpisodeWatch {
-        EpisodeWatch(
-            seriesID: 1396,
-            seriesTitle: "Breaking Bad",
-            posterPath: "/series.jpg",
-            episode: TVEpisodeRef(seasonNumber: season, episodeNumber: 1),
-            completedAt: Date(timeIntervalSince1970: 1_792_000_000)
+    private func watch(season: Int) -> DiaryEntry {
+        DiaryFixtures.episodeWatch(
+            series: 1396,
+            season: season,
+            episode: 1,
+            at: Date(timeIntervalSince1970: 1_792_000_000),
+            title: "Breaking Bad",
+            posterPath: "/series.jpg"
         )
     }
 
@@ -612,73 +642,114 @@ final class DiarySeasonPosterTests: XCTestCase {
     }
 }
 
-/// Episode rewatches: their own diary rows, badged Rewatch after the episode's check-off.
-final class DiaryEpisodeRewatchContentTests: XCTestCase {
+/// Which watches of an episode get their own diary row, and which are badged Rewatch.
+final class DiaryEpisodeRowTests: XCTestCase {
     private let utc = DiaryFixtures.utcCalendar
+    private let locale = Locale(identifier: "en_US")
+    private let oct1 = LibrarySQLDate.decode("2026-10-01T20:00:00.000Z")!
+    private let oct16 = LibrarySQLDate.decode("2026-10-16T18:00:00.000Z")!
 
-    func test_rewatchIDs_episodeCheckedOffEarlier_isRewatch() {
-        let entry = DiaryFixtures.entry(
-            subject: .episode(seriesID: 42, season: 2, episode: 3),
-            watchedOn: DiaryDay(year: 2026, month: 10, day: 20)
-        )
-        let checkOff = episodeWatch(series: 42, season: 2, episode: 3, at: "2026-10-01T20:00:00.000Z")
+    func test_rewatchIDs_secondWatchOfAnEpisode_isRewatch() {
+        let first = DiaryFixtures.episodeWatch(series: 42, season: 2, episode: 3, at: oct1)
+        let second = DiaryFixtures.episodeWatch(series: 42, season: 2, episode: 3, at: oct16)
 
-        let ids = DiaryContent.rewatchIDs(in: [entry], episodes: [checkOff], calendar: utc)
-
-        XCTAssertEqual(ids, [entry.id])
+        XCTAssertEqual(DiaryContent.rewatchIDs(in: [first, second]), [second.id])
     }
 
-    func test_rewatchIDs_episodeNeverCheckedOff_firstEntryIsNotRewatch() {
-        let entry = DiaryFixtures.entry(subject: .episode(seriesID: 42, season: 2, episode: 3))
-        let otherEpisode = episodeWatch(series: 42, season: 2, episode: 4, at: "2026-10-01T20:00:00.000Z")
+    func test_rewatchIDs_differentEpisodes_areNotRewatches() {
+        let first = DiaryFixtures.episodeWatch(series: 42, season: 2, episode: 3, at: oct1)
+        let other = DiaryFixtures.episodeWatch(series: 42, season: 2, episode: 4, at: oct16)
 
-        let ids = DiaryContent.rewatchIDs(in: [entry], episodes: [otherEpisode], calendar: utc)
-
-        XCTAssertTrue(ids.isEmpty)
+        XCTAssertTrue(DiaryContent.rewatchIDs(in: [first, other]).isEmpty)
     }
 
-    func test_rewatchIDs_episodeCheckedOffLater_firstEntryIsNotRewatch() {
-        let entry = DiaryFixtures.entry(
-            subject: .episode(seriesID: 42, season: 2, episode: 3),
-            watchedOn: DiaryDay(year: 2026, month: 10, day: 1)
-        )
-        let checkOff = episodeWatch(series: 42, season: 2, episode: 3, at: "2026-10-20T20:00:00.000Z")
+    func test_rewatchIDs_deletingFirstWatch_clearsTheBadge() {
+        let second = DiaryFixtures.episodeWatch(series: 42, season: 2, episode: 3, at: oct16)
 
-        let ids = DiaryContent.rewatchIDs(in: [entry], episodes: [checkOff], calendar: utc)
-
-        XCTAssertTrue(ids.isEmpty)
+        XCTAssertTrue(DiaryContent.rewatchIDs(in: [second]).isEmpty)
     }
 
-    func test_months_episodeEntry_getsItsOwnRowBesideThatDaysEpisodesRow() {
-        let entry = DiaryFixtures.entry(
-            subject: .episode(seriesID: 42, season: 2, episode: 3),
-            title: "Severance",
-            watchedOn: DiaryDay(year: 2026, month: 10, day: 16),
-            score: 9
-        )
-        let checkOff = episodeWatch(series: 42, season: 2, episode: 3, at: "2026-10-16T18:00:00.000Z")
+    func test_rewatchIDs_undatedWatch_countsAsTheFirst() {
+        var undated = DiaryFixtures.episodeWatch(series: 42, episode: 1, at: oct16)
+        undated.isDateKnown = false
+        let dated = DiaryFixtures.episodeWatch(series: 42, episode: 1, at: oct1)
 
-        let months = DiaryContent.months(from: [entry], episodes: [checkOff], calendar: utc, locale: Locale(identifier: "en_US"))
+        XCTAssertEqual(DiaryContent.rewatchIDs(in: [undated, dated]), [dated.id])
+    }
+
+    func test_months_ratedEpisode_getsItsOwnRowBesidePlainEpisodes() {
+        var rated = DiaryFixtures.episodeWatch(series: 42, season: 2, episode: 3, at: oct16, title: "Severance")
+        rated.score = 9
+        let plain = DiaryFixtures.episodeWatch(series: 42, season: 2, episode: 4, at: oct16)
+
+        let months = DiaryContent.months(from: [rated, plain], calendar: utc, locale: locale)
 
         let rows = months.flatMap(\.rows)
-        XCTAssertEqual(rows.count, 1)
-        XCTAssertEqual(rows.first?.title, "Severance")
+        XCTAssertEqual(rows.map(\.title), ["Severance"])
         XCTAssertEqual(rows.first?.episodeText, "S2 · E3")
-        XCTAssertEqual(rows.first?.isRewatch, true)
+        XCTAssertEqual(rows.first?.isRewatch, false)
         XCTAssertEqual(months.flatMap(\.items).count, 2)
         XCTAssertTrue(rows.first?.accessibilityLabel.contains("Season 2, episode 3") == true)
     }
 
-    private func episodeWatch(series: Int, season: Int, episode: Int, at iso: String) -> EpisodeWatch {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return EpisodeWatch(
-            seriesID: series,
-            seriesTitle: "Show \(series)",
-            posterPath: nil,
-            episode: TVEpisodeRef(seasonNumber: season, episodeNumber: episode),
-            completedAt: formatter.date(from: iso)!
-        )
+    func test_months_reviewedEpisode_getsItsOwnRow() {
+        var reviewed = DiaryFixtures.episodeWatch(series: 42, episode: 1, at: oct16)
+        reviewed.review = "Tense"
+
+        let months = DiaryContent.months(from: [reviewed], calendar: utc, locale: locale)
+
+        XCTAssertEqual(months.flatMap(\.rows).count, 1)
+    }
+
+    func test_months_episodeRewatch_getsItsOwnRow() {
+        let first = DiaryFixtures.episodeWatch(series: 42, episode: 1, at: oct1)
+        let second = DiaryFixtures.episodeWatch(series: 42, episode: 1, at: oct16)
+
+        let months = DiaryContent.months(from: [first, second], calendar: utc, locale: locale)
+
+        XCTAssertEqual(months.flatMap(\.rows).map(\.id), [second.id])
+    }
+
+    func test_months_groupingOff_givesEveryEpisodeWatchARow() {
+        let first = DiaryFixtures.episodeWatch(series: 42, episode: 1, at: oct1)
+
+        let months = DiaryContent.months(from: [first], groupsEpisodes: false, calendar: utc, locale: locale)
+
+        XCTAssertEqual(months.flatMap(\.rows).map(\.id), [first.id])
+    }
+
+    func test_months_seasonRewatch_sharesOneRowBadgedRewatch() {
+        let first = (1...2).map { DiaryFixtures.episodeWatch(series: 42, episode: $0, at: oct1) }
+        let rewatch = (1...2).map { DiaryFixtures.episodeWatch(series: 42, episode: $0, at: oct16) }
+
+        let months = DiaryContent.months(from: first + rewatch, calendar: utc, locale: locale)
+
+        let groups = months.flatMap(\.items).compactMap { item -> DiaryEpisodeGroup? in
+            guard case .episodes(let group) = item else { return nil }
+            return group
+        }
+        XCTAssertEqual(groups.map(\.episodesText), ["S1 · E1–E2 · Rewatch", "S1 · E1–E2"])
+        XCTAssertEqual(groups.map(\.isRewatch), [true, false])
+        XCTAssertTrue(months.flatMap(\.rows).isEmpty)
+    }
+
+    func test_earlierRows_listsOnlyUndatedWatches() {
+        var undated = DiaryFixtures.entry(subject: .movie(1), title: "Hope")
+        undated.isDateKnown = false
+        let dated = DiaryFixtures.entry(subject: .movie(1), title: "Hope")
+
+        let rows = DiaryContent.earlierRows(from: [undated, dated], calendar: utc, locale: locale)
+
+        XCTAssertEqual(rows.map(\.id), [undated.id])
+        XCTAssertEqual(rows.first?.dayNumber, "–")
+        XCTAssertTrue(rows.first?.accessibilityLabel.contains("date unknown") == true)
+    }
+
+    func test_months_undatedWatch_staysOffTheTimeline() {
+        var undated = DiaryFixtures.entry(subject: .movie(1))
+        undated.isDateKnown = false
+
+        XCTAssertTrue(DiaryContent.months(from: [undated], calendar: utc, locale: locale).isEmpty)
     }
 }
 

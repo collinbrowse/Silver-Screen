@@ -352,13 +352,24 @@ final class ListChangeNoticeTests: XCTestCase {
         XCTAssertTrue(after.entries.contains { $0.listID == inProgress.id && $0.itemID == 12 })
     }
 
-    // MARK: - Movie eye logs a diary watch
+    func test_ratingActionTitle_followsWhatIsBeingRated() async throws {
+        let (notice, lists, _, _) = makeMovieWatchNotice()
 
-    func test_showMovieWatch_marking_logsOneUnratedWatchTodayAndOffersRating() async throws {
+        notice.offerRating(for: .series(1), message: "Watched", using: lists)
+        await waitForRatingKey(notice)
+        XCTAssertEqual(notice.ratingActionTitle, "Rate show")
+
+        notice.offerRating(for: .season(seriesID: 1, seasonNumber: 2), message: "Watched", using: lists)
+        await waitForRatingKey(notice)
+        XCTAssertEqual(notice.ratingActionTitle, "Rate season")
+    }
+
+    // MARK: - Movie eye
+
+    func test_logMovie_logsOneUnratedWatchAndOffersRateAndReview() async throws {
         let (notice, lists, store, context) = makeMovieWatchNotice()
-        let change = try await lists.toggleWatched(heat)
 
-        await notice.showMovieWatch(change, draft: heat, using: lists)
+        try await notice.logMovie(heat, using: lists)
 
         let stored = await store.entries
         XCTAssertEqual(stored.count, 1)
@@ -367,14 +378,35 @@ final class ListChangeNoticeTests: XCTestCase {
         XCTAssertEqual(stored.first?.watchedOn, DiaryDay(Date()))
         XCTAssertNil(stored.first?.score)
         XCTAssertEqual(notice.loggedWatch?.id, stored.first?.id)
+        XCTAssertEqual(notice.message, "Watched")
+        XCTAssertEqual(notice.ratingActionTitle, "Rate & review")
         XCTAssertTrue(notice.offersRating)
+        XCTAssertTrue(notice.canUndo)
         XCTAssertEqual(context.revision, 1)
     }
 
-    func test_addRating_afterMovieWatch_editsThatSameEntry() async throws {
+    func test_logMovie_bumpsWatchRevisionSoOpenScreensReload() async throws {
+        let (notice, lists, _, _) = makeMovieWatchNotice()
+        let prior = notice.watchRevision
+
+        try await notice.logMovie(heat, using: lists)
+
+        XCTAssertGreaterThan(notice.watchRevision, prior)
+    }
+
+    func test_offerRating_afterAnEpisodeMark_bumpsWatchRevision() {
+        let lists = ListsRepository(store: InMemoryListsStore(), logger: SilentLogger())
+        let notice = ListChangeNotice()
+        let prior = notice.watchRevision
+
+        notice.offerRating(for: .season(seriesID: 9, seasonNumber: 1), message: "Season watched", using: lists)
+
+        XCTAssertGreaterThan(notice.watchRevision, prior)
+    }
+
+    func test_rateAndReview_afterMovieWatch_editsThatSameEntry() async throws {
         let (notice, lists, store, _) = makeMovieWatchNotice()
-        let change = try await lists.toggleWatched(heat)
-        await notice.showMovieWatch(change, draft: heat, using: lists)
+        try await notice.logMovie(heat, using: lists)
         let loggedID = try XCTUnwrap(notice.loggedWatch?.id)
 
         await notice.openRatingEditor()
@@ -396,22 +428,9 @@ final class ListChangeNoticeTests: XCTestCase {
         XCTAssertEqual(stored.first?.review, "Still great.")
     }
 
-    func test_showMovieWatch_alreadyLoggedToday_reusesEntry() async throws {
-        let existing = DiaryFixtures.entry(subject: .movie(15), title: "Heat", watchedOn: DiaryDay(Date()))
-        let (notice, lists, store, _) = makeMovieWatchNotice(entries: [existing])
-        let change = try await lists.toggleWatched(heat)
-
-        await notice.showMovieWatch(change, draft: heat, using: lists)
-
-        let stored = await store.entries
-        XCTAssertEqual(stored.map(\.id), [existing.id])
-        XCTAssertEqual(notice.loggedWatch?.id, existing.id)
-    }
-
-    func test_undo_afterMovieWatch_removesTheLoggedWatch() async throws {
+    func test_undo_afterLogMovie_removesTheWatchAndTheWatchedRow() async throws {
         let (notice, lists, store, _) = makeMovieWatchNotice()
-        let change = try await lists.toggleWatched(heat)
-        await notice.showMovieWatch(change, draft: heat, using: lists)
+        try await notice.logMovie(heat, using: lists)
 
         await notice.undo()
 
@@ -421,35 +440,66 @@ final class ListChangeNoticeTests: XCTestCase {
         XCTAssertFalse(snapshot.entries.contains { $0.itemKey == heat.itemKey })
     }
 
-    func test_undo_afterReusedWatch_keepsTheEarlierEntry() async throws {
-        let existing = DiaryFixtures.entry(subject: .movie(15), title: "Heat", watchedOn: DiaryDay(Date()))
-        let (notice, lists, store, _) = makeMovieWatchNotice(entries: [existing])
-        let change = try await lists.toggleWatched(heat)
-        await notice.showMovieWatch(change, draft: heat, using: lists)
+    func test_removeMovie_deletesEveryWatchAndShowsRemoved() async throws {
+        let (notice, lists, store, _) = makeMovieWatchNotice()
+        try await notice.logMovie(heat, using: lists)
 
+        try await notice.removeMovie(heat, using: lists)
+
+        let stored = await store.entries
+        XCTAssertTrue(stored.isEmpty)
+        let snapshot = try await lists.snapshot()
+        XCTAssertFalse(snapshot.entries.contains { $0.itemKey == heat.itemKey })
+        XCTAssertEqual(notice.message, "Removed")
+        XCTAssertFalse(notice.offersRating)
+        XCTAssertTrue(notice.canUndo)
+    }
+
+    func test_undo_afterRemoveMovie_bringsBackTheWatchesWithTheirIDs() async throws {
+        let (notice, lists, store, _) = makeMovieWatchNotice()
+        try await notice.logMovie(heat, using: lists)
+        let logged = await store.entries
+
+        try await notice.removeMovie(heat, using: lists)
         await notice.undo()
 
         let stored = await store.entries
-        XCTAssertEqual(stored.map(\.id), [existing.id])
+        XCTAssertEqual(stored.map(\.id), logged.map(\.id))
+        let snapshot = try await lists.snapshot()
+        XCTAssertTrue(snapshot.entries.contains { $0.itemKey == heat.itemKey })
     }
 
-    func test_showMovieWatch_unmarking_leavesDiaryAlone() async throws {
+    func test_watchCount_countsThisMovieOnly() async throws {
+        let (notice, _, _, _) = makeMovieWatchNotice(entries: [
+            DiaryFixtures.entry(subject: .movie(15)),
+            DiaryFixtures.entry(subject: .movie(15)),
+            DiaryFixtures.entry(subject: .movie(99)),
+        ])
+
+        let count = try await notice.watchCount(of: .movie(15))
+
+        XCTAssertEqual(count, 2)
+    }
+
+    func test_deleteFromToastSheet_lastWatch_leavesWatchedAndDropsUndo() async throws {
         let (notice, lists, store, _) = makeMovieWatchNotice()
-        let added = try await lists.toggleWatched(heat)
-        await notice.showMovieWatch(added, draft: heat, using: lists)
-        let removed = try await lists.toggleWatched(heat)
+        try await notice.logMovie(heat, using: lists)
+        await notice.openRatingEditor()
 
-        await notice.showMovieWatch(removed, draft: heat, using: lists)
+        let result = await notice.deleteDiaryEntry()
 
+        XCTAssertEqual(result, .succeeded)
         let stored = await store.entries
-        XCTAssertEqual(stored.count, 1)
-        XCTAssertNil(notice.loggedWatch)
+        XCTAssertTrue(stored.isEmpty)
+        let snapshot = try await lists.snapshot()
+        XCTAssertFalse(snapshot.entries.contains { $0.itemKey == heat.itemKey })
+        XCTAssertNil(notice.message)
+        XCTAssertFalse(notice.canUndo)
     }
 
     func test_dismiss_whileDiarySheetOpen_keepsBanner() async throws {
         let (notice, lists, _, _) = makeMovieWatchNotice()
-        let change = try await lists.toggleWatched(heat)
-        await notice.showMovieWatch(change, draft: heat, using: lists)
+        try await notice.logMovie(heat, using: lists)
         await notice.openRatingEditor()
 
         notice.dismiss()
@@ -481,7 +531,13 @@ final class ListChangeNoticeTests: XCTestCase {
             logger: SilentLogger()
         )
         let annotations = AnnotationsRepository(store: InMemoryAnnotationsStore(), logger: SilentLogger())
-        return (ListChangeNotice(annotations: annotations, diary: context), lists, store, context)
+        let watches = WatchRepository(
+            diary: context.diary,
+            lists: lists,
+            annotations: annotations,
+            logger: SilentLogger()
+        )
+        return (ListChangeNotice(annotations: annotations, diary: context, watches: watches), lists, store, context)
     }
 
     private func waitForRatingKey(_ notice: ListChangeNotice) async {

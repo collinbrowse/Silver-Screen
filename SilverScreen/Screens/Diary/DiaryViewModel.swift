@@ -18,10 +18,10 @@ final class DiaryViewModel {
     private(set) var state: LoadState<[DiaryMonth]> = .idle
     /// Open editor for an existing entry or a new rewatch, or nil.
     var editor: DiaryEditorSession?
-    /// The movie a new rewatch is for while its sheet is open, so saving can put it back
-    /// on Watched.
-    private var pendingRewatch: LogWatchTitle?
 
+    /// Undated watches, shown under "Earlier" on a title's history. Always empty on the
+    /// full diary, because they belong to no day on its timeline.
+    private(set) var earlierRows: [DiaryRow] = []
     /// Poster path by season number, on a show's history.
     private(set) var seasonPosters: [Int: String] = [:]
 
@@ -55,9 +55,12 @@ final class DiaryViewModel {
     /// opened from that title.
     var showsTitleLinks: Bool { scope == nil }
 
-    /// Log a Rewatch shows on a movie's own history. A show is logged episode by episode
-    /// with its eyes, so its history has no button.
-    var canLogRewatch: Bool { scope?.subject.kind == .movie }
+    /// Log a Rewatch shows on a movie's or episode's own history. A show is rewatched
+    /// through its episodes, so its history has no button.
+    var canLogRewatch: Bool {
+        guard let subject = scope?.subject else { return false }
+        return !subject.isWholeSeries
+    }
 
     /// A show's history leads each row with its season's poster, since the rows of one
     /// show would otherwise look the same.
@@ -98,9 +101,14 @@ final class DiaryViewModel {
             } else {
                 entries = try await context.diary.entries()
             }
-            let episodes = try await episodeWatches()
-            let months = DiaryContent.months(from: entries, episodes: episodes, calendar: calendar, locale: locale)
-            state = months.isEmpty ? .empty : .loaded(months)
+            let months = DiaryContent.months(
+                from: entries,
+                groupsEpisodes: scope?.subject.episode == nil,
+                calendar: calendar,
+                locale: locale
+            )
+            earlierRows = scope == nil ? [] : DiaryContent.earlierRows(from: entries, calendar: calendar, locale: locale)
+            state = months.isEmpty && earlierRows.isEmpty ? .empty : .loaded(months)
             if showsSeasonPosters, let seriesID = scope?.subject.tmdbID {
                 seasonPosters = await context.seasonPosters(seriesID: seriesID)
             }
@@ -119,32 +127,19 @@ final class DiaryViewModel {
 
     func dismissEditor() {
         editor = nil
-        pendingRewatch = nil
     }
 
-    /// Opens the sheet for a new watch of the scoped movie, dated today and unrated. The
+    /// Opens the sheet for a new watch of the scoped title, dated today and unrated. The
     /// title snapshot comes from its latest entry, falling back to the screen's title.
     func beginRewatch() async {
         guard let scope, canLogRewatch else { return }
         let latest = try? await context.diary.entries(for: scope.subject).first
-        let name = latest?.title ?? scope.title
         let title = LogWatchTitle(
             subject: scope.subject,
-            title: name,
+            title: latest?.title ?? scope.title,
             releaseYear: latest?.releaseYear,
-            posterPath: latest?.posterPath,
-            listItem: ListItemDraft(
-                id: scope.subject.tmdbID,
-                kind: .movie,
-                title: name,
-                imagePath: latest?.posterPath,
-                releaseDate: nil,
-                genreNames: [],
-                voteAverage: 0,
-                popularity: 0
-            )
+            posterPath: latest?.posterPath
         )
-        pendingRewatch = title
         editor = .logging(title, currentScore: nil, now: now())
     }
 
@@ -158,33 +153,17 @@ final class DiaryViewModel {
         } catch {
             return .failed
         }
-        if session.isNew, let rewatch = pendingRewatch {
-            await putOnWatched(rewatch, on: session.entry(from: draft, now: now(), calendar: calendar).watchedOn)
-        }
         editor = nil
-        pendingRewatch = nil
         context.noteChange()
         await load()
         return .succeeded
-    }
-
-    /// A logged watch means the movie is watched. A movie already on Watched keeps its
-    /// row; a failure is logged and the saved entry stands.
-    private func putOnWatched(_ title: LogWatchTitle, on day: DiaryDay) async {
-        do {
-            _ = try await context.lists.addToWatched(title.listItem, at: day.date(in: calendar))
-        } catch is CancellationError {
-            return
-        } catch {
-            context.logger.error("Logged rewatch was not added to Watched", category: .persistence)
-        }
     }
 
     /// Deletes the entry open in the editor. Failure keeps the sheet open.
     func deleteEditorEntry() async -> AnnotationEditorWriteResult {
         guard let session = editor, !session.isNew else { return .cancelled }
         do {
-            try await context.diary.delete(id: session.base.id)
+            try await context.deleteWatch(session.base)
         } catch is CancellationError {
             return .cancelled
         } catch {
@@ -199,7 +178,7 @@ final class DiaryViewModel {
     /// Deletes from a swipe or context menu. Failure leaves the list with a failed activity.
     func delete(_ row: DiaryRow) async {
         do {
-            try await context.diary.delete(id: row.id)
+            try await context.deleteWatch(row.entry)
         } catch is CancellationError {
             return
         } catch {
@@ -222,22 +201,6 @@ final class DiaryViewModel {
         switch row.entry.subject.kind {
             case .tv: .tvSeries(id: row.entry.subject.tmdbID)
             case .movie, .person: .movieDetail(id: row.entry.subject.tmdbID)
-        }
-    }
-
-    /// Episode history, or none when it cannot be read (the repository logs the failure).
-    /// Only cancellation propagates.
-    private func episodeWatches() async throws -> [EpisodeWatch] {
-        do {
-            guard let subject = scope?.subject else {
-                return try await context.diary.episodeWatches()
-            }
-            guard subject.kind == .tv else { return [] }
-            return try await context.diary.episodeWatches(seriesID: subject.tmdbID)
-        } catch is CancellationError {
-            throw CancellationError()
-        } catch {
-            return []
         }
     }
 

@@ -54,7 +54,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Privacy")
                 } footer: {
-                    Text("Your lists, ratings, and notes stay on this device. Crash reports and feedback you send go to the developer without your name. Anonymous usage counts, such as \"a list was created,\" never include titles, ratings, or notes.")
+                    Text("Your lists, ratings, and reviews stay on this device. Crash reports and feedback you send go to the developer without your name. Anonymous usage counts, such as \"a list was created,\" never include titles, ratings, or reviews.")
                 }
 
                 Section {

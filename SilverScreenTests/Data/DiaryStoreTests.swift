@@ -42,9 +42,9 @@ final class DiaryStoreTests: XCTestCase {
         XCTAssertEqual(try db.scalarInt("SELECT COUNT(*) FROM tv_series_watch;"), 1)
         XCTAssertEqual(try db.scalarInt("SELECT COUNT(*) FROM tv_episode_completed;"), 1)
         // Existing rows keep their sync metadata; the migration is not a write to them.
-        XCTAssertEqual(try db.scalarInt("SELECT MAX(revision) FROM annotation;"), 1)
+        XCTAssertEqual(try db.scalarInt("SELECT revision FROM annotation WHERE id = 'A2';"), 1)
         XCTAssertEqual(
-            try db.scalarText("SELECT updated_at FROM annotation WHERE id = 'A1';"),
+            try db.scalarText("SELECT updated_at FROM annotation WHERE id = 'A2';"),
             "2026-10-01T00:00:00.000Z"
         )
     }
@@ -56,12 +56,19 @@ final class DiaryStoreTests: XCTestCase {
         try await store.bootstrap()
 
         let entries = try await store.fetchDiaryEntries()
-        // movie-550, movie-600, tv-42 are on Watched. movie-700 is only on Watchlist,
-        // and movie-800's Watched row is a tombstone.
-        XCTAssertEqual(Set(entries.map(\.subject)), [.movie(550), .movie(600), .series(42)])
+        // movie-550, movie-600 are on Watched. tv-42's series entry gave way to its one
+        // checked-off episode. movie-700 is only on Watchlist, and movie-800's Watched row
+        // is a tombstone.
+        XCTAssertEqual(
+            Set(entries.map(\.subject)),
+            [.movie(550), .movie(600), .episode(seriesID: 42, season: 1, episode: 1)]
+        )
         XCTAssertEqual(
             Set(entries.map(\.id)),
-            Set([DiarySubject.movie(550), .movie(600), .series(42)].map(SQLiteLibraryStore.backfilledDiaryID))
+            Set(
+                [DiarySubject.movie(550), .movie(600)].map(SQLiteLibraryStore.backfilledDiaryID)
+                    + [SQLiteLibraryStore.episodeWatchID(for: .episode(seriesID: 42, season: 1, episode: 1))]
+            )
         )
         XCTAssertTrue(entries.allSatisfy { !$0.isRewatch })
     }
@@ -81,7 +88,7 @@ final class DiaryStoreTests: XCTestCase {
         // No rating: the day it joined Watched.
         XCTAssertEqual(bySubject[.movie(600)]?.watchedOn, DiaryDay(date("2025-05-01T12:00:00.000Z")))
         // Joined Watched (2025-02-01) before the series was rated (2025-06-01).
-        XCTAssertEqual(bySubject[.series(42)]?.watchedOn, DiaryDay(date("2025-02-01T12:00:00.000Z")))
+        XCTAssertNil(bySubject[.series(42)])
 
         let db = try SQLiteDatabase(fileURL: databaseURL())
         defer { db.close() }
@@ -89,8 +96,13 @@ final class DiaryStoreTests: XCTestCase {
             "SELECT created_at FROM diary_entry WHERE tmdb_id = 550;"
         )
         XCTAssertEqual(createdAt, "2023-07-04T12:00:00.000Z")
-        XCTAssertEqual(try db.scalarInt("SELECT MAX(revision) FROM diary_entry;"), 1)
-        XCTAssertEqual(try db.scalarInt("SELECT COUNT(*) FROM diary_entry WHERE deleted_at IS NOT NULL;"), 0)
+        XCTAssertEqual(try db.scalarInt("SELECT MAX(revision) FROM diary_entry WHERE kind = 'movie';"), 1)
+        // Only the whole-series entry is retired, and it keeps its v4 date.
+        XCTAssertEqual(try db.scalarInt("SELECT COUNT(*) FROM diary_entry WHERE deleted_at IS NOT NULL;"), 1)
+        XCTAssertEqual(
+            try db.scalarText("SELECT watched_on FROM diary_entry WHERE deleted_at IS NOT NULL;"),
+            DiaryDay(date("2025-02-01T12:00:00.000Z")).iso
+        )
     }
 
     func test_migrate_fromV3_backfillCopiesRatingReviewAndTitleSnapshot() async throws {
@@ -110,8 +122,12 @@ final class DiaryStoreTests: XCTestCase {
         XCTAssertNil(other.score)
         XCTAssertNil(other.review)
         XCTAssertNil(other.releaseYear)
-        // The series takes the series rating, not an episode's.
-        XCTAssertEqual(entries.first { $0.subject == .series(42) }?.score, 9)
+        // The show keeps its verdict, and the episode's score moves onto its watch.
+        let annotations = try await store.fetchAnnotations()
+        XCTAssertEqual(annotations.first { $0.key == .series(42) }?.score, 9)
+        XCTAssertEqual(entries.first { $0.subject == .episode(seriesID: 42, season: 1, episode: 1) }?.score, 4)
+        // The note was already the review, so it is not repeated.
+        XCTAssertNil(annotations.first { $0.key == .movie(550) }?.note)
     }
 
     func test_bootstrap_freshInstall_createsEmptyDiary() async throws {
@@ -199,49 +215,6 @@ final class DiaryStoreTests: XCTestCase {
 
         let loaded = try await store.fetchDiaryEntries()
         XCTAssertEqual(loaded, [entry])
-    }
-
-    func test_fetchEpisodeWatches_joinsSeriesTitleAndSkipsUnmarkedEpisodes() async throws {
-        let store = try makeStore()
-        try await store.bootstrap()
-        let list = LibraryList.system(.inProgress)
-        let series = ListItemDraft(
-            id: 42,
-            kind: .tv,
-            title: "Severance",
-            imagePath: "/sev.jpg",
-            releaseDate: nil,
-            genreNames: [],
-            voteAverage: 8,
-            popularity: 10
-        )
-        try await store.apply(
-            .replaceLists(
-                LibrarySnapshot(lists: [list], entries: [ListEntry(listID: list.id, draft: series, addedAt: Date(), position: 0)])
-            )
-        )
-        let first = TVEpisodeRef(seasonNumber: 1, episodeNumber: 1)
-        let second = TVEpisodeRef(seasonNumber: 1, episodeNumber: 2)
-        try await store.apply(.replaceTVWatch([TVSeriesWatchState(seriesID: 42, completed: [first, second])]))
-        try await store.apply(.replaceTVWatch([TVSeriesWatchState(seriesID: 42, completed: [first])]))
-        // An episode of a series with no stored title has nothing to show.
-        try await store.apply(
-            .replaceTVWatch([
-                TVSeriesWatchState(seriesID: 42, completed: [first]),
-                TVSeriesWatchState(seriesID: 99, completed: [first]),
-            ])
-        )
-
-        let watches = try await store.fetchEpisodeWatches()
-
-        XCTAssertEqual(watches.map(\.seriesID), [42])
-        XCTAssertEqual(watches.first?.seriesTitle, "Severance")
-        XCTAssertEqual(watches.first?.posterPath, "/sev.jpg")
-        XCTAssertEqual(watches.first?.episode, first)
-        let narrowed = try await store.fetchEpisodeWatches(seriesID: 42)
-        XCTAssertEqual(narrowed, watches)
-        let other = try await store.fetchEpisodeWatches(seriesID: 7)
-        XCTAssertEqual(other, [])
     }
 
     func test_replaceDiary_savingOneEntry_leavesOtherRowsUntouched() async throws {

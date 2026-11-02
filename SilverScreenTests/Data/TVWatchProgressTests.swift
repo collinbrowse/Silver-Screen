@@ -220,6 +220,24 @@ final class TVWatchProgressTests: XCTestCase {
         XCTAssertTrue(state.completed.isEmpty)
     }
 
+    func test_markSeason_episodeNumbers_marksTheListedNumbersNotOneThroughN() {
+        var state = TVSeriesWatchState(seriesID: 1)
+
+        let newly = state.markSeason(seasonNumber: 2, episodeNumbers: [11, 12, 13])
+
+        XCTAssertEqual(newly, 3)
+        XCTAssertTrue(state.contains(seasonNumber: 2, episodeNumber: 13))
+        XCTAssertFalse(state.contains(seasonNumber: 2, episodeNumber: 1))
+    }
+
+    func test_unmarkedCount_episodeNumbers_countsOnlyListedEpisodesStillUnmarked() {
+        var state = TVSeriesWatchState(seriesID: 1)
+        state.markSeason(seasonNumber: 2, episodeNumbers: [11, 12])
+
+        XCTAssertEqual(state.unmarkedCount(seasonNumber: 2, episodeNumbers: [11, 12, 13]), 1)
+        XCTAssertEqual(state.unmarkedCount(seasonNumber: 2, episodeNumbers: [11, 12]), 0)
+    }
+
     func test_unmarkSeason_clearsOnlyThatSeason() {
         var state = TVSeriesWatchState(seriesID: 1)
         state.markSeason(seasonNumber: 1, episodeCount: 2)

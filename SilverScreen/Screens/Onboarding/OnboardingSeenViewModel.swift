@@ -32,6 +32,7 @@ final class OnboardingSeenViewModel {
     private let lists: ListsRepository
     private let annotations: AnnotationsRepository
     private let tvWatch: TVWatchRepository
+    private let watches: WatchRepository
     private let awards: AwardsRepository
     private let now: @Sendable () -> Date
     /// Taps on a poster whose save has not finished yet are ignored.
@@ -43,6 +44,7 @@ final class OnboardingSeenViewModel {
         lists: ListsRepository,
         annotations: AnnotationsRepository,
         tvWatch: TVWatchRepository,
+        watches: WatchRepository,
         awards: AwardsRepository,
         now: @escaping @Sendable () -> Date = { Date() }
     ) {
@@ -52,6 +54,7 @@ final class OnboardingSeenViewModel {
         self.lists = lists
         self.annotations = annotations
         self.tvWatch = tvWatch
+        self.watches = watches
         self.awards = awards
     }
 
@@ -193,7 +196,7 @@ final class OnboardingSeenViewModel {
             notes[title.id] = nil
             do {
                 try await removeFromWatched(title)
-                if priorScore != nil || priorNote != nil {
+                if title.draft.kind != .movie, priorScore != nil || priorNote != nil {
                     try await annotations.clear(for: title.annotationKey)
                 }
             } catch {
@@ -218,9 +221,16 @@ final class OnboardingSeenViewModel {
     func rate(_ title: OnboardingTitle, score: Double, note: String) async -> AnnotationEditorWriteResult {
         guard pickedKeys.contains(title.id), UserScore.isValid(score) else { return .failed }
         do {
-            let saved = try await annotations.save(score: score, note: note, for: title.annotationKey)
-            scores[title.id] = saved.score
-            notes[title.id] = saved.note
+            if title.draft.kind == .movie {
+                try await watches.rate(.movie(title.draft.id), score: score, review: note)
+                let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
+                scores[title.id] = score
+                notes[title.id] = trimmed.isEmpty ? nil : trimmed
+            } else {
+                let saved = try await annotations.save(score: score, note: note, for: title.annotationKey)
+                scores[title.id] = saved.score
+                notes[title.id] = saved.note
+            }
             return .succeeded
         } catch is CancellationError {
             return .cancelled
@@ -232,7 +242,11 @@ final class OnboardingSeenViewModel {
     /// Removes the score and note from the rating sheet. The title stays on Watched.
     func clearRating(_ title: OnboardingTitle) async -> AnnotationEditorWriteResult {
         do {
-            try await annotations.clear(for: title.annotationKey)
+            if title.draft.kind == .movie {
+                try await watches.rate(.movie(title.draft.id), score: nil, review: nil)
+            } else {
+                try await annotations.clear(for: title.annotationKey)
+            }
             scores[title.id] = nil
             notes[title.id] = nil
             return .succeeded
@@ -252,11 +266,12 @@ final class OnboardingSeenViewModel {
                 try await tvWatch.markSeries(
                     seriesID: title.draft.id,
                     seasons: detail.seasons,
-                    draft: title.draft
+                    draft: title.draft,
+                    dateKnown: false
                 )
             case .movie, .person:
                 // An unrated movie lands on Watched too; a score added later keeps it there.
-                _ = try await lists.addToWatched(title.draft)
+                _ = try await watches.logMovie(title.draft, dateKnown: false)
         }
     }
 
@@ -265,9 +280,7 @@ final class OnboardingSeenViewModel {
             case .tv:
                 _ = try await tvWatch.clearSeries(seriesID: title.draft.id, draft: title.draft)
             case .movie, .person:
-                let snapshot = try await lists.snapshot()
-                guard let watched = snapshot.list(.watched) else { return }
-                _ = try await lists.remove(itemKey: title.id, listID: watched.id)
+                _ = try await watches.removeMovie(title.draft)
         }
     }
 

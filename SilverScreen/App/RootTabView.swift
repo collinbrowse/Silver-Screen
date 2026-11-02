@@ -15,6 +15,7 @@ struct RootTabView: View {
     @Bindable var listChanges: ListChangeNotice
     let annotations: AnnotationsRepository
     let tvWatch: TVWatchRepository
+    let watches: WatchRepository
     let awards: AwardsRepository
     let imageLoader: ImageLoader
     let libraryHomeViewModel: LibraryHomeViewModel
@@ -36,6 +37,7 @@ struct RootTabView: View {
         listChanges: ListChangeNotice,
         annotations: AnnotationsRepository,
         tvWatch: TVWatchRepository,
+        watches: WatchRepository,
         awards: AwardsRepository,
         imageLoader: ImageLoader,
         libraryHomeViewModel: LibraryHomeViewModel,
@@ -53,6 +55,7 @@ struct RootTabView: View {
         self.listChanges = listChanges
         self.annotations = annotations
         self.tvWatch = tvWatch
+        self.watches = watches
         self.awards = awards
         self.imageLoader = imageLoader
         self.libraryHomeViewModel = libraryHomeViewModel
@@ -122,7 +125,7 @@ struct RootTabView: View {
                 }
             }
             .sheet(item: toastAnnotationEditorBinding) { session in
-                AnnotationEditorSheet(
+                VerdictEditorSheet(
                     title: session.title,
                     score: session.score,
                     note: session.note,
@@ -149,6 +152,7 @@ struct RootTabView: View {
                         lists: lists,
                         annotations: annotations,
                         tvWatch: tvWatch,
+                        watches: watches,
                         awards: awards,
                         gate: onboarding
                     ),

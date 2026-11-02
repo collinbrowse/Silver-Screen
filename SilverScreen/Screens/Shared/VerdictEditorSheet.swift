@@ -1,11 +1,13 @@
 //
-//  AnnotationEditorSheet.swift
+//  VerdictEditorSheet.swift
 //  SilverScreen
 //
-//  Combined rating and note editor. A new rating must be chosen before Save.
-//  X discards the draft. Delete clears rating and note together. A failed save
+//  The Log sheet's fields without a date, for the one thing that is not a watch: your
+//  verdict on a season or a show. Onboarding's picks use it too, having no day to log.
+//  A new rating must be chosen before Save.
+//  X discards the draft. Delete clears rating and review together. A failed save
 //  stays on this sheet. Cancelled writes do not show a persistence banner. The
-//  view model owns dismissal after success. The note field fills leftover height
+//  view model owns dismissal after success. The review field fills leftover height
 //  above the keyboard as the sheet resizes. Focus is resigned before any dismiss
 //  so the keyboard and sheet do not fight. Every save outcome goes to the
 //  review prompter, which decides whether this is a good moment to ask.
@@ -14,7 +16,7 @@
 import SwiftUI
 import UIKit
 
-struct AnnotationEditorSheet: View {
+struct VerdictEditorSheet: View {
     let title: String
     let canClear: Bool
     let onSave: (Double, String) async -> AnnotationEditorWriteResult
@@ -90,7 +92,7 @@ struct AnnotationEditorSheet: View {
                             noteFocused = true
                         }
 
-                    TextField("Note (optional)", text: $note, axis: .vertical)
+                    TextField("What did you think? (optional)", text: $note, axis: .vertical)
                         .font(DesignTypography.body)
                         .lineLimit(3...)
                         .focused($noteFocused)
@@ -98,7 +100,7 @@ struct AnnotationEditorSheet: View {
                         .padding(.horizontal, DesignSpacing.md)
                         .padding(.vertical, DesignSpacing.lg)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                        .accessibilityLabel("Note")
+                        .accessibilityLabel("Review")
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
 
@@ -154,7 +156,7 @@ struct AnnotationEditorSheet: View {
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("This removes your rating and note for this title.")
+                Text("This removes your rating and review for this title.")
             }
         }
         .presentationDetents([.medium, .large])

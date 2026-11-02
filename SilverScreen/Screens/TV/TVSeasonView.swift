@@ -50,6 +50,8 @@ struct TVSeasonView: View {
     /// Separate from `pendingConfirm` so dismissing the alert cannot clear the
     /// payload before the confirm button’s action reads it (SwiftUI race).
     @State private var isSeasonConfirmPresented = false
+    @State private var pendingRemoval: WatchRemovalRequest?
+    @State private var isSeasonRewatchPresented = false
 
     private var fullscreenBinding: Binding<FullscreenImages?> {
         Binding(
@@ -170,6 +172,7 @@ struct TVSeasonView: View {
                 )
             }
         }
+        .removeWatchesAlert($pendingRemoval)
         .onChange(of: notice.ratingKey) { _, key in
             // Toast rating just saved (key cleared) — refresh TMDB card + episode badges.
             if key == nil {
@@ -184,7 +187,7 @@ struct TVSeasonView: View {
         }
         .trailerPlayer($playingTrailer, loadingID: $loadingTrailerID)
         .sheet(item: annotationEditorBinding) { session in
-            AnnotationEditorSheet(
+            VerdictEditorSheet(
                 title: session.title,
                 score: session.score,
                 note: session.note,
@@ -316,9 +319,9 @@ struct TVSeasonView: View {
             try? await Task.sleep(for: .milliseconds(50))
             guard !Task.isCancelled else { return }
         }
-        withAnimation(.easeInOut(duration: 0.25)) {
-            proxy.scrollTo(Self.episodeScrollID(target), anchor: .top)
-        }
+        // Not animated: on an unfolded iPhone Duo an animated scroll here left every
+        // episode's touch area about 30pt above where it is drawn until the user scrolled.
+        proxy.scrollTo(Self.episodeScrollID(target), anchor: .top)
         // Only latch once we had a measured inset (or timed out waiting). That lets
         // onChange(statusBarHeight) re-try when the probe reports after the first pass.
         if statusBarHeight > 0 {
@@ -375,9 +378,20 @@ struct TVSeasonView: View {
             formattedRating: content.formattedRating,
             accessibilityLabel: content.ratingAccessibilityLabel,
             formattedUserScore: content.formattedUserScore,
-            userScoreAccessibilityLabel: content.userScoreAccessibilityLabel,
+            userScoreAccessibilityLabel: content.formattedUserScore == nil
+                ? "Rate season"
+                : content.userScoreAccessibilityLabel,
+            addRatingTitle: "Rate season",
             onEdit: { viewModel.openAnnotationEditor() }
         )
+        if viewModel.isSeasonFullyWatched {
+            LogRewatchButton { isSeasonRewatchPresented = true }
+                .sheet(isPresented: $isSeasonRewatchPresented) {
+                    SeasonRewatchSheet(title: "Season \(seasonNumber)") { day, dateKnown in
+                        await logSeasonRewatch(content, on: day, dateKnown: dateKnown)
+                    }
+                }
+        }
         MediaDescriptionSection(
             overview: content.overview,
             note: content.userNote,
@@ -420,7 +434,11 @@ struct TVSeasonView: View {
 
     private func requestMarkSeasonWatched() async {
         let unmarked = await viewModel.unmarkedEpisodeCountForSeason()
-        guard unmarked > 0 else { return }
+        guard unmarked > 0 else {
+            // The ledger already has every episode, so the eye was stale: show the truth.
+            await viewModel.reloadWatchChrome()
+            return
+        }
         pendingConfirm = .markSeason(episodeCount: unmarked)
         isSeasonConfirmPresented = true
     }
@@ -451,10 +469,11 @@ struct TVSeasonView: View {
     }
 
     private func performMarkSeasonWatched() async {
-        guard let outcome = await viewModel.markSeasonWatched(),
-              outcome.episodesNewlyMarked > 0
-                || outcome.membershipChange?.confirmation != nil
-        else { return }
+        guard let outcome = await viewModel.markSeasonWatched() else { return }
+        guard outcome.episodesNewlyMarked > 0 || outcome.membershipChange?.confirmation != nil else {
+            notice.noteWatchChange()
+            return
+        }
         notice.presentWatch(
             outcome,
             ratingKey: ratingKey(for: outcome),
@@ -466,14 +485,7 @@ struct TVSeasonView: View {
 
     private func performUnmarkSeasonWatched() async {
         guard let outcome = await viewModel.unmarkSeasonWatched() else { return }
-        if let change = outcome.membershipChange, change.confirmation != nil {
-            notice.show(
-                change,
-                using: lists,
-                tvWatch: tvWatch,
-                watchUndo: outcome.watchUndo
-            )
-        }
+        notice.presentRemoved(outcome, using: lists, tvWatch: tvWatch)
     }
 
     /// Prefer series rating when the season mark finished the show (Watched move).
@@ -484,30 +496,70 @@ struct TVSeasonView: View {
         return .season(seriesID: seriesID, seasonNumber: seasonNumber)
     }
 
+    private func logSeasonRewatch(
+        _ content: TVSeasonContent,
+        on day: Date,
+        dateKnown: Bool
+    ) async -> AnnotationEditorWriteResult {
+        do {
+            try await notice.logSeasonRewatch(
+                seriesID: seriesID,
+                season: seasonNumber,
+                episodes: content.episodes.map(\.episodeNumber),
+                title: content.seriesName,
+                posterPath: viewModel.seriesSnapshot.posterPath,
+                on: day,
+                dateKnown: dateKnown,
+                using: lists
+            )
+            return .succeeded
+        } catch is CancellationError {
+            return .cancelled
+        } catch {
+            return .failed
+        }
+    }
+
+    /// Logs an unwatched episode. A watched one is removed, asking first when it has
+    /// more than one watch.
     private func toggleEpisodeWatch(_ episode: TVEpisodeSummary) async {
-        let wasCompleted = viewModel.completedEpisodeNumbers.contains(episode.episodeNumber)
-        let ratingKey = AnnotationKey.episode(
+        guard viewModel.completedEpisodeNumbers.contains(episode.episodeNumber) else {
+            await changeEpisodeWatch(episode)
+            return
+        }
+        let subject = DiarySubject.episode(
             seriesID: seriesID,
-            seasonNumber: seasonNumber,
-            episodeNumber: episode.episodeNumber
+            season: seasonNumber,
+            episode: episode.episodeNumber
         )
+        let count = (try? await notice.watchCount(of: subject)) ?? 1
+        guard count > 1 else {
+            await changeEpisodeWatch(episode)
+            return
+        }
+        pendingRemoval = WatchRemovalRequest(
+            title: episode.title,
+            watchCount: count,
+            remove: { await changeEpisodeWatch(episode) }
+        )
+    }
+
+    private func changeEpisodeWatch(_ episode: TVEpisodeSummary) async {
+        let wasCompleted = viewModel.completedEpisodeNumbers.contains(episode.episodeNumber)
         guard let outcome = await viewModel.toggleEpisodeWatched(episode) else {
             await viewModel.reloadEpisodeScores()
             return
         }
         if wasCompleted {
-            if let change = outcome.membershipChange, change.confirmation != nil {
-                notice.show(
-                    change,
-                    using: lists,
-                    tvWatch: tvWatch,
-                    watchUndo: outcome.watchUndo
-                )
-            }
+            notice.presentRemoved(outcome, using: lists, tvWatch: tvWatch)
         } else {
-            notice.presentWatch(
+            notice.presentEpisodeLogged(
                 outcome,
-                ratingKey: ratingKey,
+                ratingKey: .episode(
+                    seriesID: seriesID,
+                    seasonNumber: seasonNumber,
+                    episodeNumber: episode.episodeNumber
+                ),
                 fallbackMessage: "Episode watched",
                 using: lists,
                 tvWatch: tvWatch

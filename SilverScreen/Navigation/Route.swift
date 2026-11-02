@@ -72,5 +72,5 @@ enum Route: Hashable, Sendable, Codable {
     case diary
     /// One title's watches (and, for a show, its episode check-offs), from its detail page.
     /// `title` is the navigation title, so the screen needs no fetch to name itself.
-    case titleHistory(kind: ListItemKind, id: Int, title: String)
+    case titleHistory(kind: ListItemKind, id: Int, title: String, episode: TVEpisodeRef? = nil)
 }

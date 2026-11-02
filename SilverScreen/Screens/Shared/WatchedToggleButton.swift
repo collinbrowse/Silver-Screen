@@ -2,8 +2,9 @@
 //  WatchedToggleButton.swift
 //  SilverScreen
 //
-//  Eye control that marks a title watched or not. Watched is never chosen from
-//  the + list menu — this toggle (and TV episode progress / rating sync) owns it.
+//  The eye: says whether you have seen a title, and nothing else. Grey logs a watch and
+//  orange removes them, asking first when there is more than one. A show's eye logs or
+//  clears every episode. Watched is never chosen from the + list menu.
 //  `onFailure` is last and has no default. A trailing closure binds to the first
 //  defaulted closure parameter, so a default here would route it to `onToggleComplete`.
 //
@@ -25,7 +26,7 @@ struct WatchedToggleButton: View {
     /// When set, drives the filled eye (series detail ledger completeness) instead of
     /// Watched-list membership alone.
     var isWatchedOverride: Bool? = nil
-    /// Called after a successful watch toggle (membership and/or episode ledger).
+    /// Called after a successful watch change.
     var onToggleComplete: () -> Void = {}
     /// Trailing-closure target. Keep it last and required.
     var onFailure: () -> Void
@@ -39,6 +40,7 @@ struct WatchedToggleButton: View {
     @State private var isMarkConfirmPresented = false
     @State private var isClearConfirmPresented = false
     @State private var optimisticWatched: Bool?
+    @State private var pendingRemoval: WatchRemovalRequest?
 
     private var isWatched: Bool {
         optimisticWatched ?? isWatchedOverride ?? index.isOnWatched(draft.itemKey)
@@ -79,6 +81,7 @@ struct WatchedToggleButton: View {
                 Text(TVWatchConfirm.clearMessage(episodeCount: count))
             }
         }
+        .removeWatchesAlert($pendingRemoval)
     }
 
     /// Rows (`chrome`) need `.borderless` so tapping the eye does not also open the row.
@@ -118,16 +121,19 @@ struct WatchedToggleButton: View {
         do {
             switch draft.kind {
                 case .movie:
-                    optimisticWatched = !isWatched
-                    do {
-                        let change = try await lists.toggleWatched(draft)
-                        // Also logs today's diary watch when this marked it watched.
-                        await notice.showMovieWatch(change, draft: draft, using: lists)
-                        optimisticWatched = nil
-                        onToggleComplete()
-                    } catch {
-                        optimisticWatched = nil
-                        throw error
+                    if isWatched {
+                        let count = try await notice.watchCount(of: .movie(draft.id))
+                        if count > 1 {
+                            pendingRemoval = WatchRemovalRequest(
+                                title: draft.title,
+                                watchCount: count,
+                                remove: { await changeMovieWatch(to: false) }
+                            )
+                        } else {
+                            await changeMovieWatch(to: false)
+                        }
+                    } else {
+                        await changeMovieWatch(to: true)
                     }
                 case .tv:
                     guard let tvWatch else {
@@ -166,6 +172,23 @@ struct WatchedToggleButton: View {
         }
     }
 
+    private func changeMovieWatch(to watched: Bool) async {
+        optimisticWatched = watched
+        defer { optimisticWatched = nil }
+        do {
+            if watched {
+                try await notice.logMovie(draft, using: lists)
+            } else {
+                try await notice.removeMovie(draft, using: lists)
+            }
+            onToggleComplete()
+        } catch is CancellationError {
+            return
+        } catch {
+            onFailure()
+        }
+    }
+
     /// Captures seasons synchronously so alert dismissal cannot nil them first.
     private func confirmMarkSeries() {
         guard let seasons = pendingSeasons else { return }
@@ -192,14 +215,7 @@ struct WatchedToggleButton: View {
                 seriesID: draft.id,
                 draft: draft
             )
-            if let change = outcome.membershipChange, change.confirmation != nil {
-                notice.show(
-                    change,
-                    using: lists,
-                    tvWatch: tvWatch,
-                    watchUndo: outcome.watchUndo
-                )
-            }
+            notice.presentRemoved(outcome, using: lists, tvWatch: tvWatch)
             optimisticWatched = nil
             onToggleComplete()
         } catch is CancellationError {
@@ -231,6 +247,8 @@ struct WatchedToggleButton: View {
                     tvWatch: tvWatch,
                     watchUndo: outcome.watchUndo
                 )
+            } else {
+                notice.noteWatchChange()
             }
             optimisticWatched = nil
             onToggleComplete()

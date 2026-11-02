@@ -22,6 +22,7 @@ actor DiaryRepository {
     }
 
     /// Every entry, newest watch first; entries on the same day put the latest log first.
+    /// An undated watch sorts after every dated one.
     func entries() async throws -> [DiaryEntry] {
         Self.sorted(try await loadCache())
     }
@@ -30,20 +31,6 @@ actor DiaryRepository {
     /// an episode subject returns only that episode's.
     func entries(for subject: DiarySubject) async throws -> [DiaryEntry] {
         try await entries().filter { subject.contains($0.subject) }
-    }
-
-    /// Episodes checked off in TV progress, newest first; one show's when `seriesID` is
-    /// set. Read fresh every time rather than cached, because the TV screens write
-    /// progress without going through here.
-    func episodeWatches(seriesID: Int? = nil) async throws -> [EpisodeWatch] {
-        do {
-            return try await store.loadEpisodeWatches(seriesID: seriesID)
-        } catch is CancellationError {
-            throw CancellationError()
-        } catch {
-            logger.error("Diary episode history load failed", category: .persistence)
-            throw AppError.persistence
-        }
     }
 
     /// Inserts `entry`, or replaces the entry with the same id. Returns what was stored
@@ -68,13 +55,52 @@ actor DiaryRepository {
         }
     }
 
+    /// Inserts or replaces every entry in one store write, so logging a whole show does
+    /// not rewrite the diary once per episode. Returns what was stored.
+    @discardableResult
+    func save(contentsOf newEntries: [DiaryEntry]) async throws -> [DiaryEntry] {
+        guard !newEntries.contains(where: { $0.subject.kind == .person }) else {
+            logger.error("Rejected a diary entry for a person", category: .persistence)
+            throw AppError.persistence
+        }
+        let normalized = newEntries.map { $0.normalized() }
+        guard !normalized.isEmpty else { return [] }
+        return try await serializeWrite { [self] in
+            var entries = try await loadCache()
+            var indexByID = Dictionary(
+                uniqueKeysWithValues: entries.enumerated().map { ($0.element.id, $0.offset) }
+            )
+            var changed = false
+            for entry in normalized {
+                if let index = indexByID[entry.id] {
+                    guard entries[index] != entry else { continue }
+                    entries[index] = entry
+                } else {
+                    indexByID[entry.id] = entries.count
+                    entries.append(entry)
+                }
+                changed = true
+            }
+            if changed {
+                try await persist(entries)
+            }
+            return normalized
+        }
+    }
+
     /// Removes the entry. The store keeps a tombstone so the removal can sync later.
     /// No-op when the id is not stored.
     func delete(id: UUID) async throws {
+        try await delete(ids: [id])
+    }
+
+    /// Removes every entry in `ids` in one store write. Ids not stored are ignored.
+    func delete(ids: Set<UUID>) async throws {
+        guard !ids.isEmpty else { return }
         try await serializeWrite { [self] in
             var entries = try await loadCache()
             let before = entries.count
-            entries.removeAll { $0.id == id }
+            entries.removeAll { ids.contains($0.id) }
             guard entries.count != before else { return }
             try await persist(entries)
         }
@@ -82,6 +108,9 @@ actor DiaryRepository {
 
     static func sorted(_ entries: [DiaryEntry]) -> [DiaryEntry] {
         entries.sorted { lhs, rhs in
+            if lhs.isDateKnown != rhs.isDateKnown {
+                return lhs.isDateKnown
+            }
             if lhs.watchedOn != rhs.watchedOn {
                 return lhs.watchedOn > rhs.watchedOn
             }
