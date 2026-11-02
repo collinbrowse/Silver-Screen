@@ -319,9 +319,9 @@ struct TVSeasonView: View {
             try? await Task.sleep(for: .milliseconds(50))
             guard !Task.isCancelled else { return }
         }
-        withAnimation(.easeInOut(duration: 0.25)) {
-            proxy.scrollTo(Self.episodeScrollID(target), anchor: .top)
-        }
+        // Not animated: on an unfolded iPhone Duo an animated scroll here left every
+        // episode's touch area about 30pt above where it is drawn until the user scrolled.
+        proxy.scrollTo(Self.episodeScrollID(target), anchor: .top)
         // Only latch once we had a measured inset (or timed out waiting). That lets
         // onChange(statusBarHeight) re-try when the probe reports after the first pass.
         if statusBarHeight > 0 {
