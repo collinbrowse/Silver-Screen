@@ -50,6 +50,13 @@ enum ReelLoaderMotion {
         return (within < 0 ? within + period : within) / period
     }
 
+    /// Where in the loop a loader falls `elapsed` seconds after it appeared. The first loop
+    /// skips its rest, so the film starts moving the moment the loader is on screen; later
+    /// loops still pause as the icon.
+    static func phase(sinceAppearing elapsed: TimeInterval) -> Double {
+        phase(after: elapsed + restShare * period)
+    }
+
     /// True while the loop rests as the app icon.
     static func isAtRest(at phase: Double) -> Bool {
         phase <= restShare || phase >= 1

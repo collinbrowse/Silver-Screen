@@ -154,6 +154,21 @@ final class ReelLoaderTests: XCTestCase {
         XCTAssertEqual(ReelLoaderMotion.phase(after: -period * 0.25), 0.75, accuracy: 1e-6)
     }
 
+    func test_phaseSinceAppearing_onAppear_startsWindingWithoutResting() throws {
+        let phase = ReelLoaderMotion.phase(sinceAppearing: 0)
+
+        XCTAssertEqual(phase, ReelLoaderMotion.restShare, accuracy: 1e-9)
+        XCTAssertFalse(ReelLoaderMotion.isAtRest(at: ReelLoaderMotion.phase(sinceAppearing: 0.01)))
+        let winding = try XCTUnwrap(ReelLoaderMotion.winding(at: ReelLoaderMotion.phase(sinceAppearing: 0.01)))
+        XCTAssertEqual(winding.morph, 0, accuracy: 0.01, "still lands on the icon artwork")
+    }
+
+    func test_phaseSinceAppearing_afterFirstLoop_restsAsTheIcon() {
+        let secondLoopRest = ReelLoaderMotion.period * (1 - ReelLoaderMotion.restShare) + 0.1
+
+        XCTAssertTrue(ReelLoaderMotion.isAtRest(at: ReelLoaderMotion.phase(sinceAppearing: secondLoopRest)))
+    }
+
     private func square(side: CGFloat) -> [CGPoint] {
         [CGPoint(x: 0, y: 0), CGPoint(x: side, y: 0), CGPoint(x: side, y: side), CGPoint(x: 0, y: side)]
     }
