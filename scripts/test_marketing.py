@@ -206,7 +206,7 @@ class DeviceSetTests(unittest.TestCase):
         self.assertEqual(marketing.CAPTURE_DEVICES, ["iphone", "ipad", "duo", "duo-outer"])
 
     def test_duo_sets_match_apples_inner_and_outer_sizes_on_one_simulator(self):
-        self.assertEqual(marketing.DEVICES["duo"]["size"], (2007, 2853))
+        self.assertEqual(marketing.DEVICES["duo"]["size"], (2853, 2007))
         self.assertEqual(marketing.DEVICES["duo-outer"]["size"], (1398, 2034))
         self.assertIs(marketing.simulator_spec("duo-outer"), marketing.DEVICES["duo"])
         self.assertIn("iPhone-Duo", marketing.simulator_spec("duo")["type"])

@@ -50,21 +50,29 @@ struct FramedShot: View {
     /// Squat canvases (iPad, both iPhone Duo screens) take the tablet proportions;
     /// a tall phone canvas is over 2:1.
     private var isSquat: Bool { job.height / job.width < 1.6 }
-    private var unit: Double { job.width / 1320 }
+    /// The unfolded iPhone Duo inner screen is the one landscape set.
+    private var isLandscape: Bool { job.width > job.height }
+    /// Type and spacing scale with the short side, so a landscape canvas reads
+    /// like its portrait twin instead of blowing the caption up.
+    private var unit: Double { min(job.width, job.height) / 1320 }
 
-    /// Display corner radius as a share of screen width, from each device's
-    /// simulator framebuffer mask (iPhone 17 Pro Max, iPad Pro 13", iPhone Duo).
+    /// Display corner radius as a share of the framed screen's width, from each
+    /// device's simulator framebuffer mask (iPhone 17 Pro Max, iPad Pro 13", iPhone
+    /// Duo). The Duo inner share is 0.06 of its 2007 pt short side, rescaled to
+    /// the 2853 pt long side it is framed by in landscape.
     private var cornerShare: Double {
         switch job.device {
-        case "ipad": 0.022
-        case "duo": 0.06
-        case "duo-outer": 0.008
-        default: 0.14
+            case "ipad": 0.022
+            case "duo": 0.042
+            case "duo-outer": 0.008
+            default: 0.14
         }
     }
 
     var body: some View {
-        let screenWidth = job.width * (isSquat ? 0.78 : 0.765)
+        // Landscape narrows the screen so it fits under the caption and only just
+        // runs off the bottom, like the portrait sets.
+        let screenWidth = job.width * (isLandscape ? 0.66 : isSquat ? 0.78 : 0.765)
         let bezel = (isSquat ? 22 : 20) * unit
         let corner = screenWidth * cornerShare
 

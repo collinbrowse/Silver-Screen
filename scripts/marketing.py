@@ -52,6 +52,8 @@ MIN_VOTES = {"movie": 200, "tv": 100}
 # iPhone Duo has two sets, one per screen, from one simulator: `display` names the
 # screen to capture (`simctl io <udid> enumerate`). simctl cannot fold a Duo, so a
 # pass whose screen is off waits for someone to fold or unfold it in Device Hub.
+# Unfolded, the inner screen opens like a book, so its set is landscape; App Store
+# Connect takes either orientation for both screens.
 DEVICES = {
     "iphone": {
         "name": "SS Marketing iPhone 17 Pro Max",
@@ -70,7 +72,7 @@ DEVICES = {
     "duo": {
         "name": "SS Marketing iPhone Duo",
         "type": "com.apple.CoreSimulator.SimDeviceType.iPhone-Duo",
-        "size": (2007, 2853),
+        "size": (2853, 2007),
         "display": "primary-1",
     },
     "duo-outer": {

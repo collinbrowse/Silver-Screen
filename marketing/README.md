@@ -20,7 +20,7 @@ Everything lands in `marketing/output/` (gitignored):
 | `appstore/iphone-6.3/<appearance>/` | 1206×2622, numbered in upload order | App Store Connect, iPhone 6.1"/6.3" slot (**required**) |
 | `appstore/iphone/<appearance>/` | 1320×2868, numbered in upload order | App Store Connect, iPhone 6.9" slot (large iPhone; required unless you give 6.5") |
 | `appstore/ipad/<appearance>/` | 2064×2752 | App Store Connect, 13" iPad (required when the app runs on iPad) |
-| `appstore/duo/<appearance>/` | 2007×2853 | App Store Connect, iPhone Duo inner (unfolded) display |
+| `appstore/duo/<appearance>/` | 2853×2007 | App Store Connect, iPhone Duo inner (unfolded) display, landscape |
 | `appstore/duo-outer/<appearance>/` | 1398×2034 | App Store Connect, iPhone Duo outer (folded) display |
 | `appstore/header/header-<appearance>.png` | 3840×1646 (21:9), opaque PNG | Product page header (iOS 27+) |
 | `appstore/header/search-<appearance>.png` | 3840×2560 (3:2), opaque PNG | Search results asset (iOS 27+) |
@@ -44,7 +44,10 @@ iPhone Duo" badge.
 
 Apple takes one set per Duo screen. Both come from one simulator (`SS Marketing
 iPhone Duo`, iOS 27.1 or later); `simctl io --display` picks the screen
-(`primary-1` inner, `primary` outer).
+(`primary-1` inner, `primary` outer). Unfolded, the inner screen opens like a
+book, so the inner set is landscape (2853×2007) and the outer set portrait;
+App Store Connect accepts either orientation for both. In Device Hub, unfold
+`SS Marketing iPhone Duo` itself: the fold is per simulator.
 
 simctl cannot fold or unfold a Duo, and the fold outlives a reboot (even a newly
 created Duo can boot folded). So before each Duo set the script checks that the
