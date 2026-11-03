@@ -47,14 +47,26 @@ struct FramedShot: View {
     let screenshot: NSImage
 
     private var isDark: Bool { job.appearance == "dark" }
-    private var isPad: Bool { job.device == "ipad" }
+    /// Squat canvases (iPad, both iPhone Duo screens) take the tablet proportions;
+    /// a tall phone canvas is over 2:1.
+    private var isPad: Bool { job.height / job.width < 1.6 }
     private var unit: Double { job.width / 1320 }
+
+    /// Display corner radius as a share of screen width, from each device's
+    /// simulator framebuffer mask (iPhone 17 Pro Max, iPad Pro 13", iPhone Duo).
+    private var cornerShare: Double {
+        switch job.device {
+        case "ipad": 0.022
+        case "duo": 0.06
+        case "duo-outer": 0.008
+        default: 0.14
+        }
+    }
 
     var body: some View {
         let screenWidth = job.width * (isPad ? 0.78 : 0.765)
         let bezel = (isPad ? 22 : 20) * unit
-        // Display corner radius as a share of screen width (iPhone 17 Pro Max, iPad Pro 13").
-        let corner = screenWidth * (isPad ? 0.022 : 0.14)
+        let corner = screenWidth * cornerShare
 
         ZStack(alignment: .top) {
             BrandBackground(isDark: isDark, size: CGSize(width: job.width, height: job.height))
