@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import contextlib
+import io
 import os
 import sys
 import tempfile
@@ -201,7 +203,48 @@ class DeviceSetTests(unittest.TestCase):
         self.assertIn(os.path.join("appstore", "iphone-6.3", "dark"), job["output"])
 
     def test_only_simulator_backed_sets_are_captured(self):
-        self.assertEqual(marketing.CAPTURE_DEVICES, ["iphone", "ipad"])
+        self.assertEqual(marketing.CAPTURE_DEVICES, ["iphone", "ipad", "duo", "duo-outer"])
+
+    def test_duo_sets_match_apples_inner_and_outer_sizes_on_one_simulator(self):
+        self.assertEqual(marketing.DEVICES["duo"]["size"], (2007, 2853))
+        self.assertEqual(marketing.DEVICES["duo-outer"]["size"], (1398, 2034))
+        self.assertIs(marketing.simulator_spec("duo-outer"), marketing.DEVICES["duo"])
+        self.assertIn("iPhone-Duo", marketing.simulator_spec("duo")["type"])
+
+    def test_duo_captures_name_their_screen_and_others_use_the_default(self):
+        self.assertEqual(marketing.screenshot_args("duo"), ["--display=primary-1"])
+        self.assertEqual(marketing.screenshot_args("duo-outer"), ["--display=primary"])
+        self.assertEqual(marketing.screenshot_args("iphone"), [])
+
+    @staticmethod
+    def bmp(pixels: list[tuple[int, int, int]]) -> bytes:
+        header = bytearray(54)
+        header[10:14] = (54).to_bytes(4, "little")
+        header[28:30] = (24).to_bytes(2, "little")
+        return bytes(header) + b"".join(bytes(pixel) for pixel in pixels)
+
+    def test_lit_share_reads_an_off_screen_as_black_and_a_live_one_as_lit(self):
+        off = self.bmp([(0, 0, 0)] * 1000 + [(200, 200, 200)] * 2)
+        live = self.bmp([(0, 0, 0), (250, 120, 30)] * 500)
+        self.assertLess(marketing.lit_share(off, step=1), 0.002)
+        self.assertAlmostEqual(marketing.lit_share(live, step=1), 0.5, places=2)
+
+    def test_duo_set_with_its_screen_off_is_skipped_when_nobody_can_fold_it(self):
+        original_check, original_stdin = marketing.screen_is_on, sys.stdin
+        marketing.screen_is_on = lambda udid, device: False
+        sys.stdin = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(io.StringIO()) as printed:
+                self.assertFalse(marketing.ensure_screen("udid", "duo-outer"))
+                self.assertFalse(marketing.ensure_screen("udid", "duo"))
+                self.assertTrue(marketing.ensure_screen("udid", "iphone"))
+        finally:
+            marketing.screen_is_on, sys.stdin = original_check, original_stdin
+        self.assertIn("fold the iPhone Duo", printed.getvalue())
+        self.assertIn("unfold the iPhone Duo", printed.getvalue())
+
+    def test_tour_is_not_offered_on_the_duo(self):
+        self.assertEqual(marketing.VIDEO_DEVICES, ["iphone", "ipad"])
 
 
 class BannerTests(unittest.TestCase):

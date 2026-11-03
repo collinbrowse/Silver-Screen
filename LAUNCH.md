@@ -51,7 +51,8 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 - [x] Large screens (decided): build the layouts for iPhone Duo first, then use its larger
       screens as the iPad screens. Base each layout on the available width (size classes),
       not on the device model, so one set of views serves both. iPad ships with those layouts
-      (`TARGETED_DEVICE_FAMILY` stays `1,2`), and `marketing.py` already captures a 13" iPad set.
+      (`TARGETED_DEVICE_FAMILY` stays `1,2`), and `marketing.py` captures a 13" iPad set
+      plus iPhone Duo inner and outer sets.
 
 ### Product
 

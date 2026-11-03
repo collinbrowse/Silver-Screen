@@ -5,7 +5,7 @@ real app on the simulator. One file drives them: [`titles.json`](titles.json).
 
 ```bash
 python3 scripts/marketing.py refresh       # all of the below except videos, in order
-python3 scripts/marketing.py screenshots   # raw PNGs, iPhone + iPad, light + dark
+python3 scripts/marketing.py screenshots   # raw PNGs, iPhone + iPad + iPhone Duo, light + dark
 python3 scripts/marketing.py frame         # captioned App Store images
 python3 scripts/marketing.py header        # product page header + search results art
 python3 scripts/marketing.py metadata      # store copy, checked (frame runs it too)
@@ -20,6 +20,8 @@ Everything lands in `marketing/output/` (gitignored):
 | `appstore/iphone-6.3/<appearance>/` | 1206×2622, numbered in upload order | App Store Connect, iPhone 6.1"/6.3" slot (**required**) |
 | `appstore/iphone/<appearance>/` | 1320×2868, numbered in upload order | App Store Connect, iPhone 6.9" slot (large iPhone; required unless you give 6.5") |
 | `appstore/ipad/<appearance>/` | 2064×2752 | App Store Connect, 13" iPad (required when the app runs on iPad) |
+| `appstore/duo/<appearance>/` | 2007×2853 | App Store Connect, iPhone Duo inner (unfolded) display |
+| `appstore/duo-outer/<appearance>/` | 1398×2034 | App Store Connect, iPhone Duo outer (folded) display |
 | `appstore/header/header-<appearance>.png` | 3840×1646 (21:9), opaque PNG | Product page header (iOS 27+) |
 | `appstore/header/search-<appearance>.png` | 3840×2560 (3:2), opaque PNG | Search results asset (iOS 27+) |
 | `appstore/metadata/*.txt` | Subtitle, promotional text, description, keywords; `metadata.md` shows them all with character counts | Paste into App Store Connect |
@@ -35,7 +37,28 @@ Apple's required sizes change; check the
 [screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)
 before an upload. The 6.3" set is framed from the 6.9" captures (same shape), so it
 needs no extra simulator run. iPhone Duo screenshots become required in April 2027
-for apps built with the iOS 27.1 SDK.
+for apps built with the iOS 27.1 SDK, and they earn the product page's "optimized for
+iPhone Duo" badge.
+
+### iPhone Duo
+
+Apple takes one set per Duo screen. Both come from one simulator (`SS Marketing
+iPhone Duo`, iOS 27.1 or later); `simctl io --display` picks the screen
+(`primary-1` inner, `primary` outer).
+
+simctl cannot fold or unfold a Duo, and the simulator keeps its fold across boots
+(a new one boots unfolded). So before each Duo set the script checks that the
+screen it captures is on, and when it is not, asks you to fold (`duo-outer`) or
+unfold (`duo`) the simulator in Device Hub and waits for Return. With no terminal
+to answer (`refresh` from another script, CI), it skips that set and says so.
+
+```bash
+python3 scripts/marketing.py screenshots --device duo         # unfolded
+python3 scripts/marketing.py screenshots --device duo-outer   # folded
+```
+
+The website tour stays on iPhone and iPad: `simctl` records the Duo's outer screen
+by default.
 
 ## How it works
 
@@ -68,7 +91,8 @@ for apps built with the iOS 27.1 SDK.
   - `openList`: open a seeded list by name instead (list ids change every launch).
   - `settle`: seconds to wait for artwork before the capture (default 7).
   - `caption`, `subcaption`: the text `frame` puts above the screenshot.
-  - `devices`: `["iphone"]` or `["ipad"]` to limit a shot. Missing means both.
+  - `devices`: a list of sets (`iphone`, `ipad`, `duo`, `duo-outer`) to limit a
+    shot. Missing means all of them.
   - `fresh: true` marks a shot that features current titles.
 - `header`: the product page header. Following Apple's examples it has no app UI,
   only brand art (a film strip like the app icon's) and `wordmark`; `tagline` adds
