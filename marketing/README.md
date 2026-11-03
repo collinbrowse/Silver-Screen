@@ -46,8 +46,8 @@ Apple takes one set per Duo screen. Both come from one simulator (`SS Marketing
 iPhone Duo`, iOS 27.1 or later); `simctl io --display` picks the screen
 (`primary-1` inner, `primary` outer).
 
-simctl cannot fold or unfold a Duo, and the simulator keeps its fold across boots
-(a new one boots unfolded). So before each Duo set the script checks that the
+simctl cannot fold or unfold a Duo, and the fold outlives a reboot (even a newly
+created Duo can boot folded). So before each Duo set the script checks that the
 screen it captures is on, and when it is not, asks you to fold (`duo-outer`) or
 unfold (`duo`) the simulator in Device Hub and waits for Return. With no terminal
 to answer (`refresh` from another script, CI), it skips that set and says so.

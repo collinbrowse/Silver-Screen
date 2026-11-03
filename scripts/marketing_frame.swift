@@ -49,7 +49,7 @@ struct FramedShot: View {
     private var isDark: Bool { job.appearance == "dark" }
     /// Squat canvases (iPad, both iPhone Duo screens) take the tablet proportions;
     /// a tall phone canvas is over 2:1.
-    private var isPad: Bool { job.height / job.width < 1.6 }
+    private var isSquat: Bool { job.height / job.width < 1.6 }
     private var unit: Double { job.width / 1320 }
 
     /// Display corner radius as a share of screen width, from each device's
@@ -64,8 +64,8 @@ struct FramedShot: View {
     }
 
     var body: some View {
-        let screenWidth = job.width * (isPad ? 0.78 : 0.765)
-        let bezel = (isPad ? 22 : 20) * unit
+        let screenWidth = job.width * (isSquat ? 0.78 : 0.765)
+        let bezel = (isSquat ? 22 : 20) * unit
         let corner = screenWidth * cornerShare
 
         ZStack(alignment: .top) {
@@ -73,20 +73,20 @@ struct FramedShot: View {
             VStack(spacing: 0) {
                 VStack(spacing: 26 * unit) {
                     Text(job.caption)
-                        .font(.system(size: (isPad ? 84 : 104) * unit, weight: .bold))
+                        .font(.system(size: (isSquat ? 84 : 104) * unit, weight: .bold))
                         .tracking(-1.5 * unit)
                         .foregroundStyle(isDark ? Color.white : Palette.tealDeep)
                     if let subcaption = job.subcaption, !subcaption.isEmpty {
                         Text(subcaption)
-                            .font(.system(size: (isPad ? 42 : 50) * unit, weight: .medium))
+                            .font(.system(size: (isSquat ? 42 : 50) * unit, weight: .medium))
                             .foregroundStyle(isDark ? Color.white.opacity(0.72) : Palette.teal)
                     }
                 }
                 .multilineTextAlignment(.center)
                 .lineSpacing(4 * unit)
                 .frame(width: job.width * 0.86)
-                .padding(.top, (isPad ? 150 : 190) * unit)
-                .frame(height: (isPad ? 540 : 600) * unit, alignment: .top)
+                .padding(.top, (isSquat ? 150 : 190) * unit)
+                .frame(height: (isSquat ? 540 : 600) * unit, alignment: .top)
 
                 PhoneFrame(
                     screenshot: screenshot,

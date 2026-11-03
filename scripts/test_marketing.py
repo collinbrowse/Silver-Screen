@@ -217,15 +217,20 @@ class DeviceSetTests(unittest.TestCase):
         self.assertEqual(marketing.screenshot_args("iphone"), [])
 
     @staticmethod
-    def bmp(pixels: list[tuple[int, int, int]]) -> bytes:
+    def bmp(pixels: list[tuple[int, int, int]], width: int = 10) -> bytes:
+        """A 24-bit BMP with each row padded to 4 bytes, as the format requires."""
         header = bytearray(54)
         header[10:14] = (54).to_bytes(4, "little")
+        header[18:22] = width.to_bytes(4, "little")
+        header[22:26] = (len(pixels) // width).to_bytes(4, "little")
         header[28:30] = (24).to_bytes(2, "little")
-        return bytes(header) + b"".join(bytes(pixel) for pixel in pixels)
+        padding = b"\0" * (-width * 3 % 4)
+        rows = [b"".join(bytes(p) for p in pixels[i:i + width]) + padding for i in range(0, len(pixels), width)]
+        return bytes(header) + b"".join(rows)
 
     def test_lit_share_reads_an_off_screen_as_black_and_a_live_one_as_lit(self):
-        off = self.bmp([(0, 0, 0)] * 1000 + [(200, 200, 200)] * 2)
-        live = self.bmp([(0, 0, 0), (250, 120, 30)] * 500)
+        off = self.bmp([(0, 0, 0)] * 999 + [(200, 200, 200)], width=37)
+        live = self.bmp([(0, 0, 0), (250, 120, 30)] * 500, width=37)
         self.assertLess(marketing.lit_share(off, step=1), 0.002)
         self.assertAlmostEqual(marketing.lit_share(live, step=1), 0.5, places=2)
 

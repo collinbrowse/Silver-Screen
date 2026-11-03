@@ -405,10 +405,17 @@ def lit_share(bmp: bytes, step: int = 97) -> float:
     32-bit BMP. A screen that is off (black, or a boot spinner) reads under 0.1%; even a
     dark, empty home screen reads near 1%."""
     offset = int.from_bytes(bmp[10:14], "little")
+    width = int.from_bytes(bmp[18:22], "little", signed=True)
+    height = abs(int.from_bytes(bmp[22:26], "little", signed=True))
     depth = int.from_bytes(bmp[28:30], "little") // 8
-    pixels = bmp[offset:]
-    samples = range(0, len(pixels) - depth, depth * step)
-    lit = sum(1 for i in samples if max(pixels[i:i + 3]) > 40)
+    # Rows are padded to 4 bytes, so sample by pixel index, not by byte stride.
+    row = (width * depth + 3) // 4 * 4
+    samples = range(0, width * height, step)
+    lit = 0
+    for index in samples:
+        start = offset + (index // width) * row + (index % width) * depth
+        if max(bmp[start:start + 3]) > 40:
+            lit += 1
     return lit / max(len(samples), 1)
 
 
@@ -420,11 +427,15 @@ def screen_is_on(udid: str, device: str, wait: float = 30) -> bool:
     png, bmp = os.path.join(STAGE, "probe.png"), os.path.join(STAGE, "probe.bmp")
     deadline = time.monotonic() + wait
     while True:
-        simctl("io", udid, "screenshot", "--type=png", *screenshot_args(device), png)
-        subprocess.run(["sips", "-s", "format", "bmp", png, "--out", bmp], check=True, capture_output=True)
-        with open(bmp, "rb") as handle:
-            if lit_share(handle.read()) > 0.002:
-                return True
+        if os.path.exists(png):
+            os.remove(png)
+        # A powered-off screen can stall `simctl io`; one short try, and no file reads as off.
+        simctl("io", udid, "screenshot", "--type=png", *screenshot_args(device), png, check=False, attempts=1, timeout=20)
+        if os.path.exists(png):
+            subprocess.run(["sips", "-s", "format", "bmp", png, "--out", bmp], check=True, capture_output=True)
+            with open(bmp, "rb") as handle:
+                if lit_share(handle.read()) > 0.002:
+                    return True
         if time.monotonic() >= deadline:
             return False
         time.sleep(3)
