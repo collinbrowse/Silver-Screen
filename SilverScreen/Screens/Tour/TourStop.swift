@@ -75,7 +75,7 @@ enum TourStop: Hashable, Sendable {
             case .awards:
                 "Browse every Oscar, BAFTA, and Emmy winner and nominee, by category."
             case .rateMovie:
-                "Tap your rating to change it or add a review. Each watch keeps its own, and seasons and shows get a verdict."
+                "Tap your rating to change it or add a review. A rewatch gets a rating of its own, and you can rate whole shows and single seasons too."
             case .trackSeries(_, let title):
                 "Open a season of \(title) to check off episodes. Next up keeps your place."
         }

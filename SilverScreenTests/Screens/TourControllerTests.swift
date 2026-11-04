@@ -183,6 +183,13 @@ final class TourControllerTests: XCTestCase {
         XCTAssertEqual(tour.highlight, CGRect(x: 320, y: 50, width: 44, height: 44))
     }
 
+    func test_rateMovieMessage_explainsRewatchesAndShowRatings() {
+        let message = TourStop.rateMovie(id: 1, title: "Heat").message
+
+        XCTAssertFalse(message.localizedCaseInsensitiveContains("verdict"))
+        XCTAssertTrue(message.contains("rewatch"))
+    }
+
     // MARK: - Onboarding hand-off
 
     func test_onboardingFinish_startsTheTour() async {
