@@ -100,10 +100,21 @@ final class TourController {
             sighting.isVisible = isVisible
         }
         sightings[anchor, default: [:]][source] = sighting
-        prune(anchor)
+        if isVisible == false {
+            prune(anchor)
+        }
         if current?.anchors.contains(anchor) == true {
             updateHighlight()
         }
+    }
+
+    /// Moves a view's sighting to a new anchor when the view stays on screen but its
+    /// anchor changes. No `onAppear` fires for the new anchor and the frame may not
+    /// change, so without this the new anchor would never count as visible.
+    func reassign(_ old: TourAnchor, to new: TourAnchor, source: UUID) {
+        let frame = sightings[old]?[source]?.frame
+        report(old, source: source, frame: nil, isVisible: false)
+        report(new, source: source, frame: frame, isVisible: true)
     }
 
     /// Whether the given anchor is laid out on screen right now.

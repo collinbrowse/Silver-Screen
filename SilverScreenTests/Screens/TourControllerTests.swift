@@ -197,6 +197,38 @@ final class TourControllerTests: XCTestCase {
         XCTAssertEqual(tour.highlight, CGRect(x: 320, y: 50, width: 44, height: 44))
     }
 
+    func test_reassign_movesTheFrameToTheNewAnchor() async {
+        let tour = TourController(router: AppRouter(), lists: .empty())
+        let row = UUID()
+        let frame = CGRect(x: 20, y: 120, width: 300, height: 60)
+        tour.report(.libraryWatched, source: row, frame: frame, isVisible: true)
+        tour.reassign(.libraryWatched, to: .newList, source: row)
+        await tour.start()
+        tour.next()
+
+        XCTAssertEqual(tour.highlight, frame)
+        XCTAssertFalse(tour.isShowing(.libraryWatched))
+    }
+
+    func test_prune_dropsTheOldestHiddenViews() async {
+        let tour = TourController(router: AppRouter(), lists: .empty())
+        await tour.start()
+        tour.next()
+        let rows = (0..<6).map { _ in UUID() }
+        for (offset, row) in rows.enumerated() {
+            let frame = CGRect(x: 300, y: 50 + CGFloat(offset) * 10, width: 44, height: 44)
+            tour.report(.newList, source: row, frame: frame, isVisible: true)
+            tour.report(.newList, source: row, frame: nil, isVisible: false)
+        }
+
+        // The oldest two were dropped, so coming back they have no frame to show.
+        tour.report(.newList, source: rows[0], frame: nil, isVisible: true)
+        XCTAssertNil(tour.highlight)
+
+        tour.report(.newList, source: rows[5], frame: nil, isVisible: true)
+        XCTAssertEqual(tour.highlight, CGRect(x: 300, y: 100, width: 44, height: 44))
+    }
+
     func test_rateMovieMessage_explainsRewatchesAndShowRatings() {
         let message = TourStop.rateMovie(id: 1, title: "Heat").message
 

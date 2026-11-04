@@ -46,6 +46,7 @@ struct TourAnchorModifier: ViewModifier {
             }
             .onAppear { tour?.report(anchor, source: source, frame: nil, isVisible: true) }
             .onDisappear { tour?.report(anchor, source: source, frame: nil, isVisible: false) }
+            .onChange(of: anchor) { old, new in tour?.reassign(old, to: new, source: source) }
     }
 }
 
