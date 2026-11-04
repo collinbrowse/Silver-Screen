@@ -6,6 +6,7 @@ Version.xcconfig is the only shipping version. Dev runs do not advance it.
 since the latest ancestor testflight/* tag, and tags
 testflight/<marketing>+<build>. `promote` puts v<marketing> on that same
 commit so the App Store submission is the binary already on TestFlight.
+`media` (which `cut` also runs) uploads marketing/output to App Store Connect.
 
 Run from the repo root: python3 scripts/release.py status
 """
@@ -962,6 +963,11 @@ def build_parser() -> argparse.ArgumentParser:
         default="main",
         help="Branch this cut must be on. Pass the hotfix branch name when not cutting from main.",
     )
+    cut.add_argument(
+        "--no-media",
+        action="store_true",
+        help="Skip uploading marketing/output to App Store Connect after the cut.",
+    )
 
     promote = sub.add_parser("promote", help="Tag this TestFlight commit for the App Store.")
     promote.add_argument(
@@ -988,6 +994,30 @@ def build_parser() -> argparse.ArgumentParser:
         default=0,
         metavar="SECONDS",
         help="Poll this long for the uploaded build to appear in App Store Connect.",
+    )
+
+    media = sub.add_parser(
+        "media",
+        help="Sync marketing/output screenshots, app preview, and header and search art to App Store Connect.",
+    )
+    media.add_argument("--apply", action="store_true", help="Upload. Without it, print the plan only.")
+    media.add_argument(
+        "--appearance",
+        choices=("light", "dark"),
+        default="dark",
+        help="Which set to upload. App Store Connect takes one appearance per slot (default dark).",
+    )
+    media.add_argument(
+        "--duo",
+        choices=("outer", "inner"),
+        default="outer",
+        help="Which iPhone Duo screen's set to place (default outer, the one Apple's API is known to accept).",
+    )
+    media.add_argument("--locale", default="en-US", help="Version localization (default en-US).")
+    media.add_argument(
+        "--live",
+        action="store_true",
+        help="Place approved header and search art on the live version, where it shows at once.",
     )
 
     rollout = sub.add_parser(
@@ -1067,6 +1097,69 @@ def cmd_rollout(root: Path, start: bool) -> str:
     return f"{verb} phased release for {version.marketing} ({state}).\n"
 
 
+def cmd_media(
+    root: Path,
+    apply: bool,
+    appearance: str = "dark",
+    duo: str = "outer",
+    locale: str = "en-US",
+    live: bool = False,
+    client=None,
+    log=print,
+) -> str:
+    """Sync marketing/output/ to the App Store version for Version.xcconfig's marketing version.
+
+    Without apply it reads App Store Connect and prints the plan. See asc_media.py.
+    """
+    from asc_api import ASCClient, ASCError, load_credentials
+    from asc_media import MediaError, MediaSync, collect_slots
+
+    require_valid(root)
+    _, version = load_version(root)
+    output = root / "marketing" / "output"
+    if not (output / "appstore").is_dir():
+        raise ReleaseError(
+            f"No {output / 'appstore'}. Run python3 scripts/marketing.py refresh on the Mac first."
+        )
+    try:
+        slots, notes = collect_slots(output, appearance, duo)
+        for note in notes:
+            log(note)
+        sync = MediaSync(client or ASCClient(load_credentials()), apply=apply, log=log)
+        app_id = sync.client.app_id()
+        sync.run(app_id, version.marketing, slots, locale=locale, live=live)
+    except (ASCError, MediaError) as error:
+        raise ReleaseError(str(error)) from error
+    if sync.failures:
+        raise ReleaseError("Some media did not sync:\n  " + "\n  ".join(sync.failures))
+    if not sync.changes:
+        return "App Store media already matches marketing/output.\n"
+    if not apply:
+        return f"{sync.changes} change(s) planned. Run again with --apply to upload.\n"
+    return f"Synced {sync.changes} change(s) to App Store Connect.\n"
+
+
+def media_after_cut(root: Path, run=cmd_media, log=print) -> str:
+    """The media step `cut` runs once the tag exists. It never fails the cut.
+
+    The commit and tag are already made, so a missing output folder, missing
+    credentials, or an App Store Connect error is reported with the command to
+    rerun instead of an error exit.
+    """
+    if not (root / "marketing" / "output" / "appstore").is_dir():
+        return (
+            "Skipped App Store media: no marketing/output/appstore here. "
+            "Run python3 scripts/marketing.py refresh, then python3 scripts/release.py media --apply.\n"
+        )
+    try:
+        return run(root, apply=True, log=log)
+    except Exception as error:  # noqa: BLE001 — the cut is already tagged; any media failure is a report, not an exit.
+        return (
+            f"App Store media did not finish: {error}\n"
+            "The cut is done. Fix that, then run python3 scripts/release.py media --apply.\n"
+        )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -1090,13 +1183,27 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "cut":
             from datetime import date
 
-            print(cmd_cut(root, args.branch, date.today().isoformat()), end="")
+            print(cmd_cut(root, args.branch, date.today().isoformat()), end="", flush=True)
+            if not args.no_media:
+                print(media_after_cut(root), end="")
         elif args.command == "promote":
             print(cmd_promote(root, args.retarget), end="")
         elif args.command == "archive":
             print(cmd_archive(root, args.upload), end="")
         elif args.command == "tf-notes":
             print(cmd_tf_notes(root, args.locale, args.wait), end="")
+        elif args.command == "media":
+            print(
+                cmd_media(
+                    root,
+                    apply=args.apply,
+                    appearance=args.appearance,
+                    duo=args.duo,
+                    locale=args.locale,
+                    live=args.live,
+                ),
+                end="",
+            )
         elif args.command == "rollout":
             print(cmd_rollout(root, start=args.start), end="")
         else:

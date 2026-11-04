@@ -56,6 +56,7 @@ python3 scripts/release.py cut
 python3 scripts/release.py archive
 python3 scripts/release.py archive --upload
 python3 scripts/release.py tf-notes
+python3 scripts/release.py media [--apply]
 python3 scripts/release.py promote
 python3 scripts/release.py rollout --start
 python3 scripts/release.py rollout --halt
@@ -76,6 +77,9 @@ before export so a contaminated binary cannot upload.
 4. GitHub Actions (`.github/workflows/release.yml`) archives, uploads, syncs
    TestFlight “What to Test” from the changelog, and uploads dSYMs to Sentry.
 5. Install the build from TestFlight and QA it.
+
+`cut` also uploads the App Store media in `marketing/output/` once the tag is
+made (see [App Store media](#app-store-media)). Pass `--no-media` to skip it.
 
 The release job does not rerun unit tests. CI already tested the cut commit
 when it landed on `main`. It also waits up to 15 minutes for App Store Connect
@@ -106,6 +110,42 @@ PR list. For a hotfix branch, pass `--branch hotfix/0.1.2` and be on that
 branch.
 
 Build 1 has never been uploaded. The first cut publishes build 2.
+
+### App Store media
+
+`python3 scripts/release.py media` syncs what `marketing.py` rendered into
+`marketing/output/` to the App Store version for the marketing version in
+`Version.xcconfig`. On its own it only reads App Store Connect and prints the
+plan; `--apply` uploads. `cut` runs it with `--apply` on the Mac where you cut,
+because `marketing/output/` is gitignored and only exists there. The release job
+on GitHub Actions has no media to send.
+
+| Slot | From `marketing/output/` | How |
+| --- | --- | --- |
+| iPhone 6.9" screenshots | `appstore/iphone/<appearance>/` | screenshot set `APP_IPHONE_67` |
+| iPhone 6.3" screenshots | `appstore/iphone-6.3/<appearance>/` | screenshot set `APP_IPHONE_61` |
+| 13" iPad screenshots | `appstore/ipad/<appearance>/` | screenshot set `APP_IPAD_PRO_3GEN_129` |
+| App preview | `video/iphone/dark/appstore-preview.mp4` | preview set `IPHONE_67` |
+| iPhone Duo screenshots | `appstore/duo-outer/<appearance>/` (`--duo inner` for `duo/`) | Asset Library, `APP_SCREENSHOT` in `IPHONE_DUO_PROFILE` |
+| Product page header | `appstore/header/header-motion-<appearance>.mp4`, else `header-<appearance>.png` | Asset Library, `PRODUCT_PAGE_HEADER_ASSET` |
+| Search results art | `appstore/header/search-<appearance>.png` | Asset Library, `APP_STORE_SEARCH_RESULTS_ASSET` |
+
+- App Store Connect takes one appearance per slot. `--appearance` picks the set
+  (default `dark`).
+- Every PNG is checked against its slot's size before anything uploads.
+- A screenshot set whose files match (Apple keeps each file's MD5) is left
+  alone. A changed set is replaced whole, in file order.
+- Library uploads are named after their content hash, so the same art is
+  never uploaded twice; the slot's placement is pointed at it.
+- If App Store Connect has no version for the marketing version, `--apply`
+  creates it. It stops instead when another version is already in preparation,
+  or when this one is in review or live, since those screenshots are locked.
+- Header and search art placed on a version in preparation goes live when
+  Apple approves that version. `--live` places it on the version already on
+  sale instead, where it shows at once, but only art App Review has already
+  approved. Submit new art from the Asset Library first.
+- The iPhone Duo screenshot type is not in Apple's published API docs yet.
+  Others have uploaded the outer set through it; the inner set is unconfirmed.
 
 ### App Store
 

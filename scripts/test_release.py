@@ -465,5 +465,45 @@ class GitFlowTests(unittest.TestCase):
             self.assertEqual(release.parse_version((root / "Version.xcconfig").read_text()).build, 2)
 
 
+class ReleaseMediaTests(unittest.TestCase):
+    """The `media` command and the media step after `cut`."""
+
+    def setUp(self) -> None:
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+
+    def test_media_after_cut_skips_without_output(self) -> None:
+        root = Path(self.tmp.name)
+        self.assertIn("Skipped App Store media", release.media_after_cut(root, run=self.fail))
+
+    def test_media_after_cut_never_fails_the_cut(self) -> None:
+        root = Path(self.tmp.name)
+        (root / "marketing" / "output" / "appstore").mkdir(parents=True)
+
+        def boom(root, apply, log):
+            self.assertTrue(apply)
+            raise release.ReleaseError("Set ASC_KEY_ID and ASC_ISSUER_ID for App Store Connect API calls.")
+
+        message = release.media_after_cut(root, run=boom)
+        self.assertIn("The cut is done", message)
+        self.assertIn("ASC_KEY_ID", message)
+
+    def test_media_after_cut_reports_unexpected_errors(self) -> None:
+        root = Path(self.tmp.name)
+        (root / "marketing" / "output" / "appstore").mkdir(parents=True)
+
+        def boom(root, apply, log):
+            raise KeyError("id")
+
+        self.assertIn("The cut is done", release.media_after_cut(root, run=boom))
+
+    def test_cut_parser_has_no_media_switch(self) -> None:
+        args = release.build_parser().parse_args(["cut", "--no-media"])
+        self.assertTrue(args.no_media)
+        args = release.build_parser().parse_args(["media"])
+        self.assertFalse(args.apply)
+        self.assertEqual(args.appearance, "dark")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -46,6 +46,7 @@ jobs:
         run: |
           python3 scripts/test_release.py
           python3 scripts/test_asc_api.py
+          python3 scripts/test_asc_media.py
       - name: Scheduled check script tests
         run: |
           python3 scripts/test_tmdb_health.py
