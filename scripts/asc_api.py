@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Minimal App Store Connect API client (stdlib + openssl).
 
-Used by release.py for TestFlight notes and phased release, and by
+Used by release.py for TestFlight notes and phased release, by asc_media.py
+for App Store screenshots, previews, and creative assets, and by
 weekly_digest.py for sales, downloads, and customer reviews. No pip packages.
 """
 
@@ -145,6 +146,12 @@ def default_download(method, url, headers, body):
     return _send(method, url, headers, body, timeout=120)
 
 
+def default_upload(method, url, headers, body):
+    """Send one part of an asset upload to Apple's presigned URL. Returns the status."""
+    status, _ = _send(method, url, headers, body, timeout=300)
+    return status
+
+
 # Product Type Identifiers for a first-time app download (not an update or
 # redownload): iPhone, universal, and iPad.
 DOWNLOAD_PRODUCT_TYPES = frozenset({"1", "1F", "1T"})
@@ -179,10 +186,12 @@ class ASCClient:
         token=None,
         bundle_id="com.collinbrowse.thesilverscreen",
         download=default_download,
+        upload=default_upload,
     ):
         self.credentials = credentials
         self.http = http
         self.download = download
+        self.upload = upload
         self._token = token
         # None for an injected token, which never expires in tests.
         self._token_issued = None
@@ -201,6 +210,9 @@ class ASCClient:
         url = "https://api.appstoreconnect.apple.com" + path
         if query:
             url += "?" + urllib.parse.urlencode(query)
+        return self._request_url(method, url, path, payload)
+
+    def _request_url(self, method, url, path, payload=None):
         headers = {
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json",
@@ -210,6 +222,45 @@ class ASCClient:
         if status >= 400:
             raise ASCError(f"ASC {method} {path} failed ({status}): {data}")
         return data
+
+    def get_all(self, path, query=None):
+        """Every row of a list endpoint, following Apple's links.next pages.
+
+        Returns (rows, included). included holds the resources an include= query
+        asked for, from every page.
+        """
+        data = self.request("GET", path, query=query)
+        rows = list(data.get("data") or [])
+        included = list(data.get("included") or [])
+        next_url = (data.get("links") or {}).get("next")
+        while next_url:
+            data = self._request_url("GET", next_url, path)
+            rows.extend(data.get("data") or [])
+            included.extend(data.get("included") or [])
+            next_url = (data.get("links") or {}).get("next")
+        return rows, included
+
+    def upload_parts(self, operations, data):
+        """PUT each slice of data to the presigned URLs a reservation returned.
+
+        These URLs are Apple's asset store, not the API, so the bearer token
+        stays off them.
+        """
+        for operation in operations:
+            offset = int(operation.get("offset") or 0)
+            length = int(operation.get("length") or len(data) - offset)
+            headers = {
+                header["name"]: header["value"]
+                for header in operation.get("requestHeaders") or []
+            }
+            status = self.upload(
+                operation.get("method") or "PUT",
+                operation["url"],
+                headers,
+                data[offset : offset + length],
+            )
+            if status >= 400:
+                raise ASCError(f"Asset upload part at offset {offset} failed ({status}).")
 
     def app_id(self):
         data = self.request(
