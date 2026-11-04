@@ -49,6 +49,11 @@ MIN_VOTES = {"movie": 200, "tv": 100}
 # App Store screenshot sets. Apple requires a 6.3" iPhone set ("Dynamic Island,
 # medium"), a large iPhone set (6.9" here), and a 13" iPad set when the app runs on
 # iPad. The 6.3" set is framed from the 6.9" captures: same shape, so no extra run.
+# iPhone Duo has two sets, one per screen, from one simulator: `display` names the
+# screen to capture (`simctl io <udid> enumerate`). simctl cannot fold a Duo, so a
+# pass whose screen is off waits for someone to fold or unfold it in Device Hub.
+# Unfolded, the inner screen opens like a book, so its set is landscape; App Store
+# Connect takes either orientation for both screens.
 DEVICES = {
     "iphone": {
         "name": "SS Marketing iPhone 17 Pro Max",
@@ -64,8 +69,22 @@ DEVICES = {
         "type": "com.apple.CoreSimulator.SimDeviceType.iPad-Pro-13-inch-M5-12GB",
         "size": (2064, 2752),
     },
+    "duo": {
+        "name": "SS Marketing iPhone Duo",
+        "type": "com.apple.CoreSimulator.SimDeviceType.iPhone-Duo",
+        "size": (2853, 2007),
+        "display": "primary-1",
+    },
+    "duo-outer": {
+        "simulator": "duo",
+        "size": (1398, 2034),
+        "display": "primary",
+        "folded": True,
+    },
 }
 CAPTURE_DEVICES = [name for name, spec in DEVICES.items() if "raw_from" not in spec]
+# The tour records the default display, which on the Duo is the outer screen.
+VIDEO_DEVICES = [name for name in CAPTURE_DEVICES if "display" not in DEVICES[name]]
 APPEARANCES = ("light", "dark")
 APP_NAME = "Silver Screen"
 # Apple's creative asset sizes (iOS 27): product page header and search results.
@@ -249,9 +268,14 @@ def run(command: list[str], log_path: str | None = None, env: dict | None = None
             sys.exit(f"Failed: {' '.join(command[:3])}… (log: {os.path.relpath(log_path, ROOT)})")
 
 
+def simulator_spec(device: str) -> dict:
+    """The simulator a set is captured on; the Duo's outer set shares the inner set's."""
+    return DEVICES[DEVICES[device].get("simulator", device)]
+
+
 def simulator_udid(device: str) -> str:
     """The marketing simulator for an idiom, created and booted on first use."""
-    spec = DEVICES[device]
+    spec = simulator_spec(device)
     listing = json.loads(subprocess.check_output(["xcrun", "simctl", "list", "devices", "available", "-j"]))
     for runtime_devices in listing["devices"].values():
         for entry in runtime_devices:
@@ -378,6 +402,72 @@ def demo_environment(step: dict) -> dict:
     return env
 
 
+def lit_share(bmp: bytes, step: int = 97) -> float:
+    """Share of sampled pixels that are not near-black, from an uncompressed 24- or
+    32-bit BMP. A screen that is off (black, or a boot spinner) reads under 0.1%; even a
+    dark, empty home screen reads near 1%."""
+    offset = int.from_bytes(bmp[10:14], "little")
+    width = int.from_bytes(bmp[18:22], "little", signed=True)
+    height = abs(int.from_bytes(bmp[22:26], "little", signed=True))
+    depth = int.from_bytes(bmp[28:30], "little") // 8
+    # Rows are padded to 4 bytes, so sample by pixel index, not by byte stride.
+    row = (width * depth + 3) // 4 * 4
+    samples = range(0, width * height, step)
+    lit = 0
+    for index in samples:
+        start = offset + (index // width) * row + (index % width) * depth
+        if max(bmp[start:start + 3]) > 40:
+            lit += 1
+    return lit / max(len(samples), 1)
+
+
+def screen_is_on(udid: str, device: str, wait: float = 30) -> bool:
+    """Whether the Duo screen this set captures is the live one: a folded Duo leaves
+    the inner screen black, an unfolded one the outer. Both stay black for a few
+    seconds after `bootstatus` returns, so this waits up to `wait` seconds for light."""
+    os.makedirs(STAGE, exist_ok=True)
+    png, bmp = os.path.join(STAGE, "probe.png"), os.path.join(STAGE, "probe.bmp")
+    deadline = time.monotonic() + wait
+    while True:
+        if os.path.exists(png):
+            os.remove(png)
+        # A powered-off screen can stall `simctl io`; one short try, and no file reads as off.
+        simctl("io", udid, "screenshot", "--type=png", *screenshot_args(device), png, check=False, attempts=1, timeout=20)
+        if os.path.exists(png):
+            subprocess.run(["sips", "-s", "format", "bmp", png, "--out", bmp], check=True, capture_output=True)
+            with open(bmp, "rb") as handle:
+                if lit_share(handle.read()) > 0.002:
+                    return True
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(3)
+
+
+def ensure_screen(udid: str, device: str) -> bool:
+    """simctl cannot fold or unfold a Duo, and the simulator keeps its fold across
+    boots. When the wrong screen is on, asks the person at the Mac to fold or unfold
+    it in Device Hub. False (skip this set) when nobody can answer, so an unattended
+    `refresh` still finishes."""
+    if "display" not in DEVICES[device] or screen_is_on(udid, device):
+        return True
+    action = "Fold" if DEVICES[device].get("folded") else "Unfold"
+    if not sys.stdin.isatty():
+        print(f"  Skipping {device}: {action.lower()} the iPhone Duo in Device Hub and run "
+              f"`marketing.py screenshots --device {device}` from a terminal.", flush=True)
+        return False
+    while True:
+        input(f"  {action} \"{simulator_spec(device)['name']}\" in Device Hub, then press Return. ")
+        if screen_is_on(udid, device):
+            return True
+        print("  That screen is still off.", flush=True)
+
+
+def screenshot_args(device: str) -> list[str]:
+    """`simctl io` options that pick the device's screen; none means the default display."""
+    display = DEVICES[device].get("display")
+    return [f"--display={display}"] if display else []
+
+
 def shots_for(config: dict, device: str, only: set[str] | None = None) -> list[dict]:
     return [
         shot for shot in config.get("shots", [])
@@ -393,6 +483,9 @@ def capture_screenshots(devices: list[str], appearances: list[str], only: str | 
     wanted = set(only.split(",")) if only else None
     for device in devices:
         udid = simulator_udid(device)
+        if not ensure_screen(udid, device):
+            shutdown_simulator(udid)
+            continue
         bundle_id = install_app(udid)
         for appearance in appearances:
             prepare_simulator(udid, appearance)
@@ -404,7 +497,7 @@ def capture_screenshots(devices: list[str], appearances: list[str], only: str | 
                 # Posters and backdrops load from TMDB; give them time to land.
                 time.sleep(shot.get("settle", 7))
                 path = os.path.join(out_dir, f"{shot['id']}.png")
-                simctl("io", udid, "screenshot", "--type=png", path)
+                simctl("io", udid, "screenshot", "--type=png", *screenshot_args(device), path)
                 print(f"  {device} {appearance} {shot['id']}", flush=True)
             simctl("terminate", udid, bundle_id, check=False)
         shutdown_simulator(udid)
@@ -828,7 +921,7 @@ def main(argv: list[str] | None = None) -> int:
     p_header.add_argument("--appearance", choices=[*APPEARANCES, "all"], default="all")
 
     p_videos = sub.add_parser("videos", help="record and encode the website tour")
-    p_videos.add_argument("--device", choices=CAPTURE_DEVICES, default="iphone")
+    p_videos.add_argument("--device", choices=VIDEO_DEVICES, default="iphone")
     p_videos.add_argument("--appearance", choices=list(APPEARANCES), default="dark")
     p_videos.add_argument("--width", type=int, default=720, help="website clip width in pixels")
     p_videos.add_argument("--reuse", action="store_true", help="re-cut the last recording without recording again")

@@ -40,46 +40,95 @@ enum Palette {
     static let accent = Color(red: 0.98, green: 0.51, blue: 0.08)
 }
 
+/// How a device's screen and body are drawn. Radii and camera are shares of the
+/// framed screen's width, from each simulator's framebuffer mask (iPhone 17 Pro
+/// Max, iPad Pro 13", iPhone Duo): the mask's corner run divided by 1.53, the
+/// reach of a continuous corner.
+struct DeviceLook {
+    /// Hinge side on the iPhone Duo outer screen.
+    var leadingCorner: Double
+    var trailingCorner: Double
+    /// Camera hole drawn over the screen: centre and diameter.
+    var camera: (x: Double, y: Double, diameter: Double)?
+    /// A faint fold down the middle of the unfolded iPhone Duo.
+    var crease = false
+    /// Fit the whole device above the bottom edge, so its outline shows. A new
+    /// shape like the Duo's is only recognisable whole.
+    var whole = false
+
+    static func of(_ device: String) -> DeviceLook {
+        switch device {
+            case "ipad":
+                DeviceLook(leadingCorner: 0.022, trailingCorner: 0.022)
+            case "duo":
+                // Mask 1252 × 1780, 106 pt runs; framed by its long side in landscape.
+                DeviceLook(leadingCorner: 0.039, trailingCorner: 0.039, crease: true, whole: true)
+            case "duo-outer":
+                // Mask 466 × 678: square at the hinge (5 pt runs), round away from
+                // it (59 pt). Camera measured from the outer screen in Device Hub.
+                DeviceLook(
+                    leadingCorner: 0.007,
+                    trailingCorner: 0.083,
+                    camera: (x: 0.897, y: 0.068, diameter: 0.082),
+                    whole: true
+                )
+            default:
+                DeviceLook(leadingCorner: 0.14, trailingCorner: 0.14)
+        }
+    }
+}
+
 /// The full App Store image: caption on top, the screenshot in a slim device
-/// outline below, running off the bottom edge.
+/// outline below, running off the bottom edge (or whole, for the iPhone Duo).
 struct FramedShot: View {
     let job: Job
     let screenshot: NSImage
 
     private var isDark: Bool { job.appearance == "dark" }
-    private var isPad: Bool { job.device == "ipad" }
-    private var unit: Double { job.width / 1320 }
+    /// Squat canvases (iPad, both iPhone Duo screens) take the tablet proportions;
+    /// a tall phone canvas is over 2:1.
+    private var isSquat: Bool { job.height / job.width < 1.6 }
+    /// The unfolded iPhone Duo inner screen is the one landscape set.
+    private var isLandscape: Bool { job.width > job.height }
+    /// Type and spacing scale with the short side, so a landscape canvas reads
+    /// like its portrait twin instead of blowing the caption up.
+    private var unit: Double { min(job.width, job.height) / 1320 }
+    /// Caption band height; landscape tightens it so the device stays large.
+    private var captionHeight: Double { (isLandscape ? 400 : isSquat ? 540 : 600) * unit }
 
     var body: some View {
-        let screenWidth = job.width * (isPad ? 0.78 : 0.765)
-        let bezel = (isPad ? 22 : 20) * unit
-        // Display corner radius as a share of screen width (iPhone 17 Pro Max, iPad Pro 13").
-        let corner = screenWidth * (isPad ? 0.022 : 0.14)
+        let look = DeviceLook.of(job.device)
+        let bezel = (isSquat ? 22 : 20) * unit
+        let aspect = screenshot.size.height / max(screenshot.size.width, 1)
+        let widest = job.width * (isSquat ? 0.78 : 0.765)
+        // A whole device shrinks until its body clears the bottom margin.
+        let fitted = (job.height - captionHeight - 110 * unit - 2 * bezel) / aspect
+        let screenWidth = look.whole ? min(widest, fitted) : widest
 
         ZStack(alignment: .top) {
             BrandBackground(isDark: isDark, size: CGSize(width: job.width, height: job.height))
             VStack(spacing: 0) {
                 VStack(spacing: 26 * unit) {
                     Text(job.caption)
-                        .font(.system(size: (isPad ? 84 : 104) * unit, weight: .bold))
+                        .font(.system(size: (isSquat ? 84 : 104) * unit, weight: .bold))
                         .tracking(-1.5 * unit)
                         .foregroundStyle(isDark ? Color.white : Palette.tealDeep)
                     if let subcaption = job.subcaption, !subcaption.isEmpty {
                         Text(subcaption)
-                            .font(.system(size: (isPad ? 42 : 50) * unit, weight: .medium))
+                            .font(.system(size: (isSquat ? 42 : 50) * unit, weight: .medium))
                             .foregroundStyle(isDark ? Color.white.opacity(0.72) : Palette.teal)
                     }
                 }
                 .multilineTextAlignment(.center)
                 .lineSpacing(4 * unit)
                 .frame(width: job.width * 0.86)
-                .padding(.top, (isPad ? 150 : 190) * unit)
-                .frame(height: (isPad ? 540 : 600) * unit, alignment: .top)
+                .padding(.top, (isLandscape ? 110 : isSquat ? 150 : 190) * unit)
+                .frame(height: captionHeight, alignment: .top)
 
                 PhoneFrame(
                     screenshot: screenshot,
                     screenWidth: screenWidth,
-                    corner: corner,
+                    look: look,
                     bezel: bezel,
                     unit: unit,
                     isDark: isDark
@@ -95,10 +144,23 @@ struct FramedShot: View {
 struct PhoneFrame: View {
     let screenshot: NSImage
     let screenWidth: Double
-    let corner: Double
+    let look: DeviceLook
     let bezel: Double
     let unit: Double
     let isDark: Bool
+
+    /// The screen's outline; the body follows it, `grow` points out.
+    private func outline(grow: Double) -> UnevenRoundedRectangle {
+        let leading = screenWidth * look.leadingCorner + grow
+        let trailing = screenWidth * look.trailingCorner + grow
+        return UnevenRoundedRectangle(
+            topLeadingRadius: leading,
+            bottomLeadingRadius: leading,
+            bottomTrailingRadius: trailing,
+            topTrailingRadius: trailing,
+            style: .continuous
+        )
+    }
 
     var body: some View {
         let aspect = screenshot.size.height / max(screenshot.size.width, 1)
@@ -106,14 +168,33 @@ struct PhoneFrame: View {
             .resizable()
             .interpolation(.high)
             .frame(width: screenWidth, height: screenWidth * aspect)
-            .clipShape(RoundedRectangle(cornerRadius: corner, style: .continuous))
+            .overlay {
+                if look.crease {
+                    LinearGradient(
+                        colors: [.clear, .black.opacity(0.07), .white.opacity(0.10), .clear],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(width: 10 * unit)
+                }
+            }
+            .overlay(alignment: .topLeading) {
+                if let camera = look.camera {
+                    let diameter = screenWidth * camera.diameter
+                    Circle()
+                        .fill(Color.black)
+                        .frame(width: diameter, height: diameter)
+                        .offset(
+                            x: screenWidth * camera.x - diameter / 2,
+                            y: screenWidth * aspect * camera.y - diameter / 2
+                        )
+                }
+            }
+            .clipShape(outline(grow: 0))
             .padding(bezel)
-            .background(
-                RoundedRectangle(cornerRadius: corner + bezel, style: .continuous)
-                    .fill(Color(white: 0.06))
-            )
+            .background(outline(grow: bezel).fill(Color(white: 0.06)))
             .overlay(
-                RoundedRectangle(cornerRadius: corner + bezel, style: .continuous)
+                outline(grow: bezel)
                     .strokeBorder(Color.white.opacity(isDark ? 0.22 : 0.5), lineWidth: 3 * unit)
             )
             .shadow(color: .black.opacity(isDark ? 0.55 : 0.28), radius: 60 * unit, y: 30 * unit)
@@ -286,7 +367,7 @@ struct SearchArt: View {
             PhoneFrame(
                 screenshot: screenshot,
                 screenWidth: phoneWidth,
-                corner: phoneWidth * 0.14,
+                look: .of("iphone"),
                 bezel: 18 * unit,
                 unit: unit,
                 isDark: isDark
