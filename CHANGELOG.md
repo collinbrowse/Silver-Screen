@@ -7,6 +7,13 @@ list.
 
 ## [Unreleased]
 
+## [0.1.1+10] - 2026-11-04
+
+- Add iPhone Duo inner and outer screenshot sets to the marketing pipeline.
+- Fix onboarding tour layout on Mac and iPhone Duo.
+- Render the product page header as a looping video.
+- Upload App Store screenshots, preview, and header and search art on each TestFlight cut.
+
 ## [0.1.1+9] - 2026-11-02
 
 - Upgrade Sentry Cocoa to 9.30.2.
