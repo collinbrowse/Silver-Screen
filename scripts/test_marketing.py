@@ -315,6 +315,7 @@ class HeaderMotionTests(unittest.TestCase):
         self.assertEqual(args[args.index("-c:v") + 1], "libx264")
         self.assertIn("-an", args)
         self.assertIn("out_color_matrix=bt709", args[args.index("-vf") + 1])
+        self.assertIn("color_trc=bt709", args[args.index("-vf") + 1])
         self.assertEqual(args[-1], "/out/header-motion-dark.mp4")
 
 

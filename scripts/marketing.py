@@ -601,8 +601,10 @@ def header_motion_args(frames_dir: str, out_path: str) -> list[str]:
     return [
         "-framerate", str(HEADER_MOTION["fps"]), "-i", os.path.join(frames_dir, "frame-%04d.png"),
         # Convert with the BT.709 matrix the tags below declare; ffmpeg's default
-        # RGB-to-YUV matrix is BT.601, which shifts the brand colors.
-        "-vf", "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p",
+        # RGB-to-YUV matrix is BT.601, which shifts the brand colors. setparams
+        # overrides the sRGB transfer tag the Mac's PNG frames carry.
+        "-vf", "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,"
+        "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709",
         "-c:v", "libx264", "-profile:v", "high", "-preset", "slow", "-crf", "14", "-pix_fmt", "yuv420p",
         "-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709",
         "-an", "-movflags", "+faststart", out_path,
