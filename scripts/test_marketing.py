@@ -287,6 +287,37 @@ class BannerTests(unittest.TestCase):
                 marketing.OUTPUT = original
 
 
+class HeaderMotionTests(unittest.TestCase):
+    def test_header_video_fits_apples_frame_rate_and_length_and_loops_whole_patterns(self):
+        motion = marketing.HEADER_MOTION
+        self.assertIn(motion["fps"], (30, 60))
+        self.assertTrue(5 <= motion["seconds"] <= 30)
+        self.assertIsInstance(motion["loops"], int)
+        self.assertGreater(motion["loops"], 0)
+
+    def test_motion_jobs_render_one_frame_folder_per_appearance_at_header_size(self):
+        jobs = marketing.motion_jobs({"header": {"wordmark": "Silver Screen"}}, ["light", "dark"])
+        self.assertEqual([job["appearance"] for job in jobs], ["light", "dark"])
+        job = jobs[1]
+        self.assertEqual((job["kind"], job["width"], job["height"]), ("header-motion", 3840, 1646))
+        self.assertEqual(job["frames"], marketing.HEADER_MOTION["seconds"] * marketing.HEADER_MOTION["fps"])
+        self.assertEqual(os.path.basename(job["output"]), "frames-dark")
+        self.assertEqual(job["caption"], "Silver Screen")
+
+    def test_motion_jobs_without_a_wordmark_exits(self):
+        with self.assertRaises(SystemExit):
+            marketing.motion_jobs({}, ["dark"])
+
+    def test_header_video_is_silent_h264_read_from_numbered_frames(self):
+        args = marketing.header_motion_args("/frames", "/out/header-motion-dark.mp4")
+        self.assertEqual(args[args.index("-i") + 1], "/frames/frame-%04d.png")
+        self.assertEqual(args[args.index("-framerate") + 1], "30")
+        self.assertEqual(args[args.index("-c:v") + 1], "libx264")
+        self.assertIn("-an", args)
+        self.assertIn("out_color_matrix=bt709", args[args.index("-vf") + 1])
+        self.assertEqual(args[-1], "/out/header-motion-dark.mp4")
+
+
 class MetadataTests(unittest.TestCase):
     ATTRIBUTION = marketing.TMDB_ATTRIBUTION
 
