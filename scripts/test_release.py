@@ -488,6 +488,15 @@ class ReleaseMediaTests(unittest.TestCase):
         self.assertIn("The cut is done", message)
         self.assertIn("ASC_KEY_ID", message)
 
+    def test_media_after_cut_reports_unexpected_errors(self) -> None:
+        root = Path(self.tmp.name)
+        (root / "marketing" / "output" / "appstore").mkdir(parents=True)
+
+        def boom(root, apply, log):
+            raise KeyError("id")
+
+        self.assertIn("The cut is done", release.media_after_cut(root, run=boom))
+
     def test_cut_parser_has_no_media_switch(self) -> None:
         args = release.build_parser().parse_args(["cut", "--no-media"])
         self.assertTrue(args.no_media)

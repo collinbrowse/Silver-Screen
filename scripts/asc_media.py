@@ -433,7 +433,8 @@ class MediaSync:
                     attributes = row.get("attributes") or {}
                     state = attributes.get("state") or ""
                     name = attributes.get("fileName")
-                    if name and state not in UNUSABLE_STATES:
+                    # Keep an approved copy over a later duplicate still in review.
+                    if name and state not in UNUSABLE_STATES and (found.get(name) or ("", "", ""))[2] != "APPROVED":
                         found[name] = (resource, str(row["id"]), state)
             self._library_assets = found
         return self._library_assets
@@ -443,7 +444,10 @@ class MediaSync:
         name = item.library_name(slot.stem)
         assets = self.library_assets(app_id)
         if name in assets:
-            resource, asset_id, _ = assets[name]
+            resource, asset_id, state = assets[name]
+            if state in PROCESSING_STATES and self.apply:
+                # An earlier run timed out before processing finished; placing it now would fail.
+                assets[name] = (resource, asset_id, self.wait_processed(resource, asset_id))
             return resource, asset_id
 
         resource = "appAssetLibraryVideos" if item.is_video else "appAssetLibraryImages"

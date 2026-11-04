@@ -340,6 +340,36 @@ class MediaSyncTests(MediaTestCase):
         self.assertEqual(fake.writes, [])
         self.assertEqual(sync.changes, 0)
 
+    def test_library_asset_still_processing_is_awaited_before_placing(self) -> None:
+        self.make_output()
+        slots, _ = asc_media.collect_slots(self.output, "dark")
+        search = next(slot for slot in slots if slot.key == "APP_STORE_SEARCH_RESULTS_ASSET")
+        fake = FakeASC()
+        fake.library_images = [
+            {"id": "img-1", "attributes": {"fileName": search.files[0].library_name("search-dark"), "state": "UPLOAD_COMPLETE"}}
+        ]
+        fake.asset_states["img-1"] = ["UPLOAD_COMPLETE", "PREPARE_FOR_SUBMISSION"]
+        sync = self.sync(fake, apply=True)
+        sync.sync_library("app-1", "loc-1", search, [], live=False)
+        polls = [path for method, path, _ in fake.calls if method == "GET" and path == "/v1/appAssetLibraryImages/img-1"]
+        self.assertEqual(len(polls), 2)
+        self.assertFalse(any(path == "/v1/appAssetLibraryImages" for _, path, _ in fake.writes))
+        placed = [p for m, path, p in fake.writes if path == "/v1/appAssetLibraryPlacements"][0]["data"]
+        self.assertEqual(placed["relationships"]["image"]["data"]["id"], "img-1")
+
+    def test_approved_duplicate_wins_over_later_copy(self) -> None:
+        self.make_output()
+        slots, _ = asc_media.collect_slots(self.output, "dark")
+        search = next(slot for slot in slots if slot.key == "APP_STORE_SEARCH_RESULTS_ASSET")
+        name = search.files[0].library_name("search-dark")
+        fake = FakeASC()
+        fake.library_images = [
+            {"id": "img-ok", "attributes": {"fileName": name, "state": "APPROVED"}},
+            {"id": "img-dup", "attributes": {"fileName": name, "state": "PREPARE_FOR_SUBMISSION"}},
+        ]
+        assets = self.sync(fake, apply=False).library_assets("app-1")
+        self.assertEqual(assets[name][1], "img-ok")
+
     def test_live_version_only_takes_approved_art(self) -> None:
         self.make_output()
         slots, _ = asc_media.collect_slots(self.output, "dark")

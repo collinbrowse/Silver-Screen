@@ -1153,7 +1153,7 @@ def media_after_cut(root: Path, run=cmd_media, log=print) -> str:
         )
     try:
         return run(root, apply=True, log=log)
-    except ReleaseError as error:
+    except Exception as error:  # noqa: BLE001 — the cut is already tagged; any media failure is a report, not an exit.
         return (
             f"App Store media did not finish: {error}\n"
             "The cut is done. Fix that, then run python3 scripts/release.py media --apply.\n"
