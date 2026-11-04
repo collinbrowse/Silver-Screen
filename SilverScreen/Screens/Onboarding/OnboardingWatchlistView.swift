@@ -35,6 +35,7 @@ struct OnboardingWatchlistView: View {
                 }
                 .padding(.horizontal, DesignSpacing.lg)
                 .padding(.bottom, DesignSpacing.lg)
+                .onboardingScrollContentWidth()
             }
             .scrollDismissesKeyboard(.immediately)
             .overlay(alignment: .top) {

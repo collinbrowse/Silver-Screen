@@ -6,6 +6,7 @@
 //  how reported frames become the highlight.
 //
 
+import SwiftUI
 import XCTest
 @testable import SilverScreen
 
@@ -134,6 +135,144 @@ final class TourControllerTests: XCTestCase {
         tour.next()
 
         XCTAssertEqual(tour.highlight, CGRect(x: 320, y: 50, width: 44, height: 44))
+    }
+
+    func test_highlight_followsTheNewestViewWhenALayoutChangeSwapsThem() async {
+        let tour = TourController(router: AppRouter(), lists: .empty())
+        await tour.start()
+        tour.next()
+        tour.next()
+        let oldRow = UUID()
+        let newRow = UUID()
+        tour.report(.browseEye, source: oldRow, frame: nil, isVisible: true)
+        tour.report(.browseEye, source: oldRow, frame: CGRect(x: 400, y: 200, width: 40, height: 40), isVisible: nil)
+
+        // Unfolding regroups the grid: the new row appears, then the old one reports
+        // a last frame from the layout it is leaving before it disappears.
+        tour.report(.browseEye, source: newRow, frame: CGRect(x: 290, y: 200, width: 40, height: 40), isVisible: nil)
+        tour.report(.browseEye, source: newRow, frame: nil, isVisible: true)
+        tour.report(.browseEye, source: oldRow, frame: CGRect(x: 550, y: 200, width: 40, height: 40), isVisible: nil)
+
+        XCTAssertEqual(tour.highlight, CGRect(x: 290, y: 200, width: 40, height: 40))
+
+        tour.report(.browseEye, source: oldRow, frame: nil, isVisible: false)
+
+        XCTAssertEqual(tour.highlight, CGRect(x: 290, y: 200, width: 40, height: 40))
+    }
+
+    func test_highlight_ignoresEmptyFrames() async {
+        let tour = TourController(router: AppRouter(), lists: .empty())
+        await tour.start()
+        tour.next()
+
+        tour.report(.newList, frame: .zero, isVisible: true)
+
+        XCTAssertNil(tour.highlight)
+        XCTAssertFalse(tour.isShowing(.newList))
+    }
+
+    func test_highlight_skipsAToolbarCopyThatWasNeverPlaced() async {
+        let tour = TourController(router: AppRouter(), lists: .empty())
+        await tour.start()
+        tour.next()
+        let placed = UUID()
+        let unplaced = UUID()
+        tour.report(.newList, source: placed, frame: CGRect(x: 352, y: 73, width: 23, height: 22), isVisible: true)
+
+        // A newer bridged copy of the toolbar item reports its unplaced frame around (0, 0).
+        tour.report(.newList, source: unplaced, frame: CGRect(x: -11.5, y: -11, width: 23, height: 22), isVisible: true)
+
+        XCTAssertEqual(tour.highlight, CGRect(x: 352, y: 73, width: 23, height: 22))
+    }
+
+    func test_hiddenViewThatComesBack_keepsItsFrame() async {
+        let tour = TourController(router: AppRouter(), lists: .empty())
+        tour.report(.newList, frame: CGRect(x: 320, y: 50, width: 44, height: 44), isVisible: true)
+        tour.report(.newList, frame: nil, isVisible: false)
+        await tour.start()
+        tour.next()
+        XCTAssertNil(tour.highlight)
+
+        tour.report(.newList, frame: nil, isVisible: true)
+
+        XCTAssertEqual(tour.highlight, CGRect(x: 320, y: 50, width: 44, height: 44))
+    }
+
+    func test_reassign_movesTheFrameToTheNewAnchor() async {
+        let tour = TourController(router: AppRouter(), lists: .empty())
+        let row = UUID()
+        let frame = CGRect(x: 20, y: 120, width: 300, height: 60)
+        tour.report(.libraryWatched, source: row, frame: frame, isVisible: true)
+        tour.reassign(.libraryWatched, to: .newList, source: row)
+        await tour.start()
+        tour.next()
+
+        XCTAssertEqual(tour.highlight, frame)
+        XCTAssertFalse(tour.isShowing(.libraryWatched))
+    }
+
+    func test_prune_dropsTheOldestHiddenViews() async {
+        let tour = TourController(router: AppRouter(), lists: .empty())
+        await tour.start()
+        tour.next()
+        let rows = (0..<6).map { _ in UUID() }
+        for (offset, row) in rows.enumerated() {
+            let frame = CGRect(x: 300, y: 50 + CGFloat(offset) * 10, width: 44, height: 44)
+            tour.report(.newList, source: row, frame: frame, isVisible: true)
+            tour.report(.newList, source: row, frame: nil, isVisible: false)
+        }
+
+        // The oldest two were dropped, so coming back they have no frame to show.
+        tour.report(.newList, source: rows[0], frame: nil, isVisible: true)
+        XCTAssertNil(tour.highlight)
+
+        tour.report(.newList, source: rows[5], frame: nil, isVisible: true)
+        XCTAssertEqual(tour.highlight, CGRect(x: 300, y: 100, width: 44, height: 44))
+    }
+
+    func test_rateMovieMessage_explainsRewatchesAndShowRatings() {
+        let message = TourStop.rateMovie(id: 1, title: "Heat").message
+
+        XCTAssertFalse(message.localizedCaseInsensitiveContains("verdict"))
+        XCTAssertTrue(message.contains("rewatch"))
+    }
+
+    // MARK: - Card placement
+
+    func test_cardPlacement_goesUnderATopHighlightWhenItFits() {
+        let placement = TourOverlay.cardPlacement(
+            cutout: CGRect(x: 0, y: 100, width: 300, height: 100),
+            height: 800,
+            cardHeight: 200,
+            insets: EdgeInsets(top: 50, leading: 0, bottom: 34, trailing: 0),
+            gap: 16
+        )
+
+        XCTAssertEqual(placement, .top(216))
+    }
+
+    func test_cardPlacement_pinsAboveTheHomeIndicatorUnderATallHighlight() {
+        let placement = TourOverlay.cardPlacement(
+            cutout: CGRect(x: 0, y: 60, width: 300, height: 600),
+            height: 800,
+            cardHeight: 200,
+            insets: EdgeInsets(top: 50, leading: 0, bottom: 34, trailing: 0),
+            gap: 16
+        )
+
+        XCTAssertEqual(placement, .bottom(50))
+    }
+
+    func test_cardPlacement_pinsBelowTheTopInsetOverATallBottomHighlight() {
+        let placement = TourOverlay.cardPlacement(
+            cutout: CGRect(x: 0, y: 150, width: 300, height: 640),
+            height: 800,
+            cardHeight: 200,
+            insets: EdgeInsets(top: 50, leading: 0, bottom: 34, trailing: 0),
+            gap: 16
+        )
+
+        XCTAssertEqual(placement, .top(66))
     }
 
     // MARK: - Onboarding hand-off

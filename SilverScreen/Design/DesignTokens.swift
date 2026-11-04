@@ -89,8 +89,22 @@ struct ScrollingInlineTitle: ViewModifier {
     func body(content: Content) -> some View {
         content
             .environment(\.inlineTitleIsInNavigationBar, showsTitle)
-            .navigationTitle(showsTitle && !title.isEmpty ? title : "")
             .navigationBarTitleDisplayMode(.inline)
+            // A principal item that is always there and fades in, not a navigation title
+            // that switches from "" to the title. Where the bar holds nothing else (the
+            // iPhone Duo cover screen keeps its toolbar in a side column), adding the
+            // title added a top bar and raised the scroll inset mid-scroll, which moved
+            // SwiftUI's frames for scroll content by the inset and put tour cutouts
+            // about 45pt above their targets.
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text(title)
+                        .font(.headline)
+                        .lineLimit(1)
+                        .opacity(showsTitle ? 1 : 0)
+                        .accessibilityHidden(!showsTitle)
+                }
+            }
             .toolbarBackground(showsBackground ? .visible : .hidden, for: .navigationBar)
             .onPreferenceChange(InlineTitleBottomKey.self) { titleBottom = $0 }
             .onScrollGeometryChange(for: Bool.self) { geometry in
