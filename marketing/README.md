@@ -8,6 +8,7 @@ python3 scripts/marketing.py refresh       # all of the below except videos, in 
 python3 scripts/marketing.py screenshots   # raw PNGs, iPhone + iPad + iPhone Duo, light + dark
 python3 scripts/marketing.py frame         # captioned App Store images
 python3 scripts/marketing.py header        # product page header + search results art
+python3 scripts/marketing.py header --motion  # ...plus the looping header video (needs ffmpeg)
 python3 scripts/marketing.py metadata      # store copy, checked (frame runs it too)
 python3 scripts/marketing.py videos        # website clips + App Store app preview
 python3 scripts/marketing.py videos --reuse  # re-cut the last recording (no simulator)
@@ -23,6 +24,7 @@ Everything lands in `marketing/output/` (gitignored):
 | `appstore/duo/<appearance>/` | 2853×2007 | App Store Connect, iPhone Duo inner (unfolded) display, landscape |
 | `appstore/duo-outer/<appearance>/` | 1398×2034 | App Store Connect, iPhone Duo outer (folded) display |
 | `appstore/header/header-<appearance>.png` | 3840×1646 (21:9), opaque PNG | Product page header (iOS 27+) |
+| `appstore/header/header-motion-<appearance>.mp4` | 3840×1646 (21:9), 12 s at 30 fps, H.264, silent | Product page header video (iOS 27+) |
 | `appstore/header/search-<appearance>.png` | 3840×2560 (3:2), opaque PNG | Search results asset (iOS 27+) |
 | `appstore/metadata/*.txt` | Subtitle, promotional text, description, keywords; `metadata.md` shows them all with character counts | Paste into App Store Connect |
 | `raw/` | Unframed simulator captures | Website, press kit, README |
@@ -107,7 +109,10 @@ by default.
 - `header`: the product page header. Following Apple's examples it has no app UI,
   only brand art (a film strip like the app icon's) and `wordmark`; `tagline` adds
   an optional short line. iPhone shows about the middle 60% under the back and share
-  buttons, so the wordmark stays centered.
+  buttons, so the wordmark stays centered. `header --motion` also renders it as a
+  12-second video in which film runs along the strip and the glow pulses gently; it
+  loops seamlessly, and App Store Connect takes it in place of the still (21:9,
+  30 or 60 fps, 5 to 30 seconds, muted, looping).
 - `search`: the search results art: `caption` (one short phrase), an optional
   `subcaption`, and one phone showing the iPhone raw capture named in `shot`.
   Apple: no prices, URLs, awards you haven't won, or other platforms' logos. Check

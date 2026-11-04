@@ -8,7 +8,8 @@ the library a capture launch starts with. See marketing/README.md.
   hydrate      Fill title, poster, dates, genres, and scores in titles.json from TMDB ids.
   screenshots  Run the MarketingCapture UI test per device and appearance; save raw PNGs.
   frame        Put each raw PNG on a captioned background at App Store size.
-  header       Product page header (21:9) and search results art (3:2) from raw PNGs.
+  header       Product page header (21:9) and search results art (3:2) from raw PNGs;
+               --motion also renders the looping header video.
   metadata     Store copy (subtitle, promotional text, description, keywords), checked
                against Apple's limits and rules. `frame` runs it too.
   refresh      Everything for a new App Store version: screenshots, frame, header,
@@ -89,6 +90,10 @@ APPEARANCES = ("light", "dark")
 APP_NAME = "Silver Screen"
 # Apple's creative asset sizes (iOS 27): product page header and search results.
 BANNERS = {"header": (3840, 1646), "search": (3840, 2560)}
+# Header video: Apple takes 30 or 60 fps and 5 to 30 seconds, muted and looping.
+# `loops` is how many times the film strip's pattern runs past in that time; a
+# whole number keeps the loop seamless.
+HEADER_MOTION = {"seconds": 12, "fps": 30, "loops": 2}
 
 
 # MARK: - TMDB
@@ -570,6 +575,52 @@ def banner_jobs(config: dict, appearances: list[str]) -> list[dict]:
     return jobs
 
 
+def motion_jobs(config: dict, appearances: list[str]) -> list[dict]:
+    """Header video frames: the header art with film running along the strip, one
+    PNG folder per appearance for `encode_header_motion`."""
+    header = config.get("header") or {}
+    if not header.get("wordmark"):
+        sys.exit("titles.json needs `header.wordmark`.")
+    width, height = BANNERS["header"]
+    return [{
+        "kind": "header-motion",
+        "device": "iphone",
+        "appearance": appearance,
+        "output": os.path.join(OUTPUT, "appstore", "header", f"frames-{appearance}"),
+        "caption": header["wordmark"],
+        "subcaption": header.get("tagline", ""),
+        "width": width,
+        "height": height,
+        "frames": HEADER_MOTION["seconds"] * HEADER_MOTION["fps"],
+        "loops": HEADER_MOTION["loops"],
+    } for appearance in appearances]
+
+
+def header_motion_args(frames_dir: str, out_path: str) -> list[str]:
+    """ffmpeg arguments for the header video: H.264 MP4 at the header size, no audio."""
+    return [
+        "-framerate", str(HEADER_MOTION["fps"]), "-i", os.path.join(frames_dir, "frame-%04d.png"),
+        # Convert with the BT.709 matrix the tags below declare; ffmpeg's default
+        # RGB-to-YUV matrix is BT.601, which shifts the brand colors. setparams
+        # overrides the sRGB transfer tag the Mac's PNG frames carry.
+        "-vf", "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p,"
+        "setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709",
+        "-c:v", "libx264", "-profile:v", "high", "-preset", "slow", "-crf", "14", "-pix_fmt", "yuv420p",
+        "-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709",
+        "-an", "-movflags", "+faststart", out_path,
+    ]
+
+
+def encode_header_motion(jobs: list[dict]) -> None:
+    """Encodes header-motion-<appearance>.mp4 from frames `render_jobs` drew on the
+    Mac (SF Pro), and deletes the frames."""
+    for job in jobs:
+        out_path = os.path.join(OUTPUT, "appstore", "header", f"header-motion-{job['appearance']}.mp4")
+        ffmpeg(*header_motion_args(job["output"], out_path))
+        shutil.rmtree(job["output"])
+        print(f"encoded {os.path.relpath(out_path, ROOT)}")
+
+
 def render_jobs(jobs: list[dict]) -> None:
     path = os.path.join(OUTPUT, "frame-jobs.json")
     os.makedirs(OUTPUT, exist_ok=True)
@@ -919,6 +970,7 @@ def main(argv: list[str] | None = None) -> int:
 
     p_header = sub.add_parser("header", help="product page header and search results art")
     p_header.add_argument("--appearance", choices=[*APPEARANCES, "all"], default="all")
+    p_header.add_argument("--motion", action="store_true", help="also render the looping header video")
 
     p_videos = sub.add_parser("videos", help="record and encode the website tour")
     p_videos.add_argument("--device", choices=VIDEO_DEVICES, default="iphone")
@@ -957,7 +1009,18 @@ def main(argv: list[str] | None = None) -> int:
             record_tour("iphone", "dark", 720)
     elif args.command == "header":
         appearances = list(APPEARANCES) if args.appearance == "all" else [args.appearance]
-        render_jobs(banner_jobs(load_config(), appearances))
+        config = load_config()
+        jobs = banner_jobs(config, appearances)
+        motion = []
+        if args.motion:
+            if not shutil.which("ffmpeg"):
+                sys.exit("header --motion needs ffmpeg: brew install ffmpeg")
+            motion = motion_jobs(config, appearances)
+            for job in motion:
+                shutil.rmtree(job["output"], ignore_errors=True)
+        # One Swift run draws the stills and the video frames.
+        render_jobs(jobs + motion)
+        encode_header_motion(motion)
     elif args.command == "videos":
         if not shutil.which("ffmpeg"):
             sys.exit("videos needs ffmpeg: brew install ffmpeg")

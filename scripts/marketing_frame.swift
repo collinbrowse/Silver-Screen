@@ -4,7 +4,8 @@
 //
 //  Puts raw simulator screenshots on a captioned background at exact App Store
 //  pixel sizes: framed screenshots (`marketing.py frame`) and the product page
-//  header and search results art (`marketing.py header`). The script writes the
+//  header and search results art (`marketing.py header`), and the frames of the
+//  looping header video (`marketing.py header --motion`). The script writes the
 //  job list:
 //
 //    swift scripts/marketing_frame.swift jobs.json
@@ -17,7 +18,9 @@ import AppKit
 import SwiftUI
 
 /// One image to write. Sizes are pixels. `kind` is `screenshot` (default, one
-/// `input`), `header` (no input), or `search` (one `input`, the phone shown).
+/// `input`), `header` (no input), `search` (one `input`, the phone shown), or
+/// `header-motion`: `frames` PNGs of the header written into the `output` folder,
+/// with the film running `loops` pattern lengths along the strip over the loop.
 struct Job: Decodable {
     let kind: String?
     let input: String?
@@ -28,6 +31,8 @@ struct Job: Decodable {
     let height: Double
     let device: String
     let appearance: String
+    let frames: Int?
+    let loops: Int?
 }
 
 /// Brand colors from the app icon's teal film strip and the in-app accent.
@@ -208,6 +213,8 @@ struct BrandBackground: View {
     /// Warm orange glow on dark screenshots; the header art uses a cool teal glow,
     /// since orange over a large teal field turns muddy.
     var warmGlow = true
+    /// Multiplies the glow's strength; the header video pulses it around 1.
+    var glowScale = 1.0
 
     var body: some View {
         let reach = max(size.width, size.height)
@@ -215,7 +222,7 @@ struct BrandBackground: View {
             if isDark {
                 LinearGradient(colors: [Palette.tealMid, Palette.tealDeep], startPoint: .top, endPoint: .bottom)
                 RadialGradient(
-                    colors: [(warmGlow ? Palette.accent.opacity(0.22) : Palette.teal.opacity(0.45)), .clear],
+                    colors: [(warmGlow ? Palette.accent.opacity(0.22 * glowScale) : Palette.teal.opacity(0.45 * glowScale)), .clear],
                     center: .init(x: 0.5, y: 0.55),
                     startRadius: 0,
                     endRadius: reach * 0.75
@@ -223,7 +230,7 @@ struct BrandBackground: View {
             } else {
                 LinearGradient(colors: [Palette.silver, Palette.mist], startPoint: .top, endPoint: .bottom)
                 RadialGradient(
-                    colors: [Palette.teal.opacity(0.16), .clear],
+                    colors: [Palette.teal.opacity(0.16 * glowScale), .clear],
                     center: .init(x: 0.5, y: 0.6),
                     startRadius: 0,
                     endRadius: reach * 0.8
@@ -247,6 +254,23 @@ struct FilmStrip: View {
     /// Band thickness as a share of canvas height.
     let thickness: Double
     let isDark: Bool
+    /// How far the film has run along the strip, in points. Frames and sprocket
+    /// holes move toward the strip's right end; the strip itself stays put.
+    var travel = 0.0
+
+    /// Frame and gap, and sprocket hole and gap, as shares of the band thickness.
+    static let frameDash = [0.78, 0.1]
+    static let holeDash = [0.1, 0.1]
+
+    /// The distance, as a share of the band, after which frames and sprocket holes
+    /// line up as they started: the least common multiple of their pitches (0.88 and
+    /// 0.2 make 4.4). Running the film a whole number of these loops seamlessly.
+    static var patternShare: Double {
+        let quantum = 1000.0
+        let pitches = [frameDash, holeDash].map { Int(($0.reduce(0, +) * quantum).rounded()) }
+        func gcd(_ a: Int, _ b: Int) -> Int { b == 0 ? a : gcd(b, a % b) }
+        return Double(pitches.reduce(1) { $0 / gcd($0, $1) * $1 }) / quantum
+    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -262,10 +286,10 @@ struct FilmStrip: View {
                     .stroke(film, style: StrokeStyle(lineWidth: band, lineCap: .butt, lineJoin: .round))
                     .shadow(color: .black.opacity(isDark ? 0.45 : 0.18), radius: band * 0.25, y: band * 0.12)
                 Self.path(points)
-                    .stroke(frame, style: StrokeStyle(lineWidth: band * 0.56, lineCap: .butt, dash: [band * 0.78, band * 0.1]))
+                    .stroke(frame, style: StrokeStyle(lineWidth: band * 0.56, lineCap: .butt, dash: Self.frameDash.map { band * $0 }, dashPhase: -travel))
                 ForEach([-1.0, 1.0], id: \.self) { side in
                     Self.path(Self.offset(points, by: side * band * 0.39))
-                        .stroke(hole, style: StrokeStyle(lineWidth: band * 0.1, lineCap: .butt, dash: [band * 0.1, band * 0.1]))
+                        .stroke(hole, style: StrokeStyle(lineWidth: band * 0.1, lineCap: .butt, dash: Self.holeDash.map { band * $0 }, dashPhase: -travel))
                 }
             }
         }
@@ -305,14 +329,35 @@ struct FilmStrip: View {
 /// so the wordmark is centered and the strip's busy parts stay to the sides.
 struct HeaderArt: View {
     let job: Job
+    /// Film run along the strip and glow strength, for the header video's frames.
+    var travel = 0.0
+    var glowScale = 1.0
+
+    /// Strip thickness as a share of height.
+    static let thickness = 0.14
+
+    /// The distance after which the strip's pattern repeats exactly; see
+    /// `FilmStrip.patternShare`.
+    static func patternLength(height: Double) -> Double {
+        height * thickness * FilmStrip.patternShare
+    }
 
     private var isDark: Bool { job.appearance == "dark" }
 
     var body: some View {
         let unit = job.height / 1646
         ZStack {
-            BrandBackground(isDark: isDark, size: CGSize(width: job.width, height: job.height), warmGlow: false)
-            FilmStrip(base: 0.76, tilt: -0.08, amplitude: 0.07, cycles: 1.3, phase: 0.05, thickness: 0.14, isDark: isDark)
+            BrandBackground(isDark: isDark, size: CGSize(width: job.width, height: job.height), warmGlow: false, glowScale: glowScale)
+            FilmStrip(
+                base: 0.76,
+                tilt: -0.08,
+                amplitude: 0.07,
+                cycles: 1.3,
+                phase: 0.05,
+                thickness: Self.thickness,
+                isDark: isDark,
+                travel: travel
+            )
             VStack(spacing: 30 * unit) {
                 Text(job.caption.uppercased())
                     .font(.system(size: 230 * unit, weight: .semibold).width(.expanded))
@@ -397,8 +442,58 @@ func opaque(_ image: CGImage) -> CGImage? {
     return context.makeImage()
 }
 
+/// Draws `content` at the job's size and writes it as an opaque PNG.
+@MainActor
+func writePNG(_ content: AnyView, job: Job, to output: String, quiet: Bool = false) throws {
+    let renderer = ImageRenderer(content: content)
+    renderer.scale = 1
+    renderer.proposedSize = ProposedViewSize(width: job.width, height: job.height)
+    guard
+        let cgImage = renderer.cgImage.flatMap(opaque),
+        let png = NSBitmapImageRep(cgImage: cgImage).representation(using: .png, properties: [:])
+    else {
+        throw NSError(domain: "frame", code: 2, userInfo: [NSLocalizedDescriptionKey: "Render failed for \(output)"])
+    }
+    try FileManager.default.createDirectory(
+        at: URL(fileURLWithPath: output).deletingLastPathComponent(),
+        withIntermediateDirectories: true
+    )
+    try png.write(to: URL(fileURLWithPath: output))
+    if !quiet {
+        print("framed \(output) (\(cgImage.width)x\(cgImage.height))")
+    }
+}
+
+/// The header video's frames, `frame-0000.png` up, into the job's `output` folder.
+/// The film runs `loops` pattern lengths and the glow pulses ±12% once, so the last
+/// frame leads straight back into the first.
+@MainActor
+func renderHeaderMotion(_ job: Job) throws {
+    guard let frames = job.frames, let loops = job.loops, frames > 0 else {
+        throw NSError(domain: "frame", code: 3, userInfo: [NSLocalizedDescriptionKey: "header-motion needs `frames` and `loops`"])
+    }
+    let distance = Double(loops) * HeaderArt.patternLength(height: job.height)
+    for index in 0..<frames {
+        let progress = Double(index) / Double(frames)
+        let art = HeaderArt(job: job, travel: distance * progress, glowScale: 1 + 0.12 * sin(2 * .pi * progress))
+        let path = (job.output as NSString).appendingPathComponent(String(format: "frame-%04d.png", index))
+        // The whole script runs in one pass with no run loop to drain autoreleased
+        // images, so each 4K frame's buffers would otherwise pile up until exit.
+        try autoreleasepool {
+            try writePNG(AnyView(art), job: job, to: path, quiet: true)
+        }
+        if index % 60 == 0 || index == frames - 1 {
+            print("header video \(job.appearance): frame \(index + 1)/\(frames)")
+        }
+    }
+}
+
 @MainActor
 func render(_ job: Job) throws {
+    if job.kind == "header-motion" {
+        try renderHeaderMotion(job)
+        return
+    }
     let images = try [job.input].compactMap { $0 }.map { path in
         guard let image = NSImage(contentsOfFile: path) else {
             throw NSError(domain: "frame", code: 1, userInfo: [NSLocalizedDescriptionKey: "Unreadable \(path)"])
@@ -414,21 +509,7 @@ func render(_ job: Job) throws {
         default:
             content = AnyView(FramedShot(job: job, screenshot: images[0]))
     }
-    let renderer = ImageRenderer(content: content)
-    renderer.scale = 1
-    renderer.proposedSize = ProposedViewSize(width: job.width, height: job.height)
-    guard
-        let cgImage = renderer.cgImage.flatMap(opaque),
-        let png = NSBitmapImageRep(cgImage: cgImage).representation(using: .png, properties: [:])
-    else {
-        throw NSError(domain: "frame", code: 2, userInfo: [NSLocalizedDescriptionKey: "Render failed for \(job.output)"])
-    }
-    try FileManager.default.createDirectory(
-        at: URL(fileURLWithPath: job.output).deletingLastPathComponent(),
-        withIntermediateDirectories: true
-    )
-    try png.write(to: URL(fileURLWithPath: job.output))
-    print("framed \(job.output) (\(cgImage.width)x\(cgImage.height))")
+    try writePNG(content, job: job, to: job.output)
 }
 
 let arguments = CommandLine.arguments
