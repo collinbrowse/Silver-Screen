@@ -11,7 +11,11 @@ python3 scripts/marketing.py header        # product page header + search result
 python3 scripts/marketing.py metadata      # store copy, checked (frame runs it too)
 python3 scripts/marketing.py videos        # website clips + App Store app preview
 python3 scripts/marketing.py videos --reuse  # re-cut the last recording (no simulator)
+python3 scripts/release.py media           # plan the App Store Connect upload; --apply sends it
 ```
+
+`release.py cut` uploads all of it to App Store Connect after each TestFlight cut.
+See [App Store media](../RELEASE.md#app-store-media) in RELEASE.md.
 
 Everything lands in `marketing/output/` (gitignored):
 
@@ -24,7 +28,7 @@ Everything lands in `marketing/output/` (gitignored):
 | `appstore/duo-outer/<appearance>/` | 1398×2034 | App Store Connect, iPhone Duo outer (folded) display |
 | `appstore/header/header-<appearance>.png` | 3840×1646 (21:9), opaque PNG | Product page header (iOS 27+) |
 | `appstore/header/search-<appearance>.png` | 3840×2560 (3:2), opaque PNG | Search results asset (iOS 27+) |
-| `appstore/metadata/*.txt` | Subtitle, promotional text, description, keywords; `metadata.md` shows them all with character counts | Paste into App Store Connect |
+| `appstore/metadata/*.txt` | Subtitle, promotional text, description, keywords; `metadata.md` shows them all with character counts | Paste into App Store Connect (not uploaded by `release.py media`) |
 | `raw/` | Unframed simulator captures | Website, press kit, README |
 | `video/iphone/dark/<clip>.mp4`, `.webm`, `.jpg` | Muted, looping, 720 px wide | Website |
 | `video/iphone/dark/appstore-preview.mp4` | 886×1920, 30 fps, ≤ 30 s | App Store Connect app preview |
@@ -149,7 +153,9 @@ or three months. App Store screenshots only change with a version submission.
 The header and search art go through the Asset Library and need no new version,
 so they are the place to rotate what is current: a big premiere, Oscar season
 (January to March), Emmy season (September). Edit `header` or `search` and re-run
-`header`.
+`header`. `python3 scripts/release.py media --apply` places the new art on the
+version in preparation. On a version already on sale, submit it from the Asset
+Library, and once Apple approves it run `media --apply --live`.
 
 1. `python3 scripts/marketing.py suggest` lists what is trending, now playing, and
    popular on TMDB, without unreleased titles, low-vote titles, or talk, reality,
