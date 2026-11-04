@@ -136,6 +136,53 @@ final class TourControllerTests: XCTestCase {
         XCTAssertEqual(tour.highlight, CGRect(x: 320, y: 50, width: 44, height: 44))
     }
 
+    func test_highlight_followsTheNewestViewWhenALayoutChangeSwapsThem() async {
+        let tour = TourController(router: AppRouter(), lists: .empty())
+        await tour.start()
+        tour.next()
+        tour.next()
+        let oldRow = UUID()
+        let newRow = UUID()
+        tour.report(.browseEye, source: oldRow, frame: nil, isVisible: true)
+        tour.report(.browseEye, source: oldRow, frame: CGRect(x: 400, y: 200, width: 40, height: 40), isVisible: nil)
+
+        // Unfolding regroups the grid: the new row appears, then the old one reports
+        // a last frame from the layout it is leaving before it disappears.
+        tour.report(.browseEye, source: newRow, frame: CGRect(x: 290, y: 200, width: 40, height: 40), isVisible: nil)
+        tour.report(.browseEye, source: newRow, frame: nil, isVisible: true)
+        tour.report(.browseEye, source: oldRow, frame: CGRect(x: 550, y: 200, width: 40, height: 40), isVisible: nil)
+
+        XCTAssertEqual(tour.highlight, CGRect(x: 290, y: 200, width: 40, height: 40))
+
+        tour.report(.browseEye, source: oldRow, frame: nil, isVisible: false)
+
+        XCTAssertEqual(tour.highlight, CGRect(x: 290, y: 200, width: 40, height: 40))
+    }
+
+    func test_highlight_ignoresEmptyFrames() async {
+        let tour = TourController(router: AppRouter(), lists: .empty())
+        await tour.start()
+        tour.next()
+
+        tour.report(.newList, frame: .zero, isVisible: true)
+
+        XCTAssertNil(tour.highlight)
+        XCTAssertFalse(tour.isShowing(.newList))
+    }
+
+    func test_hiddenViewThatComesBack_keepsItsFrame() async {
+        let tour = TourController(router: AppRouter(), lists: .empty())
+        tour.report(.newList, frame: CGRect(x: 320, y: 50, width: 44, height: 44), isVisible: true)
+        tour.report(.newList, frame: nil, isVisible: false)
+        await tour.start()
+        tour.next()
+        XCTAssertNil(tour.highlight)
+
+        tour.report(.newList, frame: nil, isVisible: true)
+
+        XCTAssertEqual(tour.highlight, CGRect(x: 320, y: 50, width: 44, height: 44))
+    }
+
     // MARK: - Onboarding hand-off
 
     func test_onboardingFinish_startsTheTour() async {

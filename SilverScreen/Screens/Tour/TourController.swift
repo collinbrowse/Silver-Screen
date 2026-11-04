@@ -19,11 +19,21 @@ final class TourController {
     /// Window-space union of the current stop's visible anchors. Nil until one reports.
     private(set) var highlight: CGRect?
 
-    /// Last reported window frame per anchor. Kept even when the tour is off, because
-    /// a view reports only when its frame changes, not when a stop starts.
-    @ObservationIgnored private var frames: [TourAnchor: CGRect] = [:]
-    /// Anchors whose view is on screen. A hidden tab keeps its old frame.
-    @ObservationIgnored private var visible: Set<TourAnchor> = []
+    /// What each view carrying an anchor last reported, by the view's source id. Kept
+    /// even when the tour is off, because a view reports only when its frame changes,
+    /// not when a stop starts. A hidden tab keeps its old frame.
+    ///
+    /// More than one view can carry an anchor at once: when a fold, unfold, or resize
+    /// regroups a grid, the new view appears before the old one is gone, and the old
+    /// one can still report a frame from the layout it is leaving.
+    @ObservationIgnored private var sightings: [TourAnchor: [UUID: Sighting]] = [:]
+    /// Counts appearances so the newest view of an anchor wins.
+    @ObservationIgnored private var appearances = 0
+
+    /// Source id for callers that have only one view per anchor, such as tests.
+    nonisolated static let soleSource = UUID()
+    /// Invisible sightings kept per anchor before the oldest is dropped.
+    private static let keptSightings = 4
 
     private let router: AppRouter
     private let lists: ListsRepository
@@ -69,15 +79,28 @@ final class TourController {
     }
 
     /// Called by `.tourAnchor` when a marked view moves, appears, or disappears.
-    func report(_ anchor: TourAnchor, frame: CGRect?, isVisible: Bool) {
+    /// `source` tells apart views that carry the same anchor. A nil `isVisible` (a
+    /// frame change) leaves visibility alone, so a view on its way out cannot win
+    /// back the highlight by reporting one last frame.
+    func report(
+        _ anchor: TourAnchor,
+        source: UUID = TourController.soleSource,
+        frame: CGRect?,
+        isVisible: Bool?
+    ) {
+        var sighting = sightings[anchor]?[source] ?? Sighting()
         if let frame {
-            frames[anchor] = frame
+            sighting.frame = frame
         }
-        if isVisible {
-            visible.insert(anchor)
-        } else {
-            visible.remove(anchor)
+        if let isVisible {
+            if isVisible, !sighting.isVisible {
+                appearances += 1
+                sighting.order = appearances
+            }
+            sighting.isVisible = isVisible
         }
+        sightings[anchor, default: [:]][source] = sighting
+        prune(anchor)
         if current?.anchors.contains(anchor) == true {
             updateHighlight()
         }
@@ -85,7 +108,7 @@ final class TourController {
 
     /// Whether the given anchor is laid out on screen right now.
     func isShowing(_ anchor: TourAnchor) -> Bool {
-        visible.contains(anchor) && frames[anchor] != nil
+        frame(of: anchor) != nil
     }
 
     private func show(_ newIndex: Int) {
@@ -128,7 +151,43 @@ final class TourController {
             highlight = nil
             return
         }
-        let shown = current.anchors.compactMap { visible.contains($0) ? frames[$0] : nil }
+        let shown = current.anchors.compactMap(frame(of:))
         highlight = shown.dropFirst().reduce(shown.first) { union, frame in union?.union(frame) }
     }
+
+    /// The frame of the newest visible view carrying the anchor. An older view that
+    /// has not disappeared yet is never used: its frame belongs to the old layout.
+    /// Empty frames (a view that was never laid out) count as not on screen.
+    private func frame(of anchor: TourAnchor) -> CGRect? {
+        let newest = sightings[anchor]?.values
+            .filter(\.isVisible)
+            .max { $0.order < $1.order }
+        guard let frame = newest?.frame, Self.isUsable(frame) else { return nil }
+        return frame
+    }
+
+    static func isUsable(_ frame: CGRect) -> Bool {
+        !frame.isNull && !frame.isInfinite && frame.width >= 1 && frame.height >= 1
+    }
+
+    /// Drops the oldest hidden views of an anchor so grid rows that come and go
+    /// do not pile up.
+    private func prune(_ anchor: TourAnchor) {
+        guard let all = sightings[anchor] else { return }
+        let hidden = all.filter { !$0.value.isVisible }
+        guard hidden.count > Self.keptSightings else { return }
+        let dropped = hidden.sorted { $0.value.order < $1.value.order }
+            .prefix(hidden.count - Self.keptSightings)
+        for (source, _) in dropped {
+            sightings[anchor]?[source] = nil
+        }
+    }
+}
+
+/// One view's last report for a tour anchor.
+private struct Sighting {
+    var frame: CGRect?
+    var isVisible = false
+    /// When the view last appeared; higher is newer.
+    var order = 0
 }
