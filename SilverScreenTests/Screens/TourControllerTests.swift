@@ -170,6 +170,20 @@ final class TourControllerTests: XCTestCase {
         XCTAssertFalse(tour.isShowing(.newList))
     }
 
+    func test_highlight_skipsAToolbarCopyThatWasNeverPlaced() async {
+        let tour = TourController(router: AppRouter(), lists: .empty())
+        await tour.start()
+        tour.next()
+        let placed = UUID()
+        let unplaced = UUID()
+        tour.report(.newList, source: placed, frame: CGRect(x: 352, y: 73, width: 23, height: 22), isVisible: true)
+
+        // A newer bridged copy of the toolbar item reports its unplaced frame around (0, 0).
+        tour.report(.newList, source: unplaced, frame: CGRect(x: -11.5, y: -11, width: 23, height: 22), isVisible: true)
+
+        XCTAssertEqual(tour.highlight, CGRect(x: 352, y: 73, width: 23, height: 22))
+    }
+
     func test_hiddenViewThatComesBack_keepsItsFrame() async {
         let tour = TourController(router: AppRouter(), lists: .empty())
         tour.report(.newList, frame: CGRect(x: 320, y: 50, width: 44, height: 44), isVisible: true)

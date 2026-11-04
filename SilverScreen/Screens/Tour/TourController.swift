@@ -155,19 +155,23 @@ final class TourController {
         highlight = shown.dropFirst().reduce(shown.first) { union, frame in union?.union(frame) }
     }
 
-    /// The frame of the newest visible view carrying the anchor. An older view that
-    /// has not disappeared yet is never used: its frame belongs to the old layout.
-    /// Empty frames (a view that was never laid out) count as not on screen.
+    /// The frame of the newest visible view carrying the anchor that has been placed.
+    /// An older view that has not disappeared yet loses to a newer one, because its
+    /// frame belongs to the layout it is leaving.
     private func frame(of anchor: TourAnchor) -> CGRect? {
-        let newest = sightings[anchor]?.values
-            .filter(\.isVisible)
-            .max { $0.order < $1.order }
-        guard let frame = newest?.frame, Self.isUsable(frame) else { return nil }
-        return frame
+        sightings[anchor]?.values
+            .filter { $0.isVisible && $0.frame.map(Self.isPlaced) == true }
+            .max { $0.order < $1.order }?
+            .frame
     }
 
-    static func isUsable(_ frame: CGRect) -> Bool {
-        !frame.isNull && !frame.isInfinite && frame.width >= 1 && frame.height >= 1
+    /// Whether a reported frame is a real position on screen. Toolbar items are hosted
+    /// in several bridged copies, and each copy first reports a frame centered on the
+    /// origin before it is placed. On Mac the newest copy can stay there, which drew
+    /// the step 2 ring as a dot in the window's corner. Empty frames are never placed.
+    static func isPlaced(_ frame: CGRect) -> Bool {
+        guard !frame.isNull, !frame.isInfinite, frame.width >= 1, frame.height >= 1 else { return false }
+        return abs(frame.midX) >= 1 || abs(frame.midY) >= 1
     }
 
     /// Drops the oldest hidden views of an anchor so grid rows that come and go
