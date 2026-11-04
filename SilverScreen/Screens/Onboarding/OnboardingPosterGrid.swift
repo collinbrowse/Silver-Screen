@@ -93,3 +93,13 @@ struct OnboardingPosterGrid<Cell: View>: View {
         return (columns, max(width.rounded(.down), 1))
     }
 }
+
+extension View {
+    /// Gives an onboarding page's scroll content an ideal width of zero so it fills the
+    /// scroll view without deciding its width. Fixed poster columns and one-line header
+    /// text otherwise made the ScrollView adopt the previous layout's width after a
+    /// rotation, fold, or unfold, and the page stayed that wide, off both edges.
+    func onboardingScrollContentWidth() -> some View {
+        frame(minWidth: 0, idealWidth: 0, maxWidth: .infinity, alignment: .leading)
+    }
+}
