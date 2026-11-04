@@ -43,7 +43,8 @@ iPhone Duo" badge.
 ### iPhone Duo
 
 Apple takes one set per Duo screen. Both come from one simulator (`SS Marketing
-iPhone Duo`, iOS 27.1 or later); `simctl io --display` picks the screen
+iPhone Duo`, on the Duo runtime `iOS-27-2-iPhone19-4` that `simctl create` picks
+by default); `simctl io --display` picks the screen
 (`primary-1` inner, `primary` outer). Unfolded, the inner screen opens like a
 book, so the inner set is landscape (2853×2007) and the outer set portrait;
 App Store Connect accepts either orientation for both. In Device Hub, unfold
@@ -59,6 +60,12 @@ to answer (`refresh` from another script, CI), it skips that set and says so.
 python3 scripts/marketing.py screenshots --device duo         # unfolded
 python3 scripts/marketing.py screenshots --device duo-outer   # folded
 ```
+
+`frame` draws both Duo sets whole, so the shape shows a Duo rather than a cropped
+tablet: the outer screen square at the hinge and round away from it, with its
+camera hole, and the inner screen with a faint fold down the middle. The shapes
+come from the Duo's simulator framebuffer masks (`DeviceLook` in
+`marketing_frame.swift`).
 
 The website tour stays on iPhone and iPad: `simctl` records the Duo's outer screen
 by default.
