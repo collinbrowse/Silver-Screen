@@ -35,10 +35,19 @@ struct OnboardingPosterGrid<Cell: View>: View {
         )
     }
 
+    /// Measures the width the parent offers with a zero-height strip, not the grid
+    /// itself. Fixed-width columns make the grid as wide as its last layout, so
+    /// measuring the grid would never see the width shrink: moving from an unfolded
+    /// phone to its cover screen kept the wide columns and ran them off both edges.
     var body: some View {
-        content
-            .frame(maxWidth: .infinity)
-            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { availableWidth = $0 }
+        VStack(spacing: 0) {
+            Color.clear
+                .frame(maxWidth: .infinity, maxHeight: 0)
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { availableWidth = $0 }
+                .accessibilityHidden(true)
+            content
+                .frame(maxWidth: .infinity)
+        }
     }
 
     @ViewBuilder
