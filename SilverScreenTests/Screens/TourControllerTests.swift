@@ -6,6 +6,7 @@
 //  how reported frames become the highlight.
 //
 
+import SwiftUI
 import XCTest
 @testable import SilverScreen
 
@@ -234,6 +235,44 @@ final class TourControllerTests: XCTestCase {
 
         XCTAssertFalse(message.localizedCaseInsensitiveContains("verdict"))
         XCTAssertTrue(message.contains("rewatch"))
+    }
+
+    // MARK: - Card placement
+
+    func test_cardPlacement_goesUnderATopHighlightWhenItFits() {
+        let placement = TourOverlay.cardPlacement(
+            cutout: CGRect(x: 0, y: 100, width: 300, height: 100),
+            height: 800,
+            cardHeight: 200,
+            insets: EdgeInsets(top: 50, leading: 0, bottom: 34, trailing: 0),
+            gap: 16
+        )
+
+        XCTAssertEqual(placement, .top(216))
+    }
+
+    func test_cardPlacement_pinsAboveTheHomeIndicatorUnderATallHighlight() {
+        let placement = TourOverlay.cardPlacement(
+            cutout: CGRect(x: 0, y: 60, width: 300, height: 600),
+            height: 800,
+            cardHeight: 200,
+            insets: EdgeInsets(top: 50, leading: 0, bottom: 34, trailing: 0),
+            gap: 16
+        )
+
+        XCTAssertEqual(placement, .bottom(50))
+    }
+
+    func test_cardPlacement_pinsBelowTheTopInsetOverATallBottomHighlight() {
+        let placement = TourOverlay.cardPlacement(
+            cutout: CGRect(x: 0, y: 150, width: 300, height: 640),
+            height: 800,
+            cardHeight: 200,
+            insets: EdgeInsets(top: 50, leading: 0, bottom: 34, trailing: 0),
+            gap: 16
+        )
+
+        XCTAssertEqual(placement, .top(66))
     }
 
     // MARK: - Onboarding hand-off

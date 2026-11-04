@@ -14,6 +14,8 @@ struct TourOverlay: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AccessibilityFocusState private var cardFocused: Bool
+    /// The card's measured height, so it can be kept clear of the screen edges.
+    @State private var cardHeight: CGFloat = 0
 
     /// Breathing room between the highlighted view and the cutout's edge.
     private let cutoutPadding: CGFloat = 8
@@ -49,7 +51,7 @@ struct TourOverlay: View {
                         .accessibilityHidden(true)
                 }
 
-                cardLayer(cutout: cutout, height: container.height)
+                cardLayer(cutout: cutout, height: container.height, insets: proxy.safeAreaInsets)
             }
         }
         .ignoresSafeArea()
@@ -62,25 +64,55 @@ struct TourOverlay: View {
     }
 
     /// Puts the card under a highlight in the top half and over one in the bottom half.
-    /// With nothing highlighted yet (still loading), the card sits in the middle.
+    /// With nothing highlighted yet (still loading), the card sits in the middle. A
+    /// highlight too tall to leave room pins the card inside the safe area instead, over
+    /// the far end of the highlight, so it never runs into the home indicator or bar.
     @ViewBuilder
-    private func cardLayer(cutout: CGRect?, height: CGFloat) -> some View {
+    private func cardLayer(cutout: CGRect?, height: CGFloat, insets: EdgeInsets) -> some View {
         VStack(spacing: 0) {
-            if let cutout, cutout.midY < height / 2 {
-                Color.clear.frame(height: max(cutout.maxY + cardGap, 0))
-                card
-                Spacer(minLength: 0)
-            } else if let cutout {
-                Spacer(minLength: 0)
-                card
-                Color.clear.frame(height: max(height - cutout.minY + cardGap, 0))
-            } else {
-                Spacer(minLength: 0)
-                card
-                Spacer(minLength: 0)
+            switch Self.cardPlacement(cutout: cutout, height: height, cardHeight: cardHeight, insets: insets, gap: cardGap) {
+                case .top(let space):
+                    Color.clear.frame(height: space)
+                    card
+                    Spacer(minLength: 0)
+                case .bottom(let space):
+                    Spacer(minLength: 0)
+                    card
+                    Color.clear.frame(height: space)
+                case .centered:
+                    Spacer(minLength: 0)
+                    card
+                    Spacer(minLength: 0)
             }
         }
         .padding(.horizontal, DesignSpacing.lg)
+    }
+
+    /// Where the card goes: the space above it (`top`) or below it (`bottom`).
+    enum CardPlacement: Equatable {
+        case top(CGFloat)
+        case bottom(CGFloat)
+        case centered
+    }
+
+    /// Picks the card's spot beside the cutout, falling back to the safe-area edge
+    /// when the card would not fit. `cardHeight` is 0 until the card is measured.
+    static func cardPlacement(
+        cutout: CGRect?,
+        height: CGFloat,
+        cardHeight: CGFloat,
+        insets: EdgeInsets,
+        gap: CGFloat
+    ) -> CardPlacement {
+        guard let cutout else { return .centered }
+        if cutout.midY < height / 2 {
+            let below = max(cutout.maxY + gap, 0)
+            let room = height - insets.bottom - gap - cardHeight
+            return below <= room ? .top(below) : .bottom(insets.bottom + gap)
+        }
+        let above = max(height - cutout.minY + gap, 0)
+        let room = height - insets.top - gap - cardHeight
+        return above <= room ? .bottom(above) : .top(insets.top + gap)
     }
 
     @ViewBuilder
@@ -127,6 +159,7 @@ struct TourOverlay: View {
                     .fill(DesignTheme.elevated)
             )
             .shadow(color: .black.opacity(0.25), radius: 16, y: 6)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { cardHeight = $0 }
             .accessibilityElement(children: .contain)
             .id(stop)
             .transition(.opacity)
