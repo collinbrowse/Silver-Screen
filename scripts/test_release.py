@@ -504,7 +504,7 @@ class ReleaseMediaTests(unittest.TestCase):
         with self.assertRaises(release.ReleaseError) as caught:
             release.media_after_promote(self.root, run=boom)
         self.assertIn("1.0, not 0.1.1", str(caught.exception))
-        self.assertIn("not pushed", str(caught.exception))
+        self.assertIn("rerun promote", str(caught.exception))
 
     def test_unexpected_media_error_also_stops_promote(self) -> None:
         self.add_output()

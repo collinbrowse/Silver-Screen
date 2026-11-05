@@ -1159,8 +1159,7 @@ def media_after_promote(root: Path, run=cmd_media, log=print) -> str:
     except Exception as error:  # noqa: BLE001 — any failure, including an unexpected API shape, must stop the submit.
         raise ReleaseError(
             f"App Store media did not finish: {error}\n"
-            "The v tag is made but not pushed. Fix that, then rerun promote "
-            "before you push the tag and submit."
+            "Tagging is done. Fix that, then rerun promote before you submit for review."
         ) from error
 
 
