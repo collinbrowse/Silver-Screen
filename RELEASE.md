@@ -78,8 +78,8 @@ before export so a contaminated binary cannot upload.
    TestFlight “What to Test” from the changelog, and uploads dSYMs to Sentry.
 5. Install the build from TestFlight and QA it.
 
-`cut` also uploads the App Store media in `marketing/output/` once the tag is
-made (see [App Store media](#app-store-media)). Pass `--no-media` to skip it.
+A TestFlight cut leaves the App Store listing alone. Media goes out with
+`promote` (see [App Store](#app-store)).
 
 The release job does not rerun unit tests. CI already tested the cut commit
 when it landed on `main`. It also waits up to 15 minutes for App Store Connect
@@ -116,9 +116,10 @@ Build 1 has never been uploaded. The first cut publishes build 2.
 `python3 scripts/release.py media` syncs what `marketing.py` rendered into
 `marketing/output/` to the App Store version for the marketing version in
 `Version.xcconfig`. On its own it only reads App Store Connect and prints the
-plan; `--apply` uploads. `cut` runs it with `--apply` on the Mac where you cut,
-because `marketing/output/` is gitignored and only exists there. The release job
-on GitHub Actions has no media to send.
+plan; `--apply` uploads. `promote` runs it with `--apply` on the Mac where you
+promote, because `marketing/output/` is gitignored and only exists there. The
+release job on GitHub Actions has no media to send, and TestFlight cuts do not
+sync media.
 
 | Slot | From `marketing/output/` | How |
 | --- | --- | --- |
@@ -158,6 +159,13 @@ on GitHub Actions has no media to send.
    `python3 scripts/release.py rollout --start`. Halt with
    `python3 scripts/release.py rollout --halt` if Sentry release health looks bad
    (see [`OBSERVABILITY.md`](OBSERVABILITY.md)).
+
+After tagging, `promote` uploads the App Store media in `marketing/output/` to
+that marketing version (see [App Store media](#app-store-media)). App Store
+Connect locks screenshots once the version is in review, so a failed sync stops
+`promote` with an error. The `v` tag is still local: fix the cause and rerun
+`promote`, which only reruns the sync on a commit it already tagged. Pass
+`--no-media` to skip it.
 
 `promote` does not change version numbers and does not archive. If App Review
 rejects the binary, fix it, `cut` again, upload the new build, and run
