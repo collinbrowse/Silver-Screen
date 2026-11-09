@@ -125,7 +125,7 @@
       },
       "actions": [
         {
-          "waitFor": "Verity"
+          "waitFor": "Project Hail Mary"
         },
         {
           "wait": 1
