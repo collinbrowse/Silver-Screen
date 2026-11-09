@@ -99,31 +99,45 @@ HEADER_MOTION = {"seconds": 12, "fps": 30, "loops": 2}
 # MARK: - TMDB
 
 
-def read_token(environ: dict | None = None, xcconfig_text: str | None = None) -> str:
-    """TMDB read token from $TMDB_ACCESS_TOKEN, else the gitignored Secrets.xcconfig."""
+def _xcconfig_value(name: str, xcconfig_text: str) -> str:
+    """One `NAME = value` line from Secrets.xcconfig, with xcconfig's `$()` escape removed."""
+    match = re.search(rf"^\s*{name}\s*=\s*(\S+)\s*$", xcconfig_text, re.M)
+    return match.group(1).replace("$()", "") if match else ""
+
+
+def read_connection(environ: dict | None = None, xcconfig_text: str | None = None) -> tuple[str, str | None]:
+    """Where to send TMDB calls: `(base URL, token)`.
+
+    A read token ($TMDB_ACCESS_TOKEN, else Secrets.xcconfig) calls TMDB directly. Without one,
+    a `TMDB_BASE_URL` that points at the worker/ proxy is used with no token, because the
+    proxy adds it. Exits when neither is set."""
     environ = os.environ if environ is None else environ
-    token = environ.get("TMDB_ACCESS_TOKEN", "").strip()
-    if token:
-        return token
     if xcconfig_text is None:
         path = os.path.join(ROOT, "Secrets.xcconfig")
         xcconfig_text = open(path, encoding="utf-8").read() if os.path.exists(path) else ""
-    match = re.search(r"^\s*TMDB_ACCESS_TOKEN\s*=\s*(\S+)\s*$", xcconfig_text, re.M)
-    if not match:
-        sys.exit("No TMDB token: set TMDB_ACCESS_TOKEN or fill Secrets.xcconfig.")
-    return match.group(1)
+    token = environ.get("TMDB_ACCESS_TOKEN", "").strip() or _xcconfig_value("TMDB_ACCESS_TOKEN", xcconfig_text)
+    if token:
+        return TMDB_API, token
+    base = (environ.get("TMDB_BASE_URL", "").replace("$()", "").strip()
+            or _xcconfig_value("TMDB_BASE_URL", xcconfig_text)).rstrip("/")
+    if base.startswith("https://") and urllib.parse.urlparse(base).hostname != urllib.parse.urlparse(TMDB_API).hostname:
+        return base, None
+    sys.exit("No TMDB token or proxy: set TMDB_ACCESS_TOKEN, or TMDB_BASE_URL to the worker/ proxy, "
+             "in the environment or Secrets.xcconfig.")
 
 
-def make_tmdb(token: str, opener=None):
-    """Returns get(path, **params) -> dict. The token rides in the header, never the URL."""
+def make_tmdb(token: str | None, opener=None, base: str = TMDB_API):
+    """Returns get(path, **params) -> dict. The token rides in the header, never the URL.
+    With no token (the proxy), no Authorization header is sent."""
     opener = opener or urllib.request.urlopen
+    # Cloudflare (in front of the worker/ proxy) rejects urllib's default User-Agent with error 1010.
+    headers = {"Accept": "application/json", "User-Agent": "SilverScreen-marketing/1.0"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
 
     def get(path: str, **params) -> dict:
         query = urllib.parse.urlencode({"language": "en-US", **params})
-        request = urllib.request.Request(
-            f"{TMDB_API}{path}?{query}",
-            headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
-        )
+        request = urllib.request.Request(f"{base}{path}?{query}", headers=headers)
         with opener(request, timeout=30) as response:
             return json.load(response)
 
@@ -173,7 +187,9 @@ def merge_candidates(rows: list[dict]) -> list[dict]:
     return [merged[key] for key in ranked]
 
 
-def suggest(get, today: str, english_only: bool, limit: int) -> list[dict]:
+def suggest(get, today: str, english_only: bool, limit: int, trending: bool = True) -> list[dict]:
+    """Release-ready trending and popular titles, movies then TV, `limit` of each.
+    `trending=False` drops the /trending feeds, which the worker/ proxy does not allow."""
     rows = []
     feeds = (
         ("movie", "trending", "/trending/movie/week", {}),
@@ -183,6 +199,8 @@ def suggest(get, today: str, english_only: bool, limit: int) -> list[dict]:
         ("tv", "popular", "/tv/popular", {}),
     )
     for kind, source, path, params in feeds:
+        if not trending and path.startswith("/trending/"):
+            continue
         for page in (1, 2):
             for raw in get(path, page=page, **params).get("results", []):
                 row = candidate(raw, kind, source, today)
@@ -980,12 +998,16 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
     if args.command == "suggest":
-        get = make_tmdb(read_token())
-        rows = suggest(get, dt.date.today().isoformat(), not args.any_language, args.limit)
+        base, token = read_connection()
+        if token is None:
+            print("Using the TMDB proxy, which has no trending feeds: showing now playing and popular.")
+        get = make_tmdb(token, base=base)
+        rows = suggest(get, dt.date.today().isoformat(), not args.any_language, args.limit, trending=token is not None)
         print_suggestions(rows, featured_keys(load_config()))
     elif args.command == "hydrate":
         config = load_config()
-        count = hydrate(config, make_tmdb(read_token()))
+        base, token = read_connection()
+        count = hydrate(config, make_tmdb(token, base=base))
         write_config(config)
         print(f"Refreshed {count} titles in {os.path.relpath(TITLES, ROOT)}.")
     elif args.command in ("screenshots", "frame"):
