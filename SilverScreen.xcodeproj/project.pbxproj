@@ -331,6 +331,18 @@
 		98DD8D97420A5823AAD4A5EC /* TourAnchorModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = E522B3786DF4F31C7609388C /* TourAnchorModifier.swift */; };
 		1CC482D9627E246053972AE5 /* TourOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6EB521A5F8E188EB822F847 /* TourOverlay.swift */; };
 		AB8EACAC6FC8FDCE611C82E1 /* TourControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7640C70F4C19BDB3E6D95AC /* TourControllerTests.swift */; };
+		1A186138F52C4395EB3B0492 /* ProSurvey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B002F6F77375308C4B8E936 /* ProSurvey.swift */; };
+		C5CDE7C62A4C84CF4BF5259B /* ProSurveyRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = A694B0EF43ED6B5737CDA58B /* ProSurveyRequest.swift */; };
+		0BD62B196A8D1FB9E9A4AAA2 /* ProSurveyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 421B50FA9C6BBD72EA906A5A /* ProSurveyStore.swift */; };
+		BD1876B81D35B9FE86D1329F /* ProSurveyRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E97362DC04DDF3F36A7DD4 /* ProSurveyRepository.swift */; };
+		5FE8372C8CC17C03B31B2056 /* ProSurveyPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66D122707B909D3B419865E4 /* ProSurveyPrompt.swift */; };
+		6F5DFBFB1FC6D039B10994E0 /* ProSurveyViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9241393AB1F0F44387E3ABF5 /* ProSurveyViewModel.swift */; };
+		7FC4BA5D7EE2BEEFE58B2685 /* ProSurveyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D2197AD240FDBA65517AEF1 /* ProSurveyView.swift */; };
+		820FB95178D1E651A64B919A /* ProSurveyFeatureRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FFDB42C945748FE68335696 /* ProSurveyFeatureRow.swift */; };
+		A4AF1C5846CE49517609658A /* ProSurveyCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A4B9E3D9E739FAE75EE3CE6 /* ProSurveyCard.swift */; };
+		81845930411357E297310C7C /* ProSurveyRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7128E6A94B99678C3C797185 /* ProSurveyRepositoryTests.swift */; };
+		83C0F42A8C42E03DE25D591A /* ProSurveyViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6A4EEE8549009B542BEF15E /* ProSurveyViewModelTests.swift */; };
+		D9D2D04B61E7C81D56D9356D /* ProSurveyPromptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B43C3EE933C3626923626987 /* ProSurveyPromptTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -679,6 +691,18 @@
 		E522B3786DF4F31C7609388C /* TourAnchorModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TourAnchorModifier.swift; sourceTree = "<group>"; };
 		B6EB521A5F8E188EB822F847 /* TourOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TourOverlay.swift; sourceTree = "<group>"; };
 		F7640C70F4C19BDB3E6D95AC /* TourControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TourControllerTests.swift; sourceTree = "<group>"; };
+		3B002F6F77375308C4B8E936 /* ProSurvey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProSurvey.swift; sourceTree = "<group>"; };
+		A694B0EF43ED6B5737CDA58B /* ProSurveyRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProSurveyRequest.swift; sourceTree = "<group>"; };
+		421B50FA9C6BBD72EA906A5A /* ProSurveyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProSurveyStore.swift; sourceTree = "<group>"; };
+		96E97362DC04DDF3F36A7DD4 /* ProSurveyRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProSurveyRepository.swift; sourceTree = "<group>"; };
+		66D122707B909D3B419865E4 /* ProSurveyPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProSurveyPrompt.swift; sourceTree = "<group>"; };
+		9241393AB1F0F44387E3ABF5 /* ProSurveyViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProSurveyViewModel.swift; sourceTree = "<group>"; };
+		8D2197AD240FDBA65517AEF1 /* ProSurveyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProSurveyView.swift; sourceTree = "<group>"; };
+		3FFDB42C945748FE68335696 /* ProSurveyFeatureRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProSurveyFeatureRow.swift; sourceTree = "<group>"; };
+		4A4B9E3D9E739FAE75EE3CE6 /* ProSurveyCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProSurveyCard.swift; sourceTree = "<group>"; };
+		7128E6A94B99678C3C797185 /* ProSurveyRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProSurveyRepositoryTests.swift; sourceTree = "<group>"; };
+		A6A4EEE8549009B542BEF15E /* ProSurveyViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProSurveyViewModelTests.swift; sourceTree = "<group>"; };
+		B43C3EE933C3626923626987 /* ProSurveyPromptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProSurveyPromptTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -734,6 +758,7 @@
 		A10000092788B823003D8011 /* Support */ = {
 			isa = PBXGroup;
 			children = (
+				B43C3EE933C3626923626987 /* ProSurveyPromptTests.swift */,
 				EC815E0E78D769875E215A35 /* AppInfoTests.swift */,
 				5A7E2F0C1B3D4E5F60718294 /* StartupFailureViewTests.swift */,
 				B3BA399FC842D5AC49B37810 /* ReviewPrompterTests.swift */,
@@ -768,6 +793,7 @@
 		B10000302788B823003D8011 /* Repositories */ = {
 			isa = PBXGroup;
 			children = (
+				96E97362DC04DDF3F36A7DD4 /* ProSurveyRepository.swift */,
 				E2A0000C2788B823003D8011 /* TVRepository.swift */,
 				7A1E00042788B823003D8011 /* RecentTrailerScan.swift */,
 				B100001F2788B823003D8011 /* MovieRepository.swift */,
@@ -787,6 +813,7 @@
 		B100010E2788B823003D8011 /* Persistence */ = {
 			isa = PBXGroup;
 			children = (
+				421B50FA9C6BBD72EA906A5A /* ProSurveyStore.swift */,
 				15ABDEE87F9AFE1CD5E1CD73 /* OnboardingMarkerStore.swift */,
 				C20000032788B823003D8011 /* AnnotationsStore.swift */,
 				FE6E288267EFBC31634DA3FD /* DiaryStore.swift */,
@@ -810,6 +837,7 @@
 		B10001142788B823003D8011 /* Screens */ = {
 			isa = PBXGroup;
 			children = (
+				4712ECB736E4B813356B6958 /* ProSurvey */,
 				B4DA49D7C6FB8C3901FC4793 /* Tour */,
 				41491D8643D223068E698444 /* Onboarding */,
 				B7AE5A13ED9DD5C410826A4E /* Settings */,
@@ -1035,6 +1063,7 @@
 		C77D45622788C95A003D8011 /* Networking */ = {
 			isa = PBXGroup;
 			children = (
+				A694B0EF43ED6B5737CDA58B /* ProSurveyRequest.swift */,
 				E2A0000A2788B823003D8011 /* TMDBPageDecoding.swift */,
 				F10000022788B823003D8011 /* TMDBLocale.swift */,
 				A10000012788B823003D8011 /* HTTPClient.swift */,
@@ -1058,6 +1087,7 @@
 		C77D45632788C969003D8011 /* Domain */ = {
 			isa = PBXGroup;
 			children = (
+				3B002F6F77375308C4B8E936 /* ProSurvey.swift */,
 				BE714FA9307044B100F6F593 /* MediaTypes.swift */,
 				C20000012788B823003D8011 /* MediaAnnotation.swift */,
 				C97BE0A9149793537A169F88 /* DiaryEntry.swift */,
@@ -1101,6 +1131,7 @@
 		D1A000022788B823003D8011 /* Support */ = {
 			isa = PBXGroup;
 			children = (
+				66D122707B909D3B419865E4 /* ProSurveyPrompt.swift */,
 				4C9E32E1A131B4A8C215309F /* AppInfo.swift */,
 				1CD6EA7AF70D38B9F7D8DA01 /* ReviewPrompt.swift */,
 				B10000112788B823003D8011 /* AppError.swift */,
@@ -1175,6 +1206,7 @@
 		T1A000012788B823003D8011 /* Screens */ = {
 			isa = PBXGroup;
 			children = (
+				A6A4EEE8549009B542BEF15E /* ProSurveyViewModelTests.swift */,
 				F7640C70F4C19BDB3E6D95AC /* TourControllerTests.swift */,
 				04EFF01621A4E2250D8C6367 /* OnboardingCatalogTests.swift */,
 				B862E00F8FC703BEAB76371F /* OnboardingWatchlistViewModelTests.swift */,
@@ -1213,6 +1245,7 @@
 		T1A000022788B823003D8011 /* Data */ = {
 			isa = PBXGroup;
 			children = (
+				7128E6A94B99678C3C797185 /* ProSurveyRepositoryTests.swift */,
 				A1A000102788B823003D8011 /* AwardsRepositoryTests.swift */,
 				G1E000152788B823003D8011 /* MergedGenreTests.swift */,
 				E2A000322788B823003D8011 /* TVRepositoryTests.swift */,
@@ -1287,6 +1320,17 @@
 				4B0269C24FB3FC16DDFE8D0A /* TourStop.swift */,
 			);
 			path = Tour;
+			sourceTree = "<group>";
+		};
+		4712ECB736E4B813356B6958 /* ProSurvey */ = {
+			isa = PBXGroup;
+			children = (
+				4A4B9E3D9E739FAE75EE3CE6 /* ProSurveyCard.swift */,
+				3FFDB42C945748FE68335696 /* ProSurveyFeatureRow.swift */,
+				8D2197AD240FDBA65517AEF1 /* ProSurveyView.swift */,
+				9241393AB1F0F44387E3ABF5 /* ProSurveyViewModel.swift */,
+			);
+			path = ProSurvey;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -1427,6 +1471,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A4AF1C5846CE49517609658A /* ProSurveyCard.swift in Sources */,
+				820FB95178D1E651A64B919A /* ProSurveyFeatureRow.swift in Sources */,
+				7FC4BA5D7EE2BEEFE58B2685 /* ProSurveyView.swift in Sources */,
+				6F5DFBFB1FC6D039B10994E0 /* ProSurveyViewModel.swift in Sources */,
+				5FE8372C8CC17C03B31B2056 /* ProSurveyPrompt.swift in Sources */,
+				BD1876B81D35B9FE86D1329F /* ProSurveyRepository.swift in Sources */,
+				0BD62B196A8D1FB9E9A4AAA2 /* ProSurveyStore.swift in Sources */,
+				C5CDE7C62A4C84CF4BF5259B /* ProSurveyRequest.swift in Sources */,
+				1A186138F52C4395EB3B0492 /* ProSurvey.swift in Sources */,
 				1CC482D9627E246053972AE5 /* TourOverlay.swift in Sources */,
 				98DD8D97420A5823AAD4A5EC /* TourAnchorModifier.swift in Sources */,
 				1F54BE5452C455F27D9429B4 /* TourController.swift in Sources */,
@@ -1676,6 +1729,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D9D2D04B61E7C81D56D9356D /* ProSurveyPromptTests.swift in Sources */,
+				83C0F42A8C42E03DE25D591A /* ProSurveyViewModelTests.swift in Sources */,
+				81845930411357E297310C7C /* ProSurveyRepositoryTests.swift in Sources */,
 				AB8EACAC6FC8FDCE611C82E1 /* TourControllerTests.swift in Sources */,
 				54187C9215ACB5D31F52E02A /* OnboardingCatalogTests.swift in Sources */,
 				BE80998215FE97031C214DD1 /* OnboardingWatchlistViewModelTests.swift in Sources */,

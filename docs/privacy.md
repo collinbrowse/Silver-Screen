@@ -23,19 +23,21 @@ Your lists, ratings, notes, watch history, and TV progress are saved only on you
 
 **Crash and error reports.** When the app crashes or hits an error, it sends a report to [Sentry](https://sentry.io/), the service the developer uses to find bugs. A report contains the app version, device model, iOS version, and technical details about what went wrong. About one in five app sessions also sends timing data, such as how long a screen took to load. Reports never include your name, your library, or what you typed, and Sentry is set not to store your IP address. They're used only to fix problems.
 
-**Anonymous usage counts.** To see whether the app is working for people, it counts a few events: opening the app, the first launch after installing, finishing onboarding, saving your first rating, creating a list, and adding a title to your Watchlist. These counts go to [TelemetryDeck](https://telemetrydeck.com/), a privacy-focused analytics service. Each one also includes the app and iOS version, the device model (such as "iPhone 17", which every phone of that model shares), the screen size and orientation, and how many days and times you've opened the app. They never say which title, what a list is called, a rating, a note, or anything you typed.
+**Anonymous usage counts.** To see whether the app is working for people, it counts a few events: opening the app, the first launch after installing, finishing onboarding, saving your first rating, creating a list, adding a title to your Watchlist, and seeing, opening, or answering the Pro survey. These counts go to [TelemetryDeck](https://telemetrydeck.com/), a privacy-focused analytics service. Each one also includes the app and iOS version, the device model (such as "iPhone 17", which every phone of that model shares), the screen size and orientation, and how many days and times you've opened the app. They never say which title, what a list is called, a rating, a note, or anything you typed.
 
 The counts are linked to a random ID that the app creates when it's installed. That ID isn't connected to you, your Apple Account, or your device's own identifiers, and TelemetryDeck scrambles it again when it arrives. To stop sending counts, turn off Share Anonymous Usage in Settings. Nothing more is sent after that, and the app deletes the random ID and its record of how often you've opened it. See [TelemetryDeck's privacy policy](https://telemetrydeck.com/privacy/).
+
+**Pro survey.** If you answer "Pro is coming soon" in Settings or Library, the features you pick and anything you write in "Anything else?" go to the developer's own server on [Cloudflare](https://www.cloudflare.com/privacypolicy/), with the app version and a random ID made just for the survey, so changing your answers replaces them. Your IP address is used only to stop floods of requests and isn't stored. The survey never includes your name, your library, or your ratings, and it's sent only when you tap Send or Update.
 
 **Feedback.** When you use Send Feedback, your message goes to Sentry so the developer can read it. If you add your email address, it's used only to reply to you.
 
 ## How this information is used
 
-Only to show movie and TV information, fix crashes and bugs, reply to feedback, and decide what to improve from the usage counts. None of it is used for advertising or sold.
+Only to show movie and TV information, fix crashes and bugs, reply to feedback, and decide what to improve from the usage counts and survey answers. None of it is used for advertising or sold.
 
 ## Deleting your data
 
-To delete your library, delete the app. To have feedback or an email address you sent deleted, ask through the [support page](../support/).
+To delete your library, delete the app. To have feedback, survey answers, or an email address you sent deleted, ask through the [support page](../support/).
 
 ## Children
 

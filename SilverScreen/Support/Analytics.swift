@@ -31,6 +31,12 @@ enum AnalyticsEvent: String, Sendable, CaseIterable {
     case listCreated = "Library.listCreated"
     /// A movie or show was put on Watchlist.
     case titleAddedToWatchlist = "Library.titleAddedToWatchlist"
+    /// The one-time "Pro is coming soon" card appeared in Library. Sent once per install.
+    case proSurveyCardShown = "ProSurvey.cardShown"
+    /// The survey screen opened, from Settings or the card.
+    case proSurveyOpened = "ProSurvey.opened"
+    /// The Worker accepted answers. The answers themselves go to the Worker, never here.
+    case proSurveySubmitted = "ProSurvey.submitted"
 }
 
 /// Fire-and-forget event sink. `send` returns at once, never throws, and never
