@@ -1,4 +1,4 @@
-# TMDB proxy
+# TMDB proxy and feature survey
 
 A Cloudflare Worker that keeps the TMDB token off the device. The app calls
 `https://<worker>/3/...`, and the Worker forwards the request to
@@ -106,6 +106,74 @@ TMDB fetch for 2xx responses only (`cf.cacheTtlByStatus`), but the cached copy
 is not guaranteed. To make caching reliable, add a custom domain under **Workers & Pages →
 silverscreen-tmdb → Settings → Domains & Routes**, then use that domain in
 `TMDB_PROXY_URL`.
+
+## Feature survey
+
+`POST /survey` stores answers to the in-app "Pro is coming soon" survey in a D1
+database (`src/survey.js`, schema in `migrations/`). One row per install per
+survey: the app sends the same random `responseID` each time, so changed answers
+replace the row. Debug builds send `isTest: true` and are stored with
+`is_test = 1`. The client IP feeds the `SURVEY_RATE_LIMITER` (10 a minute) and is
+never stored. Until the database is bound, the route returns 503 and the app
+shows "Your picks weren't sent".
+
+The app only shows the survey when it calls TMDB through this Worker, because
+the survey URL is the proxy host plus `/survey`.
+
+### Set it up
+
+From `worker/`:
+
+1. Create the database. Copy the `database_id` it prints.
+
+   ```bash
+   npx wrangler@4 d1 create silverscreen-survey
+   ```
+
+2. Uncomment the `[[d1_databases]]` block in `wrangler.toml` and paste the id.
+3. Create the table.
+
+   ```bash
+   npx wrangler@4 d1 migrations apply silverscreen-survey --remote
+   ```
+
+4. Deploy, then check that a bad body gets `400`, not `503`.
+
+   ```bash
+   npx wrangler@4 deploy
+   curl -s -o /dev/null -w '%{http_code}\n' -X POST -H 'Content-Type: application/json' -d '{}' https://silverscreen-tmdb.SUBDOMAIN.workers.dev/survey
+   ```
+
+5. For the weekly digest, create a Cloudflare API token with **Account → D1 →
+   Read** and add the repository secrets `CLOUDFLARE_D1_READ_TOKEN`,
+   `CLOUDFLARE_ACCOUNT_ID`, and `SURVEY_D1_DATABASE_ID`. The digest posts counts
+   only, because its issue is public.
+
+### Read the answers
+
+`python3 scripts/survey_report.py` prints responses, picks per feature, where the
+survey was opened, and the latest free-text answers, using the same three
+values as environment variables (`CLOUDFLARE_API_TOKEN` for the token).
+
+Ad hoc queries go through Wrangler. Always leave out `is_test = 1`:
+
+```bash
+# Picks per feature
+npx wrangler@4 d1 execute silverscreen-survey --remote --command \
+  "SELECT f.value AS feature, COUNT(*) AS picks FROM survey_response, json_each(features) AS f WHERE is_test = 0 GROUP BY f.value ORDER BY picks DESC"
+
+# Features picked together with widgets
+npx wrangler@4 d1 execute silverscreen-survey --remote --command \
+  "SELECT f.value, COUNT(*) FROM survey_response, json_each(features) AS f WHERE is_test = 0 AND features LIKE '%\"widgets\"%' AND f.value != 'widgets' GROUP BY f.value ORDER BY 2 DESC"
+```
+
+To delete one person's answers on request, they need their response ID, which
+the app does not show, so delete by the text they quote:
+`DELETE FROM survey_response WHERE other = '...'`.
+
+The endpoint takes anonymous writes, so a scripted flood is possible within the
+rate limit. Checking an App Attest assertion (Launch plan, TMDB proxy step 4)
+would close that.
 
 ## Limits
 

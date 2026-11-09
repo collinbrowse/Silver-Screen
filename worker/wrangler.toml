@@ -17,3 +17,23 @@ namespace_id = "1001"
   [ratelimits.simple]
   limit = 240
   period = 60
+
+# Feature survey writes (POST /survey). A person submits once and maybe edits
+# their answers, so a low limit only stops scripted floods.
+[[ratelimits]]
+name = "SURVEY_RATE_LIMITER"
+namespace_id = "1002"
+
+  [ratelimits.simple]
+  limit = 10
+  period = 60
+
+# Feature survey storage. Until this block exists, POST /survey returns 503 and
+# the TMDB proxy works as before. Create the database, paste its id here, and
+# apply the migrations (README.md → Feature survey):
+#
+# [[d1_databases]]
+# binding = "SURVEY_DB"
+# database_name = "silverscreen-survey"
+# database_id = "<id printed by wrangler d1 create>"
+# migrations_dir = "migrations"
