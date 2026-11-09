@@ -156,7 +156,10 @@ final class MarketingCaptureTests: XCTestCase {
             if let position = action.slide {
                 let slider = app.sliders.firstMatch
                 XCTAssertTrue(slider.waitForExistence(timeout: 15), "No slider")
-                let start = slider.coordinate(withNormalizedOffset: CGVector(dx: 0.03, dy: 0.5))
+                // Start on the thumb, wherever it rests: the Log sheet parks an unrated
+                // slider mid-track, so a drag from the left end grabs nothing.
+                let thumb = slider.normalizedSliderPosition
+                let start = slider.coordinate(withNormalizedOffset: CGVector(dx: thumb, dy: 0.5))
                 let end = slider.coordinate(withNormalizedOffset: CGVector(dx: position, dy: 0.5))
                 start.press(forDuration: 0.15, thenDragTo: end, withVelocity: pace ? 250 : .fast, thenHoldForDuration: 0.2)
                 // A synthesized drag moves the thumb but may not reach SwiftUI's binding;
@@ -164,7 +167,7 @@ final class MarketingCaptureTests: XCTestCase {
                 slider.adjust(toNormalizedSliderPosition: CGFloat(position))
             }
             if let text = action.type {
-                let field = try element(app, label: action.into ?? "", containing: true)
+                let field = try textInput(app, label: action.into ?? "")
                 field.tap()
                 if pace {
                     for character in text {
@@ -206,6 +209,19 @@ final class MarketingCaptureTests: XCTestCase {
         let match = anyElement(app, label: label, containing: containing)
         XCTAssertTrue(match.waitForExistence(timeout: 15), "No element labeled \(label)")
         return match
+    }
+
+    /// A text field or text view with this label. A form section header often shares the
+    /// field's label ("Review"), and typing into the header has no keyboard focus.
+    private func textInput(_ app: XCUIApplication, label: String) throws -> XCUIElement {
+        func predicate() -> NSPredicate {
+            NSPredicate(format: "label CONTAINS[c] %@ OR placeholderValue CONTAINS[c] %@", label, label)
+        }
+        let field = app.textViews.matching(predicate()).firstMatch
+        if field.waitForExistence(timeout: 3) { return field }
+        let single = app.textFields.matching(predicate()).firstMatch
+        if single.waitForExistence(timeout: 3) { return single }
+        return try element(app, label: label, containing: true)
     }
 
     /// Buttons first so a tab or control wins over static text with the same words.

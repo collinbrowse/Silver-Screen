@@ -152,7 +152,13 @@
       },
       "actions": [
         {
-          "waitFor": "Add rating"
+          "waitFor": "Mark Wildwood watched"
+        },
+        {
+          "tap": "Mark Wildwood watched"
+        },
+        {
+          "wait": 1
         },
         {
           "tapContaining": "Add rating"
@@ -168,7 +174,7 @@
         },
         {
           "type": "Every frame is handmade and you can feel it.",
-          "into": "Note"
+          "into": "Review"
         },
         {
           "tap": "Save"
