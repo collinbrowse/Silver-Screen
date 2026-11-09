@@ -6,7 +6,7 @@ Version.xcconfig is the only shipping version. Dev runs do not advance it.
 since the latest ancestor testflight/* tag, and tags
 testflight/<marketing>+<build>. `promote` puts v<marketing> on that same
 commit so the App Store submission is the binary already on TestFlight.
-`media` (which `cut` also runs) uploads marketing/output to App Store Connect.
+`media` (which `promote` also runs) uploads marketing/output to App Store Connect.
 
 Run from the repo root: python3 scripts/release.py status
 """
@@ -963,17 +963,17 @@ def build_parser() -> argparse.ArgumentParser:
         default="main",
         help="Branch this cut must be on. Pass the hotfix branch name when not cutting from main.",
     )
-    cut.add_argument(
-        "--no-media",
-        action="store_true",
-        help="Skip uploading marketing/output to App Store Connect after the cut.",
-    )
 
     promote = sub.add_parser("promote", help="Tag this TestFlight commit for the App Store.")
     promote.add_argument(
         "--retarget",
         action="store_true",
         help="Move the local v tag onto a newer TestFlight build of the same marketing version.",
+    )
+    promote.add_argument(
+        "--no-media",
+        action="store_true",
+        help="Skip uploading marketing/output to App Store Connect after tagging.",
     )
 
     archive = sub.add_parser("archive", help="Archive the current TestFlight tag.")
@@ -1139,25 +1139,28 @@ def cmd_media(
     return f"Synced {sync.changes} change(s) to App Store Connect.\n"
 
 
-def media_after_cut(root: Path, run=cmd_media, log=print) -> str:
-    """The media step `cut` runs once the tag exists. It never fails the cut.
+def media_after_promote(root: Path, run=cmd_media, log=print) -> str:
+    """The media step `promote` runs once the v tag exists, before you submit for review.
 
-    The commit and tag are already made, so a missing output folder, missing
-    credentials, or an App Store Connect error is reported with the command to
-    rerun instead of an error exit.
+    TestFlight cuts do not touch the store listing; only an App Store push does.
+    App Store Connect locks a version's screenshots once it is in review, so a
+    failed sync stops promote with an error instead of a note that is easy to
+    miss. The v tag is local until you push it, and rerunning promote on the same
+    commit only reruns this step, so stopping costs nothing.
     """
     if not (root / "marketing" / "output" / "appstore").is_dir():
         return (
             "Skipped App Store media: no marketing/output/appstore here. "
-            "Run python3 scripts/marketing.py refresh, then python3 scripts/release.py media --apply.\n"
+            "Run python3 scripts/marketing.py refresh, then python3 scripts/release.py media --apply "
+            "before you submit.\n"
         )
     try:
         return run(root, apply=True, log=log)
-    except Exception as error:  # noqa: BLE001 — the cut is already tagged; any media failure is a report, not an exit.
-        return (
+    except Exception as error:  # noqa: BLE001 — any failure, including an unexpected API shape, must stop the submit.
+        raise ReleaseError(
             f"App Store media did not finish: {error}\n"
-            "The cut is done. Fix that, then run python3 scripts/release.py media --apply.\n"
-        )
+            "Tagging is done. Fix that, then rerun promote before you submit for review."
+        ) from error
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1183,11 +1186,11 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "cut":
             from datetime import date
 
-            print(cmd_cut(root, args.branch, date.today().isoformat()), end="", flush=True)
-            if not args.no_media:
-                print(media_after_cut(root), end="")
+            print(cmd_cut(root, args.branch, date.today().isoformat()), end="")
         elif args.command == "promote":
-            print(cmd_promote(root, args.retarget), end="")
+            print(cmd_promote(root, args.retarget), end="", flush=True)
+            if not args.no_media:
+                print(media_after_promote(root), end="")
         elif args.command == "archive":
             print(cmd_archive(root, args.upload), end="")
         elif args.command == "tf-notes":

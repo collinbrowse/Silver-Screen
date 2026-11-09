@@ -3,10 +3,13 @@
 
 from __future__ import annotations
 
+import io
 import subprocess
 import tempfile
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 import release
 
@@ -466,41 +469,89 @@ class GitFlowTests(unittest.TestCase):
 
 
 class ReleaseMediaTests(unittest.TestCase):
-    """The `media` command and the media step after `cut`."""
+    """The `media` command and the media step after `promote`."""
 
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
 
-    def test_media_after_cut_skips_without_output(self) -> None:
-        root = Path(self.tmp.name)
-        self.assertIn("Skipped App Store media", release.media_after_cut(root, run=self.fail))
+    def add_output(self) -> None:
+        (self.root / "marketing" / "output" / "appstore").mkdir(parents=True)
 
-    def test_media_after_cut_never_fails_the_cut(self) -> None:
-        root = Path(self.tmp.name)
-        (root / "marketing" / "output" / "appstore").mkdir(parents=True)
+    def test_media_after_promote_skips_without_output(self) -> None:
+        message = release.media_after_promote(self.root, run=self.fail)
+        self.assertIn("Skipped App Store media", message)
+        self.assertIn("before you submit", message)
+
+    def test_media_after_promote_applies_the_sync(self) -> None:
+        self.add_output()
+        applied: list[bool] = []
+
+        def sync(root, apply, log):
+            applied.append(apply)
+            return "Synced 2 change(s) to App Store Connect.\n"
+
+        self.assertIn("Synced 2", release.media_after_promote(self.root, run=sync))
+        self.assertEqual(applied, [True])
+
+    def test_media_failure_stops_promote(self) -> None:
+        self.add_output()
 
         def boom(root, apply, log):
-            self.assertTrue(apply)
-            raise release.ReleaseError("Set ASC_KEY_ID and ASC_ISSUER_ID for App Store Connect API calls.")
+            raise release.ReleaseError("App Store Connect's version in preparation is 1.0, not 0.1.1.")
 
-        message = release.media_after_cut(root, run=boom)
-        self.assertIn("The cut is done", message)
-        self.assertIn("ASC_KEY_ID", message)
+        with self.assertRaises(release.ReleaseError) as caught:
+            release.media_after_promote(self.root, run=boom)
+        self.assertIn("1.0, not 0.1.1", str(caught.exception))
+        self.assertIn("rerun promote", str(caught.exception))
 
-    def test_media_after_cut_reports_unexpected_errors(self) -> None:
-        root = Path(self.tmp.name)
-        (root / "marketing" / "output" / "appstore").mkdir(parents=True)
+    def test_unexpected_media_error_also_stops_promote(self) -> None:
+        self.add_output()
 
         def boom(root, apply, log):
             raise KeyError("id")
 
-        self.assertIn("The cut is done", release.media_after_cut(root, run=boom))
+        with self.assertRaises(release.ReleaseError) as caught:
+            release.media_after_promote(self.root, run=boom)
+        self.assertIsInstance(caught.exception.__cause__, KeyError)
 
-    def test_cut_parser_has_no_media_switch(self) -> None:
-        args = release.build_parser().parse_args(["cut", "--no-media"])
-        self.assertTrue(args.no_media)
-        args = release.build_parser().parse_args(["media"])
+    def test_promote_syncs_media_and_cut_does_not(self) -> None:
+        out = io.StringIO()
+        with (
+            mock.patch.object(release, "cmd_cut", return_value="cut\n"),
+            mock.patch.object(release, "cmd_promote", return_value="promoted\n"),
+            mock.patch.object(release, "media_after_promote", return_value="media\n") as media,
+            redirect_stdout(out),
+        ):
+            self.assertEqual(release.main(["cut"]), 0)
+            media.assert_not_called()
+            self.assertEqual(release.main(["promote"]), 0)
+            self.assertEqual(media.call_count, 1)
+            self.assertEqual(release.main(["promote", "--no-media"]), 0)
+            self.assertEqual(media.call_count, 1)
+        self.assertEqual(out.getvalue(), "cut\npromoted\nmedia\npromoted\n")
+
+    def test_media_failure_makes_promote_exit_nonzero(self) -> None:
+        out, err = io.StringIO(), io.StringIO()
+        failure = release.ReleaseError("App Store media did not finish: offline")
+        with (
+            mock.patch.object(release, "cmd_promote", return_value="promoted\n"),
+            mock.patch.object(release, "media_after_promote", side_effect=failure),
+            redirect_stdout(out),
+            redirect_stderr(err),
+        ):
+            self.assertEqual(release.main(["promote"]), 1)
+        self.assertEqual(out.getvalue(), "promoted\n")
+        self.assertIn("App Store media did not finish", err.getvalue())
+
+    def test_no_media_switch_is_on_promote_not_cut(self) -> None:
+        parser = release.build_parser()
+        self.assertTrue(parser.parse_args(["promote", "--no-media"]).no_media)
+        self.assertFalse(parser.parse_args(["promote"]).no_media)
+        with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            parser.parse_args(["cut", "--no-media"])
+        args = parser.parse_args(["media"])
         self.assertFalse(args.apply)
         self.assertEqual(args.appearance, "dark")
 

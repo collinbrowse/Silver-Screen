@@ -15,7 +15,7 @@ python3 scripts/marketing.py videos --reuse  # re-cut the last recording (no sim
 python3 scripts/release.py media           # plan the App Store Connect upload; --apply sends it
 ```
 
-`release.py cut` uploads all of it to App Store Connect after each TestFlight cut.
+`release.py promote` uploads all of it to App Store Connect when you tag a build for the App Store. TestFlight cuts do not.
 See [App Store media](../RELEASE.md#app-store-media) in RELEASE.md.
 
 Everything lands in `marketing/output/` (gitignored):
