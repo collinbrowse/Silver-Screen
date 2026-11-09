@@ -43,7 +43,7 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 - [x] Add the official TMDB logo to Settings → Data Sources (TMDB's attribution rules ask for it)
 - [x] App Store Connect privacy label, matching `PrivacyInfo.xcprivacy`:
       - Not linked to you: Crash Data, Performance Data (App Functionality); Other Diagnostic Data
-        (App Functionality, Analytics); Product Interaction and Device ID (Analytics)
+        (App Functionality, Analytics); Product Interaction, Device ID, and Other User Content (Pro survey) (Analytics)
       - Linked to you: Email Address and Customer Support, only when someone sends feedback with an email (App Functionality)
       - Tracking: none
 - [x] App Store Connect: privacy policy URL, support URL, Entertainment category, copyright, age rating questionnaire
@@ -139,6 +139,13 @@ later. Until then, each week's numbers live only in that week's digest issue.
 
 ### Making money
 
+- [ ] Pro demand test: "Pro is coming soon" survey in Settings and a one-time Library card
+      (second day opened). Picks go to D1 through the Worker, counts reach the weekly digest,
+      and `scripts/survey_report.py` shows the free-text answers.
+      1. [x] App, Worker route, report script, and digest section
+      2. [ ] Create the D1 database, apply the migration, deploy the Worker ([`worker/README.md`](worker/README.md#feature-survey))
+      3. [ ] Add `CLOUDFLARE_D1_READ_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and `SURVEY_D1_DATABASE_ID` repository secrets
+      4. [ ] App Store Connect privacy label: add Other User Content, not linked, Analytics
 - [ ] TMDB commercial agreement before any paid tier or ads; ask about JustWatch data at the same time
 - [ ] Silver Screen Pro with StoreKit 2 (first-party, no new dependency): widgets, stats, notifications, later sync
 - [ ] Pricing: one-time vs. yearly; free trial

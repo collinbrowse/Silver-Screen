@@ -55,6 +55,8 @@ Repository secrets:
 | `ASC_VENDOR_NUMBER` | Digest | Sales and Trends vendor number (App Store Connect → Payments and Financial Reports, top left). Without it the digest skips downloads. |
 | `SENTRY_READ_TOKEN` | Digest | Read-only Sentry token with `org:read`, `project:read`, and `event:read`. Kept apart from the release job's `SENTRY_AUTH_TOKEN`, which uploads dSYMs and has write access. The workflow passes it to the script as `SENTRY_AUTH_TOKEN`. |
 | `SENTRY_ORG` / `SENTRY_PROJECT` | Digest | Organization and project slugs |
+| `CLOUDFLARE_D1_READ_TOKEN` | Digest | Cloudflare API token with Account → D1 → Read, for Pro survey counts. The workflow passes it as `CLOUDFLARE_API_TOKEN`. |
+| `CLOUDFLARE_ACCOUNT_ID` / `SURVEY_D1_DATABASE_ID` | Digest | The account and the `silverscreen-survey` database id (`npx wrangler@4 d1 list`) |
 
 `GITHUB_TOKEN` comes from Actions; each workflow asks for `issues: write`.
 The average rating comes from the public iTunes lookup API (US storefront),
@@ -62,7 +64,13 @@ because the App Store Connect API has reviews but no aggregate rating.
 
 ## Product analytics
 
-[TelemetryDeck](https://telemetrydeck.com/) counts sessions and four anonymous
+The Pro survey's answers are not analytics: they go to the Worker's D1 database
+([`worker/README.md`](worker/README.md#feature-survey)) and are read with
+`scripts/survey_report.py`. TelemetryDeck only counts the survey funnel
+(card shown, opened, submitted), so the share of people who answer can be read
+next to sessions.
+
+[TelemetryDeck](https://telemetrydeck.com/) counts sessions and seven anonymous
 events. The app
 posts them to the [v2 ingest API](https://telemetrydeck.com/docs/ingest/v2) with
 `URLSession` in
@@ -77,6 +85,9 @@ the events and the opt-out are in [`Analytics.swift`](SilverScreen/Support/Analy
 | `Library.firstRatingSaved` | A score is saved and no other title had one | `AnnotationsRepository.save` / `saveScore` |
 | `Library.listCreated` | A custom list is created | `ListsRepository.createList` |
 | `Library.titleAddedToWatchlist` | A title is newly put on Watchlist | `ListsRepository` add and toggle |
+| `ProSurvey.cardShown` | The Library survey card first appears (once per install) | `ProSurveyPrompt.cardAppeared()` |
+| `ProSurvey.opened` | The survey screen appears, from Settings or the card | `ProSurveyViewModel.appeared()` |
+| `ProSurvey.submitted` | The Worker accepts answers | `ProSurveyPrompt` after `ProSurveyViewModel.submit()` |
 
 The two `TelemetryDeck.` types use the SDK's names, so the dashboard's built-in
 session, active-user, and retention charts work without the SDK. The repositories
