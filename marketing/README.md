@@ -162,6 +162,10 @@ so they are the place to rotate what is current: a big premiere, Oscar season
 version in preparation. On a version already on sale, submit it from the Asset
 Library, and once Apple approves it run `media --apply --live`.
 
+`suggest` and `hydrate` call TMDB with `TMDB_ACCESS_TOKEN` when `Secrets.xcconfig` (or the
+environment) has one, and otherwise go through the `TMDB_BASE_URL` proxy, which holds the
+token. The proxy has no trending feeds, so `suggest` then lists now playing and popular only.
+
 1. `python3 scripts/marketing.py suggest` lists what is trending, now playing, and
    popular on TMDB, without unreleased titles, low-vote titles, or talk, reality,
    news, soap, and kids TV. `*` marks titles already in `titles.json`.

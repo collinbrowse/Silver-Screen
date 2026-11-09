@@ -3,7 +3,7 @@
 // this file. Change the numbers with scripts/release.py.
 
 // User-facing version. Three integers. Apple rejects suffixes and a fourth component.
-MARKETING_VERSION = 0.1.1
+MARKETING_VERSION = 1.0.0
 // Upload counter. `cut` adds one; the number never goes down, including across
 // marketing versions. Dev runs do not consume a build.
 CURRENT_PROJECT_VERSION = 10

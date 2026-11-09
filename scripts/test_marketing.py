@@ -39,18 +39,62 @@ def show(id_, name="Show", date="2025-01-01", votes=500, genres=(18,), **extra):
     return row
 
 
-class TokenTests(unittest.TestCase):
+class ConnectionTests(unittest.TestCase):
+    PROXY = "TMDB_BASE_URL = https:/$()/silverscreen-tmdb.example.workers.dev/3\n"
+
     def test_environment_token_wins_over_xcconfig(self):
-        token = marketing.read_token({"TMDB_ACCESS_TOKEN": "env"}, "TMDB_ACCESS_TOKEN = file\n")
-        self.assertEqual(token, "env")
+        connection = marketing.read_connection({"TMDB_ACCESS_TOKEN": "env"}, "TMDB_ACCESS_TOKEN = file\n")
+        self.assertEqual(connection, (marketing.TMDB_API, "env"))
 
     def test_reads_token_from_xcconfig_line(self):
         text = "// comment\nTMDB_ACCESS_TOKEN = eyJabc\nSENTRY_DSN =\n"
-        self.assertEqual(marketing.read_token({}, text), "eyJabc")
+        self.assertEqual(marketing.read_connection({}, text), (marketing.TMDB_API, "eyJabc"))
 
-    def test_empty_xcconfig_value_exits(self):
+    def test_token_wins_over_proxy(self):
+        text = self.PROXY + "TMDB_ACCESS_TOKEN = eyJabc\n"
+        self.assertEqual(marketing.read_connection({}, text), (marketing.TMDB_API, "eyJabc"))
+
+    def test_proxy_from_xcconfig_has_no_token_and_unescapes_the_url(self):
+        connection = marketing.read_connection({}, self.PROXY)
+        self.assertEqual(connection, ("https://silverscreen-tmdb.example.workers.dev/3", None))
+
+    def test_proxy_from_environment(self):
+        connection = marketing.read_connection({"TMDB_BASE_URL": "https://proxy.example.dev/3/"}, "")
+        self.assertEqual(connection, ("https://proxy.example.dev/3", None))
+
+    def test_base_url_at_tmdb_itself_without_token_exits(self):
         with self.assertRaises(SystemExit):
-            marketing.read_token({}, "TMDB_ACCESS_TOKEN =\n")
+            marketing.read_connection({}, "TMDB_BASE_URL = https:/$()/api.themoviedb.org/3\n")
+
+    def test_nothing_set_exits(self):
+        with self.assertRaises(SystemExit):
+            marketing.read_connection({}, "TMDB_ACCESS_TOKEN =\n")
+
+
+class MakeTMDBTests(unittest.TestCase):
+    def requests_for(self, token, base):
+        sent = []
+
+        @contextlib.contextmanager
+        def opener(request, timeout):
+            sent.append(request)
+            yield io.BytesIO(b"{}")
+
+        marketing.make_tmdb(token, opener=opener, base=base)("/movie/1", page=2)
+        return sent[0]
+
+    def test_proxy_request_has_no_authorization_header(self):
+        request = self.requests_for(None, "https://proxy.example.dev/3")
+        self.assertTrue(request.full_url.startswith("https://proxy.example.dev/3/movie/1?"))
+        self.assertIsNone(request.get_header("Authorization"))
+
+    def test_requests_name_their_own_user_agent(self):
+        request = self.requests_for(None, "https://proxy.example.dev/3")
+        self.assertEqual(request.get_header("User-agent"), "SilverScreen-marketing/1.0")
+
+    def test_direct_request_sends_bearer_token(self):
+        request = self.requests_for("eyJabc", marketing.TMDB_API)
+        self.assertEqual(request.get_header("Authorization"), "Bearer eyJabc")
 
 
 class CandidateTests(unittest.TestCase):
@@ -95,6 +139,18 @@ class CandidateTests(unittest.TestCase):
         rows = marketing.suggest(get, TODAY, english_only=True, limit=1)
 
         self.assertEqual([(row["kind"], row["id"]) for row in rows], [("movie", 1), ("tv", 10)])
+
+    def test_suggest_without_trending_never_calls_trending_feeds(self):
+        called = []
+
+        def get(path, **params):
+            called.append(path)
+            return {"results": [movie(5)] if path == "/movie/now_playing" and params.get("page") == 1 else []}
+
+        rows = marketing.suggest(get, TODAY, english_only=True, limit=5, trending=False)
+
+        self.assertFalse(any(path.startswith("/trending/") for path in called))
+        self.assertEqual([(row["kind"], row["id"]) for row in rows], [("movie", 5)])
 
 
 class HydrateTests(unittest.TestCase):
