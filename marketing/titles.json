@@ -1,5 +1,5 @@
 {
-  "refreshed": "2026-10-14",
+  "refreshed": "2026-11-09",
   "_readme": "See marketing/README.md. Shots marked fresh feature current titles; refresh them each release.",
   "header": {
     "wordmark": "Silver Screen"
@@ -51,7 +51,7 @@
         "browsePath": [
           {
             "movieDetail": {
-              "id": 687163
+              "id": 1283515
             }
           }
         ]
@@ -125,7 +125,7 @@
       },
       "actions": [
         {
-          "waitFor": "Spider-Man"
+          "waitFor": "Verity"
         },
         {
           "wait": 1
@@ -145,7 +145,7 @@
         "browsePath": [
           {
             "movieDetail": {
-              "id": 1084244
+              "id": 791523
             }
           }
         ]
@@ -167,7 +167,7 @@
           "waitFor": "Your rating, 9.0"
         },
         {
-          "type": "Funnier than it had any right to be.",
+          "type": "Every frame is handmade and you can feel it.",
           "into": "Note"
         },
         {
@@ -320,8 +320,8 @@
           "Science Fiction",
           "Adventure"
         ],
-        "voteAverage": 8.634,
-        "popularity": 95.189,
+        "voteAverage": 8.629,
+        "popularity": 1665.774,
         "score": 9.5,
         "note": "Rocky is the best movie character in years. Saw it twice in IMAX."
       },
@@ -336,25 +336,25 @@
           "Mystery",
           "Sci-Fi & Fantasy"
         ],
-        "voteAverage": 8.394,
-        "popularity": 52.408,
+        "voteAverage": 8.389,
+        "popularity": 36.693,
         "score": 9.5,
         "note": "Season 2 finale had me yelling at the TV."
       },
       {
-        "id": 969681,
+        "id": 1283515,
         "kind": "movie",
-        "title": "Spider-Man: Brand New Day",
-        "posterPath": "/bjiS5ipwxb9JFy3XRRN4OAilSeX.jpg",
-        "releaseDate": "2026-07-29",
+        "title": "Verity",
+        "posterPath": "/rmaNMA1seHqpjtnYKzyynFAr1g8.jpg",
+        "releaseDate": "2026-09-30",
         "genres": [
-          "Science Fiction",
-          "Action",
-          "Adventure"
+          "Mystery",
+          "Thriller"
         ],
-        "voteAverage": 8.5,
-        "popularity": 842.854,
-        "score": 8.0
+        "voteAverage": 7.003,
+        "popularity": 190.158,
+        "score": 8.0,
+        "note": "Did not see that ending coming."
       },
       {
         "id": 95480,
@@ -367,8 +367,8 @@
           "Drama",
           "Mystery"
         ],
-        "voteAverage": 8.0,
-        "popularity": 217.905,
+        "voteAverage": 8.075,
+        "popularity": 135.984,
         "score": 9.0,
         "note": "Gary Oldman should never be allowed to stop playing Lamb."
       },
@@ -380,10 +380,11 @@
         "releaseDate": "2023-07-19",
         "genres": [
           "Drama",
-          "History"
+          "History",
+          "War"
         ],
-        "voteAverage": 8.022,
-        "popularity": 69.858,
+        "voteAverage": 8.0,
+        "popularity": 37.426,
         "score": 9.0
       },
       {
@@ -397,7 +398,7 @@
           "Comedy"
         ],
         "voteAverage": 8.154,
-        "popularity": 65.213,
+        "popularity": 45.573,
         "score": 8.5
       },
       {
@@ -410,8 +411,8 @@
           "Science Fiction",
           "Adventure"
         ],
-        "voteAverage": 8.14,
-        "popularity": 63.273,
+        "voteAverage": 8.144,
+        "popularity": 42.821,
         "score": 9.0
       },
       {
@@ -424,8 +425,8 @@
           "Drama",
           "War & Politics"
         ],
-        "voteAverage": 8.429,
-        "popularity": 42.686,
+        "voteAverage": 8.43,
+        "popularity": 34.317,
         "score": 9.5
       },
       {
@@ -439,8 +440,8 @@
           "Thriller",
           "Drama"
         ],
-        "voteAverage": 8.5,
-        "popularity": 34.934,
+        "voteAverage": 8.489,
+        "popularity": 30.714,
         "score": 10.0,
         "note": "Perfect. Every rewatch finds something new."
       },
@@ -454,40 +455,39 @@
           "Drama",
           "Comedy"
         ],
-        "voteAverage": 8.302,
-        "popularity": 69.442,
+        "voteAverage": 8.3,
+        "popularity": 39.359,
         "score": 10.0
       }
     ],
     "watchlist": [
       {
-        "id": 1084244,
+        "id": 791523,
         "kind": "movie",
-        "title": "Toy Story 5",
-        "posterPath": "/sfQtVlIHljToOwYjhe21KPGzZWK.jpg",
-        "releaseDate": "2026-06-17",
+        "title": "Wildwood",
+        "posterPath": "/snFM00mpNAfUzUtkdEW0uDEvXA0.jpg",
+        "releaseDate": "2026-10-19",
         "genres": [
           "Animation",
-          "Family",
-          "Comedy",
-          "Adventure"
+          "Adventure",
+          "Fantasy"
         ],
-        "voteAverage": 8.286,
-        "popularity": 149.969
+        "voteAverage": 8.5,
+        "popularity": 164.395
       },
       {
         "id": 95350,
         "kind": "tv",
         "title": "Lanterns",
-        "posterPath": "/gpC7h43xPMEV3goYMQShfJbTtLq.jpg",
+        "posterPath": "/rb94rKVIzLyfWufIN7WqLvadBDH.jpg",
         "releaseDate": "2026-08-16",
         "genres": [
           "Drama",
           "Mystery",
           "Sci-Fi & Fantasy"
         ],
-        "voteAverage": 8.3,
-        "popularity": 181.233
+        "voteAverage": 8.203,
+        "popularity": 43.115
       },
       {
         "id": 1339713,
@@ -499,21 +499,22 @@
           "Horror",
           "Thriller"
         ],
-        "voteAverage": 8.181,
-        "popularity": 120.02
+        "voteAverage": 8.2,
+        "popularity": 87.836
       },
       {
-        "id": 247718,
-        "kind": "tv",
-        "title": "MobLand",
-        "posterPath": "/5Xc7WpWsgflfgEMoBlf9TmWhfbH.jpg",
-        "releaseDate": "2025-03-30",
+        "id": 1400940,
+        "kind": "movie",
+        "title": "Clayface",
+        "posterPath": "/9l1NuFjel2j89hiuiJbsxfblqjy.jpg",
+        "releaseDate": "2026-10-19",
         "genres": [
-          "Crime",
-          "Drama"
+          "Horror",
+          "Thriller",
+          "Science Fiction"
         ],
-        "voteAverage": 8.502,
-        "popularity": 276.407
+        "voteAverage": 7.439,
+        "popularity": 89.28
       },
       {
         "id": 97546,
@@ -525,8 +526,8 @@
           "Drama",
           "Comedy"
         ],
-        "voteAverage": 8.362,
-        "popularity": 268.38
+        "voteAverage": 8.363,
+        "popularity": 115.787
       }
     ],
     "lists": [
@@ -543,8 +544,35 @@
               "Science Fiction",
               "Adventure"
             ],
-            "voteAverage": 8.634,
-            "popularity": 95.189
+            "voteAverage": 8.629,
+            "popularity": 1665.774
+          },
+          {
+            "id": 791523,
+            "kind": "movie",
+            "title": "Wildwood",
+            "posterPath": "/snFM00mpNAfUzUtkdEW0uDEvXA0.jpg",
+            "releaseDate": "2026-10-19",
+            "genres": [
+              "Animation",
+              "Adventure",
+              "Fantasy"
+            ],
+            "voteAverage": 8.5,
+            "popularity": 164.395
+          },
+          {
+            "id": 1283515,
+            "kind": "movie",
+            "title": "Verity",
+            "posterPath": "/rmaNMA1seHqpjtnYKzyynFAr1g8.jpg",
+            "releaseDate": "2026-09-30",
+            "genres": [
+              "Mystery",
+              "Thriller"
+            ],
+            "voteAverage": 7.003,
+            "popularity": 190.158
           },
           {
             "id": 1339713,
@@ -556,36 +584,22 @@
               "Horror",
               "Thriller"
             ],
-            "voteAverage": 8.181,
-            "popularity": 120.02
-          },
-          {
-            "id": 969681,
-            "kind": "movie",
-            "title": "Spider-Man: Brand New Day",
-            "posterPath": "/bjiS5ipwxb9JFy3XRRN4OAilSeX.jpg",
-            "releaseDate": "2026-07-29",
-            "genres": [
-              "Science Fiction",
-              "Action",
-              "Adventure"
-            ],
-            "voteAverage": 8.5,
-            "popularity": 842.854
+            "voteAverage": 8.2,
+            "popularity": 87.836
           },
           {
             "id": 95350,
             "kind": "tv",
             "title": "Lanterns",
-            "posterPath": "/gpC7h43xPMEV3goYMQShfJbTtLq.jpg",
+            "posterPath": "/rb94rKVIzLyfWufIN7WqLvadBDH.jpg",
             "releaseDate": "2026-08-16",
             "genres": [
               "Drama",
               "Mystery",
               "Sci-Fi & Fantasy"
             ],
-            "voteAverage": 8.3,
-            "popularity": 181.233
+            "voteAverage": 8.203,
+            "popularity": 43.115
           }
         ]
       },
@@ -600,10 +614,11 @@
             "releaseDate": "2023-07-19",
             "genres": [
               "Drama",
-              "History"
+              "History",
+              "War"
             ],
-            "voteAverage": 8.022,
-            "popularity": 69.858
+            "voteAverage": 8.0,
+            "popularity": 37.426
           },
           {
             "id": 496243,
@@ -616,8 +631,8 @@
               "Thriller",
               "Drama"
             ],
-            "voteAverage": 8.5,
-            "popularity": 34.934
+            "voteAverage": 8.489,
+            "popularity": 30.714
           },
           {
             "id": 545611,
@@ -630,8 +645,8 @@
               "Adventure",
               "Science Fiction"
             ],
-            "voteAverage": 7.716,
-            "popularity": 24.291
+            "voteAverage": 7.7,
+            "popularity": 20.07
           },
           {
             "id": 6977,
@@ -644,8 +659,8 @@
               "Thriller",
               "Western"
             ],
-            "voteAverage": 7.95,
-            "popularity": 25.191
+            "voteAverage": 7.9,
+            "popularity": 15.142
           },
           {
             "id": 238,
@@ -658,7 +673,7 @@
               "Crime"
             ],
             "voteAverage": 8.689,
-            "popularity": 56.912
+            "popularity": 45.681
           }
         ]
       }
