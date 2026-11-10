@@ -125,13 +125,14 @@ later. Until then, each week's numbers live only in that week's digest issue.
 
 ### Growth
 
-- [ ] Import from Letterboxd (CSV), Trakt, IMDb ratings, TV Time
+- [x] Import from Letterboxd (CSV): Settings → Import from Letterboxd
+- [ ] Import from Trakt, IMDb ratings, TV Time
 - [ ] Share cards: a rating, review, or list as an image for stories and messages
 - [ ] App Store In-App Events for Oscar nominations (late January) and the ceremony (March)
 
 ### Retention
 
-- [ ] Diary: watch dates and rewatches (needed before import can keep Letterboxd history)
+- [x] Diary: watch dates and rewatches (needed before import can keep Letterboxd history)
 - [ ] Local notifications: a new episode of a show in progress, a watchlist title arriving on your services
 - [ ] "My services": pick your subscriptions and filter Browse and Watchlist to them
 - [ ] Widgets: next episode, watchlist pick

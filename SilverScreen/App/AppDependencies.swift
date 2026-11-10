@@ -133,10 +133,21 @@ struct AppDependencies {
         }
         let settings = SettingsContext(
             appInfo: appInfo,
-            analyticsSharing: AnalyticsSharing(preferences: analyticsPreferences)
-        ) { submission in
-            SentryBootstrap.sendFeedback(message: submission.message, email: submission.email)
-        }
+            analyticsSharing: AnalyticsSharing(preferences: analyticsPreferences),
+            sendFeedback: { submission in
+                SentryBootstrap.sendFeedback(message: submission.message, email: submission.email)
+            },
+            letterboxdImporter: LetterboxdImporter(
+                movies: movies,
+                watches: watches,
+                lists: lists,
+                logger: logger
+            ),
+            didImport: {
+                listChanges.noteWatchChange()
+                diary.noteChange()
+            }
+        )
         return AppDependencies(
             movies: movies,
             shows: shows,
