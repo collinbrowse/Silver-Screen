@@ -1,0 +1,3 @@
+# Untracked files Claude Code copies into each new worktree.
+# settings.local.json carries the agent's GitHub token (AUTOMERGE.md → Agent identity).
+.claude/settings.local.json

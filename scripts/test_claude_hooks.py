@@ -123,6 +123,54 @@ class CodeReviewGateTests(unittest.TestCase):
         self.assertIsNone(decision(result))
 
 
+class ReleaseGateTests(unittest.TestCase):
+    def gate(self, command: str) -> str | None:
+        return decision(run_hook("gate-release-actions.sh", {"tool_name": "Bash", "tool_input": {"command": command}}))
+
+    def test_releaseGate_cutAndUpload_askTheHuman(self):
+        for command in ("python3 scripts/release.py cut", "python3 scripts/release.py archive --upload", "python3 scripts/release.py promote"):
+            self.assertEqual(self.gate(command), "ask", command)
+
+    def test_releaseGate_readOnlyReleaseCommands_returnNoDecision(self):
+        for command in ("python3 scripts/release.py status", "python3 scripts/release.py check", "python3 scripts/release.py archive"):
+            self.assertIsNone(self.gate(command), command)
+
+    def test_releaseGate_releaseTagsAndMain_askTheHuman(self):
+        for command in ("git push origin testflight/1.0.0+12", "git push origin v1.0.1", "git push --tags", "git push origin main", "git push origin HEAD:main"):
+            self.assertEqual(self.gate(command), "ask", command)
+
+    def test_releaseGate_featureBranchPush_returnsNoDecision(self):
+        for command in ("git push -u origin claude/offline", "git push origin claude/v2-mainline"):
+            self.assertIsNone(self.gate(command), command)
+
+    def test_releaseGate_mainPrefixedBranch_returnsNoDecision(self):
+        self.assertIsNone(self.gate("git push origin main-fix"))
+
+    def test_releaseGate_barePushOnMain_asksTheHuman(self):
+        repo = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, repo)
+        subprocess.run(["git", "init", "-q", "-b", "main", repo], check=True)
+        payload = {"tool_name": "Bash", "tool_input": {"command": "git push"}}
+        self.assertEqual(decision(run_hook("gate-release-actions.sh", payload, cwd=repo)), "ask")
+
+    def test_releaseGate_workflowRunAndGhRelease_askTheHuman(self):
+        for command in ("gh workflow run release.yml -f ref=testflight/1.0.0+11", "gh workflow run Release", "gh api -X POST repos/a/b/actions/workflows/release.yml/dispatches -f ref=main", "gh api -X POST repos/a/b/actions/runs/42/pending_deployments -f state=approved", "gh release create v1.0.1", "gh api -X POST repos/a/b/git/refs -f ref=refs/tags/x"):
+            self.assertEqual(self.gate(command), "ask", command)
+
+    def test_releaseGate_ciWorkflowRun_returnsNoDecision(self):
+        self.assertIsNone(self.gate("gh workflow run ci.yml"))
+
+    def test_releaseGate_mergeWithoutAuto_asksTheHuman(self):
+        self.assertEqual(self.gate("gh pr merge 5 --merge"), "ask")
+        self.assertIsNone(self.gate("gh pr merge 5 --auto --merge"))
+
+    def test_releaseGate_protectionWrites_askTheHuman(self):
+        self.assertEqual(self.gate("gh api -X POST repos/a/b/rulesets --input r.json"), "ask")
+        self.assertEqual(self.gate("gh api -X PATCH repos/a/b -F allow_auto_merge=true"), "ask")
+        self.assertIsNone(self.gate("gh api repos/a/b/rulesets"))
+        self.assertIsNone(self.gate("gh api repos/a/b/pulls/3/files"))
+
+
 class StopHookTests(unittest.TestCase):
     @unittest.skipIf(shutil.which("xcrun"), "a simulator is available; the hook would run the suite")
     def test_stopHook_noSimulator_letsTheTurnEnd(self):

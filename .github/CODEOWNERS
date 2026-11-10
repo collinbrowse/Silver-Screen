@@ -1,0 +1,29 @@
+# Paths an agent may change but not merge on its own. The main ruleset requires a code
+# owner's approval for any PR that touches them; every other path auto-merges once CI
+# is green. GitHub reads this file from the base branch, so a PR cannot loosen it for
+# itself. Policy and reasoning: .claude/rules/pull-requests.md → Auto-merge.
+
+# On-device data: a bad migration or store change can lose someone's library.
+/SilverScreen/Data/Persistence/        @collinbrowse
+
+# What the app declares to Apple and asks the OS for.
+/SilverScreen/Info.plist               @collinbrowse
+/SilverScreen/PrivacyInfo.xcprivacy    @collinbrowse
+*.entitlements                         @collinbrowse
+
+# Versions, release tooling, and signing.
+/Version.xcconfig                      @collinbrowse
+/Config.xcconfig                       @collinbrowse
+/scripts/release.py                    @collinbrowse
+/scripts/asc_api.py                    @collinbrowse
+/scripts/asc_media.py                  @collinbrowse
+
+# The TMDB proxy, which holds the token and serves every request.
+/worker/                               @collinbrowse
+
+# The harness itself: CI, hooks, rules, validators, and this file.
+/.github/                              @collinbrowse
+/.claude/                              @collinbrowse
+/CLAUDE.md                             @collinbrowse
+/scripts/validate-*.py                 @collinbrowse
+/scripts/test_claude_hooks.py          @collinbrowse
