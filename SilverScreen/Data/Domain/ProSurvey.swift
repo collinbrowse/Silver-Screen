@@ -26,8 +26,6 @@ enum ProFeature: String, CaseIterable, Sendable, Identifiable {
     case episodeAlerts
     case streamingServices
     case sync
-    case imports
-    case shareCards
     case friends
     case appIcons
     case export
@@ -41,8 +39,6 @@ enum ProFeature: String, CaseIterable, Sendable, Identifiable {
             case .episodeAlerts: "New Episode Alerts"
             case .streamingServices: "My Streaming Services"
             case .sync: "Sync Across Devices"
-            case .imports: "Import Your History"
-            case .shareCards: "Share Cards"
             case .friends: "Friends and Shared Lists"
             case .appIcons: "App Icons and Themes"
             case .export: "Export Your Library"
@@ -56,8 +52,6 @@ enum ProFeature: String, CaseIterable, Sendable, Identifiable {
             case .episodeAlerts: "A notification when a show you're watching airs"
             case .streamingServices: "Filter to your services, and hear when a Watchlist title arrives"
             case .sync: "Your library on iPhone and iPad"
-            case .imports: "From Letterboxd, Trakt, IMDb, or TV Time"
-            case .shareCards: "A rating, review, or list as an image"
             case .friends: "Follow friends and build lists together"
             case .appIcons: "Alternate icons and color themes"
             case .export: "Your lists, ratings, and notes as CSV or JSON"
@@ -71,8 +65,6 @@ enum ProFeature: String, CaseIterable, Sendable, Identifiable {
             case .episodeAlerts: "bell.badge"
             case .streamingServices: "play.tv"
             case .sync: "arrow.triangle.2.circlepath"
-            case .imports: "square.and.arrow.down"
-            case .shareCards: "photo.on.rectangle"
             case .friends: "person.2"
             case .appIcons: "app.badge"
             case .export: "square.and.arrow.up"
