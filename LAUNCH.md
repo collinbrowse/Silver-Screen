@@ -127,7 +127,7 @@ later. Until then, each week's numbers live only in that week's digest issue.
 
 - [x] Import from Letterboxd (CSV): Settings → Import from Letterboxd
 - [ ] Import from Trakt, IMDb ratings, TV Time
-- [ ] Share cards: a rating, review, or list as an image for stories and messages
+- [x] Share cards: a rating, review, or list as an image for stories and messages (Diary → Share…, list → Share List)
 - [ ] App Store In-App Events for Oscar nominations (late January) and the ceremony (March)
 
 ### Retention
@@ -151,7 +151,7 @@ later. Until then, each week's numbers live only in that week's digest issue.
 
 ### Quality
 
-- [ ] Offline handling: a reachability check so the app responds when the network drops
+- [x] Offline handling: a reachability check so the app responds when the network drops (offline banner; error screens retry on reconnect)
 - [ ] Snapshot tests for `Design/` components
 - [x] Localization: Spanish, French, German, Brazilian Portuguese in `Localizable.xcstrings` (app UI only; App Store metadata and screenshots are still English)
 
