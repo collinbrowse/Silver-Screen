@@ -120,19 +120,25 @@ final class MovieRepository: Sendable {
         )
     }
 
-    /// Type-ahead movie search. `query` is sent as a query item, never logged.
-    func searchMovies(query: String, page: Int, locale: Locale = .current) async throws -> MoviePage {
-        try await fetchMoviePage(
+    /// Type-ahead movie search. `query` is sent as a query item, never logged. `year`
+    /// narrows to that primary release year, which import matching uses.
+    func searchMovies(
+        query: String,
+        page: Int,
+        year: Int? = nil,
+        locale: Locale = .current
+    ) async throws -> MoviePage {
+        var extra = [
+            URLQueryItem(name: "query", value: query),
+            URLQueryItem(name: "include_adult", value: "false"),
+        ]
+        if let year {
+            extra.append(URLQueryItem(name: "primary_release_year", value: String(year)))
+        }
+        return try await fetchMoviePage(
             path: "search/movie",
             context: "Movie search",
-            queryItems: TMDBLocale.queryItems(
-                locale: locale,
-                page: page,
-                extra: [
-                    URLQueryItem(name: "query", value: query),
-                    URLQueryItem(name: "include_adult", value: "false"),
-                ]
-            )
+            queryItems: TMDBLocale.queryItems(locale: locale, page: page, extra: extra)
         )
     }
 

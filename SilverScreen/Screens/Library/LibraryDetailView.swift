@@ -19,6 +19,8 @@ struct LibraryDetailView: View {
 
     @State private var editMode: EditMode = .inactive
     @State private var pendingRemoval: WatchRemovalRequest?
+    /// The list being shared as an image; drives the share sheet.
+    @State private var shareCard: ShareCardContent?
 
     var body: some View {
         Group {
@@ -54,6 +56,16 @@ struct LibraryDetailView: View {
                         .accessibilityLabel(editMode == .active ? "Done reordering" : "Reorder")
                 }
             }
+            if case .loaded(let detail, _) = viewModel.state, !detail.entries.isEmpty, detail.list.segment == .moviesAndTV {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Share List", systemImage: "square.and.arrow.up") {
+                        shareCard = .list(detail.list, entries: detail.entries)
+                    }
+                }
+            }
+        }
+        .sheet(item: $shareCard) { card in
+            ShareCardSheet(content: card, imageLoader: imageLoader)
         }
         .environment(\.editMode, $editMode)
         .onChange(of: viewModel.allowsReorder) { _, canReorder in
