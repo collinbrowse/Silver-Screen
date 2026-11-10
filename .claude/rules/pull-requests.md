@@ -36,5 +36,8 @@ path in [`.github/CODEOWNERS`](.github/CODEOWNERS). See [`AUTOMERGE.md`](AUTOMER
   asks the user first.
 - When a PR touches a gated path, say so in the PR body's Summary and tell the user
   their approval is needed.
-- Cutting builds, bumping versions, and pushing `testflight/*` or `v*` tags stay human
-  (see [`releases.md`](.claude/rules/releases.md)).
+- Releases are the user's alone. Never cut, bump, promote, create or push tags, run
+  `release.yml`, or create GitHub releases unless the user asks for that specific step
+  in chat; the release gate hook then asks them to confirm. GitHub backs this up with
+  the release-tag ruleset and the `release` environment's required approval (see
+  [`releases.md`](.claude/rules/releases.md)).

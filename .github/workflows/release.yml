@@ -35,6 +35,11 @@ permissions:
 jobs:
   ship:
     name: Archive and upload
+    # Signing and App Store Connect secrets live in the `release` environment, which
+    # waits for the owner's approval and only deploys from testflight/* tags. A branch
+    # push, a PR, or a manual run from an agent cannot read them or upload a build.
+    # Setup: AUTOMERGE.md → Release environment.
+    environment: release
     runs-on: macos-latest
     timeout-minutes: 60
     env:

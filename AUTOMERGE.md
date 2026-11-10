@@ -12,12 +12,42 @@ with a person.
 | `CODEOWNERS` | Names the human-gated paths: persistence, `Info.plist`, privacy manifest, entitlements, versions, release scripts, the Worker, and the harness itself | [`.github/CODEOWNERS`](.github/CODEOWNERS) |
 | Release-tag ruleset | Only admins create, move, or delete `testflight/*` and `v*` tags, so only a person can fire `release.yml` | GitHub → Settings → Rules |
 | Repo setting | Auto-merge allowed, so `gh pr merge --auto` waits for checks and approvals | GitHub → Settings → General |
+| `release` environment | `release.yml` waits for your approval before it archives or uploads, deploys only from `testflight/*` tags, and is the only place the signing and App Store Connect secrets live | GitHub → Settings → Environments |
 | Release gate hook | Agent `release.py cut / bump / promote / archive --upload`, pushes of tags or `main`, `gh pr merge` without `--auto`, and protection edits all prompt the person first | [`.claude/hooks/gate-release-actions.sh`](.claude/hooks/gate-release-actions.sh) |
 
 Both rulesets let the **admin** role bypass, which is you. Release cuts that commit
 straight to `main` keep working from your account.
 
 GitHub reads `CODEOWNERS` from the base branch, so a PR can't remove its own gate.
+
+## Release environment
+
+Anyone with Write access can push a branch whose workflow reads repository secrets, or
+start `release.yml` from the Actions tab. So the secrets that can ship a build don't sit
+at the repository level. They live in a `release` environment that needs your approval.
+
+One-time setup (an agent can't do these; the release gate hook asks first):
+
+1. Create the environment with you as required reviewer and a `testflight/*` tag policy:
+   ```bash
+   ME=$(gh api user --jq .id)
+   gh api -X PUT repos/collinbrowse/Silver-Screen/environments/release --input - <<JSON
+   {"reviewers":[{"type":"User","id":$ME}],"prevent_self_review":false,
+    "deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}
+   JSON
+   gh api -X POST repos/collinbrowse/Silver-Screen/environments/release/deployment-branch-policies -f name='testflight/*' -f type=tag
+   ```
+2. Move these secrets from Settings → Secrets → Actions → Repository secrets to the
+   `release` environment (GitHub never shows a secret's value, so paste each one again),
+   then delete the repository copies: `ASC_API_KEY_P8`, `DEV_CERT_P12_BASE64`,
+   `DEV_CERT_PASSWORD`.
+3. Give the weekly digest its own App Store Connect key with a read-only role (Sales and
+   Reports, or Customer Support) as repository secrets (`ASC_KEY_ID`, `ASC_ISSUER_ID`,
+   `ASC_API_KEY_P8`), so a leaked digest key can't upload or submit. Keep the
+   upload-capable key in `release` only.
+
+Each TestFlight cut then shows "Waiting for review" in Actions until you approve it,
+including the runs you start yourself.
 
 ## Agent identity
 
@@ -75,4 +105,6 @@ Put a reminder in your calendar to rotate the token before it expires.
 - If no gated path changed, GitHub merges once CI passes.
 - If a gated path changed, the PR waits for your approval. Approve it and it merges.
   Pushing new commits dismisses your approval.
-- You cut and ship releases as before (`RELEASE.md`).
+- You cut and ship releases as before (`RELEASE.md`), then approve the `release`
+  deployment in Actions.
+- Agents never run release workflows, create or move tags, cut, bump, or promote.

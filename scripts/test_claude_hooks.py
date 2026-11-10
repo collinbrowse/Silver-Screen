@@ -154,8 +154,11 @@ class ReleaseGateTests(unittest.TestCase):
         self.assertEqual(decision(run_hook("gate-release-actions.sh", payload, cwd=repo)), "ask")
 
     def test_releaseGate_workflowRunAndGhRelease_askTheHuman(self):
-        for command in ("gh workflow run release.yml -f ref=testflight/1.0.0+11", "gh release create v1.0.1", "gh api -X POST repos/a/b/git/refs -f ref=refs/tags/x"):
+        for command in ("gh workflow run release.yml -f ref=testflight/1.0.0+11", "gh workflow run Release", "gh api -X POST repos/a/b/actions/workflows/release.yml/dispatches -f ref=main", "gh api -X POST repos/a/b/actions/runs/42/pending_deployments -f state=approved", "gh release create v1.0.1", "gh api -X POST repos/a/b/git/refs -f ref=refs/tags/x"):
             self.assertEqual(self.gate(command), "ask", command)
+
+    def test_releaseGate_ciWorkflowRun_returnsNoDecision(self):
+        self.assertIsNone(self.gate("gh workflow run ci.yml"))
 
     def test_releaseGate_mergeWithoutAuto_asksTheHuman(self):
         self.assertEqual(self.gate("gh pr merge 5 --merge"), "ask")
