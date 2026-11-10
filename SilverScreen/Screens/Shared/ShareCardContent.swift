@@ -10,7 +10,7 @@
 import Foundation
 
 /// The text and poster paths a share card draws. Built from a diary entry or a list.
-struct ShareCardContent: Sendable, Equatable, Identifiable {
+struct ShareCardContent: Sendable, Identifiable {
     enum Kind: Sendable, Equatable {
         /// One watch: big poster, rating, and review excerpt.
         case watch
@@ -34,12 +34,6 @@ struct ShareCardContent: Sendable, Equatable, Identifiable {
 
     static let listPosterLimit = 6
     static let reviewLimit = 280
-
-    static func == (lhs: ShareCardContent, rhs: ShareCardContent) -> Bool {
-        lhs.kind == rhs.kind && lhs.title == rhs.title && lhs.subtitle == rhs.subtitle
-            && lhs.dateLine == rhs.dateLine && lhs.scoreText == rhs.scoreText
-            && lhs.reviewExcerpt == rhs.reviewExcerpt && lhs.posterPaths == rhs.posterPaths
-    }
 
     /// A card for one logged watch. `calendar` and `locale` format the watch date.
     static func watch(
