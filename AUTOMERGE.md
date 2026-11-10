@@ -50,14 +50,15 @@ minting step. A machine user's token works with `gh` and `git` as is.
      "env": {
        "GH_TOKEN": "<agent token>",
        "GIT_CONFIG_COUNT": "2",
-       "GIT_CONFIG_KEY_0": "credential.https://github.com.helper",
+       "GIT_CONFIG_KEY_0": "credential.helper",
        "GIT_CONFIG_VALUE_0": "",
-       "GIT_CONFIG_KEY_1": "credential.https://github.com.helper",
+       "GIT_CONFIG_KEY_1": "credential.helper",
        "GIT_CONFIG_VALUE_1": "!gh auth git-credential"
      }
    }
    ```
-   The `GIT_CONFIG_*` lines make `git push` from Claude use the agent token instead of
+   The `GIT_CONFIG_*` lines clear the helper list (the empty value drops `osxkeychain`)
+   and put `gh` in its place, so `git push` from Claude uses the agent token instead of
    your keychain login. Your own terminal is unchanged.
 5. Check it from a new Claude session:
    ```bash

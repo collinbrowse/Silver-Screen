@@ -143,6 +143,20 @@ class ReleaseGateTests(unittest.TestCase):
         for command in ("git push -u origin claude/offline", "git push origin claude/v2-mainline"):
             self.assertIsNone(self.gate(command), command)
 
+    def test_releaseGate_mainPrefixedBranch_returnsNoDecision(self):
+        self.assertIsNone(self.gate("git push origin main-fix"))
+
+    def test_releaseGate_barePushOnMain_asksTheHuman(self):
+        repo = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, repo)
+        subprocess.run(["git", "init", "-q", "-b", "main", repo], check=True)
+        payload = {"tool_name": "Bash", "tool_input": {"command": "git push"}}
+        self.assertEqual(decision(run_hook("gate-release-actions.sh", payload, cwd=repo)), "ask")
+
+    def test_releaseGate_workflowRunAndGhRelease_askTheHuman(self):
+        for command in ("gh workflow run release.yml -f ref=testflight/1.0.0+11", "gh release create v1.0.1", "gh api -X POST repos/a/b/git/refs -f ref=refs/tags/x"):
+            self.assertEqual(self.gate(command), "ask", command)
+
     def test_releaseGate_mergeWithoutAuto_asksTheHuman(self):
         self.assertEqual(self.gate("gh pr merge 5 --merge"), "ask")
         self.assertIsNone(self.gate("gh pr merge 5 --auto --merge"))
