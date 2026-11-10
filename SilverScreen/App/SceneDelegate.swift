@@ -72,6 +72,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                     )
                 }
             }
+            dependencies.network.start()
             Task { try? await dependencies.lists.loadIndex() }
             Task { await dependencies.awards.prepare() }
             // Silent cold-launch catalog check. Must not delay first frame.
@@ -103,7 +104,9 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 tour: tour,
                 reviewPrompter: dependencies.reviewPrompter
             )
+            .offlineBanner()
             .environment(dependencies.diary)
+            .environment(dependencies.network)
             if let seedURL = demo?.seedURL {
                 // A demo launch holds the first frame until the seed is written, so
                 // screens never read an empty library and miss the seeded rows.

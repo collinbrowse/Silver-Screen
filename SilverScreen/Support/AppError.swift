@@ -76,4 +76,10 @@ enum AppError: Error, Equatable, Sendable {
                 return false
         }
     }
+
+    /// Whether this failure was the connection itself, so the same request is worth
+    /// sending again when the device comes back online.
+    var retriesOnReconnect: Bool {
+        self == .offline || self == .timedOut
+    }
 }
