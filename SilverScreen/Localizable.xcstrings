@@ -206,6 +206,16 @@
         }
       }
     },
+    "%lld of %lld films" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld films"
+          }
+        }
+      }
+    },
     "%lld of %lld rated" : {
       "localizations" : {
         "en" : {
@@ -261,6 +271,9 @@
     "1 title" : {
 
     },
+    "1. On letterboxd.com, open Settings → Data → Export Your Data.\n2. Open the ZIP in Files to unzip it.\n3. Choose the unzipped folder, or its CSV files." : {
+
+    },
     "A list with that name already exists." : {
 
     },
@@ -303,6 +316,9 @@
     "Added to %@" : {
 
     },
+    "Added to Watchlist" : {
+
+    },
     "Adds a new watch to your diary, dated today" : {
 
     },
@@ -319,6 +335,9 @@
 
     },
     "Alphabetical" : {
+
+    },
+    "Already in your library" : {
 
     },
     "an earlier watch" : {
@@ -351,6 +370,9 @@
     "Birthday" : {
 
     },
+    "Bring your Letterboxd diary, ratings, reviews, and watchlist into Silver Screen. Watch dates and rewatches come with them." : {
+
+    },
     "Browse" : {
 
     },
@@ -370,6 +392,9 @@
 
     },
     "Choose a rating" : {
+
+    },
+    "Choose Export…" : {
 
     },
     "Clear Genre" : {
@@ -406,6 +431,9 @@
 
     },
     "Continue works at any time." : {
+
+    },
+    "Couldn't save" : {
 
     },
     "Couldn't Save" : {
@@ -543,6 +571,15 @@
     "Film categories" : {
 
     },
+    "Films" : {
+
+    },
+    "Films are matched to TMDB by title and year. Nothing already in your library is changed, so importing again is safe." : {
+
+    },
+    "Films logged" : {
+
+    },
     "Filter titles" : {
 
     },
@@ -613,10 +650,25 @@
     "Images" : {
 
     },
+    "Import" : {
+
+    },
+    "Import Another Export" : {
+
+    },
+    "Import from Letterboxd" : {
+
+    },
+    "Imported" : {
+
+    },
     "In Progress" : {
       "comment" : "Name of the system list of shows the user is partway through"
     },
     "It went straight to the developer." : {
+
+    },
+    "Keep Silver Screen open until this finishes." : {
 
     },
     "last %@" : {
@@ -840,6 +892,9 @@
     "Not available" : {
 
     },
+    "Not Found on TMDB (%lld)" : {
+
+    },
     "Not on a list" : {
 
     },
@@ -968,6 +1023,9 @@
     "Popular" : {
 
     },
+    "Preparing the image" : {
+
+    },
     "Previous page" : {
 
     },
@@ -1011,6 +1069,12 @@
 
     },
     "Rated %@ out of 10" : {
+
+    },
+    "Ratings" : {
+
+    },
+    "Ready to Import" : {
 
     },
     "Recommendations" : {
@@ -1090,6 +1154,9 @@
 
     },
     "Rewatch logged" : {
+
+    },
+    "Rewatched %@" : {
 
     },
     "S%lld · %lld episodes" : {
@@ -1211,7 +1278,19 @@
     "Settings" : {
 
     },
+    "Share" : {
+
+    },
     "Share Anonymous Usage" : {
+
+    },
+    "Share Image" : {
+
+    },
+    "Share List" : {
+
+    },
+    "Share…" : {
 
     },
     "Show less" : {
@@ -1275,6 +1354,9 @@
 
     },
     "Specials" : {
+
+    },
+    "Start Over" : {
 
     },
     "Storyline" : {
@@ -1343,6 +1425,9 @@
     "Their ratings and reviews go too." : {
 
     },
+    "These weren't imported. Add them from Search." : {
+
+    },
     "This award has no titles in the catalog yet." : {
 
     },
@@ -1389,6 +1474,9 @@
 
     },
     "This series could not be shown." : {
+
+    },
+    "Those files had no diary, ratings, watched, or watchlist. Pick diary.csv, ratings.csv, watched.csv, and watchlist.csv, or the whole unzipped export folder." : {
 
     },
     "Tip %@" : {
@@ -1484,6 +1572,12 @@
     "Watched, date unknown" : {
 
     },
+    "Watches" : {
+
+    },
+    "Watches added" : {
+
+    },
     "Watches you log for this title show up here." : {
 
     },
@@ -1542,6 +1636,9 @@
 
     },
     "Your change couldn't be saved. Please try again." : {
+
+    },
+    "Your Data" : {
 
     },
     "Your library" : {

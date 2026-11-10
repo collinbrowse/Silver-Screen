@@ -25,7 +25,7 @@ struct ShareCardContent: Sendable, Identifiable {
     let subtitle: String?
     /// "Watched March 3, 2026", "Rewatched …", or nil when the day isn't known.
     let dateLine: String?
-    /// The score as shown in the app ("8.5"), or nil when unrated.
+    /// The score as shown in the app ("8.5", "8,5" in German), or nil when unrated.
     let scoreText: String?
     /// The review, cut at a word boundary to fit the card.
     let reviewExcerpt: String?
@@ -62,7 +62,7 @@ struct ShareCardContent: Sendable, Identifiable {
             title: entry.title,
             subtitle: entry.releaseYear.map(String.init),
             dateLine: dateLine,
-            scoreText: entry.score.map { String(format: "%.1f", $0) },
+            scoreText: entry.score.map { $0.formatted(.number.precision(.fractionLength(1)).locale(locale)) },
             reviewExcerpt: excerpt(entry.review),
             posterPaths: entry.posterPath.map { [$0] } ?? []
         )
@@ -72,7 +72,7 @@ struct ShareCardContent: Sendable, Identifiable {
     static func list(_ list: LibraryList, entries: [ListEntry]) -> ShareCardContent {
         ShareCardContent(
             kind: .list,
-            title: list.name,
+            title: list.displayName,
             subtitle: entries.count == 1
                 ? String(localized: "1 title")
                 : String(localized: "\(entries.count) titles"),

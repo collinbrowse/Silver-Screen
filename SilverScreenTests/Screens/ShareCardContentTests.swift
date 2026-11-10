@@ -63,7 +63,7 @@ final class ShareCardContentTests: XCTestCase {
         let card = ShareCardContent.list(list, entries: entries)
 
         XCTAssertEqual(card.kind, .list)
-        XCTAssertEqual(card.title, list.name)
+        XCTAssertEqual(card.title, list.displayName)
         XCTAssertEqual(card.subtitle, "8 titles")
         XCTAssertEqual(card.posterPaths, ["/p1.jpg", "/p3.jpg", "/p4.jpg", "/p5.jpg", "/p6.jpg", "/p7.jpg"])
     }
