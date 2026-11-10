@@ -39,6 +39,14 @@ final class LetterboxdExportTests: XCTestCase {
         XCTAssertFalse(plans[0].onWatchlist)
     }
 
+    func test_plans_reviewWithoutDiaryRow_isKeptAsItsOwnWatch() {
+        let plans = LetterboxdExport.plans(from: [
+            .reviews: "Date,Name,Year,Letterboxd URI,Rating,Rewatch,Review,Tags,Watched Date\n2023-05-01,Heat,1995,u9,4.5,,Tense.,,\n",
+        ])
+
+        XCTAssertEqual(plans.map(\.watches), [[LetterboxdWatch(watchedOn: nil, stars: 4.5, isRewatch: false, review: "Tense.")]])
+    }
+
     func test_plans_ratingWithoutDiary_becomesUndatedRatedWatch() {
         let plans = LetterboxdExport.plans(from: [
             .ratings: "Date,Name,Year,Letterboxd URI,Rating\n2023-05-01,Heat,1995,https://boxd.it/h,5\n",

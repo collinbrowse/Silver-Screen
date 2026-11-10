@@ -60,31 +60,69 @@ enum LetterboxdExport {
         }
 
         // Reviews attach to the diary row with the same entry URI, else the same film and day.
-        var reviewsByURI: [String: String] = [:]
-        var reviewsByFilmDay: [String: String] = [:]
-        for row in records(files[.reviews]) {
-            guard let film = row.film, let review = nonEmpty(row["Review"]) else { continue }
-            if let uri = nonEmpty(row["Letterboxd URI"]) {
-                reviewsByURI[uri] = review
-            }
-            reviewsByFilmDay[filmDayKey(film, day: DiaryDay(iso: row["Watched Date"] ?? ""))] = review
+        // One with no diary row (Letterboxd allows undated reviews) is added after the diary.
+        struct Review {
+            let film: LetterboxdFilm
+            let day: DiaryDay?
+            let uri: String?
+            let text: String
+            let stars: Double?
+            let isRewatch: Bool
+            var key: String { LetterboxdExport.filmDayKey(film, day: day) }
         }
+        let reviews: [Review] = records(files[.reviews]).compactMap { row in
+            guard let film = row.film, let text = nonEmpty(row["Review"]) else { return nil }
+            return Review(
+                film: film,
+                day: DiaryDay(iso: row["Watched Date"] ?? ""),
+                uri: nonEmpty(row["Letterboxd URI"]),
+                text: text,
+                stars: stars(row["Rating"]),
+                isRewatch: row["Rewatch"]?.lowercased() == "yes"
+            )
+        }
+        var reviewByURI: [String: Int] = [:]
+        var reviewByKey: [String: Int] = [:]
+        for (index, review) in reviews.enumerated() {
+            if let uri = review.uri { reviewByURI[uri] = index }
+            reviewByKey[review.key] = index
+        }
+        var usedReviews = Set<Int>()
 
         for row in records(files[.diary]) {
             guard let film = row.film else { continue }
             let day = DiaryDay(iso: row["Watched Date"] ?? "") ?? DiaryDay(iso: row["Date"] ?? "")
-            let review = nonEmpty(row["Letterboxd URI"]).flatMap { reviewsByURI[$0] }
-                ?? reviewsByFilmDay[filmDayKey(film, day: day)]
+            let reviewIndex = nonEmpty(row["Letterboxd URI"]).flatMap { reviewByURI[$0] }
+                ?? reviewByKey[filmDayKey(film, day: day)]
+            if let reviewIndex { usedReviews.insert(reviewIndex) }
             var entry = plan(for: film)
             entry.watches.append(
                 LetterboxdWatch(
                     watchedOn: day,
                     stars: stars(row["Rating"]),
                     isRewatch: row["Rewatch"]?.lowercased() == "yes",
-                    review: review
+                    review: reviewIndex.map { reviews[$0].text }
                 )
             )
             plans[film] = entry
+        }
+
+        for (index, review) in reviews.enumerated() where !usedReviews.contains(index) {
+            var entry = plan(for: review.film)
+            if let last = entry.watches.lastIndex(where: { $0.review == nil }) {
+                let watch = entry.watches[last]
+                entry.watches[last] = LetterboxdWatch(
+                    watchedOn: watch.watchedOn,
+                    stars: watch.stars ?? review.stars,
+                    isRewatch: watch.isRewatch,
+                    review: review.text
+                )
+            } else {
+                entry.watches.append(
+                    LetterboxdWatch(watchedOn: review.day, stars: review.stars, isRewatch: review.isRewatch, review: review.text)
+                )
+            }
+            plans[review.film] = entry
         }
 
         // A rating with no rated diary watch rates the film's undated watch.
@@ -228,7 +266,7 @@ enum LetterboxdExport {
         return value
     }
 
-    private static func filmDayKey(_ film: LetterboxdFilm, day: DiaryDay?) -> String {
+    fileprivate static func filmDayKey(_ film: LetterboxdFilm, day: DiaryDay?) -> String {
         "\(film.name)|\(film.year.map(String.init) ?? "")|\(day?.iso ?? "")"
     }
 
