@@ -17,6 +17,8 @@ struct DiaryView: View {
     let router: NavigationRouter
 
     @State private var availableWidth: CGFloat = 0
+    /// The watch being shared as an image; drives the share sheet.
+    @State private var shareCard: ShareCardContent?
 
     private var layout: DiaryLayout { DiaryLayout(width: availableWidth) }
 
@@ -81,6 +83,9 @@ struct DiaryView: View {
         .toolbarTitleDisplayMode(
             viewModel.prefersInlineTitle || layout.horizontalMargin > 0 ? .inline : .inlineLarge
         )
+        .sheet(item: $shareCard) { card in
+            ShareCardSheet(content: card, imageLoader: imageLoader)
+        }
         .sheet(item: editorBinding) { session in
             DiaryEntryEditorSheet(
                 session: session,
@@ -195,9 +200,15 @@ struct DiaryView: View {
                 Task { await viewModel.delete(row) }
             }
         }
+        .accessibilityAction(named: "Share") {
+            shareCard = .watch(row.entry)
+        }
         .contextMenu {
             Button("Edit Entry", systemImage: "pencil") {
                 viewModel.edit(row)
+            }
+            Button("Share…", systemImage: "square.and.arrow.up") {
+                shareCard = .watch(row.entry)
             }
             if viewModel.showsTitleLinks {
                 Button(
