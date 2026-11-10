@@ -279,12 +279,15 @@
 		WR00000E2788B823003D8011 /* TitleWatchSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR00000D2788B823003D8011 /* TitleWatchSection.swift */; };
 		WR0000102788B823003D8011 /* LogRewatchButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR00000F2788B823003D8011 /* LogRewatchButton.swift */; };
 		WR0000142788B823003D8011 /* SeasonRewatchSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000132788B823003D8011 /* SeasonRewatchSheet.swift */; };
+		F4AB5A1A1EC9673624DA3C03 /* LetterboxdExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B000E8F3635DED6DE3C3E89 /* LetterboxdExport.swift */; };
+		53852CED43F4BC50B2EEC30F /* LetterboxdImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13F1D20913D24F093CDDA06 /* LetterboxdImporter.swift */; };
 		WR0000022788B823003D8011 /* WatchRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000012788B823003D8011 /* WatchRepository.swift */; };
 		WR00000A2788B823003D8011 /* RemoveWatchesAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000092788B823003D8011 /* RemoveWatchesAlert.swift */; };
 		WR0000162788B823003D8011 /* WatchDateRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000152788B823003D8011 /* WatchDateRow.swift */; };
 		WR0000062788B823003D8011 /* SQLiteLibraryStore+WatchReconcile.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000052788B823003D8011 /* SQLiteLibraryStore+WatchReconcile.swift */; };
 		WR0000082788B823003D8011 /* WatchReconcileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000072788B823003D8011 /* WatchReconcileTests.swift */; };
 		WR0000122788B823003D8011 /* TitleWatchViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000112788B823003D8011 /* TitleWatchViewModelTests.swift */; };
+		EE94EED40058E39734664314 /* LetterboxdImportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1821A8F2BDE3DE69C10A16E /* LetterboxdImportTests.swift */; };
 		WR0000042788B823003D8011 /* WatchRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = WR0000032788B823003D8011 /* WatchRepositoryTests.swift */; };
 		WT0000022788B823003D8011 /* WatchedToggleButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = WT0000012788B823003D8011 /* WatchedToggleButton.swift */; };
 		WT0000042788B823003D8011 /* CarouselRatingBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = WT0000032788B823003D8011 /* CarouselRatingBadge.swift */; };
@@ -299,6 +302,8 @@
 		E9D3B50E3FC2A219DF652747 /* ReviewPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CD6EA7AF70D38B9F7D8DA01 /* ReviewPrompt.swift */; };
 		C24299D89D285E985C089C0F /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 344231C687A1F4BDC84AE838 /* SettingsView.swift */; };
 		309F7DB557353776721669D1 /* FeedbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9475A975A4338EA2BA6D454B /* FeedbackView.swift */; };
+		2EEE1AA4481B272C0A12ACE0 /* LetterboxdImportViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADB6FAFC9502E960E03BD2C6 /* LetterboxdImportViewModel.swift */; };
+		0C6CFC4A8635E648C8FFDDFB /* LetterboxdImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8344CEA9BC8C55F9996983 /* LetterboxdImportView.swift */; };
 		DBDA669F4EDAFF9271D35155 /* FeedbackViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B40858A9A67F12747AF9A004 /* FeedbackViewModel.swift */; };
 		12CD4F709858FE5E58E3A313 /* AcknowledgementsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 916478276EA922BADD12683C /* AcknowledgementsView.swift */; };
 		A7CA6C88B871936C0E9A256B /* AppInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC815E0E78D769875E215A35 /* AppInfoTests.swift */; };
@@ -632,10 +637,13 @@
 		WR00000D2788B823003D8011 /* TitleWatchSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleWatchSection.swift; sourceTree = "<group>"; };
 		WR00000F2788B823003D8011 /* LogRewatchButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogRewatchButton.swift; sourceTree = "<group>"; };
 		WR0000132788B823003D8011 /* SeasonRewatchSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonRewatchSheet.swift; sourceTree = "<group>"; };
+		9B000E8F3635DED6DE3C3E89 /* LetterboxdExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LetterboxdExport.swift; sourceTree = "<group>"; };
+		C13F1D20913D24F093CDDA06 /* LetterboxdImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LetterboxdImporter.swift; sourceTree = "<group>"; };
 		WR0000012788B823003D8011 /* WatchRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRepository.swift; sourceTree = "<group>"; };
 		WR0000052788B823003D8011 /* SQLiteLibraryStore+WatchReconcile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SQLiteLibraryStore+WatchReconcile.swift"; sourceTree = "<group>"; };
 		WR0000072788B823003D8011 /* WatchReconcileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchReconcileTests.swift; sourceTree = "<group>"; };
 		WR0000112788B823003D8011 /* TitleWatchViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleWatchViewModelTests.swift; sourceTree = "<group>"; };
+		D1821A8F2BDE3DE69C10A16E /* LetterboxdImportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LetterboxdImportTests.swift; sourceTree = "<group>"; };
 		WR0000032788B823003D8011 /* WatchRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRepositoryTests.swift; sourceTree = "<group>"; };
 		WT0000012788B823003D8011 /* WatchedToggleButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchedToggleButton.swift; sourceTree = "<group>"; };
 		WT0000032788B823003D8011 /* CarouselRatingBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarouselRatingBadge.swift; sourceTree = "<group>"; };
@@ -650,6 +658,8 @@
 		1CD6EA7AF70D38B9F7D8DA01 /* ReviewPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewPrompt.swift; sourceTree = "<group>"; };
 		344231C687A1F4BDC84AE838 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		9475A975A4338EA2BA6D454B /* FeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackView.swift; sourceTree = "<group>"; };
+		ADB6FAFC9502E960E03BD2C6 /* LetterboxdImportViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LetterboxdImportViewModel.swift; sourceTree = "<group>"; };
+		AF8344CEA9BC8C55F9996983 /* LetterboxdImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LetterboxdImportView.swift; sourceTree = "<group>"; };
 		B40858A9A67F12747AF9A004 /* FeedbackViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackViewModel.swift; sourceTree = "<group>"; };
 		916478276EA922BADD12683C /* AcknowledgementsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcknowledgementsView.swift; sourceTree = "<group>"; };
 		EC815E0E78D769875E215A35 /* AppInfoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppInfoTests.swift; sourceTree = "<group>"; };
@@ -784,6 +794,8 @@
 				891B46E4269F72AF8EDD60D7 /* DiaryRepository.swift */,
 				TW0000072788B823003D8011 /* TVWatchRepository.swift */,
 				L1B0000C2788B823003D8011 /* ListsRepository.swift */,
+				9B000E8F3635DED6DE3C3E89 /* LetterboxdExport.swift */,
+				C13F1D20913D24F093CDDA06 /* LetterboxdImporter.swift */,
 				WR0000012788B823003D8011 /* WatchRepository.swift */,
 				TW0000092788B823003D8011 /* TVWatchReconcile.swift */,
 				L1B0000E2788B823003D8011 /* ListsIndex.swift */,
@@ -1229,6 +1241,7 @@
 				C200000D2788B823003D8011 /* AnnotationsRepositoryTests.swift */,
 				650BB0C2EB6D4099886910E1 /* DiaryEntryTests.swift */,
 				22899E2AE667CC1109104922 /* DiaryRepositoryTests.swift */,
+				D1821A8F2BDE3DE69C10A16E /* LetterboxdImportTests.swift */,
 				WR0000032788B823003D8011 /* WatchRepositoryTests.swift */,
 				WR0000072788B823003D8011 /* WatchReconcileTests.swift */,
 				AF25DCB2CB677BCE2694175A /* DiaryStoreTests.swift */,
@@ -1260,6 +1273,8 @@
 			isa = PBXGroup;
 			children = (
 				916478276EA922BADD12683C /* AcknowledgementsView.swift */,
+				ADB6FAFC9502E960E03BD2C6 /* LetterboxdImportViewModel.swift */,
+				AF8344CEA9BC8C55F9996983 /* LetterboxdImportView.swift */,
 				B40858A9A67F12747AF9A004 /* FeedbackViewModel.swift */,
 				9475A975A4338EA2BA6D454B /* FeedbackView.swift */,
 				344231C687A1F4BDC84AE838 /* SettingsView.swift */,
@@ -1455,6 +1470,8 @@
 				C5612AAAF5D1D508FD094BEA /* OnboardingGate.swift in Sources */,
 				A198574D0547185689E708E5 /* OnboardingMarkerStore.swift in Sources */,
 				12CD4F709858FE5E58E3A313 /* AcknowledgementsView.swift in Sources */,
+				2EEE1AA4481B272C0A12ACE0 /* LetterboxdImportViewModel.swift in Sources */,
+				0C6CFC4A8635E648C8FFDDFB /* LetterboxdImportView.swift in Sources */,
 				DBDA669F4EDAFF9271D35155 /* FeedbackViewModel.swift in Sources */,
 				309F7DB557353776721669D1 /* FeedbackView.swift in Sources */,
 				C24299D89D285E985C089C0F /* SettingsView.swift in Sources */,
@@ -1647,6 +1664,8 @@
 				WR00000E2788B823003D8011 /* TitleWatchSection.swift in Sources */,
 				WR0000102788B823003D8011 /* LogRewatchButton.swift in Sources */,
 				WR0000142788B823003D8011 /* SeasonRewatchSheet.swift in Sources */,
+				F4AB5A1A1EC9673624DA3C03 /* LetterboxdExport.swift in Sources */,
+				53852CED43F4BC50B2EEC30F /* LetterboxdImporter.swift in Sources */,
 				WR0000022788B823003D8011 /* WatchRepository.swift in Sources */,
 				WR00000A2788B823003D8011 /* RemoveWatchesAlert.swift in Sources */,
 				WR0000162788B823003D8011 /* WatchDateRow.swift in Sources */,
@@ -1738,6 +1757,7 @@
 				FFC75DCB06DD8F7F23C02B44 /* DiaryEntryTests.swift in Sources */,
 				5CC25101B272073620C28D7C /* DiaryRepositoryTests.swift in Sources */,
 				WR0000122788B823003D8011 /* TitleWatchViewModelTests.swift in Sources */,
+				EE94EED40058E39734664314 /* LetterboxdImportTests.swift in Sources */,
 				WR0000042788B823003D8011 /* WatchRepositoryTests.swift in Sources */,
 				WR0000082788B823003D8011 /* WatchReconcileTests.swift in Sources */,
 				9C8A7CEDCD98A7B9B78E3851 /* DiaryStoreTests.swift in Sources */,
