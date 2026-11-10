@@ -16,12 +16,17 @@ struct SettingsContext {
     let sendFeedback: @MainActor (FeedbackSubmission) -> Bool
     /// The Pro survey, shared with the Library card.
     let proSurvey: ProSurveyPrompt
+    /// Settings → Import from Letterboxd.
+    let letterboxdImporter: LetterboxdImporter
+    /// Refreshes open library and diary screens after an import writes something.
+    let didImport: @MainActor () -> Void
 }
 
 /// Pages inside the Settings sheet. Kept off `Route` so Settings never lands in tab restoration.
 enum SettingsDestination: Hashable {
     case proSurvey
     case feedback
+    case letterboxdImport
     case acknowledgements
 }
 
@@ -60,6 +65,12 @@ struct SettingsView: View {
                     }
                     Link(destination: AppLinks.support) {
                         Label("Help & Support", systemImage: "questionmark.circle")
+                    }
+                }
+
+                Section("Your Data") {
+                    NavigationLink(value: SettingsDestination.letterboxdImport) {
+                        Label("Import from Letterboxd", systemImage: "square.and.arrow.down")
                     }
                 }
 
@@ -114,6 +125,13 @@ struct SettingsView: View {
                         ProSurveyView(viewModel: context.proSurvey.makeViewModel(source: .settings))
                     case .feedback:
                         FeedbackView(viewModel: FeedbackViewModel(send: context.sendFeedback))
+                    case .letterboxdImport:
+                        LetterboxdImportView(
+                            viewModel: LetterboxdImportViewModel(
+                                importer: context.letterboxdImporter,
+                                didImport: context.didImport
+                            )
+                        )
                     case .acknowledgements:
                         AcknowledgementsView()
                 }

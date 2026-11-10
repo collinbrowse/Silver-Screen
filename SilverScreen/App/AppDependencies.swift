@@ -24,6 +24,8 @@ struct AppDependencies {
     let logger: any AppLogging
     let settings: SettingsContext
     let reviewPrompter: ReviewPrompter
+    /// App-wide reachability for the offline banner and auto-retry.
+    let network: NetworkMonitor
     /// Anonymous product events. Disabled without a TelemetryDeck app ID and for demo launches.
     let analytics: any AnalyticsClient
     /// Screen details for analytics, reported by `SceneDelegate`.
@@ -156,7 +158,17 @@ struct AppDependencies {
             sendFeedback: { submission in
                 SentryBootstrap.sendFeedback(message: submission.message, email: submission.email)
             },
-            proSurvey: proSurvey
+            proSurvey: proSurvey,
+            letterboxdImporter: LetterboxdImporter(
+                movies: movies,
+                watches: watches,
+                lists: lists,
+                logger: logger
+            ),
+            didImport: {
+                listChanges.noteWatchChange()
+                diary.noteChange()
+            }
         )
         return AppDependencies(
             movies: movies,
@@ -176,6 +188,7 @@ struct AppDependencies {
             logger: logger,
             settings: settings,
             reviewPrompter: reviewPrompter,
+            network: NetworkMonitor(),
             analytics: analytics,
             analyticsDevice: analyticsDevice,
             analyticsSession: AnalyticsSessionTracker(analytics: analytics)

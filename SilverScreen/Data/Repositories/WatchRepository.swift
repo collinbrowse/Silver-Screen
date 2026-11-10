@@ -168,6 +168,30 @@ actor WatchRepository {
         }
     }
 
+    /// Saves imported watches of one movie in a single diary write, puts it on Watched,
+    /// and brings the title's rating in line. Skips any watch the diary already has: a
+    /// dated watch on a day already logged, or an undated watch of a movie that already
+    /// has one. So importing the same export twice adds nothing. Returns how many were added.
+    func importMovieWatches(_ draft: ListItemDraft, entries: [DiaryEntry]) async throws -> Int {
+        let subject = DiarySubject.movie(draft.id)
+        let existing = try await watches(of: subject)
+        let existingDays = Set(existing.filter(\.isDateKnown).map(\.watchedOn))
+        let fresh = entries.filter { entry in
+            entry.isDateKnown ? !existingDays.contains(entry.watchedOn) : existing.isEmpty
+        }
+        guard !fresh.isEmpty else { return 0 }
+        let saved = try await diary.save(contentsOf: fresh)
+        do {
+            let firstDay = fresh.filter(\.isDateKnown).map(\.watchedOn).min()
+            _ = try await lists.addToWatched(draft, at: firstDay?.date(in: calendar) ?? now())
+        } catch {
+            await rollBack("imported watches") { try await self.diary.delete(ids: Set(saved.map(\.id))) }
+            throw error
+        }
+        await syncTitleRating(for: subject)
+        return saved.count
+    }
+
     /// Sets the rating and review of a title's newest rated watch, or its newest watch.
     /// Onboarding uses this, because its picks have no Log sheet. No-op with no watch.
     func rate(_ subject: DiarySubject, score: Double?, review: String?) async throws {

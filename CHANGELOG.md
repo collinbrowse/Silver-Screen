@@ -7,6 +7,13 @@ list.
 
 ## [Unreleased]
 
+## [1.0.0+11] - 2026-11-09
+
+- Pull request #77.
+- Reword the support page and privacy policy.
+- Ship 1.0.0 with November screenshots.
+- Fix the App Store preview tour's rating step.
+
 ## [0.1.1+10] - 2026-11-04
 
 - Add iPhone Duo inner and outer screenshot sets to the marketing pipeline.
