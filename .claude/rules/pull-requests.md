@@ -24,3 +24,17 @@ When creating or editing a GitHub pull request for this repo, the body **must** 
 - Skip Decision Tree or AI Harness notes.
 - Replace the template Test Plan checkboxes with an ad-hoc list only.
 - Open a PR with a placeholder or truncated body “to fill in later.”
+
+## Auto-merge
+
+After Auto-fix is on, queue the merge: `gh pr merge --auto --merge` (or the `ccd_pr`
+auto-merge tool). The user approved this for every PR. GitHub then merges once the
+`main` ruleset is satisfied: CI green, plus code-owner approval when the PR touches a
+path in [`.github/CODEOWNERS`](.github/CODEOWNERS). See [`AUTOMERGE.md`](AUTOMERGE.md).
+
+- Never merge without `--auto`, and never use an admin bypass. The release gate hook
+  asks the user first.
+- When a PR touches a gated path, say so in the PR body's Summary and tell the user
+  their approval is needed.
+- Cutting builds, bumping versions, and pushing `testflight/*` or `v*` tags stay human
+  (see [`releases.md`](.claude/rules/releases.md)).
