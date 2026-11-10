@@ -153,7 +153,7 @@ later. Until then, each week's numbers live only in that week's digest issue.
 
 - [ ] Offline handling: a reachability check so the app responds when the network drops
 - [ ] Snapshot tests for `Design/` components
-- [ ] Localization (TMDB already serves localized titles and overviews)
+- [x] Localization: Spanish, French, German, Brazilian Portuguese in `Localizable.xcstrings` (app UI only; App Store metadata and screenshots are still English)
 
 ### Automation
 
