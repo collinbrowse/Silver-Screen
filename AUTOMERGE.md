@@ -47,7 +47,10 @@ One-time setup (an agent can't do these; the release gate hook asks first):
    upload-capable key in `release` only.
 
 Each TestFlight cut then shows "Waiting for review" in Actions until you approve it,
-including the runs you start yourself.
+including the runs you start yourself. A manual run must start from the tag (Actions →
+Release → Run workflow → "Use workflow from" a `testflight/*` tag, or
+`gh workflow run release.yml --ref testflight/<version>`); a run from `main` is refused
+by the tag policy.
 
 ## Agent identity
 
