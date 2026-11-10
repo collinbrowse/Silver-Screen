@@ -27,7 +27,7 @@ struct ErrorStateView: View {
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            if retriesOnReconnect {
+            if retriesOnReconnect, network?.isOnline == false {
                 Text("We'll try again when you're back online.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)

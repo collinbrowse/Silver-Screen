@@ -51,12 +51,16 @@ final class NetworkMonitor {
     /// Begins listening. Calling it again is a no-op.
     func start() {
         guard task == nil else { return }
-        task = Task { [weak self] in
-            await self?.run()
+        // Weak per update, so a dropped monitor's deinit can cancel the path monitor.
+        task = Task { [weak self, source] in
+            for await online in source.updates() {
+                guard let self else { return }
+                self.apply(online)
+            }
         }
     }
 
-    /// Applies each update from the source until it finishes or the task is cancelled.
+    /// Applies each update from the source until it finishes. For tests; the app uses `start()`.
     func run() async {
         for await online in source.updates() {
             apply(online)
