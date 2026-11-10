@@ -21,7 +21,7 @@ struct YouTubeEmbedView: UIViewRepresentable {
         webView.isOpaque = false
         webView.backgroundColor = .systemBackground
         webView.scrollView.backgroundColor = .systemBackground
-        webView.accessibilityLabel = "Trailer video"
+        webView.accessibilityLabel = String(localized: "Trailer video")
         return webView
     }
 

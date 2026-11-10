@@ -179,6 +179,7 @@
 		7A1E00052788B823003D8011 /* NewTrailersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1E00062788B823003D8011 /* NewTrailersTests.swift */; };
 		C77D45322788B821003D8011 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77D45312788B821003D8011 /* AppDelegate.swift */; };
 		C77D45342788B821003D8011 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77D45332788B821003D8011 /* SceneDelegate.swift */; };
+		CA43CE328828E2573DBB5EE7 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 8BC167562678CE63BDCF6779 /* Localizable.xcstrings */; };
 		C77D453B2788B822003D8011 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C77D453A2788B822003D8011 /* Assets.xcassets */; };
 		C77D453E2788B822003D8011 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C77D453C2788B822003D8011 /* LaunchScreen.storyboard */; };
 		C77D45532788B823003D8011 /* SilverScreenUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C77D45522788B823003D8011 /* SilverScreenUITests.swift */; };
@@ -529,6 +530,7 @@
 		C77D452E2788B821003D8011 /* SilverScreen.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SilverScreen.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C77D45312788B821003D8011 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C77D45332788B821003D8011 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		8BC167562678CE63BDCF6779 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		C77D453A2788B822003D8011 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C77D453D2788B822003D8011 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		C77D453F2788B822003D8011 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -1012,6 +1014,7 @@
 				B10001402788B823003D8011 /* Navigation */,
 				D1A000012788B823003D8011 /* Data */,
 				D1A000022788B823003D8011 /* Support */,
+				8BC167562678CE63BDCF6779 /* Localizable.xcstrings */,
 				C77D453A2788B822003D8011 /* Assets.xcassets */,
 				C77D453C2788B822003D8011 /* LaunchScreen.storyboard */,
 				C77D453F2788B822003D8011 /* Info.plist */,
@@ -1387,6 +1390,10 @@
 			knownRegions = (
 				en,
 				Base,
+				es,
+				fr,
+				de,
+				"pt-BR",
 			);
 			mainGroup = C77D45252788B821003D8011;
 			packageReferences = (
@@ -1409,6 +1416,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C77D453E2788B822003D8011 /* LaunchScreen.storyboard in Resources */,
+				CA43CE328828E2573DBB5EE7 /* Localizable.xcstrings in Resources */,
 				C77D453B2788B822003D8011 /* Assets.xcassets in Resources */,
 				A1A000052788B823003D8011 /* AwardsCatalog.json in Resources */,
 				FE0000042788B823003D8011 /* PrivacyInfo.xcprivacy in Resources */,

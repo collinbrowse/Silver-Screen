@@ -61,16 +61,16 @@ struct MediaDescriptionSection: View {
     private var header: some View {
         HStack(alignment: .center, spacing: DesignSpacing.sm) {
             if note == nil {
-                CardLabel(title: "Storyline")
+                CardLabel(title: String(localized: "Storyline"))
                 Spacer(minLength: 0)
             } else if page == .notes {
-                CardLabel(title: "Your review")
+                CardLabel(title: String(localized: "Your review"))
                 Spacer(minLength: 0)
                 pageSwitch(title: "Storyline", arrow: "arrow.right", arrowFirst: false, label: "Show storyline") {
                     showStoryline()
                 }
             } else {
-                CardLabel(title: "Storyline")
+                CardLabel(title: String(localized: "Storyline"))
                 Spacer(minLength: 0)
                 pageSwitch(title: "Your review", arrow: "arrow.left", arrowFirst: true, label: "Show your review") {
                     showNotes()
@@ -80,10 +80,10 @@ struct MediaDescriptionSection: View {
     }
 
     private func pageSwitch(
-        title: String,
+        title: LocalizedStringKey,
         arrow: String,
         arrowFirst: Bool,
-        label: String,
+        label: LocalizedStringKey,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -156,17 +156,17 @@ struct MediaDescriptionSection: View {
     }
 
     private var storylineCard: some View {
-        Text(overview.isEmpty ? "No description available." : overview)
+        Text(overview.isEmpty ? String(localized: "No description available.") : overview)
             .font(DesignTypography.body)
             .foregroundStyle(DesignTheme.textSecondary)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .textSelection(.enabled)
-            .accessibilityLabel(overview.isEmpty ? "No description available." : overview)
+            .accessibilityLabel(overview.isEmpty ? String(localized: "No description available.") : overview)
     }
 
     private func noteAccessibilityLabel(_ note: String) -> String {
-        var parts = ["You"]
+        var parts = [String(localized: "You", comment: "Author of a review: the user")]
         if let notedOn {
             parts.append(notedOn)
         }

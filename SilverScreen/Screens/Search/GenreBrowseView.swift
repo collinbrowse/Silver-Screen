@@ -103,8 +103,8 @@ struct GenreBrowseView: View {
                 LoadingStateView()
             case .empty:
                 EmptyStateView(
-                    title: "Nothing to Browse",
-                    message: "No titles match \(viewModel.genre.title), \(viewModel.media.title).",
+                    title: String(localized: "Nothing to Browse"),
+                    message: String(localized: "No titles match \(viewModel.genre.title), \(viewModel.media.title)."),
                     systemImage: "film"
                 )
             case .loaded(let rows, let activity):
@@ -182,7 +182,7 @@ struct GenreBrowseView: View {
                     genre: row.genreLine,
                     metadata: row.formattedDate,
                     userScore: row.formattedUserScore,
-                    kindLabel: row.media == .movie ? "Movie" : "TV",
+                    kindLabel: row.media == .movie ? String(localized: "Movie") : String(localized: "TV"),
                     imagePath: row.posterPath,
                     imageKind: .poster,
                     placeholderSystemImage: row.media == .movie ? "film" : "tv",

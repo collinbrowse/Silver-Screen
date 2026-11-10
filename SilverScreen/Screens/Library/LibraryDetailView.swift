@@ -27,8 +27,8 @@ struct LibraryDetailView: View {
                     LoadingStateView()
                 case .empty:
                     EmptyStateView(
-                        title: "List Unavailable",
-                        message: "That list no longer exists.",
+                        title: String(localized: "List Unavailable"),
+                        message: String(localized: "That list no longer exists."),
                         systemImage: "books.vertical"
                     )
                 case .loaded(let detail, let activity):
@@ -72,9 +72,9 @@ struct LibraryDetailView: View {
 
     private var title: String {
         if case .loaded(let detail, _) = viewModel.state {
-            return detail.list.name
+            return detail.list.displayName
         }
-        return "List"
+        return String(localized: "List")
     }
 
     private func loaded(_ detail: LibraryListDetail, activity: LoadActivity) -> some View {
@@ -227,15 +227,15 @@ struct LibraryDetailView: View {
 
     private func metadata(for entry: ListEntry) -> String {
         switch entry.kind {
-            case .person: "Person"
+            case .person: String(localized: "Person")
             case .movie, .tv: DisplayDate.year(entry.releaseDate) ?? ""
         }
     }
 
     private func kindLabel(for kind: ListItemKind) -> String? {
         switch kind {
-            case .movie: "Movie"
-            case .tv: "TV"
+            case .movie: String(localized: "Movie")
+            case .tv: String(localized: "TV")
             case .person: nil
         }
     }
@@ -251,26 +251,26 @@ struct LibraryDetailView: View {
     private func emptyTitle() -> String {
         let query = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !query.isEmpty || (viewModel.showsMediaFilter && viewModel.mediaFilter != .all) {
-            return "No Matches"
+            return String(localized: "No Matches")
         }
-        return "Nothing Here"
+        return String(localized: "Nothing Here")
     }
 
     private func emptyMessage(_ detail: LibraryListDetail) -> String {
         let query = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !query.isEmpty {
-            return "Nothing matches \"\(query)\"."
+            return String(localized: "Nothing matches \"\(query)\".")
         }
         if viewModel.showsMediaFilter, viewModel.mediaFilter == .movies {
-            return "No movies on this list."
+            return String(localized: "No movies on this list.")
         }
         if viewModel.showsMediaFilter, viewModel.mediaFilter == .tv {
-            return "No TV on this list."
+            return String(localized: "No TV on this list.")
         }
         if detail.list.segment == .people {
-            return "Add a person from Search."
+            return String(localized: "Add a person from Search.")
         }
-        return "Add a title from Browse or Search."
+        return String(localized: "Add a title from Browse or Search.")
     }
 
     private func remove(_ entry: ListEntry) async {

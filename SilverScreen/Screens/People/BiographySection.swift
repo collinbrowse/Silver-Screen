@@ -18,7 +18,7 @@ struct BiographySection: View {
     private let expandsWhenCharacterCountExceeds = 500
 
     private var displayText: String {
-        biography.isEmpty ? "No biography available." : biography
+        biography.isEmpty ? String(localized: "No biography available.") : biography
     }
 
     private var canExpand: Bool {
@@ -30,7 +30,7 @@ struct BiographySection: View {
         VStack(alignment: .leading, spacing: 0) {
             SurfaceCard {
                 VStack(alignment: .leading, spacing: DesignSpacing.sm) {
-                    CardLabel(title: "Biography")
+                    CardLabel(title: String(localized: "Biography"))
 
                     Text(displayText)
                         .font(DesignTypography.body)

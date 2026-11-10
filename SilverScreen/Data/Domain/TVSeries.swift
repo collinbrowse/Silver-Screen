@@ -63,8 +63,8 @@ struct TVEpisodeSummary: Sendable, Identifiable, Equatable, Hashable {
 
     /// `Director: …` or `Director: unknown` when the season payload has no director.
     var directorLine: String {
-        guard let directorName, !directorName.isEmpty else { return "Director: unknown" }
-        return "Director: \(directorName)"
+        guard let directorName, !directorName.isEmpty else { return String(localized: "Director: unknown") }
+        return String(localized: "Director: \(directorName)")
     }
 }
 
@@ -137,8 +137,8 @@ enum SeasonTitle {
             return trimmed
         }
         if number == 0 {
-            return "Specials"
+            return String(localized: "Specials")
         }
-        return "Season \(number)"
+        return String(localized: "Season \(number)")
     }
 }

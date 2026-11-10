@@ -277,7 +277,7 @@ final class TVEpisodeViewModel {
     ) -> TVEpisodeContent {
         TVEpisodeContent(
             title: episode.title,
-            episodeNumberText: "Episode \(episode.episodeNumber)",
+            episodeNumberText: String(localized: "Episode \(episode.episodeNumber)"),
             overview: episode.overview,
             formattedAirDate: DisplayDate.day(episode.airDate),
             formattedRating: TMDBRating.formatted(episode.voteAverage),

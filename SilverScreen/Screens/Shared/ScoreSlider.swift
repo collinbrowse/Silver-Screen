@@ -62,7 +62,7 @@ struct ScoreSlider: View {
             .tint(score == nil ? DesignTheme.textMuted : DesignTheme.accent)
             .disabled(isDisabled)
             .accessibilityLabel("Your rating")
-            .accessibilityValue(score.map(UserScore.formatted) ?? "No rating chosen")
+            .accessibilityValue(score.map(UserScore.formatted) ?? String(localized: "No rating chosen"))
         }
         .onChange(of: score) { _, newValue in
             // Keep the thumb in step when the owner clears or replaces the score.

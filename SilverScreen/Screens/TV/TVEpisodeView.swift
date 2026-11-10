@@ -68,7 +68,7 @@ struct TVEpisodeView: View {
             return
         }
         pendingRemoval = WatchRemovalRequest(
-            title: navigationTitle.isEmpty ? "this episode" : navigationTitle,
+            title: navigationTitle.isEmpty ? String(localized: "this episode") : navigationTitle,
             watchCount: count,
             remove: { await changeEpisodeWatch() }
         )
@@ -83,7 +83,7 @@ struct TVEpisodeView: View {
             notice.presentEpisodeLogged(
                 outcome,
                 ratingKey: .episode(seriesID: seriesID, seasonNumber: seasonNumber, episodeNumber: episodeNumber),
-                fallbackMessage: "Episode watched",
+                fallbackMessage: String(localized: "Episode watched"),
                 using: lists,
                 tvWatch: tvWatch
             )
@@ -97,8 +97,8 @@ struct TVEpisodeView: View {
                     LoadingStateView()
                 case .empty:
                     EmptyStateView(
-                        title: "Episode Unavailable",
-                        message: "This episode could not be shown.",
+                        title: String(localized: "Episode Unavailable"),
+                        message: String(localized: "This episode could not be shown."),
                         systemImage: "tv"
                     )
                 case .loaded(let content, let activity):
@@ -118,7 +118,7 @@ struct TVEpisodeView: View {
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     EpisodeWatchButton(
                         isCompleted: viewModel.isEpisodeCompleted,
-                        accessibilityTitle: navigationTitle.isEmpty ? "episode" : navigationTitle,
+                        accessibilityTitle: navigationTitle.isEmpty ? String(localized: "episode") : navigationTitle,
                         idleColor: DesignTheme.textPrimary
                     ) {
                         Task { await toggleEpisodeWatch() }
@@ -309,13 +309,13 @@ struct TVEpisodeView: View {
     @ViewBuilder
     private func credits(_ content: TVEpisodeContent) -> some View {
         if !content.cast.isEmpty {
-            TVCreditCarousel(title: "Cast", people: content.cast, imageLoader: imageLoader) { person in
+            TVCreditCarousel(title: String(localized: "Cast"), people: content.cast, imageLoader: imageLoader) { person in
                 router?.push(.person(id: person.id))
             }
         }
         if !content.guestStars.isEmpty {
             TVCreditCarousel(
-                title: "Guest Stars",
+                title: String(localized: "Guest Stars"),
                 people: content.guestStars,
                 imageLoader: imageLoader
             ) { person in
@@ -324,7 +324,7 @@ struct TVEpisodeView: View {
         }
         if !content.directorsAndWriters.isEmpty {
             TVCreditCarousel(
-                title: "Directors & Writers",
+                title: String(localized: "Directors & Writers"),
                 people: content.directorsAndWriters,
                 imageLoader: imageLoader
             ) { person in
@@ -334,7 +334,7 @@ struct TVEpisodeView: View {
     }
 
     private func otherEpisodes(_ episodes: [TVEpisodeSummary]) -> some View {
-        DetailCarousel(title: "More Episodes") {
+        DetailCarousel(title: String(localized: "More Episodes")) {
             ForEach(episodes) { episode in
                 Button {
                     router?.push(

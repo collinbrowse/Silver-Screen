@@ -52,7 +52,7 @@ struct BrowseListView: View {
 
     private var mediaControl: some View {
         FittingSegmentedControl(
-            title: "Media",
+            title: String(localized: "Media"),
             options: MediaTypes.allCases,
             selection: Binding(
                 get: { viewModel.media },
@@ -112,10 +112,10 @@ struct BrowseListView: View {
                 LoadingStateView()
             case .empty:
                 EmptyStateView(
-                    title: "Nothing to Browse",
+                    title: String(localized: "Nothing to Browse"),
                     message: viewModel.window == .newTrailers
-                        ? "No new trailers came out this week."
-                        : "No titles match \(viewModel.media.title), \(viewModel.window.title).",
+                        ? String(localized: "No new trailers came out this week.")
+                        : String(localized: "No titles match \(viewModel.media.title), \(viewModel.window.title)."),
                     systemImage: "film"
                 )
             case .loaded(let rows, let activity):
@@ -178,7 +178,7 @@ struct BrowseListView: View {
                     genre: row.genreLine,
                     metadata: row.formattedDate,
                     userScore: row.formattedUserScore,
-                    kindLabel: row.media == .movie ? "Movie" : "TV",
+                    kindLabel: row.media == .movie ? String(localized: "Movie") : String(localized: "TV"),
                     imagePath: row.posterPath,
                     imageKind: .poster,
                     placeholderSystemImage: row.media == .movie ? "film" : "tv",

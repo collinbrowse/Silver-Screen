@@ -50,12 +50,12 @@ struct CreditsListRow: View {
         if !item.genreNames.isEmpty {
             parts.append(item.genreNames.joined(separator: ", "))
         }
-        if item.formattedReleaseDate != "Not available" {
+        if item.formattedReleaseDate != String(localized: "Not available") {
             parts.append(item.formattedReleaseDate)
         }
         switch item.credit.mediaType {
-            case .movie: parts.append("Movie")
-            case .tv: parts.append("TV series")
+            case .movie: parts.append(String(localized: "Movie"))
+            case .tv: parts.append(String(localized: "TV series"))
         }
         return parts.joined(separator: ", ")
     }

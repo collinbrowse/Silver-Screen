@@ -30,10 +30,10 @@ struct LibraryHomeView: View {
                     LoadingStateView()
                 case .empty:
                     EmptyStateView(
-                        title: "No Lists",
+                        title: String(localized: "No Lists"),
                         message: emptyMessage,
                         systemImage: "books.vertical",
-                        actionTitle: viewModel.segment == .moviesAndTV ? "Get started" : nil,
+                        actionTitle: viewModel.segment == .moviesAndTV ? String(localized: "Get started") : nil,
                         action: onGetStarted
                     )
                 case .loaded(_, let activity):
@@ -155,10 +155,10 @@ struct LibraryHomeView: View {
                         if viewModel.showsGetStarted {
                             Section {
                                 EmptyStateView(
-                                    title: "Nothing Saved Yet",
+                                    title: String(localized: "Nothing Saved Yet"),
                                     message: emptyMessage,
                                     systemImage: "books.vertical",
-                                    actionTitle: "Get started",
+                                    actionTitle: String(localized: "Get started"),
                                     action: onGetStarted
                                 )
                                 .listRowSeparator(.hidden)
@@ -210,13 +210,13 @@ struct LibraryHomeView: View {
                     Button("Rename") {
                         beginRename(list)
                     }
-                    .accessibilityLabel("Rename \(list.name)")
+                    .accessibilityLabel("Rename \(list.displayName)")
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     Button("Delete", role: .destructive) {
                         Task { await viewModel.delete(list) }
                     }
-                    .accessibilityLabel("Delete \(list.name)")
+                    .accessibilityLabel("Delete \(list.displayName)")
                 }
                 .contextMenu {
                     customListActions(list)
@@ -301,7 +301,7 @@ struct LibraryHomeView: View {
                 imageLoader: imageLoader
             )
             VStack(alignment: .leading, spacing: DesignSpacing.xs) {
-                Text(list.name)
+                Text(list.displayName)
                     .font(DesignTypography.section)
                     .foregroundStyle(DesignTheme.textPrimary)
                 Text(countText(for: list))
@@ -327,41 +327,38 @@ struct LibraryHomeView: View {
 
     private func countText(for list: LibraryList) -> String {
         let count = viewModel.membershipCount(for: list.id)
-        let noun: String
-        if list.segment == .people {
-            noun = count == 1 ? "person" : "people"
-        } else {
-            noun = count == 1 ? "title" : "titles"
-        }
         if count == 0 {
-            return list.segment == .people ? "No people" : "No titles"
+            return list.segment == .people ? String(localized: "No people") : String(localized: "No titles")
         }
-        return "\(count) \(noun)"
+        if list.segment == .people {
+            return count == 1 ? String(localized: "1 person") : String(localized: "\(count) people")
+        }
+        return count == 1 ? String(localized: "1 title") : String(localized: "\(count) titles")
     }
 
     private var emptyMessage: String {
         viewModel.segment == .people
-            ? "Create a list to save people."
-            : "Your lists will show up here."
+            ? String(localized: "Create a list to save people.")
+            : String(localized: "Your lists will show up here.")
     }
 
     private var noMatchesTitle: String {
         let query = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if query.isEmpty, viewModel.segment == .people {
-            return "No Lists"
+            return String(localized: "No Lists")
         }
-        return "No Matches"
+        return String(localized: "No Matches")
     }
 
     private var noMatchesMessage: String {
         let query = viewModel.searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if query.isEmpty, viewModel.segment == .people {
-            return "Create a list to save people."
+            return String(localized: "Create a list to save people.")
         }
         if query.isEmpty {
-            return "No lists match."
+            return String(localized: "No lists match.")
         }
-        return "No lists match \"\(query)\"."
+        return String(localized: "No lists match \"\(query)\".")
     }
 
     private func beginRename(_ list: LibraryList) {

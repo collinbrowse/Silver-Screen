@@ -66,11 +66,11 @@ enum UserScore {
     }
 
     static func formatted(_ value: Double) -> String {
-        String(format: "%.1f / 10", value)
+        String(localized: "\(value, format: .number.precision(.fractionLength(1))) / 10")
     }
 
     static func accessibilityLabel(_ value: Double) -> String {
-        String(format: "Your rating, %.1f out of 10", value)
+        String(localized: "Your rating, \(value, format: .number.precision(.fractionLength(1))) out of 10")
     }
 }
 
@@ -150,7 +150,7 @@ struct PersonalDetail: Sendable, Equatable {
     static let empty = PersonalDetail(
         userScore: nil,
         formattedUserScore: nil,
-        userScoreAccessibilityLabel: "Add rating",
+        userScoreAccessibilityLabel: String(localized: "Add rating"),
         userNote: nil,
         formattedRatedOn: nil,
         formattedNotedOn: nil
@@ -189,7 +189,7 @@ struct PersonalDetail: Sendable, Equatable {
             self.init(
                 userScore: nil,
                 formattedUserScore: nil,
-                userScoreAccessibilityLabel: "Add rating",
+                userScoreAccessibilityLabel: String(localized: "Add rating"),
                 userNote: annotation?.note,
                 formattedRatedOn: nil,
                 formattedNotedOn: notedOn

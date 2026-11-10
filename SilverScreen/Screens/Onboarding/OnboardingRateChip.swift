@@ -16,7 +16,7 @@ struct OnboardingRateChip: View {
     var body: some View {
         Button(action: action) {
             Label(
-                score.map { String(format: "%.1f", $0) } ?? "Rate",
+                score.map { $0.formatted(.number.precision(.fractionLength(1))) } ?? String(localized: "Rate"),
                 systemImage: score == nil ? "star" : "star.fill"
             )
             .font(DesignTypography.chip)
@@ -32,7 +32,7 @@ struct OnboardingRateChip: View {
         }
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityLabel(score.map { UserScore.accessibilityLabel($0) } ?? "Rate \(title)")
+        .accessibilityLabel(score.map { UserScore.accessibilityLabel($0) } ?? String(localized: "Rate \(title)"))
         .accessibilityHint(score == nil ? "Opens the rating editor." : "Opens the rating editor to change it.")
     }
 }

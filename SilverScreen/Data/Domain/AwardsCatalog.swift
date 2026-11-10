@@ -17,17 +17,17 @@ enum AwardFamily: String, Codable, Hashable, Sendable, CaseIterable {
     /// Name on the search shelf and the category screen.
     var title: String {
         switch self {
-            case .academy: "Oscar Winners"
-            case .bafta: "BAFTAs"
-            case .emmy: "Emmys"
+            case .academy: String(localized: "Oscar Winners")
+            case .bafta: String(localized: "BAFTAs")
+            case .emmy: String(localized: "Emmys")
         }
     }
 
     var subtitle: String {
         switch self {
-            case .academy: "Academy Awards"
-            case .bafta: "Film categories"
-            case .emmy: "Primetime categories"
+            case .academy: String(localized: "Academy Awards")
+            case .bafta: String(localized: "Film categories")
+            case .emmy: String(localized: "Primetime categories")
         }
     }
 
@@ -258,7 +258,7 @@ struct PersonAward: Hashable, Sendable, Equatable, Identifiable {
 
     /// Category name. Nominations keep the word "nominee".
     var categoryLabel: String {
-        won ? category : "\(category) nominee"
+        won ? category : String(localized: "\(category) nominee")
     }
 
     /// Movie or episode, then the ceremony year.
@@ -269,8 +269,8 @@ struct PersonAward: Hashable, Sendable, Equatable, Identifiable {
     /// Prize body, category, title, and year. The trophy is decorative.
     var accessibilityName: String {
         let prize = won
-            ? "\(family.shortName) for \(category)"
-            : "\(family.shortName) nominee for \(category)"
+            ? String(localized: "\(family.shortName) for \(category)")
+            : String(localized: "\(family.shortName) nominee for \(category)")
         return "\(prize), \(workTitle), \(year)"
     }
 
@@ -325,10 +325,10 @@ struct AwardTitleRequest: Hashable, Codable, Sendable, Equatable {
     var navigationTitle: String {
         if let category, !category.isEmpty { return category }
         switch family {
-            case .academy: return "Oscar Winners"
-            case .bafta: return "BAFTAs"
-            case .emmy: return "Emmys"
-            case nil: return "Awards"
+            case .academy: return String(localized: "Oscar Winners")
+            case .bafta: return String(localized: "BAFTAs")
+            case .emmy: return String(localized: "Emmys")
+            case nil: return String(localized: "Awards")
         }
     }
 }
@@ -412,13 +412,13 @@ enum TitleAwardList {
 
     private static func row(_ credit: AwardCredit) -> AwardRow {
         let names = credit.recipients.map(\.name).filter { !$0.isEmpty }
-        let categoryLabel = credit.won ? credit.category : "\(credit.category) nominee"
+        let categoryLabel = credit.won ? credit.category : String(localized: "\(credit.category) nominee")
         let detailLine = names.isEmpty
             ? String(credit.year)
             : "\(names.joined(separator: ", ")) · \(credit.year)"
         let prize = credit.won
-            ? "\(credit.family.shortName) for \(credit.category)"
-            : "\(credit.family.shortName) nominee for \(credit.category)"
+            ? String(localized: "\(credit.family.shortName) for \(credit.category)")
+            : String(localized: "\(credit.family.shortName) nominee for \(credit.category)")
         let spokenDetail = names.isEmpty
             ? String(credit.year)
             : "\(names.joined(separator: ", ")), \(credit.year)"

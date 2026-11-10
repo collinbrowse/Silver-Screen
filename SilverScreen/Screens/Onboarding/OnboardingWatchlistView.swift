@@ -24,10 +24,10 @@ struct OnboardingWatchlistView: View {
                     header
                     OnboardingPosterGrid(
                         state: viewModel.displayed,
-                        emptyTitle: viewModel.isSearching ? "No Matches" : "Nothing to Show",
+                        emptyTitle: viewModel.isSearching ? String(localized: "No Matches") : String(localized: "Nothing to Show"),
                         emptyMessage: viewModel.isSearching
-                            ? "Try another title."
-                            : "Search for something you want to see.",
+                            ? String(localized: "Try another title.")
+                            : String(localized: "Search for something you want to see."),
                         retry: retry
                     ) { title, width in
                         cell(title, width: width)
@@ -100,9 +100,9 @@ struct OnboardingWatchlistView: View {
             title: title,
             width: width,
             isPicked: picked,
-            pickedState: "On Watchlist",
-            unpickedState: "Not on Watchlist",
-            actionHint: picked ? "Removes it from Watchlist." : "Adds it to Watchlist.",
+            pickedState: String(localized: "On Watchlist"),
+            unpickedState: String(localized: "Not on Watchlist"),
+            actionHint: picked ? String(localized: "Removes it from Watchlist.") : String(localized: "Adds it to Watchlist."),
             imageLoader: imageLoader,
             onTap: { Task { await viewModel.toggle(title) } }
         ) {

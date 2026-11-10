@@ -54,7 +54,7 @@ final class TourController {
     /// "2 of 6".
     var progressText: String {
         guard let index else { return "" }
-        return "\(index + 1) of \(stops.count)"
+        return String(localized: "\(index + 1) of \(stops.count)")
     }
 
     /// Plans the stops from the library and opens the first one.

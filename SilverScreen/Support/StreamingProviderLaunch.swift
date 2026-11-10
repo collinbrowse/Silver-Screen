@@ -40,17 +40,17 @@ enum StreamingProviderLaunch {
     }
 
     static func accessibilityLabel(for provider: StreamingProvider, isAppInstalled: (URL) -> Bool) -> String {
-        let name = provider.name.isEmpty ? "Streaming app" : provider.name
+        let name = provider.name.isEmpty ? String(localized: "Streaming app") : provider.name
         guard destination(for: provider.id) != nil else {
             return name
         }
         guard let appURL = destination(for: provider.id).flatMap({ URL(string: "\($0.urlScheme)://") }) else {
-            return "Get \(name) on the App Store"
+            return String(localized: "Get \(name) on the App Store")
         }
         if isAppInstalled(appURL) {
-            return "Open \(name)"
+            return String(localized: "Open \(name)")
         }
-        return "Get \(name) on the App Store"
+        return String(localized: "Get \(name) on the App Store")
     }
 
     /// IDs from TMDB `/watch/providers/movie|tv?watch_region=US` (338 entries). This map covers

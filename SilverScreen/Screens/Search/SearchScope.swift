@@ -17,10 +17,10 @@ enum SearchTypeNiche: String, CaseIterable, Sendable, Equatable {
     /// Pill labels for Movies / TV / People (`.all` has no pill).
     var title: String {
         switch self {
-            case .all: "All"
-            case .movies: "Movies"
-            case .tv: "TV"
-            case .people: "People"
+            case .all: String(localized: "All")
+            case .movies: String(localized: "Movies")
+            case .tv: String(localized: "TV")
+            case .people: String(localized: "People")
         }
     }
 

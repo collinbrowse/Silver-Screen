@@ -12,9 +12,9 @@ enum MediaTypes: String, CaseIterable, Sendable, Equatable {
 
     var title: String {
         switch self {
-            case .all: "All"
-            case .movies: "Movies"
-            case .tv: "TV Series"
+            case .all: String(localized: "All")
+            case .movies: String(localized: "Movies")
+            case .tv: String(localized: "TV Series")
         }
     }
 

@@ -519,7 +519,7 @@ final class TVSeasonViewModel {
 
         let episodeCount = season.episodes.count
         if episodeCount > 0 {
-            let text = episodeCount == 1 ? "1 Episode" : "\(episodeCount) Episodes"
+            let text = episodeCount == 1 ? String(localized: "1 Episode") : String(localized: "\(episodeCount) Episodes")
             visible.append(text)
             spoken.append(text)
         }

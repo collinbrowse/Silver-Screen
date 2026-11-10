@@ -12,7 +12,7 @@ import SwiftUI
 /// Text field that stands in for `.searchable` on Mac.
 struct MacSearchField: View {
     @Binding var text: String
-    var prompt: String
+    var prompt: LocalizedStringKey
     /// Mirrors keyboard focus when the screen needs to dismiss the field itself.
     var isFocused: Binding<Bool>?
     /// Called when the user submits from the keyboard (Search key / Return).
@@ -75,14 +75,14 @@ extension View {
     /// On Mac this is a text field. The system search bar asks `UIScreen` for
     /// focus bounds, which UIKit rejects and terminates the process.
     @ViewBuilder
-    func navigationSearch(text: Binding<String>, prompt: String) -> some View {
+    func navigationSearch(text: Binding<String>, prompt: LocalizedStringKey) -> some View {
         navigationSearch(text: text, prompt: prompt, isFocused: nil, onSubmit: nil)
     }
 
     @ViewBuilder
     func navigationSearch(
         text: Binding<String>,
-        prompt: String,
+        prompt: LocalizedStringKey,
         isFocused: Binding<Bool>?
     ) -> some View {
         navigationSearch(text: text, prompt: prompt, isFocused: isFocused, onSubmit: nil)
@@ -91,7 +91,7 @@ extension View {
     @ViewBuilder
     func navigationSearch(
         text: Binding<String>,
-        prompt: String,
+        prompt: LocalizedStringKey,
         isFocused: Binding<Bool>?,
         onSubmit: (() -> Void)?
     ) -> some View {

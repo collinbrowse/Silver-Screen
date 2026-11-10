@@ -55,29 +55,29 @@ enum TourStop: Hashable, Sendable {
 
     var title: String {
         switch self {
-            case .libraryLists: "Your library"
-            case .newList: "Make your own lists"
-            case .eyeButton: "Mark it watched"
-            case .awards: "Award winners"
-            case .rateMovie: "Rate it anytime"
-            case .trackSeries: "Track episodes"
+            case .libraryLists: String(localized: "Your library")
+            case .newList: String(localized: "Make your own lists")
+            case .eyeButton: String(localized: "Mark it watched")
+            case .awards: String(localized: "Award winners")
+            case .rateMovie: String(localized: "Rate it anytime")
+            case .trackSeries: String(localized: "Track episodes")
         }
     }
 
     var message: String {
         switch self {
             case .libraryLists:
-                "What you've seen is on Watched, and your picks are on Watchlist. Shows you're partway through move to In Progress."
+                String(localized: "What you've seen is on Watched, and your picks are on Watchlist. Shows you're partway through move to In Progress.")
             case .newList:
-                "Tap + to start a list of your own, like Date Night or Halloween."
+                String(localized: "Tap + to start a list of your own, like Date Night or Halloween.")
             case .eyeButton:
-                "Tap the eye on any title to put it on Watched. For a show, it marks every episode."
+                String(localized: "Tap the eye on any title to put it on Watched. For a show, it marks every episode.")
             case .awards:
-                "Browse every Oscar, BAFTA, and Emmy winner and nominee, by category."
+                String(localized: "Browse every Oscar, BAFTA, and Emmy winner and nominee, by category.")
             case .rateMovie:
-                "Tap your rating to change it or add a review. A rewatch gets a rating of its own, and you can rate whole shows and single seasons too."
+                String(localized: "Tap your rating to change it or add a review. A rewatch gets a rating of its own, and you can rate whole shows and single seasons too.")
             case .trackSeries(_, let title):
-                "Open a season of \(title) to check off episodes. Next up keeps your place."
+                String(localized: "Open a season of \(title) to check off episodes. Next up keeps your place.")
         }
     }
 

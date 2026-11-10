@@ -223,7 +223,7 @@ final class LibraryDetailViewModel {
                         if let caption = state.watchedSeasonCaption {
                             captions[entry.itemKey] = caption
                         } else {
-                            captions[entry.itemKey] = "Complete"
+                            captions[entry.itemKey] = String(localized: "Complete", comment: "Caption for a show the user has watched every season of")
                         }
                     case .watchlist, nil:
                         break

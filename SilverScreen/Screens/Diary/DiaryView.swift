@@ -39,14 +39,14 @@ struct DiaryView: View {
                 case .empty:
                     if viewModel.scope == nil {
                         EmptyStateView(
-                            title: "No Diary Entries",
-                            message: "Mark a movie or an episode watched with its eye, and it shows up here by the day you watched it.",
+                            title: String(localized: "No Diary Entries"),
+                            message: String(localized: "Mark a movie or an episode watched with its eye, and it shows up here by the day you watched it."),
                             systemImage: "book.closed"
                         )
                     } else {
                         EmptyStateView(
-                            title: "No Watches Yet",
-                            message: "Watches you log for this title show up here.",
+                            title: String(localized: "No Watches Yet"),
+                            message: String(localized: "Watches you log for this title show up here."),
                             systemImage: "book.closed"
                         )
                     }

@@ -11,11 +11,11 @@ import Foundation
 enum DisplayDate {
     /// A TMDB calendar day, formatted for `locale` without shifting the day into another timezone.
     static func day(_ date: Date?, locale: Locale = .current) -> String {
-        guard let date else { return "Date unavailable" }
+        guard let date else { return String(localized: "Date unavailable") }
         var utc = Calendar(identifier: .gregorian)
         utc.timeZone = TimeZone(secondsFromGMT: 0)!
         let parts = utc.dateComponents([.year, .month, .day], from: date)
-        guard let stable = utc.date(from: parts) else { return "Date unavailable" }
+        guard let stable = utc.date(from: parts) else { return String(localized: "Date unavailable") }
         let style = Date.FormatStyle(date: .abbreviated, time: .omitted, locale: locale, calendar: utc, timeZone: utc.timeZone)
             .year()
             .month(.abbreviated)
@@ -41,9 +41,12 @@ enum DisplayDate {
         )
     }
 
-    /// Month/day/year for the rating label, short enough to stay on one line beside YOUR RATING.
+    /// Numeric day in the locale's order (01/05/2026 in the US) for the rating label, short enough to stay on one line beside YOUR RATING.
     static func numericDay(_ date: Date, calendar: Calendar = .current) -> String {
-        let parts = calendar.dateComponents([.month, .day, .year], from: date)
-        return String(format: "%02d/%02d/%04d", parts.month ?? 1, parts.day ?? 1, parts.year ?? 1)
+        let style = Date.FormatStyle(calendar: calendar, timeZone: calendar.timeZone)
+            .month(.twoDigits)
+            .day(.twoDigits)
+            .year(.defaultDigits)
+        return date.formatted(style)
     }
 }

@@ -48,8 +48,8 @@ struct MovieDetailView: View {
                     LoadingStateView()
                 case .empty:
                     EmptyStateView(
-                        title: "Movie Unavailable",
-                        message: "This movie could not be shown.",
+                        title: String(localized: "Movie Unavailable"),
+                        message: String(localized: "This movie could not be shown."),
                         systemImage: "film"
                     )
                 case .loaded(let content, let activity):
@@ -309,7 +309,7 @@ struct MovieDetailView: View {
     private func castCarousel(
         _ section: MovieDetailContent.CastSection
     ) -> some View {
-        DetailCarousel(title: "Top Billed Cast") {
+        DetailCarousel(title: String(localized: "Top Billed Cast")) {
             ForEach(section.members) { member in
                 Button {
                     router?.push(.person(id: member.personID))
@@ -353,7 +353,7 @@ struct MovieDetailView: View {
     private func crewCarousel(
         _ section: MovieDetailContent.CrewSection
     ) -> some View {
-        DetailCarousel(title: "Directors & Writers") {
+        DetailCarousel(title: String(localized: "Directors & Writers")) {
             ForEach(section.people) { person in
                 Button {
                     router?.push(.person(id: person.id))
@@ -397,7 +397,7 @@ struct MovieDetailView: View {
     private func similarCarousel(
         _ section: MovieDetailContent.SimilarSection
     ) -> some View {
-        DetailCarousel(title: "More Like This") {
+        DetailCarousel(title: String(localized: "More Like This")) {
             ForEach(section.items) { item in
                 similarMovieCell(item)
             }
@@ -449,7 +449,7 @@ struct MovieDetailView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
-                if item.formattedReleaseDate != "Not available" {
+                if item.formattedReleaseDate != String(localized: "Not available") {
                     Text(item.formattedReleaseDate)
                         .font(DesignTypography.chip)
                         .foregroundStyle(DesignTheme.textSecondary)
@@ -537,28 +537,28 @@ struct MovieDetailView: View {
             Group {
                 if stack {
                     VStack(alignment: .leading, spacing: DesignSpacing.lg) {
-                        factCell(label: "Budget", value: content.formattedBudget, accessibility: content.budgetAccessibilityLabel)
+                        factCell(label: String(localized: "Budget"), value: content.formattedBudget, accessibility: content.budgetAccessibilityLabel)
                         Divider()
-                        factCell(label: "Revenue", value: content.formattedRevenue, accessibility: content.revenueAccessibilityLabel)
+                        factCell(label: String(localized: "Revenue"), value: content.formattedRevenue, accessibility: content.revenueAccessibilityLabel)
                         Divider()
-                        factCell(label: "Release Date", value: content.formattedReleaseDate, accessibility: content.formattedReleaseDate)
+                        factCell(label: String(localized: "Release Date"), value: content.formattedReleaseDate, accessibility: content.formattedReleaseDate)
                     }
                 } else {
                     VStack(alignment: .leading, spacing: 0) {
                         HStack(alignment: .top, spacing: 0) {
-                            factCell(label: "Budget", value: content.formattedBudget, accessibility: content.budgetAccessibilityLabel)
+                            factCell(label: String(localized: "Budget"), value: content.formattedBudget, accessibility: content.budgetAccessibilityLabel)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             Rectangle()
                                 .fill(DesignTheme.separator.opacity(0.35))
                                 .frame(width: 0.5)
                                 .padding(.vertical, DesignSpacing.xs)
-                            factCell(label: "Revenue", value: content.formattedRevenue, accessibility: content.revenueAccessibilityLabel)
+                            factCell(label: String(localized: "Revenue"), value: content.formattedRevenue, accessibility: content.revenueAccessibilityLabel)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.leading, DesignSpacing.lg)
                         }
                         Divider()
                             .padding(.vertical, DesignSpacing.md)
-                        factCell(label: "Release Date", value: content.formattedReleaseDate, accessibility: content.formattedReleaseDate)
+                        factCell(label: String(localized: "Release Date"), value: content.formattedReleaseDate, accessibility: content.formattedReleaseDate)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
@@ -585,7 +585,7 @@ struct MovieDetailView: View {
         if member.character.isEmpty {
             return member.name
         }
-        return "\(member.name) as \(member.character)"
+        return String(localized: "\(member.name) as \(member.character)")
     }
 
     private func similarAccessibilityLabel(_ item: MovieDetailContent.SimilarSection.Item) -> String {
@@ -593,7 +593,7 @@ struct MovieDetailView: View {
         if !item.genreNames.isEmpty {
             parts.append(item.genreNames.joined(separator: ", "))
         }
-        if item.formattedReleaseDate != "Not available" {
+        if item.formattedReleaseDate != String(localized: "Not available") {
             parts.append(item.formattedReleaseDate)
         }
         return parts.joined(separator: ", ")

@@ -30,7 +30,7 @@ struct StartupFailureView: View {
         if let appError = error as? AppError {
             return "\(appError.title)\n\n\(appError.message)"
         }
-        return "The app could not start."
+        return String(localized: "The app could not start.")
     }
 
     /// Error domain and code only. A description can carry a file path with the device's

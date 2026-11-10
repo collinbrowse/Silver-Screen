@@ -20,8 +20,8 @@ struct CollectionView: View {
                     LoadingStateView()
                 case .empty:
                     EmptyStateView(
-                        title: "No Collection",
-                        message: "This collection has no details.",
+                        title: String(localized: "No Collection"),
+                        message: String(localized: "This collection has no details."),
                         systemImage: "square.stack"
                     )
                 case .loaded(let content, _):
@@ -124,7 +124,7 @@ struct CollectionView: View {
                     genre: row.genreNames.joined(separator: ", "),
                     metadata: row.formattedReleaseDate,
                     userScore: row.formattedUserScore,
-                    kindLabel: "Movie",
+                    kindLabel: String(localized: "Movie"),
                     imagePath: row.posterPath,
                     imageKind: .poster,
                     placeholderSystemImage: "film",

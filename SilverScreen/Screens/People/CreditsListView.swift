@@ -38,8 +38,8 @@ struct CreditsListView: View {
                     LoadingStateView()
                 case .empty:
                     EmptyStateView(
-                        title: "No Credits",
-                        message: "No credits were found for this section.",
+                        title: String(localized: "No Credits"),
+                        message: String(localized: "No credits were found for this section."),
                         systemImage: "film"
                     )
                 case .loaded(let content, _):

@@ -87,17 +87,17 @@ final class WatchHistoryCardViewModel {
     static func episodesSummary(for entries: [DiaryEntry], calendar: Calendar, locale: Locale) -> String? {
         let count = Set(entries.map(\.subject)).count
         guard count > 0 else { return nil }
-        let watched = count == 1 ? "1 episode watched" : "\(count) episodes watched"
+        let watched = count == 1 ? String(localized: "1 episode watched") : String(localized: "\(count) episodes watched")
         let rewatches = DiaryContent.rewatchIDs(in: entries).count
         let day = lastDay(of: entries, calendar: calendar, locale: locale)
         switch rewatches {
             case 0:
                 guard let day else { return watched }
-                return count == 1 ? "\(watched) · \(day)" : "\(watched) · last \(day)"
+                return count == 1 ? "\(watched) · \(day)" : String(localized: "\(watched) · last \(day)")
             case 1:
-                return [watched, "1 rewatch", day.map { "last \($0)" }].compactMap { $0 }.joined(separator: " · ")
+                return [watched, String(localized: "1 rewatch"), day.map { String(localized: "last \($0)") }].compactMap { $0 }.joined(separator: " · ")
             default:
-                return [watched, "\(rewatches) rewatches", day.map { "last \($0)" }]
+                return [watched, String(localized: "\(rewatches) rewatches"), day.map { String(localized: "last \($0)") }]
                     .compactMap { $0 }
                     .joined(separator: " · ")
         }
@@ -109,10 +109,10 @@ final class WatchHistoryCardViewModel {
         guard !entries.isEmpty else { return nil }
         let day = lastDay(of: entries, calendar: calendar, locale: locale)
         if entries.count == 1 {
-            return day.map { "Watched once · \($0)" } ?? "Watched once"
+            return day.map { String(localized: "Watched once · \($0)") } ?? String(localized: "Watched once")
         }
-        let times = "Watched \(entries.count) times"
-        return day.map { "\(times) · last \($0)" } ?? times
+        let times = String(localized: "Watched \(entries.count) times")
+        return day.map { String(localized: "\(times) · last \($0)") } ?? times
     }
 
     /// The newest dated watch's day, formatted. Nil when every watch is undated.

@@ -23,7 +23,7 @@ enum AwardRowsDisplay {
     }
 
     static func toggleTitle(isExpanded: Bool) -> String {
-        isExpanded ? "Show less" : "Show more"
+        isExpanded ? String(localized: "Show less") : String(localized: "Show more")
     }
 }
 
@@ -41,7 +41,7 @@ struct AwardRowsSection: View {
         VStack(alignment: .leading, spacing: 0) {
             SurfaceCard {
                 VStack(alignment: .leading, spacing: 0) {
-                    CardLabel(title: "Awards")
+                    CardLabel(title: String(localized: "Awards"))
                         .padding(.bottom, DesignSpacing.md)
                     ForEach(Array(visibleRows.enumerated()), id: \.element.id) { index, row in
                         if index > 0 {

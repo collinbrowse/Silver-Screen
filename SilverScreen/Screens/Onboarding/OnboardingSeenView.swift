@@ -25,10 +25,10 @@ struct OnboardingSeenView: View {
                     header
                     OnboardingPosterGrid(
                         state: viewModel.displayed,
-                        emptyTitle: viewModel.isSearching ? "No Matches" : "Nothing to Show",
+                        emptyTitle: viewModel.isSearching ? String(localized: "No Matches") : String(localized: "Nothing to Show"),
                         emptyMessage: viewModel.isSearching
-                            ? "Try another title."
-                            : "Search for something you have seen.",
+                            ? String(localized: "Try another title.")
+                            : String(localized: "Search for something you have seen."),
                         retry: retry
                     ) { title, width in
                         cell(title, width: width)
@@ -130,9 +130,9 @@ struct OnboardingSeenView: View {
             title: title,
             width: width,
             isPicked: picked,
-            pickedState: "Seen",
-            unpickedState: "Not seen",
-            actionHint: picked ? "Removes it from Watched." : "Adds it to Watched.",
+            pickedState: String(localized: "Seen"),
+            unpickedState: String(localized: "Not seen"),
+            actionHint: picked ? String(localized: "Removes it from Watched.") : String(localized: "Adds it to Watched."),
             imageLoader: imageLoader,
             onTap: { Task { await viewModel.toggle(title) } }
         ) {

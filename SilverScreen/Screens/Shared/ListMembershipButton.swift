@@ -45,12 +45,12 @@ struct ListMembershipButton: View {
                     Task { await toggle(list) }
                 } label: {
                     if saved {
-                        Label(list.name, systemImage: "checkmark")
+                        Label(list.displayName, systemImage: "checkmark")
                     } else {
-                        Text(list.name)
+                        Text(list.displayName)
                     }
                 }
-                .accessibilityLabel(saved ? "Remove from \(list.name)" : "Add to \(list.name)")
+                .accessibilityLabel(saved ? "Remove from \(list.displayName)" : "Add to \(list.displayName)")
             }
             Divider()
             Button("New list") {
@@ -133,8 +133,8 @@ struct ListMembershipButton: View {
 extension View {
     /// Centered name alert. `confirmTitle` is "Add to List" from a title and "Create" from the library.
     func listNamePrompt(
-        title: String = "New List",
-        confirmTitle: String,
+        title: LocalizedStringKey = "New List",
+        confirmTitle: LocalizedStringKey,
         name: Binding<String>,
         errorMessage: String?,
         isPresented: Binding<Bool>,
@@ -147,7 +147,7 @@ extension View {
                 onConfirm(name.wrappedValue)
             }
         } message: {
-            Text(errorMessage ?? "Name this list.")
+            Text(errorMessage ?? String(localized: "Name this list."))
         }
     }
 }

@@ -535,7 +535,7 @@ final class TVSeriesViewModel {
     }
 
     private static func episodeCountText(_ count: Int) -> String {
-        count == 1 ? "1 episode" : "\(count) episodes"
+        count == 1 ? String(localized: "1 episode") : String(localized: "\(count) episodes")
     }
 
     /// Season count (excluding specials) · leading genres · first–last air years.
@@ -545,7 +545,7 @@ final class TVSeriesViewModel {
 
         let seasonCount = detail.seasons.filter { $0.seasonNumber > 0 }.count
         if seasonCount > 0 {
-            let text = seasonCount == 1 ? "1 Season" : "\(seasonCount) Seasons"
+            let text = seasonCount == 1 ? String(localized: "1 Season") : String(localized: "\(seasonCount) Seasons")
             visible.append(text)
             spoken.append(text)
         }
@@ -562,7 +562,7 @@ final class TVSeriesViewModel {
         switch (firstYear, lastYear) {
             case let (first?, last?):
                 visible.append("\(first) - \(last)")
-                spoken.append("\(first) to \(last)")
+                spoken.append(String(localized: "\(first) to \(last)"))
             case let (first?, nil):
                 visible.append(first)
                 spoken.append(first)

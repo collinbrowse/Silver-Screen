@@ -65,7 +65,7 @@ struct SearchFilterPills: View {
             }
         } label: {
             HStack(spacing: DesignSpacing.xs) {
-                Text(genreFilter?.title ?? "Genre")
+                Text(genreFilter?.title ?? String(localized: "Genre"))
                     .font(DesignTypography.chip)
                 Image(systemName: "chevron.down")
                     .font(DesignTypography.chip.weight(.semibold))
@@ -82,9 +82,9 @@ struct SearchFilterPills: View {
             .frame(minHeight: 44)
             .contentShape(Capsule())
         }
-        .accessibilityLabel(genreFilter.map { "Genre, \($0.title)" } ?? "Genre")
+        .accessibilityLabel(genreFilter.map { String(localized: "Genre, \($0.title)") } ?? String(localized: "Genre"))
         .accessibilityHint("Filters movie and TV results by genre")
-        .accessibilityValue(genreFilter?.title ?? "None")
+        .accessibilityValue(genreFilter?.title ?? String(localized: "None"))
     }
 }
 

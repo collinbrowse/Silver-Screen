@@ -16,10 +16,10 @@ struct WatchRemovalRequest {
 
     /// "Remove all 3 watches of Hope?"
     var alertTitle: String {
-        "Remove all \(watchCount) watches of \(title)?"
+        String(localized: "Remove all \(watchCount) watches of \(title)?")
     }
 
-    static let message = "Their ratings and reviews go too."
+    static let message = String(localized: "Their ratings and reviews go too.")
 }
 
 extension View {

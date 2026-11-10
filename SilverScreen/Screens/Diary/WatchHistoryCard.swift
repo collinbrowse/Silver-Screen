@@ -19,7 +19,7 @@ struct WatchHistoryCard: View {
             NavigationLink(value: route) {
                 WatchHistoryCardRow(
                     systemImage: "clock.arrow.circlepath",
-                    title: "Watch History",
+                    title: String(localized: "Watch History"),
                     subtitle: viewModel.summary
                 )
             }

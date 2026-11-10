@@ -327,7 +327,7 @@ final class MovieDetailViewModel {
     }
 
     static func formatReleaseDate(_ date: Date?) -> String {
-        guard date != nil else { return "Not available" }
+        guard date != nil else { return String(localized: "Not available") }
         return DisplayDate.day(date)
     }
 
@@ -345,8 +345,8 @@ final class MovieDetailViewModel {
             spoken.append(year)
         }
         if let runtimeMinutes, runtimeMinutes > 0 {
-            visible.append("\(runtimeMinutes) mins")
-            spoken.append(runtimeMinutes == 1 ? "1 minute" : "\(runtimeMinutes) minutes")
+            visible.append(String(localized: "\(runtimeMinutes) mins"))
+            spoken.append(runtimeMinutes == 1 ? String(localized: "1 minute") : String(localized: "\(runtimeMinutes) minutes"))
         }
         let leadingGenres = genreNames.prefix(2).filter { !$0.isEmpty }
         if !leadingGenres.isEmpty {
@@ -360,7 +360,7 @@ final class MovieDetailViewModel {
 
     static func formatCurrency(_ amount: Int) -> (display: String, accessibility: String) {
         guard amount > 0 else {
-            return ("Not available", "Not available")
+            return (String(localized: "Not available"), String(localized: "Not available"))
         }
 
         let accessibility: String
@@ -370,13 +370,12 @@ final class MovieDetailViewModel {
             accessibility = "$\(amount)"
         }
 
-        if amount >= 1_000_000 {
-            let millions = Double(amount) / 1_000_000
-            return (String(format: "$%.1fM", millions), accessibility)
-        }
         if amount >= 1_000 {
-            let thousands = Double(amount) / 1_000
-            return (String(format: "$%.1fK", thousands), accessibility)
+            // Short form in the device locale: "$25.0M" in the US, "25,0 Mio. $" in Germany.
+            let compact = Double(amount).formatted(
+                .currency(code: "USD").notation(.compactName).precision(.fractionLength(1))
+            )
+            return (compact, accessibility)
         }
         return (accessibility, accessibility)
     }

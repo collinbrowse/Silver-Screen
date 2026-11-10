@@ -85,18 +85,18 @@ final class SearchViewModel {
     }
 
     var emptyTitle: String {
-        if showsFocusedPlaceholder { return "Search" }
-        return "No Results"
+        if showsFocusedPlaceholder { return String(localized: "Search") }
+        return String(localized: "No Results")
     }
 
     var emptyMessage: String {
         if showsFocusedPlaceholder {
-            return "Type a name"
+            return String(localized: "Type a name")
         }
         if genreFilter != nil || typeNiche != .all {
-            return "No matches for \"\(trimmedQuery)\" with these filters."
+            return String(localized: "No matches for \"\(trimmedQuery)\" with these filters.")
         }
-        return "No matches for \"\(trimmedQuery)\"."
+        return String(localized: "No matches for \"\(trimmedQuery)\".")
     }
 
     func load() async {
