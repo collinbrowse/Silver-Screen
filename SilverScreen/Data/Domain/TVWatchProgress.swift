@@ -101,7 +101,7 @@ struct TVSeriesWatchState: Codable, Sendable, Equatable {
     var progressSubtitle: String? {
         guard let next = nextUp else { return nil }
         let title = nextUpTitle?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let prefix = "Next up: S\(next.seasonNumber) · E\(next.episodeNumber)"
+        let prefix = String(localized: "Next up: S\(next.seasonNumber) · E\(next.episodeNumber)")
         return title.isEmpty ? prefix : "\(prefix) · \(title)"
     }
 
@@ -198,9 +198,9 @@ struct TVSeriesWatchState: Codable, Sendable, Equatable {
         guard let catalogSnapshot else { return nil }
         let seasons = catalogSnapshot.filter { $0.seasonNumber > 0 && $0.episodeCount > 0 }
         let count = seasons.count
-        if count == 0 { return "Complete" }
-        if count == 1 { return "1 season" }
-        return "\(count) seasons"
+        if count == 0 { return String(localized: "Complete", comment: "Caption for a show the user has watched every season of") }
+        if count == 1 { return String(localized: "1 season") }
+        return String(localized: "\(count) seasons")
     }
 
     /// Marks one episode completed. Returns whether it was newly added.

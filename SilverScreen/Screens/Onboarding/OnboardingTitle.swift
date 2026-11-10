@@ -23,10 +23,10 @@ struct OnboardingTitle: Sendable, Hashable, Identifiable {
 
     /// "Dune, movie, 2021" for VoiceOver.
     var accessibilityName: String {
-        let kind = isSeries ? "series" : "movie"
+        let kind = isSeries ? String(localized: "series") : String(localized: "movie")
         if let releaseDate = draft.releaseDate {
             let year = Calendar(identifier: .gregorian).component(.year, from: releaseDate)
-            return "\(draft.title), \(kind), \(year)"
+            return "\(draft.title), \(kind), \(String(year))"
         }
         return "\(draft.title), \(kind)"
     }

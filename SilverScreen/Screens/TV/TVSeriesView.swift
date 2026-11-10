@@ -59,8 +59,8 @@ struct TVSeriesView: View {
                     LoadingStateView()
                 case .empty:
                     EmptyStateView(
-                        title: "Series Unavailable",
-                        message: "This series could not be shown.",
+                        title: String(localized: "Series Unavailable"),
+                        message: String(localized: "This series could not be shown."),
                         systemImage: "tv"
                     )
                 case .loaded(let content, let activity):
@@ -232,7 +232,7 @@ struct TVSeriesView: View {
                         accessibilityLabel: content.ratingAccessibilityLabel,
                         formattedUserScore: content.formattedUserScore,
                         userScoreAccessibilityLabel: content.formattedUserScore == nil
-                            ? "Rate show"
+                            ? String(localized: "Rate show")
                             : content.userScoreAccessibilityLabel,
                         addRatingTitle: "Rate show",
                         onEdit: { viewModel.openAnnotationEditor() }
@@ -313,7 +313,7 @@ struct TVSeriesView: View {
         }
         if !content.detail.cast.isEmpty {
             TVCreditCarousel(
-                title: "Cast",
+                title: String(localized: "Cast"),
                 people: content.detail.cast,
                 imageLoader: imageLoader
             ) { person in
@@ -322,7 +322,7 @@ struct TVSeriesView: View {
         }
         if !content.detail.directorsAndWriters.isEmpty {
             TVCreditCarousel(
-                title: "Directors & Writers",
+                title: String(localized: "Directors & Writers"),
                 people: content.detail.directorsAndWriters,
                 imageLoader: imageLoader
             ) { person in
@@ -348,7 +348,7 @@ struct TVSeriesView: View {
     }
 
     private func seasonsCarousel(_ content: TVSeriesContent) -> some View {
-        DetailCarousel(title: "Seasons") {
+        DetailCarousel(title: String(localized: "Seasons")) {
             ForEach(content.seasons) { season in
                 Button {
                     router?.push(
@@ -404,15 +404,15 @@ struct TVSeriesView: View {
     private func seasonAccessibilityLabel(_ season: TVSeriesContent.SeasonRow) -> String {
         var parts = [season.name, season.formattedAirDate, season.episodeCountText]
         if let score = viewModel.seasonScores[season.seasonNumber] {
-            parts.append("Your rating \(score)")
+            parts.append(String(localized: "Your rating \(score)"))
         } else if viewModel.watchedSeasonNumbers.contains(season.seasonNumber) {
-            parts.append("Watched")
+            parts.append(String(localized: "Watched"))
         }
         return parts.joined(separator: ", ")
     }
 
     private func recommendationsCarousel(_ content: TVSeriesContent) -> some View {
-        DetailCarousel(title: "Recommendations") {
+        DetailCarousel(title: String(localized: "Recommendations")) {
             ForEach(content.recommendations) { show in
                 Button {
                     router?.push(.tvSeries(id: show.id))
@@ -450,9 +450,9 @@ struct TVSeriesView: View {
     private func recommendationAccessibilityLabel(_ show: TVSeriesContent.RecommendationRow) -> String {
         var parts = [show.name]
         if let score = viewModel.recommendationScores[show.id] {
-            parts.append("Your rating \(score)")
+            parts.append(String(localized: "Your rating \(score)"))
         } else if listsIndex.isOnWatched(ListEntry.itemKey(id: show.id, kind: .tv)) {
-            parts.append("Watched")
+            parts.append(String(localized: "Watched"))
         }
         return parts.joined(separator: ", ")
     }

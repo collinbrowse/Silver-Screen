@@ -16,51 +16,53 @@ enum AppError: Error, Equatable, Sendable {
     case invalidBaseURL
     case unknown
 
+    /// Localized headline for the error. The developer setup errors (`missingAccessToken`,
+    /// `invalidBaseURL`) stay in English because only a misconfigured build shows them.
     var title: String {
         switch self {
             case .offline:
-                return "You're Offline"
+                return String(localized: "You're Offline")
             case .timedOut:
-                return "Request Timed Out"
+                return String(localized: "Request Timed Out")
             case .unauthorized:
-                return "Unable to Authenticate"
+                return String(localized: "Unable to Authenticate")
             case .server:
-                return "Server Error"
+                return String(localized: "Server Error")
             case .decoding:
-                return "Unexpected Data"
+                return String(localized: "Unexpected Data")
             case .persistence:
-                return "Couldn't Save"
+                return String(localized: "Couldn't Save")
             case .missingAccessToken:
                 return "Missing Access Token"
             case .invalidBaseURL:
                 return "Invalid Movie Service Address"
             case .unknown:
-                return "Something Went Wrong"
+                return String(localized: "Something Went Wrong")
         }
     }
 
     var message: String {
         switch self {
             case .offline:
-                return "Check your internet connection and try again."
+                return String(localized: "Check your internet connection and try again.")
             case .timedOut:
-                return "The request took too long. Please try again."
+                return String(localized: "The request took too long. Please try again.")
             case .unauthorized:
-                return "The movie service rejected this request. Check the access token."
+                return String(localized: "The movie service rejected this request. Check the access token.")
             case .server(let status) where status != 429 && (400..<500).contains(status):
-                return "The movie service couldn't find what you asked for (\(status))."
+                return String(localized: "The movie service couldn't find what you asked for (\(status)).")
             case .server(let status):
-                return "The movie service returned an error (\(status)). Please try again later."
+                return String(localized: "The movie service returned an error (\(status)). Please try again later.")
             case .decoding:
-                return "We couldn't understand the response from the movie service."
+                return String(localized: "We couldn't understand the response from the movie service.")
             case .persistence:
-                return "Your change couldn't be saved. Please try again."
+                return String(localized: "Your change couldn't be saved. Please try again.")
             case .missingAccessToken:
                 return "Copy Secrets.example.xcconfig to Secrets.xcconfig and set TMDB_ACCESS_TOKEN to the API Read Access Token on the TMDB API settings page. A v3 API key will not work."
             case .invalidBaseURL:
                 return "Set TMDB_BASE_URL in Secrets.xcconfig to an https address, written as https:/$()/host/3, or remove it to call TMDB directly."
             case .unknown:
-                return "Please try again. If the problem continues, come back later."
+                return String(localized: "Please try again. If the problem continues, come back later.")
         }
     }
 

@@ -43,19 +43,19 @@ final class TitleWatchViewModel {
 
     /// "8.5"; nil until a watch has a rating.
     var formattedUserScore: String? {
-        ratedWatch?.score.map { String(format: "%.1f", $0) }
+        ratedWatch?.score.map { $0.formatted(.number.precision(.fractionLength(1))) }
     }
 
     /// "from your Oct 16 watch", or "from an earlier watch" when it has no date.
     var scoreCaption: String? {
-        ratedWatch.map { "from \(watchName($0))" }
+        ratedWatch.map { String(localized: "from \(watchName($0))") }
     }
 
     var scoreAccessibilityLabel: String {
         if let score = formattedUserScore, let scoreCaption {
-            return "Your rating \(score), \(scoreCaption). Edit."
+            return String(localized: "Your rating \(score), \(scoreCaption). Edit.")
         }
-        return watches.first.map { "Rate \(watchName($0))" } ?? "Add rating"
+        return watches.first.map { String(localized: "Rate \(watchName($0))") } ?? String(localized: "Add rating")
     }
 
     /// The newest watch with a review, which the page shows beside the overview.
@@ -151,7 +151,7 @@ final class TitleWatchViewModel {
 
     /// "your Oct 16 watch", or "an earlier watch" when it has no date.
     private func watchName(_ watch: DiaryEntry) -> String {
-        dayText(watch).map { "your \($0) watch" } ?? "an earlier watch"
+        dayText(watch).map { String(localized: "your \($0) watch") } ?? String(localized: "an earlier watch")
     }
 
     private func dayText(_ watch: DiaryEntry) -> String? {

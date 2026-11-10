@@ -39,7 +39,7 @@ struct WatchDateRow: View {
 
     /// The grey circle button at the end of the row. Same size in both states, so the
     /// row keeps its height when the date is cleared or added back.
-    private func iconButton(_ systemImage: String, label: String, action: @escaping () -> Void) -> some View {
+    private func iconButton(_ systemImage: String, label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(.title3)

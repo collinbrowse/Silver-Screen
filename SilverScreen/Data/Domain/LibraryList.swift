@@ -16,8 +16,8 @@ enum LibrarySegment: String, Codable, Sendable, Equatable, CaseIterable {
 
     var title: String {
         switch self {
-            case .moviesAndTV: "Movies & TV"
-            case .people: "People"
+            case .moviesAndTV: String(localized: "Movies & TV")
+            case .people: String(localized: "People")
         }
     }
 }
@@ -28,11 +28,22 @@ enum SystemListKind: String, Codable, Sendable, Equatable {
     case inProgress
     case watchlist
 
+    /// English name saved with the list. It is stored data and matched in code, so it
+    /// never changes with the device language; show `displayName` instead.
     var name: String {
         switch self {
             case .watched: "Watched"
             case .inProgress: "In Progress"
             case .watchlist: "Watchlist"
+        }
+    }
+
+    /// The list's name in the device language, for anything shown to the user.
+    var displayName: String {
+        switch self {
+            case .watched: String(localized: "Watched", comment: "Name of the system list of titles the user has seen")
+            case .inProgress: String(localized: "In Progress", comment: "Name of the system list of shows the user is partway through")
+            case .watchlist: String(localized: "Watchlist", comment: "Name of the system list of titles the user wants to see")
         }
     }
 
@@ -55,12 +66,12 @@ enum LibrarySort: String, Codable, Sendable, Equatable, CaseIterable {
 
     var title: String {
         switch self {
-            case .dateAdded: "Date Added"
-            case .alphabetical: "Alphabetical"
-            case .popular: "Popular"
-            case .topRated: "Top Rated"
-            case .newest: "Newest"
-            case .oldest: "Oldest"
+            case .dateAdded: String(localized: "Date Added")
+            case .alphabetical: String(localized: "Alphabetical")
+            case .popular: String(localized: "Popular")
+            case .topRated: String(localized: "Top Rated")
+            case .newest: String(localized: "Newest")
+            case .oldest: String(localized: "Oldest")
         }
     }
 
@@ -89,6 +100,10 @@ struct LibraryList: Codable, Sendable, Equatable, Identifiable, Hashable {
     var position: Int
 
     var isSystem: Bool { system != nil }
+
+    /// Name to show the user: a system list's name in the device language, or the
+    /// name the user typed. `name` keeps the stored value.
+    var displayName: String { system?.displayName ?? name }
 
     static func system(_ kind: SystemListKind, id: UUID = UUID(), position: Int = 0) -> LibraryList {
         LibraryList(
@@ -277,15 +292,15 @@ enum ListEditError: Error, Equatable, Sendable {
     var message: String {
         switch self {
             case .emptyName:
-                "Enter a name."
+                String(localized: "Enter a name.")
             case .duplicateName:
-                "A list with that name already exists."
+                String(localized: "A list with that name already exists.")
             case .systemListLocked:
-                "System lists can't be changed."
+                String(localized: "System lists can't be changed.")
             case .wrongSegment:
-                "That title doesn't belong on this list."
+                String(localized: "That title doesn't belong on this list.")
             case .missingList:
-                "That list no longer exists."
+                String(localized: "That list no longer exists.")
         }
     }
 }
@@ -317,9 +332,9 @@ struct MembershipChange: Sendable, Equatable {
         if let messageOverride { return messageOverride }
         switch action {
             case .added:
-                return "Added to \(listName)"
+                return String(localized: "Added to \(listName)")
             case .removed:
-                return "Removed from \(listName)"
+                return String(localized: "Removed from \(listName)")
             case .unchanged:
                 return nil
         }
@@ -449,7 +464,7 @@ enum LibraryQuery {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return ordered }
         return ordered.filter { list in
-            list.name.localizedStandardContains(trimmed)
+            list.displayName.localizedStandardContains(trimmed)
                 || snapshot.entries.contains {
                     $0.listID == list.id && $0.title.localizedStandardContains(trimmed)
                 }
@@ -483,9 +498,9 @@ enum TitleMediaFilter: String, CaseIterable, Sendable, Equatable {
 
     var title: String {
         switch self {
-            case .all: "All"
-            case .movies: "Movies"
-            case .tv: "TV"
+            case .all: String(localized: "All")
+            case .movies: String(localized: "Movies")
+            case .tv: String(localized: "TV")
         }
     }
 }

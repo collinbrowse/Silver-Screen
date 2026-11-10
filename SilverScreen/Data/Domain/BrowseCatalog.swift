@@ -19,10 +19,10 @@ enum BrowseWindow: String, CaseIterable, Sendable, Equatable {
 
     var title: String {
         switch self {
-            case .all: "All"
-            case .nowPlaying: "Now Playing"
-            case .upcoming: "Upcoming"
-            case .newTrailers: "New Trailers"
+            case .all: String(localized: "All")
+            case .nowPlaying: String(localized: "Now Playing")
+            case .upcoming: String(localized: "Upcoming")
+            case .newTrailers: String(localized: "New Trailers")
         }
     }
 
@@ -45,11 +45,11 @@ enum BrowseSort: String, CaseIterable, Sendable, Equatable {
 
     var title: String {
         switch self {
-            case .popular: "Popular"
-            case .topRated: "Top Rated"
-            case .alphabetical: "Alphabetical"
-            case .newest: "Newest"
-            case .oldest: "Oldest"
+            case .popular: String(localized: "Popular")
+            case .topRated: String(localized: "Top Rated")
+            case .alphabetical: String(localized: "Alphabetical")
+            case .newest: String(localized: "Newest")
+            case .oldest: String(localized: "Oldest")
         }
     }
 

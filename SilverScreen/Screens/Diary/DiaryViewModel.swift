@@ -49,7 +49,7 @@ final class DiaryViewModel {
     /// Moves whenever any screen writes the diary; the view reloads on change.
     var contextRevision: Int { context.revision }
 
-    var navigationTitle: String { scope?.title ?? "Diary" }
+    var navigationTitle: String { scope?.title ?? String(localized: "Diary") }
 
     /// Rows link back to their title only in the full diary; a title's history was
     /// opened from that title.

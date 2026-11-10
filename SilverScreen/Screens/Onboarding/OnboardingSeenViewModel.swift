@@ -75,7 +75,7 @@ final class OnboardingSeenViewModel {
 
     /// "2 of 5 rated", or a done message once the goal is met.
     var goalText: String {
-        isGoalMet ? "\(ratedCount) rated. Nice start." : "\(ratedCount) of \(Self.ratingGoal) rated"
+        isGoalMet ? String(localized: "\(ratedCount) rated. Nice start.") : String(localized: "\(ratedCount) of \(Self.ratingGoal) rated")
     }
 
     var goalFraction: Double {

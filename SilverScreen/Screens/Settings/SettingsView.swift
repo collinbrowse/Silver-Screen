@@ -69,10 +69,10 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    creditLink("Movies and TV", source: "TMDB", url: AppLinks.tmdb)
-                    creditLink("Streaming availability", source: "JustWatch", url: AppLinks.justWatch)
-                    creditLink("Awards", source: "Wikidata", url: AppLinks.wikidata)
-                    creditLink("Person pages", source: "IMDb", url: AppLinks.imdb)
+                    creditLink(String(localized: "Movies and TV"), source: "TMDB", url: AppLinks.tmdb)
+                    creditLink(String(localized: "Streaming availability"), source: "JustWatch", url: AppLinks.justWatch)
+                    creditLink(String(localized: "Awards"), source: "Wikidata", url: AppLinks.wikidata)
+                    creditLink(String(localized: "Person pages"), source: "IMDb", url: AppLinks.imdb)
                 } header: {
                     Text("Data Sources")
                 } footer: {

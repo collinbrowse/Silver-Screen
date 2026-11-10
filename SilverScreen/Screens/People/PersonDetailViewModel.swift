@@ -201,7 +201,7 @@ final class PersonDetailViewModel {
     }
 
     static func formatReleaseDate(_ date: Date?) -> String {
-        guard date != nil else { return "Not available" }
+        guard date != nil else { return String(localized: "Not available") }
         return DisplayDate.day(date)
     }
 
@@ -260,7 +260,7 @@ enum PersonCreditGroups {
 
     private static func actingGroup(_ credits: [PersonCredit]) -> Group? {
         guard !credits.isEmpty else { return nil }
-        return Group(department: .cast, title: "Acting", credits: credits)
+        return Group(department: .cast, title: String(localized: "Acting"), credits: credits)
     }
 
     private static func primaryGroup(
@@ -269,9 +269,9 @@ enum PersonCreditGroups {
     ) -> (group: Group, consumed: Set<String>)? {
         switch known.lowercased() {
             case "directing":
-                return slice(credits, department: .directing, title: "Directing") { $0.job == "Director" }
+                return slice(credits, department: .directing, title: String(localized: "Directing")) { $0.job == "Director" }
             case "writing":
-                return slice(credits, department: .writing, title: "Writing") {
+                return slice(credits, department: .writing, title: String(localized: "Writing")) {
                 MovieRepository.writerJobs.contains($0.job)
                 }
             default:
@@ -311,7 +311,7 @@ enum PersonCreditGroups {
             selected.append(credit.keepingJobs(jobs))
         }
         guard !selected.isEmpty else { return nil }
-        return Group(department: .crew, title: "Crew", credits: selected)
+        return Group(department: .crew, title: String(localized: "Crew"), credits: selected)
     }
 
     private static func consumedKey(creditID: String, job: String) -> String {

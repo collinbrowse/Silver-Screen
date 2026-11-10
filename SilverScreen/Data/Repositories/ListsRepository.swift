@@ -217,7 +217,7 @@ actor ListsRepository {
             return MembershipChange(
                 action: .unchanged,
                 listID: list.id,
-                listName: list.name,
+                listName: list.displayName,
                 itemKey: draft.itemKey,
                 restores: [],
                 removed: nil,
@@ -277,7 +277,7 @@ actor ListsRepository {
         return MembershipChange(
             action: .added,
             listID: list.id,
-            listName: list.name,
+            listName: list.displayName,
             itemKey: draft.itemKey,
             restores: restores,
             removed: nil,
@@ -310,7 +310,7 @@ actor ListsRepository {
             return MembershipChange(
                 action: .unchanged,
                 listID: list.id,
-                listName: list.name,
+                listName: list.displayName,
                 itemKey: itemKey,
                 restores: [],
                 removed: nil
@@ -321,7 +321,7 @@ actor ListsRepository {
         return MembershipChange(
             action: .removed,
             listID: list.id,
-            listName: list.name,
+            listName: list.displayName,
             itemKey: itemKey,
             restores: [],
             removed: removed
@@ -381,7 +381,7 @@ actor ListsRepository {
             change = MembershipChange(
                 action: .added,
                 listID: list.id,
-                listName: list.name,
+                listName: list.displayName,
                 itemKey: draft.itemKey,
                 restores: [],
                 removed: nil
@@ -606,7 +606,9 @@ actor ListsRepository {
     }
 
     private static func isReservedMovieTVName(_ name: String) -> Bool {
-        let reserved = ["Watched", "In Progress", "Watchlist"]
+        // Stored English names, plus the names shown in the device language.
+        let kinds: [SystemListKind] = [.watched, .inProgress, .watchlist]
+        let reserved = kinds.map(\.name) + kinds.map(\.displayName)
         return reserved.contains { candidate in
             name.compare(candidate, options: [.caseInsensitive, .diacriticInsensitive]) == .orderedSame
         }

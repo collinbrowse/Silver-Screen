@@ -25,8 +25,8 @@ struct DiaryRouteView: View {
             )
         } else {
             EmptyStateView(
-                title: "Diary Unavailable",
-                message: "The diary could not be opened.",
+                title: String(localized: "Diary Unavailable"),
+                message: String(localized: "The diary could not be opened."),
                 systemImage: "book.closed"
             )
         }

@@ -20,14 +20,14 @@ struct FeedbackView: View {
                     form
                 case .sent:
                     EmptyStateView(
-                        title: "Thanks for the Feedback",
-                        message: "It went straight to the developer.",
+                        title: String(localized: "Thanks for the Feedback"),
+                        message: String(localized: "It went straight to the developer."),
                         systemImage: "checkmark.bubble"
                     )
                 case .unavailable:
                     EmptyStateView(
-                        title: "Couldn't Send",
-                        message: "This build can't send feedback. Help & Support in Settings has another way to reach the developer.",
+                        title: String(localized: "Couldn't Send"),
+                        message: String(localized: "This build can't send feedback. Help & Support in Settings has another way to reach the developer."),
                         systemImage: "exclamationmark.bubble"
                     )
             }

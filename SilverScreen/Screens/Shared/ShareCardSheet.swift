@@ -63,7 +63,7 @@ struct ShareCardSheet: View {
     }
 
     private var accessibilityText: String {
-        [content.title, content.subtitle, content.scoreText.map { "Rated \($0) out of 10" }, content.dateLine]
+        [content.title, content.subtitle, content.scoreText.map { String(localized: "Rated \($0) out of 10") }, content.dateLine]
             .compactMap { $0 }
             .joined(separator: ", ")
     }

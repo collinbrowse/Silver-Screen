@@ -27,8 +27,8 @@ struct PersonDetailView: View {
                     LoadingStateView()
                 case .empty:
                     EmptyStateView(
-                        title: "Person Unavailable",
-                        message: "This person could not be found.",
+                        title: String(localized: "Person Unavailable"),
+                        message: String(localized: "This person could not be found."),
                         systemImage: "person"
                     )
                 case .loaded(let content, let activity):
@@ -299,13 +299,13 @@ struct PersonDetailView: View {
     private func factRows(_ content: PersonDetailContent) -> [FactRow] {
         var rows: [FactRow] = []
         if let birthday = content.formattedBirthday {
-            rows.append(FactRow(label: "Birthday", value: birthday))
+            rows.append(FactRow(label: String(localized: "Birthday"), value: birthday))
         }
         if let deathday = content.formattedDeathday {
-            rows.append(FactRow(label: "Died", value: deathday))
+            rows.append(FactRow(label: String(localized: "Died"), value: deathday))
         }
         if let place = content.placeOfBirth {
-            rows.append(FactRow(label: "Place of Birth", value: place))
+            rows.append(FactRow(label: String(localized: "Place of Birth"), value: place))
         }
         return rows
     }
@@ -326,7 +326,7 @@ struct PersonDetailView: View {
     }
 
     private func imagesCarousel(_ section: PersonDetailContent.ImagesSection) -> some View {
-        DetailCarousel(title: "Images") {
+        DetailCarousel(title: String(localized: "Images")) {
             ForEach(Array(section.items.enumerated()), id: \.element.id) { index, image in
                 RemoteImageView(
                     path: image.filePath,
@@ -364,7 +364,7 @@ struct PersonDetailView: View {
         let showsViewAll = section.showsViewAll(previewCount: previewCount)
         return DetailCarousel(
             title: title,
-            viewAllTitle: showsViewAll ? "View All" : nil,
+            viewAllTitle: showsViewAll ? String(localized: "View All") : nil,
             onViewAll: showsViewAll
                 ? {
                     router?.push(
@@ -428,8 +428,8 @@ struct PersonDetailView: View {
     private func creditAccessibilityLabel(_ credit: PersonCredit) -> String {
         var parts = [credit.title]
         switch credit.mediaType {
-            case .movie: parts.append("Movie")
-            case .tv: parts.append("TV series")
+            case .movie: parts.append(String(localized: "Movie"))
+            case .tv: parts.append(String(localized: "TV series"))
         }
         if !credit.roleLabel.isEmpty {
             parts.append(credit.roleLabel)

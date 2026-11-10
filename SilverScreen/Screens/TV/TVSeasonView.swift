@@ -87,8 +87,8 @@ struct TVSeasonView: View {
                     LoadingStateView()
                 case .empty:
                     EmptyStateView(
-                        title: "Season Unavailable",
-                        message: "This season could not be shown.",
+                        title: String(localized: "Season Unavailable"),
+                        message: String(localized: "This season could not be shown."),
                         systemImage: "tv"
                     )
                 case .loaded(let content, let activity):
@@ -379,7 +379,7 @@ struct TVSeasonView: View {
             accessibilityLabel: content.ratingAccessibilityLabel,
             formattedUserScore: content.formattedUserScore,
             userScoreAccessibilityLabel: content.formattedUserScore == nil
-                ? "Rate season"
+                ? String(localized: "Rate season")
                 : content.userScoreAccessibilityLabel,
             addRatingTitle: "Rate season",
             onEdit: { viewModel.openAnnotationEditor() }
@@ -387,7 +387,7 @@ struct TVSeasonView: View {
         if viewModel.isSeasonFullyWatched {
             LogRewatchButton { isSeasonRewatchPresented = true }
                 .sheet(isPresented: $isSeasonRewatchPresented) {
-                    SeasonRewatchSheet(title: "Season \(seasonNumber)") { day, dateKnown in
+                    SeasonRewatchSheet(title: String(localized: "Season \(seasonNumber)")) { day, dateKnown in
                         await logSeasonRewatch(content, on: day, dateKnown: dateKnown)
                     }
                 }
@@ -404,13 +404,13 @@ struct TVSeasonView: View {
     @ViewBuilder
     private func credits(_ content: TVSeasonContent) -> some View {
         if !content.cast.isEmpty {
-            TVCreditCarousel(title: "Cast", people: content.cast, imageLoader: imageLoader) { person in
+            TVCreditCarousel(title: String(localized: "Cast"), people: content.cast, imageLoader: imageLoader) { person in
                 router?.push(.person(id: person.id))
             }
         }
         if !content.directorsAndWriters.isEmpty {
             TVCreditCarousel(
-                title: "Directors & Writers",
+                title: String(localized: "Directors & Writers"),
                 people: content.directorsAndWriters,
                 imageLoader: imageLoader
             ) { person in
@@ -477,7 +477,7 @@ struct TVSeasonView: View {
         notice.presentWatch(
             outcome,
             ratingKey: ratingKey(for: outcome),
-            fallbackMessage: "Season watched",
+            fallbackMessage: String(localized: "Season watched"),
             using: lists,
             tvWatch: tvWatch
         )
@@ -560,7 +560,7 @@ struct TVSeasonView: View {
                     seasonNumber: seasonNumber,
                     episodeNumber: episode.episodeNumber
                 ),
-                fallbackMessage: "Episode watched",
+                fallbackMessage: String(localized: "Episode watched"),
                 using: lists,
                 tvWatch: tvWatch
             )
@@ -684,12 +684,12 @@ struct TVSeasonView: View {
     private func episodeLabel(_ episode: TVEpisodeSummary) -> String {
         var parts = [
             episode.title,
-            "Episode \(episode.episodeNumber)",
+            String(localized: "Episode \(episode.episodeNumber)"),
             DisplayDate.day(episode.airDate),
             episode.directorLine,
         ]
         if let score = viewModel.episodeScores[episode.episodeNumber] {
-            parts.append("Your rating \(score)")
+            parts.append(String(localized: "Your rating \(score)"))
         }
         return parts.joined(separator: ", ")
     }

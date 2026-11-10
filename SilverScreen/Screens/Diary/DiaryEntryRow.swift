@@ -73,7 +73,7 @@ struct DiaryEntryRow: View {
                                 .foregroundStyle(DesignTheme.accent)
                         }
                         if row.isRewatch {
-                            DiaryIconText(text: "Rewatch", systemImage: "arrow.counterclockwise")
+                            DiaryIconText(text: String(localized: "Rewatch"), systemImage: "arrow.counterclockwise")
                                 .foregroundStyle(DesignTheme.textSecondary)
                         }
                     }

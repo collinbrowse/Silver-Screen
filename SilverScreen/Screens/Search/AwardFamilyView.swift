@@ -22,8 +22,8 @@ struct AwardFamilyView: View {
                     LoadingStateView()
                 case .empty:
                     EmptyStateView(
-                        title: "No Categories",
-                        message: "This award has no titles in the catalog yet.",
+                        title: String(localized: "No Categories"),
+                        message: String(localized: "This award has no titles in the catalog yet."),
                         systemImage: "trophy"
                     )
                 case .loaded(let categories, _):

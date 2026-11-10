@@ -34,8 +34,8 @@ struct AwardTitleRow: Identifiable, Equatable, Sendable {
     /// Media kind chip for the row (Movie or TV).
     var kindLabel: String? {
         switch route {
-            case .movieDetail: "Movie"
-            case .tvSeries, .tvSeason, .tvEpisode: "TV"
+            case .movieDetail: String(localized: "Movie")
+            case .tvSeries, .tvSeason, .tvEpisode: String(localized: "TV")
             default: nil
         }
     }
@@ -96,12 +96,12 @@ final class AwardTitlesViewModel {
 
     var navigationTitle: String { request.navigationTitle }
 
-    var emptyTitle: String { showingWinners ? "No Winners" : "No Nominees" }
+    var emptyTitle: String { showingWinners ? String(localized: "No Winners") : String(localized: "No Nominees") }
 
     var emptyMessage: String {
         showingWinners
-            ? "No winning titles are in this list yet."
-            : "No nominated titles are in this list yet."
+            ? String(localized: "No winning titles are in this list yet.")
+            : String(localized: "No nominated titles are in this list yet.")
     }
 
     func load() async {

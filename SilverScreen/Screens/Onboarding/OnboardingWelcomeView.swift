@@ -36,18 +36,18 @@ struct OnboardingWelcomeView: View {
                 VStack(alignment: .leading, spacing: DesignSpacing.xl) {
                     feature(
                         symbol: "star.leadinghalf.filled",
-                        title: "Rate anything",
-                        message: "Movies, shows, seasons, and single episodes, in half points out of 10."
+                        title: String(localized: "Rate anything"),
+                        message: String(localized: "Movies, shows, seasons, and single episodes, in half points out of 10.")
                     )
                     feature(
                         symbol: "trophy",
-                        title: "Awards built in",
-                        message: "Oscar, BAFTA, and Emmy history on every title and person."
+                        title: String(localized: "Awards built in"),
+                        message: String(localized: "Oscar, BAFTA, and Emmy history on every title and person.")
                     )
                     feature(
                         symbol: "lock",
-                        title: "Private, with no account",
-                        message: "Your library and ratings stay on this device."
+                        title: String(localized: "Private, with no account"),
+                        message: String(localized: "Your library and ratings stay on this device.")
                     )
                 }
             }

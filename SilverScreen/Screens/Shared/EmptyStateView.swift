@@ -14,7 +14,7 @@ struct EmptyStateView: View {
     let action: (() -> Void)?
 
     init(
-        title: String = "Nothing Here",
+        title: String = String(localized: "Nothing Here"),
         message: String,
         systemImage: String = "tray",
         actionTitle: String? = nil,

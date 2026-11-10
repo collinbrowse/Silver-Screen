@@ -43,11 +43,11 @@ final class ListChangeNotice {
     var canUndo: Bool { change != nil || watchUndo != nil || diaryUndo != nil }
     /// "Rate & review" on a watch just logged; a season or show gets a verdict instead.
     var ratingActionTitle: String {
-        guard loggedWatch == nil else { return "Rate & review" }
+        guard loggedWatch == nil else { return String(localized: "Rate & review") }
         switch ratingKey?.kind {
-            case .tvSeries: return "Rate show"
-            case .tvSeason: return "Rate season"
-            case .movie, .tvEpisode, nil: return "Add rating"
+            case .tvSeries: return String(localized: "Rate show")
+            case .tvSeason: return String(localized: "Rate season")
+            case .movie, .tvEpisode, nil: return String(localized: "Add rating")
         }
     }
     /// Whether the banner shows its rating action: a title without a score, or a watch
@@ -99,7 +99,7 @@ final class ListChangeNotice {
         guard let watches else { throw AppError.persistence }
         let logged = try await watches.logMovie(draft)
         diary?.noteChange()
-        present(message: "Watched", using: lists, diaryUndo: .logged(logged), loggedWatch: logged.entry)
+        present(message: String(localized: "Watched"), using: lists, diaryUndo: .logged(logged), loggedWatch: logged.entry)
     }
 
     /// The orange eye on a movie: removes every watch, after any confirmation.
@@ -107,7 +107,7 @@ final class ListChangeNotice {
         guard let watches else { throw AppError.persistence }
         let removed = try await watches.removeMovie(draft)
         diary?.noteChange()
-        present(message: "Removed", using: lists, diaryUndo: .removed(removed))
+        present(message: String(localized: "Removed"), using: lists, diaryUndo: .removed(removed))
     }
 
     /// Log a Rewatch on a watched season: a rewatch of each of `episodes` on the chosen day.
@@ -132,7 +132,7 @@ final class ListChangeNotice {
             dateKnown: dateKnown
         )
         diary?.noteChange()
-        present(message: "Rewatch logged", using: lists, diaryUndo: .seasonRewatch(logged))
+        present(message: String(localized: "Rewatch logged"), using: lists, diaryUndo: .seasonRewatch(logged))
     }
 
     /// An episode's eye just logged its watch. A mark that logged several, like a whole
@@ -156,7 +156,7 @@ final class ListChangeNotice {
             return
         }
         present(
-            message: "Watched",
+            message: String(localized: "Watched"),
             using: lists,
             change: outcome.membershipChange,
             tvWatch: tvWatch,
@@ -169,7 +169,7 @@ final class ListChangeNotice {
     func presentRemoved(_ outcome: TVWatchOutcome, using lists: ListsRepository, tvWatch: TVWatchRepository) {
         diary?.noteChange()
         present(
-            message: "Removed",
+            message: String(localized: "Removed"),
             using: lists,
             change: outcome.membershipChange,
             tvWatch: tvWatch,
@@ -373,14 +373,14 @@ final class ListChangeNotice {
             return
         } catch {
             // Partial undo — do not bump revision so open screens keep prior chrome.
-            message = "Couldn’t undo. Try again."
+            message = String(localized: "Couldn’t undo. Try again.")
             generation += 1
             let token = generation
             presentationID += 1
             Task {
                 try? await Task.sleep(for: .seconds(3))
                 guard !Task.isCancelled, generation == token else { return }
-                if self.message == "Couldn’t undo. Try again." {
+                if self.message == String(localized: "Couldn’t undo. Try again.") {
                     clear()
                 }
             }
@@ -618,13 +618,13 @@ final class ListChangeNotice {
                 case .tvSeason:
                     if let name {
                         return key.seasonNumber == 0
-                            ? "\(name) · Specials"
-                            : "\(name) · Season \(key.seasonNumber)"
+                            ? String(localized: "\(name) · Specials")
+                            : String(localized: "\(name) · Season \(key.seasonNumber)")
                     }
                     return fallbackEditorTitle(for: key)
                 case .tvEpisode:
                     if let name {
-                        return "\(name) · S\(key.seasonNumber) · E\(key.episodeNumber)"
+                        return String(localized: "\(name) · S\(key.seasonNumber) · E\(key.episodeNumber)")
                     }
                     return fallbackEditorTitle(for: key)
             }
@@ -635,12 +635,12 @@ final class ListChangeNotice {
 
     static func fallbackEditorTitle(for key: AnnotationKey) -> String {
         switch key.kind {
-            case .movie: return "Movie"
-            case .tvSeries: return "Series"
+            case .movie: return String(localized: "Movie")
+            case .tvSeries: return String(localized: "Series")
             case .tvSeason:
-                return key.seasonNumber == 0 ? "Specials" : "Season \(key.seasonNumber)"
+                return key.seasonNumber == 0 ? String(localized: "Specials") : String(localized: "Season \(key.seasonNumber)")
             case .tvEpisode:
-                return "S\(key.seasonNumber) · E\(key.episodeNumber)"
+                return String(localized: "S\(key.seasonNumber) · E\(key.episodeNumber)")
         }
     }
 }

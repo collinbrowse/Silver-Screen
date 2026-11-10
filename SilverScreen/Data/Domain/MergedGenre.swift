@@ -24,17 +24,17 @@ enum MergedGenre: String, CaseIterable, Codable, Hashable, Sendable {
 
     var title: String {
         switch self {
-            case .actionAndAdventure: "Action & Adventure"
-            case .animation: "Animation"
-            case .comedy: "Comedy"
-            case .crime: "Crime"
-            case .documentary: "Documentary"
-            case .drama: "Drama"
-            case .family: "Family"
-            case .mystery: "Mystery"
-            case .sciFiAndFantasy: "Sci-Fi & Fantasy"
-            case .warAndPolitics: "War & Politics"
-            case .western: "Western"
+            case .actionAndAdventure: String(localized: "Action & Adventure")
+            case .animation: String(localized: "Animation")
+            case .comedy: String(localized: "Comedy")
+            case .crime: String(localized: "Crime")
+            case .documentary: String(localized: "Documentary")
+            case .drama: String(localized: "Drama")
+            case .family: String(localized: "Family")
+            case .mystery: String(localized: "Mystery")
+            case .sciFiAndFantasy: String(localized: "Sci-Fi & Fantasy")
+            case .warAndPolitics: String(localized: "War & Politics")
+            case .western: String(localized: "Western")
         }
     }
 

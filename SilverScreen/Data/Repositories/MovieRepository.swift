@@ -526,7 +526,7 @@ final class MovieRepository: Sendable {
     static func mapReview(_ dto: ReviewDTO) -> MovieReview? {
         let content = dto.content?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard !content.isEmpty else { return nil }
-        let author = dto.author?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "Anonymous"
+        let author = dto.author?.trimmingCharacters(in: .whitespacesAndNewlines) ?? String(localized: "Anonymous", comment: "Author shown for a TMDB review with no author name")
         let username = dto.authorDetails?.username?.trimmingCharacters(in: .whitespacesAndNewlines) ?? author
         return MovieReview(
             id: dto.id,

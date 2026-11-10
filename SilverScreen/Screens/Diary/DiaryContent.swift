@@ -200,9 +200,10 @@ enum DiaryContent {
                 lastCompletedAt: latest.loggedAt,
                 dayNumber: String(key.day.day),
                 weekday: weekday,
-                episodesText: key.isRewatch ? "\(episodesText(episodes)) · Rewatch" : episodesText(episodes),
-                accessibilityLabel: "\(latest.title). \(spokenEpisodes(episodes)). Watched \(spokenDay)."
-                    + (key.isRewatch ? " Rewatch." : ""),
+                episodesText: key.isRewatch ? String(localized: "\(episodesText(episodes)) · Rewatch") : episodesText(episodes),
+                accessibilityLabel: key.isRewatch
+                    ? String(localized: "\(latest.title). \(spokenEpisodes(episodes)). Watched \(spokenDay). Rewatch.")
+                    : String(localized: "\(latest.title). \(spokenEpisodes(episodes)). Watched \(spokenDay)."),
                 isRewatch: key.isRewatch
             )
         }
@@ -218,23 +219,23 @@ enum DiaryContent {
     static func episodesText(_ episodes: [TVEpisodeRef]) -> String {
         guard let first = episodes.first, let last = episodes.last else { return "" }
         if first.seasonNumber != last.seasonNumber {
-            return "S\(first.seasonNumber)–S\(last.seasonNumber) · \(episodes.count) episodes"
+            return String(localized: "S\(first.seasonNumber)–S\(last.seasonNumber) · \(episodes.count) episodes")
         }
         if episodes.count == 1 {
-            return "S\(first.seasonNumber) · E\(first.episodeNumber)"
+            return String(localized: "S\(first.seasonNumber) · E\(first.episodeNumber)")
         }
         if last.episodeNumber - first.episodeNumber == episodes.count - 1 {
-            return "S\(first.seasonNumber) · E\(first.episodeNumber)–E\(last.episodeNumber)"
+            return String(localized: "S\(first.seasonNumber) · E\(first.episodeNumber)–E\(last.episodeNumber)")
         }
-        return "S\(first.seasonNumber) · \(episodes.count) episodes"
+        return String(localized: "S\(first.seasonNumber) · \(episodes.count) episodes")
     }
 
     private static func spokenEpisodes(_ episodes: [TVEpisodeRef]) -> String {
         guard let first = episodes.first else { return "" }
         if episodes.count == 1 {
-            return "Season \(first.seasonNumber), episode \(first.episodeNumber)"
+            return String(localized: "Season \(first.seasonNumber), episode \(first.episodeNumber)")
         }
-        return "\(episodes.count) episodes"
+        return String(localized: "\(episodes.count) episodes")
     }
 
     /// Undated watches for a title's "Earlier" section, latest logged first.
@@ -278,22 +279,22 @@ enum DiaryContent {
             Date.FormatStyle(date: .complete, time: .omitted, locale: locale, calendar: calendar, timeZone: calendar.timeZone)
         )
         let yearText = entry.releaseYear.map(String.init)
-        let ratingText = entry.score.map { String(format: "%.1f", $0) }
+        let ratingText = entry.score.map { $0.formatted(.number.precision(.fractionLength(1))) }
         let episodeText = entry.subject.episode.map { episodesText([$0]) }
 
         var spoken = [yearText.map { "\(entry.title), \($0)" } ?? entry.title]
         if let episode = entry.subject.episode {
-            spoken.append("Season \(episode.seasonNumber), episode \(episode.episodeNumber)")
+            spoken.append(String(localized: "Season \(episode.seasonNumber), episode \(episode.episodeNumber)"))
         }
-        spoken.append(entry.isDateKnown ? "Watched \(spokenDay)" : "Watched, date unknown")
+        spoken.append(entry.isDateKnown ? String(localized: "Watched \(spokenDay)") : String(localized: "Watched, date unknown"))
         if let score = entry.score {
-            spoken.append(String(format: "Rated %.1f out of 10", score))
+            spoken.append(String(localized: "Rated \(score, format: .number.precision(.fractionLength(1))) out of 10"))
         }
         if isRewatch {
-            spoken.append("Rewatch")
+            spoken.append(String(localized: "Rewatch"))
         }
         if entry.review != nil {
-            spoken.append("Has a review")
+            spoken.append(String(localized: "Has a review"))
         }
 
         return DiaryRow(

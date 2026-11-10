@@ -407,7 +407,7 @@ actor TVWatchRepository {
             do {
                 change = try await lists.addToInProgress(
                     draft,
-                    messageOverride: "\(draft.title) moved to In Progress"
+                    messageOverride: String(localized: "\(draft.title) moved to In Progress")
                 )
             } catch {
                 do {
@@ -463,7 +463,7 @@ actor TVWatchRepository {
 
         // Caught up vs current TMDB → Watched (snapshot already frozen before persist).
         if state.isSeriesComplete(against: seasons) {
-            let message = preferSilentComplete ? "\(draft.title) moved to Watched" : nil
+            let message = preferSilentComplete ? String(localized: "\(draft.title) moved to Watched") : nil
             let change = try await lists.addToWatched(draft, messageOverride: message)
             // Never toast a no-op membership write.
             return change.action == .unchanged ? nil : change

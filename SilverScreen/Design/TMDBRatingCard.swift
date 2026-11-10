@@ -17,7 +17,7 @@ struct TMDBRatingCard: View {
     var userScoreCaption: String? = nil
     var showsUserSide = true
     /// The prompt with no score yet: "Rate season" and "Rate show" on those pages.
-    var addRatingTitle = "Add rating"
+    var addRatingTitle: LocalizedStringKey = "Add rating"
     let onEdit: () -> Void
 
     var body: some View {

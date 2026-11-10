@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct OnboardingBottomBar: View {
-    let title: String
+    let title: LocalizedStringKey
     let action: () -> Void
 
     var body: some View {
