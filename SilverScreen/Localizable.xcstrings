@@ -1,7 +1,1592 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "" : {
 
+    },
+    "-" : {
+
+    },
+    "@%@" : {
+
+    },
+    "%@ · last %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · last %2$@"
+          }
+        }
+      }
+    },
+    "%@ · Rewatch" : {
+
+    },
+    "%@ · S%lld · E%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · S%2$lld · E%3$lld"
+          }
+        }
+      }
+    },
+    "%@ · Season %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · Season %2$lld"
+          }
+        }
+      }
+    },
+    "%@ · Specials" : {
+
+    },
+    "%@ / 10" : {
+
+    },
+    "%@ as %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ as %2$@"
+          }
+        }
+      }
+    },
+    "%@ for %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ for %2$@"
+          }
+        }
+      }
+    },
+    "%@ from %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ from %2$@"
+          }
+        }
+      }
+    },
+    "%@ moved to In Progress" : {
+
+    },
+    "%@ moved to Watched" : {
+
+    },
+    "%@ nominee" : {
+
+    },
+    "%@ nominee for %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ nominee for %2$@"
+          }
+        }
+      }
+    },
+    "%@ to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ to %2$@"
+          }
+        }
+      }
+    },
+    "%@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%@, %@, %@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@, %3$@. %4$@"
+          }
+        }
+      }
+    },
+    "%@, Episode %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, Episode %2$lld"
+          }
+        }
+      }
+    },
+    "%@, on a list" : {
+
+    },
+    "%@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@"
+          }
+        }
+      }
+    },
+    "%@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@. %2$@"
+          }
+        }
+      }
+    },
+    "%@. %@. Watched %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@. %2$@. Watched %3$@."
+          }
+        }
+      }
+    },
+    "%@. %@. Watched %@. Rewatch." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@. %2$@. Watched %3$@. Rewatch."
+          }
+        }
+      }
+    },
+    "%lld episodes" : {
+
+    },
+    "%lld Episodes" : {
+
+    },
+    "%lld episodes watched" : {
+
+    },
+    "%lld mins" : {
+
+    },
+    "%lld minutes" : {
+
+    },
+    "%lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "%lld of %lld rated" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld rated"
+          }
+        }
+      }
+    },
+    "%lld people" : {
+
+    },
+    "%lld rated. Nice start." : {
+
+    },
+    "%lld rewatches" : {
+
+    },
+    "%lld seasons" : {
+
+    },
+    "%lld Seasons" : {
+
+    },
+    "%lld titles" : {
+
+    },
+    "1 episode" : {
+
+    },
+    "1 Episode" : {
+
+    },
+    "1 episode watched" : {
+
+    },
+    "1 minute" : {
+
+    },
+    "1 person" : {
+
+    },
+    "1 rewatch" : {
+
+    },
+    "1 season" : {
+
+    },
+    "1 Season" : {
+
+    },
+    "1 title" : {
+
+    },
+    "A list with that name already exists." : {
+
+    },
+    "Academy Awards" : {
+
+    },
+    "Acknowledgements" : {
+
+    },
+    "Acting" : {
+
+    },
+    "Acting Roles" : {
+
+    },
+    "Action & Adventure" : {
+
+    },
+    "Add %@ to a list" : {
+
+    },
+    "Add a person from Search." : {
+
+    },
+    "Add a title from Browse or Search." : {
+
+    },
+    "Add rating" : {
+
+    },
+    "Add to %@" : {
+
+    },
+    "Add to List" : {
+
+    },
+    "Add watch date" : {
+
+    },
+    "Added to %@" : {
+
+    },
+    "Adds a new watch to your diary, dated today" : {
+
+    },
+    "Adds a rewatch of every episode in this season." : {
+
+    },
+    "Adds it to Watched." : {
+
+    },
+    "Adds it to Watchlist." : {
+
+    },
+    "All" : {
+
+    },
+    "Alphabetical" : {
+
+    },
+    "an earlier watch" : {
+
+    },
+    "Animation" : {
+
+    },
+    "Anonymous" : {
+      "comment" : "Author shown for a TMDB review with no author name"
+    },
+    "Award winners" : {
+
+    },
+    "Awards" : {
+
+    },
+    "Awards built in" : {
+
+    },
+    "Back" : {
+
+    },
+    "BAFTAs" : {
+
+    },
+    "Biography" : {
+
+    },
+    "Birthday" : {
+
+    },
+    "Browse" : {
+
+    },
+    "Browse every Oscar, BAFTA, and Emmy winner and nominee, by category." : {
+
+    },
+    "Budget" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Cast" : {
+
+    },
+    "Check your internet connection and try again." : {
+
+    },
+    "Choose a rating" : {
+
+    },
+    "Clear Genre" : {
+
+    },
+    "Clear Rating" : {
+
+    },
+    "Clear search" : {
+
+    },
+    "Clear watch date" : {
+
+    },
+    "Close" : {
+
+    },
+    "Closes setup. Titles you picked stay saved." : {
+
+    },
+    "Closes setup. You can start it again from the Library." : {
+
+    },
+    "Collapses the biography" : {
+
+    },
+    "Comedy" : {
+
+    },
+    "Complete" : {
+      "comment" : "Caption for a show the user has watched every season of"
+    },
+    "Continue" : {
+
+    },
+    "Continue works at any time." : {
+
+    },
+    "Couldn't Save" : {
+
+    },
+    "Couldn't Send" : {
+
+    },
+    "Couldn’t undo. Try again." : {
+
+    },
+    "Create" : {
+
+    },
+    "Create a list to save people." : {
+
+    },
+    "Crew" : {
+
+    },
+    "Crew Roles" : {
+
+    },
+    "Crime" : {
+
+    },
+    "Data Sources" : {
+
+    },
+    "Date Added" : {
+
+    },
+    "Date unavailable" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete %@" : {
+
+    },
+    "Delete Entry" : {
+
+    },
+    "Delete Rating and Review" : {
+
+    },
+    "Delete this entry?" : {
+
+    },
+    "Delete your rating and review?" : {
+
+    },
+    "Diary" : {
+
+    },
+    "Diary Unavailable" : {
+
+    },
+    "Died" : {
+
+    },
+    "Directing" : {
+
+    },
+    "Director: %@" : {
+
+    },
+    "Director: unknown" : {
+
+    },
+    "Directors & Writers" : {
+
+    },
+    "Dismisses search and restores the last results" : {
+
+    },
+    "Documentary" : {
+
+    },
+    "Done" : {
+
+    },
+    "Done reordering" : {
+
+    },
+    "Drama" : {
+
+    },
+    "Earlier" : {
+
+    },
+    "Edit Entry" : {
+
+    },
+    "Edit rating and review. %@" : {
+
+    },
+    "Edits this entry" : {
+
+    },
+    "Email (optional)" : {
+
+    },
+    "Emmys" : {
+
+    },
+    "Enter a full email address, or leave it blank." : {
+
+    },
+    "Enter a name." : {
+
+    },
+    "episode" : {
+
+    },
+    "Episode %lld" : {
+
+    },
+    "Episode Unavailable" : {
+
+    },
+    "Episode watched" : {
+
+    },
+    "Episodes" : {
+
+    },
+    "Expands the full biography" : {
+
+    },
+    "Family" : {
+
+    },
+    "Film categories" : {
+
+    },
+    "Filter titles" : {
+
+    },
+    "Filters" : {
+
+    },
+    "Filters movie and TV results by genre" : {
+
+    },
+    "Find list" : {
+
+    },
+    "Find title" : {
+
+    },
+    "from %@" : {
+
+    },
+    "Genre" : {
+
+    },
+    "Genre, %@" : {
+
+    },
+    "Genres: %@" : {
+
+    },
+    "Get %@ on the App Store" : {
+
+    },
+    "Get started" : {
+
+    },
+    "Get Started" : {
+
+    },
+    "Go to Movie" : {
+
+    },
+    "Go to Show" : {
+
+    },
+    "Goal: %lld · optional" : {
+
+    },
+    "Guest Stars" : {
+
+    },
+    "Has a review" : {
+
+    },
+    "Help & Support" : {
+
+    },
+    "Image" : {
+
+    },
+    "Image %lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Image %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Images" : {
+
+    },
+    "In Progress" : {
+      "comment" : "Name of the system list of shows the user is partway through"
+    },
+    "It went straight to the developer." : {
+
+    },
+    "last %@" : {
+
+    },
+    "Library" : {
+
+    },
+    "List" : {
+
+    },
+    "List Unavailable" : {
+
+    },
+    "Loading" : {
+
+    },
+    "Loading %@" : {
+
+    },
+    "Loading titles" : {
+
+    },
+    "Log a Rewatch" : {
+
+    },
+    "Make your own lists" : {
+
+    },
+    "Mark %@ not watched" : {
+
+    },
+    "Mark %@ watched" : {
+
+    },
+    "Mark a movie or an episode watched with its eye, and it shows up here by the day you watched it." : {
+
+    },
+    "Mark as Watched?" : {
+
+    },
+    "Mark it watched" : {
+
+    },
+    "Mark Season as Watched?" : {
+
+    },
+    "Mark season not watched" : {
+
+    },
+    "Mark season watched" : {
+
+    },
+    "Mark Watched" : {
+
+    },
+    "Media" : {
+
+    },
+    "More Episodes" : {
+
+    },
+    "More Like This" : {
+
+    },
+    "movie" : {
+
+    },
+    "Movie" : {
+
+    },
+    "Movie Unavailable" : {
+
+    },
+    "Movies" : {
+
+    },
+    "Movies & TV" : {
+
+    },
+    "Movies and TV" : {
+
+    },
+    "Movies, shows, seasons, and single episodes, in half points out of 10." : {
+
+    },
+    "Mystery" : {
+
+    },
+    "Name" : {
+
+    },
+    "Name this list." : {
+
+    },
+    "New list" : {
+
+    },
+    "New List" : {
+
+    },
+    "New Trailers" : {
+
+    },
+    "Newest" : {
+
+    },
+    "Next" : {
+
+    },
+    "Next episode, %@" : {
+
+    },
+    "Next page" : {
+
+    },
+    "Next up: S%lld · E%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Next up: S%1$lld · E%2$lld"
+          }
+        }
+      }
+    },
+    "No biography available." : {
+
+    },
+    "No Categories" : {
+
+    },
+    "No Collection" : {
+
+    },
+    "No Credits" : {
+
+    },
+    "No credits were found for this section." : {
+
+    },
+    "No description available." : {
+
+    },
+    "No Diary Entries" : {
+
+    },
+    "No Lists" : {
+
+    },
+    "No lists match \"%@\"." : {
+
+    },
+    "No lists match." : {
+
+    },
+    "No Matches" : {
+
+    },
+    "No matches for \"%@\" with these filters." : {
+
+    },
+    "No matches for \"%@\"." : {
+
+    },
+    "No movies on this list." : {
+
+    },
+    "No new trailers came out this week." : {
+
+    },
+    "No nominated titles are in this list yet." : {
+
+    },
+    "No Nominees" : {
+
+    },
+    "No people" : {
+
+    },
+    "No rating" : {
+
+    },
+    "No rating chosen" : {
+
+    },
+    "No Results" : {
+
+    },
+    "No titles" : {
+
+    },
+    "No titles match %@, %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "No titles match %1$@, %2$@."
+          }
+        }
+      }
+    },
+    "No TV on this list." : {
+
+    },
+    "No Watches Yet" : {
+
+    },
+    "No Winners" : {
+
+    },
+    "No winning titles are in this list yet." : {
+
+    },
+    "Nominees" : {
+
+    },
+    "None" : {
+
+    },
+    "Not available" : {
+
+    },
+    "Not on a list" : {
+
+    },
+    "Not on Watchlist" : {
+
+    },
+    "Not seen" : {
+
+    },
+    "Not watched" : {
+
+    },
+    "Nothing Here" : {
+
+    },
+    "Nothing matches \"%@\"." : {
+
+    },
+    "Nothing Saved Yet" : {
+
+    },
+    "Nothing to Browse" : {
+
+    },
+    "Nothing to Show" : {
+
+    },
+    "Now Playing" : {
+
+    },
+    "Oldest" : {
+
+    },
+    "On a list" : {
+
+    },
+    "On Watchlist" : {
+
+    },
+    "Only if you'd like a reply." : {
+
+    },
+    "Open %@" : {
+
+    },
+    "Open a season of %@ to check off episodes. Next up keeps your place." : {
+
+    },
+    "Open IMDb page in Safari" : {
+
+    },
+    "Open title" : {
+
+    },
+    "Opens %@ in your browser" : {
+
+    },
+    "Opens the rating editor to change it." : {
+
+    },
+    "Opens the rating editor." : {
+
+    },
+    "Opens the show" : {
+
+    },
+    "Opens this award list" : {
+
+    },
+    "Opens this genre list" : {
+
+    },
+    "Opens this title" : {
+
+    },
+    "Optional rating goal" : {
+
+    },
+    "Oscar Winners" : {
+
+    },
+    "Oscar, BAFTA, and Emmy history on every title and person." : {
+
+    },
+    "Page %lld / %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Page %1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "Page %lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Page %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "People" : {
+
+    },
+    "Person" : {
+
+    },
+    "Person pages" : {
+
+    },
+    "Person Unavailable" : {
+
+    },
+    "Place of Birth" : {
+
+    },
+    "Play %@" : {
+
+    },
+    "Please try again. If the problem continues, come back later." : {
+
+    },
+    "Popular" : {
+
+    },
+    "Previous page" : {
+
+    },
+    "Primetime categories" : {
+
+    },
+    "Privacy" : {
+
+    },
+    "Privacy Policy" : {
+
+    },
+    "Private, with no account" : {
+
+    },
+    "Profile photo" : {
+
+    },
+    "Rate" : {
+
+    },
+    "Rate & review" : {
+
+    },
+    "Rate %@" : {
+
+    },
+    "Rate anything" : {
+
+    },
+    "Rate it anytime" : {
+
+    },
+    "Rate out of 10" : {
+
+    },
+    "Rate season" : {
+
+    },
+    "Rate show" : {
+
+    },
+    "Rated %@ out of 10" : {
+
+    },
+    "Recommendations" : {
+
+    },
+    "Release Date" : {
+
+    },
+    "Remove" : {
+
+    },
+    "Remove %@" : {
+
+    },
+    "Remove all %lld watches of %@?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Remove all %1$lld watches of %2$@?"
+          }
+        }
+      }
+    },
+    "Remove from %@" : {
+
+    },
+    "Remove Season Watches?" : {
+
+    },
+    "Remove Watches?" : {
+
+    },
+    "Removed" : {
+
+    },
+    "Removed from %@" : {
+
+    },
+    "Removes it from Watched." : {
+
+    },
+    "Removes it from Watchlist." : {
+
+    },
+    "Rename" : {
+
+    },
+    "Rename %@" : {
+
+    },
+    "Rename List" : {
+
+    },
+    "Reorder" : {
+
+    },
+    "Reorder lists" : {
+
+    },
+    "Request Timed Out" : {
+
+    },
+    "Retry" : {
+
+    },
+    "Revenue" : {
+
+    },
+    "Review" : {
+
+    },
+    "Reviews" : {
+
+    },
+    "Rewatch" : {
+
+    },
+    "Rewatch logged" : {
+
+    },
+    "S%lld · %lld episodes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "S%1$lld · %2$lld episodes"
+          }
+        }
+      }
+    },
+    "S%lld · E%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "S%1$lld · E%2$lld"
+          }
+        }
+      }
+    },
+    "S%lld · E%lld–E%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "S%1$lld · E%2$lld–E%3$lld"
+          }
+        }
+      }
+    },
+    "S%lld–S%lld · %lld episodes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "S%1$lld–S%2$lld · %3$lld episodes"
+          }
+        }
+      }
+    },
+    "Save" : {
+
+    },
+    "Saves the watch with an unknown date" : {
+
+    },
+    "Sci-Fi & Fantasy" : {
+
+    },
+    "Search" : {
+
+    },
+    "Search filters" : {
+
+    },
+    "Search for something you have seen." : {
+
+    },
+    "Search for something you want to see." : {
+
+    },
+    "Search movies and shows" : {
+
+    },
+    "Search movies, TV, and people" : {
+
+    },
+    "Season %lld" : {
+
+    },
+    "Season %lld, episode %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Season %1$lld, episode %2$lld"
+          }
+        }
+      }
+    },
+    "Season Unavailable" : {
+
+    },
+    "Season watched" : {
+
+    },
+    "Seasons" : {
+
+    },
+    "Seen" : {
+
+    },
+    "Selected. Double tap to show all types." : {
+
+    },
+    "Send" : {
+
+    },
+    "Send Feedback" : {
+
+    },
+    "Sentry Cocoa" : {
+
+    },
+    "series" : {
+
+    },
+    "Series" : {
+
+    },
+    "Series Unavailable" : {
+
+    },
+    "Server Error" : {
+
+    },
+    "Settings" : {
+
+    },
+    "Share Anonymous Usage" : {
+
+    },
+    "Show less" : {
+
+    },
+    "Show Less" : {
+
+    },
+    "Show more" : {
+
+    },
+    "Show More" : {
+
+    },
+    "Show poster" : {
+
+    },
+    "Show storyline" : {
+
+    },
+    "Show your review" : {
+
+    },
+    "Shows a full ranked list with filters" : {
+
+    },
+    "Shows every watch of this title" : {
+
+    },
+    "Shows only %@ results." : {
+
+    },
+    "Shows the poster full screen" : {
+
+    },
+    "Shows the profile photo full screen" : {
+
+    },
+    "Shows this image full screen" : {
+
+    },
+    "Shows winners and nominees" : {
+
+    },
+    "Silver Screen" : {
+
+    },
+    "Silver Screen %@" : {
+
+    },
+    "Skip" : {
+
+    },
+    "Skip tour" : {
+
+    },
+    "Something Went Wrong" : {
+
+    },
+    "Sort" : {
+
+    },
+    "Specials" : {
+
+    },
+    "Storyline" : {
+
+    },
+    "Streaming app" : {
+
+    },
+    "Streaming availability" : {
+
+    },
+    "Streaming availability data from JustWatch via TMDB" : {
+
+    },
+    "Streaming availability from JustWatch via TMDB" : {
+
+    },
+    "System lists can't be changed." : {
+
+    },
+    "Tap + to start a list of your own, like Date Night or Halloween." : {
+
+    },
+    "Tap anything you want to see. It goes on your Watchlist." : {
+
+    },
+    "Tap everything you've watched. Rating is optional, but a few ratings give your library a head start." : {
+
+    },
+    "Tap the eye on any title to put it on Watched. For a show, it marks every episode." : {
+
+    },
+    "Tap your rating to change it or add a review. A rewatch gets a rating of its own, and you can rate whole shows and single seasons too." : {
+
+    },
+    "Thanks for the Feedback" : {
+
+    },
+    "That list no longer exists." : {
+
+    },
+    "That title doesn't belong on this list." : {
+
+    },
+    "The app could not start." : {
+
+    },
+    "The diary could not be opened." : {
+
+    },
+    "The Movie Database (TMDB) logo" : {
+
+    },
+    "The movie service couldn't find what you asked for (%lld)." : {
+
+    },
+    "The movie service rejected this request. Check the access token." : {
+
+    },
+    "The movie service returned an error (%lld). Please try again later." : {
+
+    },
+    "The request took too long. Please try again." : {
+
+    },
+    "Their ratings and reviews go too." : {
+
+    },
+    "This award has no titles in the catalog yet." : {
+
+    },
+    "This build can't send feedback. Help & Support in Settings has another way to reach the developer." : {
+
+    },
+    "This collection has no details." : {
+
+    },
+    "this episode" : {
+
+    },
+    "This episode could not be shown." : {
+
+    },
+    "This marks %lld episodes as watched." : {
+
+    },
+    "This marks 1 episode as watched." : {
+
+    },
+    "This movie could not be shown." : {
+
+    },
+    "This person could not be found." : {
+
+    },
+    "This product uses the TMDB API but is not endorsed or certified by TMDB." : {
+
+    },
+    "This removes %lld watched episodes and their ratings and reviews." : {
+
+    },
+    "This removes 1 watched episode and its ratings and reviews." : {
+
+    },
+    "This removes this watch from your diary, with its rating and review." : {
+
+    },
+    "This removes your rating and review for this title." : {
+
+    },
+    "This season could not be shown." : {
+
+    },
+    "This series could not be shown." : {
+
+    },
+    "Tip %@" : {
+
+    },
+    "TMDB RATING" : {
+
+    },
+    "TMDB rating unavailable" : {
+
+    },
+    "Top Billed Cast" : {
+
+    },
+    "Top Rated" : {
+
+    },
+    "Track episodes" : {
+
+    },
+    "Trailer video" : {
+
+    },
+    "Try Again" : {
+
+    },
+    "Try another title." : {
+
+    },
+    "TV" : {
+
+    },
+    "TV series" : {
+
+    },
+    "TV Series" : {
+
+    },
+    "Type a name" : {
+
+    },
+    "Unable to Authenticate" : {
+
+    },
+    "Unavailable" : {
+      "comment" : "TMDB score when a title has none"
+    },
+    "Undo" : {
+
+    },
+    "Unexpected Data" : {
+
+    },
+    "Unknown watch date" : {
+
+    },
+    "Upcoming" : {
+
+    },
+    "View All" : {
+
+    },
+    "View all results for \"%@\"" : {
+
+    },
+    "View all results for %@" : {
+
+    },
+    "War & Politics" : {
+
+    },
+    "Watch History" : {
+
+    },
+    "Watched" : {
+      "comment" : "Name of the system list of titles the user has seen"
+    },
+    "Watched %@" : {
+
+    },
+    "Watched %lld times" : {
+
+    },
+    "Watched on" : {
+
+    },
+    "Watched once" : {
+
+    },
+    "Watched once · %@" : {
+
+    },
+    "Watched, date unknown" : {
+
+    },
+    "Watches you log for this title show up here." : {
+
+    },
+    "Watchlist" : {
+      "comment" : "Name of the system list of titles the user wants to see"
+    },
+    "We couldn't understand the response from the movie service." : {
+
+    },
+    "We'll try again when you're back online." : {
+
+    },
+    "Western" : {
+
+    },
+    "What did you think? (optional)" : {
+
+    },
+    "What do you want to watch?" : {
+
+    },
+    "What have you seen?" : {
+
+    },
+    "What you've seen is on Watched, and your picks are on Watchlist. Shows you're partway through move to In Progress." : {
+
+    },
+    "What's working, what isn't, what you'd add" : {
+
+    },
+    "Window" : {
+
+    },
+    "Winners" : {
+
+    },
+    "Winners or nominees" : {
+
+    },
+    "Writing" : {
+
+    },
+    "You" : {
+      "comment" : "Author of a review: the user"
+    },
+    "You're Offline" : {
+
+    },
+    "You're offline. Your library still works." : {
+
+    },
+    "your %@ watch" : {
+
+    },
+    "Your app version is included." : {
+
+    },
+    "Your change couldn't be saved. Please try again." : {
+
+    },
+    "Your library" : {
+
+    },
+    "Your library and ratings stay on this device." : {
+
+    },
+    "Your lists will show up here." : {
+
+    },
+    "Your lists, ratings, and reviews stay on this device. Crash reports and feedback you send go to the developer without your name. Anonymous usage counts, such as \"a list was created,\" never include titles, ratings, or reviews." : {
+
+    },
+    "Your rating" : {
+
+    },
+    "YOUR RATING" : {
+
+    },
+    "Your rating %@" : {
+
+    },
+    "Your rating %@, %@. Edit." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your rating %1$@, %2$@. Edit."
+          }
+        }
+      }
+    },
+    "Your rating for this title is the one from your newest rated watch." : {
+
+    },
+    "Your rating, %@" : {
+
+    },
+    "Your rating, %@ out of 10" : {
+
+    },
+    "Your review" : {
+
+    }
   },
   "version" : "1.0"
 }
