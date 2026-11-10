@@ -107,6 +107,15 @@ final class ProSurveyViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.other.count, ProSurvey.otherCharacterLimit)
     }
 
+    func test_other_withMultiScalarEmoji_isCappedInScalarsLikeTheWorker() {
+        let viewModel = ProSurveyViewModel(repository: makeRepository(), source: .settings)
+        let family = "👨‍👩‍👧" // one Character, five scalars
+
+        viewModel.other = String(repeating: family, count: 200)
+
+        XCTAssertEqual(viewModel.other.unicodeScalars.count, ProSurvey.otherCharacterLimit)
+    }
+
     func test_appeared_reportsOpenOnce() {
         var opened = 0
         let viewModel = ProSurveyViewModel(repository: makeRepository(), source: .settings, onOpened: { opened += 1 })

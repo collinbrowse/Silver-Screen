@@ -23,10 +23,14 @@ final class ProSurveyViewModel {
     /// Every option, in this install's order.
     let options: [ProFeature]
     private(set) var selected: Set<ProFeature>
+    /// Capped in Unicode scalars, the unit the Worker counts, so emoji-heavy text
+    /// that fits here is never rejected there.
     var other: String {
         didSet {
-            if other.count > ProSurvey.otherCharacterLimit {
-                other = String(other.prefix(ProSurvey.otherCharacterLimit))
+            if other.unicodeScalars.count > ProSurvey.otherCharacterLimit {
+                var scalars = String.UnicodeScalarView()
+                scalars.append(contentsOf: other.unicodeScalars.prefix(ProSurvey.otherCharacterLimit))
+                other = String(scalars)
             }
         }
     }
