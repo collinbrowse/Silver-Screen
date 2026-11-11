@@ -28,12 +28,12 @@ namespace_id = "1002"
   limit = 10
   period = 60
 
-# Feature survey storage. Until this block exists, POST /survey returns 503 and
-# the TMDB proxy works as before. Create the database, paste its id here, and
-# apply the migrations (README.md → Feature survey):
-#
-# [[d1_databases]]
-# binding = "SURVEY_DB"
-# database_name = "silverscreen-survey"
-# database_id = "<id printed by wrangler d1 create>"
-# migrations_dir = "migrations"
+# Feature survey storage (POST /survey). Without this block the route returns 503
+# and the TMDB proxy works as before. A schema change is a new file in migrations/,
+# applied with `wrangler d1 migrations apply silverscreen-survey --remote`
+# (README.md → Feature survey).
+[[d1_databases]]
+binding = "SURVEY_DB"
+database_name = "silverscreen-survey"
+database_id = "ce5d0715-87b4-459c-9466-5c1c0e7427d2"
+migrations_dir = "migrations"
