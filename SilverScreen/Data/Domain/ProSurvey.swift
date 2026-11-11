@@ -25,6 +25,7 @@ enum ProFeature: String, CaseIterable, Sendable, Identifiable {
     case stats
     case episodeAlerts
     case streamingServices
+    case watchlistSync
     case sync
     case friends
     case appIcons
@@ -38,6 +39,7 @@ enum ProFeature: String, CaseIterable, Sendable, Identifiable {
             case .stats: "Stats and Year in Review"
             case .episodeAlerts: "New Episode Alerts"
             case .streamingServices: "My Streaming Services"
+            case .watchlistSync: "Streaming Watchlist Sync"
             case .sync: "Sync Across Devices"
             case .friends: "Friends and Shared Lists"
             case .appIcons: "App Icons and Themes"
@@ -51,6 +53,7 @@ enum ProFeature: String, CaseIterable, Sendable, Identifiable {
             case .stats: "Hours watched, top genres, and your year in film and TV"
             case .episodeAlerts: "A notification when a show you're watching airs"
             case .streamingServices: "Filter to your services, and hear when a Watchlist title arrives"
+            case .watchlistSync: "Your Watchlist kept in step with your streaming apps' watchlists"
             case .sync: "Your library on iPhone and iPad"
             case .friends: "Follow friends and build lists together"
             case .appIcons: "Alternate icons and color themes"
@@ -64,6 +67,7 @@ enum ProFeature: String, CaseIterable, Sendable, Identifiable {
             case .stats: "chart.bar.xaxis"
             case .episodeAlerts: "bell.badge"
             case .streamingServices: "play.tv"
+            case .watchlistSync: "arrow.left.arrow.right"
             case .sync: "arrow.triangle.2.circlepath"
             case .friends: "person.2"
             case .appIcons: "app.badge"
@@ -71,12 +75,16 @@ enum ProFeature: String, CaseIterable, Sendable, Identifiable {
         }
     }
 
+    /// Options that always sit at the bottom, after the shuffled ones.
+    static let pinnedLast: [ProFeature] = [.appIcons]
+
     /// Every option in an order fixed for one install. Lists read top-down get more
     /// picks near the top, so each install sees its own order, and reopening the
-    /// survey shows the same one.
+    /// survey shows the same one. `pinnedLast` stays at the end, below the core features.
     static func displayOrder(seed: UInt64) -> [ProFeature] {
         var generator = SplitMix64(seed: seed)
-        return allCases.shuffled(using: &generator)
+        let shuffled = allCases.filter { !pinnedLast.contains($0) }.shuffled(using: &generator)
+        return shuffled + pinnedLast
     }
 }
 

@@ -147,6 +147,12 @@ final class ProSurveyRepositoryTests: XCTestCase {
         XCTAssertEqual(first.count, ProFeature.allCases.count)
     }
 
+    func test_displayOrder_forAnySeed_putsAppIconsLast() {
+        for seed in UInt64(0)..<16 {
+            XCTAssertEqual(ProFeature.displayOrder(seed: seed &* 0x9E37_79B9).last, .appIcons)
+        }
+    }
+
     func test_displayOrder_differsBetweenSeeds() {
         let orders = Set((0..<8).map { ProFeature.displayOrder(seed: UInt64($0) &* 0x1234_5678_9ABC)})
 
