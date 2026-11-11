@@ -17,6 +17,7 @@ struct LibraryHomeView: View {
     /// Reopens onboarding from the empty state.
     let onGetStarted: () -> Void
     @State private var showingSettings = false
+    @State private var showingProSurvey = false
     @State private var editMode: EditMode = .inactive
     @State private var showingNameDialog = false
     @State private var nameDialogIsRename = false
@@ -92,6 +93,16 @@ struct LibraryHomeView: View {
         .sheet(isPresented: $showingSettings) {
             SettingsView(context: settings)
         }
+        .sheet(isPresented: $showingProSurvey) {
+            NavigationStack {
+                ProSurveyView(viewModel: settings.proSurvey.makeViewModel(source: .libraryCard))
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Close") { showingProSurvey = false }
+                        }
+                    }
+            }
+        }
         .onChange(of: viewModel.canReorderLists) { _, canReorder in
             if !canReorder {
                 editMode = .inactive
@@ -162,6 +173,18 @@ struct LibraryHomeView: View {
                                     action: onGetStarted
                                 )
                                 .listRowSeparator(.hidden)
+                            }
+                        }
+                        if settings.proSurvey.isCardVisible, viewModel.searchText.isEmpty, !editMode.isEditing {
+                            Section {
+                                ProSurveyCard {
+                                    showingProSurvey = true
+                                } onDismiss: {
+                                    settings.proSurvey.dismissCard()
+                                }
+                                .onAppear { settings.proSurvey.cardAppeared() }
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: DesignSpacing.sm, leading: DesignSpacing.lg, bottom: DesignSpacing.sm, trailing: DesignSpacing.lg))
                             }
                         }
                         if !system.isEmpty {

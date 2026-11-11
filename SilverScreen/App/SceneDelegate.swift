@@ -16,6 +16,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     /// Held so foreground and background transitions reach analytics.
     private var analyticsSession: AnalyticsSessionTracker?
     private var analyticsDevice: AnalyticsDeviceContext?
+    /// Counts the days the app is opened, for when the Pro survey card appears.
+    private var proSurvey: ProSurveyPrompt?
 
     func scene(
         _ scene: UIScene,
@@ -38,6 +40,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             let dependencies = try AppDependencies.live(demo: demo)
             analyticsSession = dependencies.analyticsSession
             analyticsDevice = dependencies.analyticsDevice
+            proSurvey = dependencies.settings.proSurvey
             // Restore the selected tab and pushed screens before the view tree is built.
             // A demo launch opens where the capture asks and never saves its navigation.
             if let demo {
@@ -174,6 +177,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             reportDisplay(of: windowScene)
         }
         analyticsSession?.sceneWillEnterForeground()
+        proSurvey?.recordAppOpened()
     }
 
     func sceneDidEnterBackground(_ scene: UIScene) {

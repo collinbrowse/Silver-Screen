@@ -51,6 +51,7 @@ jobs:
         run: |
           python3 scripts/test_tmdb_health.py
           python3 scripts/test_weekly_digest.py
+          python3 scripts/test_survey_report.py
       - name: TMDB proxy Worker tests
         run: node --test 'worker/test/*.test.js'
 

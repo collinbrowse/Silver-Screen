@@ -133,12 +133,32 @@ struct AppDependencies {
         ) { cutoff in
             try await libraryStore.countRatings(createdAfter: cutoff)
         }
+        #if DEBUG
+        let isTestBuild = true
+        #else
+        let isTestBuild = false
+        #endif
+        let proSurveyStore = ProSurveyStore()
+        let proSurvey = ProSurveyPrompt(
+            repository: ProSurveyRepository(
+                client: httpClient,
+                // Demo launches are for screenshots, not answers.
+                endpoint: demo == nil ? ProSurveyRequest.endpoint(for: connection) : nil,
+                store: proSurveyStore,
+                appInfo: appInfo,
+                isTestMode: isTestBuild,
+                logger: logger
+            ),
+            store: proSurveyStore,
+            analytics: analytics
+        )
         let settings = SettingsContext(
             appInfo: appInfo,
             analyticsSharing: AnalyticsSharing(preferences: analyticsPreferences),
             sendFeedback: { submission in
                 SentryBootstrap.sendFeedback(message: submission.message, email: submission.email)
             },
+            proSurvey: proSurvey,
             letterboxdImporter: LetterboxdImporter(
                 movies: movies,
                 watches: watches,

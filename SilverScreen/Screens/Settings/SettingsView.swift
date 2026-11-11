@@ -2,7 +2,7 @@
 //  SettingsView.swift
 //  SilverScreen
 //
-//  Feedback, support and privacy links, the anonymous-usage toggle, data credits with TMDB's logo, and the app version.
+//  The Pro survey, feedback, support and privacy links, the anonymous-usage toggle, data credits with TMDB's logo, and the app version.
 //  Opens as a sheet from Library.
 //
 
@@ -14,6 +14,8 @@ struct SettingsContext {
     /// The "Share Anonymous Usage" toggle.
     let analyticsSharing: AnalyticsSharing
     let sendFeedback: @MainActor (FeedbackSubmission) -> Bool
+    /// The Pro survey, shared with the Library card.
+    let proSurvey: ProSurveyPrompt
     /// Settings → Import from Letterboxd.
     let letterboxdImporter: LetterboxdImporter
     /// Refreshes open library and diary screens after an import writes something.
@@ -22,6 +24,7 @@ struct SettingsContext {
 
 /// Pages inside the Settings sheet. Kept off `Route` so Settings never lands in tab restoration.
 enum SettingsDestination: Hashable {
+    case proSurvey
     case feedback
     case letterboxdImport
     case acknowledgements
@@ -40,6 +43,22 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             List {
+                if context.proSurvey.isAvailable {
+                    Section {
+                        NavigationLink(value: SettingsDestination.proSurvey) {
+                            LabeledContent {
+                                if context.proSurvey.hasAnswered {
+                                    Text("Answered")
+                                }
+                            } label: {
+                                Label("Pro Is Coming Soon", systemImage: "sparkles")
+                            }
+                        }
+                    } footer: {
+                        Text("Pick the features you'd like to see in Silver Screen Pro.")
+                    }
+                }
+
                 Section {
                     NavigationLink(value: SettingsDestination.feedback) {
                         Label("Send Feedback", systemImage: "bubble.left.and.text.bubble.right")
@@ -102,6 +121,8 @@ struct SettingsView: View {
             }
             .navigationDestination(for: SettingsDestination.self) { destination in
                 switch destination {
+                    case .proSurvey:
+                        ProSurveyView(viewModel: context.proSurvey.makeViewModel(source: .settings))
                     case .feedback:
                         FeedbackView(viewModel: FeedbackViewModel(send: context.sendFeedback))
                     case .letterboxdImport:

@@ -1,7 +1,8 @@
 name: Weekly digest
 
 # Every Monday, post last week's downloads, rating, new reviews, crash-free
-# rates, top issues, and feedback count as a `weekly-digest` issue. Sources
+# rates, top issues, feedback count, and Pro survey counts as a
+# `weekly-digest` issue. Sources
 # without credentials or data (the App Store before launch) are skipped with a
 # note. Secrets are listed in OBSERVABILITY.md.
 
@@ -31,6 +32,7 @@ jobs:
       - name: Test digest
         run: |
           python3 scripts/test_weekly_digest.py
+          python3 scripts/test_survey_report.py
           python3 scripts/test_asc_api.py
 
       - name: Write App Store Connect key
@@ -57,5 +59,9 @@ jobs:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_READ_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+          # Read-only D1 token for the Pro survey counts (worker/README.md).
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_READ_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SURVEY_D1_DATABASE_ID: ${{ secrets.SURVEY_D1_DATABASE_ID }}
           GITHUB_TOKEN: ${{ github.token }}
         run: python3 scripts/weekly_digest.py

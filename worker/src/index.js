@@ -8,6 +8,11 @@
 //
 // Images do not come through here: the app loads them from image.tmdb.org, which
 // needs no token. See worker/README.md for deploy steps.
+//
+// POST /survey is the one other route: the in-app feature survey, stored in D1.
+// It lives in survey.js.
+
+import { SURVEY_PATH, handleSurvey } from "./survey.js";
 
 export const UPSTREAM_ORIGIN = "https://api.themoviedb.org";
 export const CACHE_SECONDS = 4 * 60 * 60;
@@ -104,6 +109,10 @@ function errorResponse(status, message, extraHeaders = {}) {
 
 // Handles one request. `deps` lets tests swap in a fake upstream and cache.
 export async function handle(request, env, ctx, deps) {
+  if (new URL(request.url).pathname === SURVEY_PATH) {
+    return handleSurvey(request, env, { clientKey: clientKey(request), now: deps.now });
+  }
+
   if (request.method !== "GET") {
     return errorResponse(405, "Only GET is supported.", { Allow: "GET" });
   }

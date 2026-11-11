@@ -12,7 +12,8 @@ digest issue, so no state lives in the repo.
     python3 scripts/weekly_digest.py             # post it (CI)
 
 Environment: ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_PATH, ASC_VENDOR_NUMBER,
-SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT, GITHUB_TOKEN, GITHUB_REPOSITORY.
+SENTRY_AUTH_TOKEN, SENTRY_ORG, SENTRY_PROJECT, CLOUDFLARE_API_TOKEN,
+CLOUDFLARE_ACCOUNT_ID, SURVEY_D1_DATABASE_ID, GITHUB_TOKEN, GITHUB_REPOSITORY.
 No pip packages.
 """
 
@@ -33,6 +34,7 @@ from typing import Any, Dict, List, Optional
 
 import asc_api
 import github_issues
+import survey_report
 
 ISSUE_LABEL = "weekly-digest"
 BUNDLE_ID = "com.collinbrowse.thesilverscreen"
@@ -346,6 +348,24 @@ def feedback_section(sentry, week, metrics, previous):
     return section
 
 
+def survey_section(query, metrics, previous):
+    """Pro survey counts. Free-text answers stay out: the digest is a public issue."""
+    section = Section("Pro survey")
+    try:
+        summary = survey_report.summarize(query, include_other=False)
+    except survey_report.SurveySourceError as error:
+        raise SourceError(str(error)) from error
+    metrics["survey_responses"] = summary.responses
+    if summary.responses == 0:
+        section.note = "No answers yet."
+        return section
+    section.lines.append(
+        f"- **{summary.responses:,}** responses in all{fmt_delta(summary.responses, previous.get('survey_responses'))}"
+    )
+    section.lines += survey_report.feature_lines(summary)
+    return section
+
+
 # Rendering -----------------------------------------------------------------
 
 
@@ -388,7 +408,7 @@ def run_url():
     return f"{server}/{repo}/actions/runs/{run_id}" if repo and run_id else None
 
 
-def build_digest(week, previous, asc_client=None, vendor_number="", sentry=None, rating_lookup=None):
+def build_digest(week, previous, asc_client=None, vendor_number="", sentry=None, rating_lookup=None, survey_query=None):
     metrics: Dict[str, Any] = {"week_end": week.end.isoformat()}
     groups = []
 
@@ -408,6 +428,12 @@ def build_digest(week, previous, asc_client=None, vendor_number="", sentry=None,
     else:
         crash = sentry_sections(sentry, week, metrics, previous)
     groups.append(("Stability and feedback", crash))
+
+    if survey_query is None:
+        survey = [Section("Pro survey", note="Skipped: set CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, and SURVEY_D1_DATABASE_ID.")]
+    else:
+        survey = [guarded("Pro survey", lambda: survey_section(survey_query, metrics, previous))]
+    groups.append(("Demand", survey))
 
     return render(week, groups, metrics, previous, run_url())
 
@@ -446,6 +472,7 @@ def main(argv=None):
         vendor_number=os.environ.get("ASC_VENDOR_NUMBER", "").strip(),
         sentry=SentryClient.from_env(),
         rating_lookup=lambda: itunes_rating(BUNDLE_ID),
+        survey_query=survey_report.query_from_env(),
     )
 
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
