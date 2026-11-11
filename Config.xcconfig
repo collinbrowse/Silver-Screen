@@ -2,10 +2,11 @@
 // without a key still opens the project; the app fails clearly at launch.
 // Version.xcconfig is required: it is the only shipping version.
 
-// TMDB by default. Secrets.xcconfig (or the release job) overrides this with the
-// proxy in worker/, and then the build needs no TMDB_ACCESS_TOKEN. It is set
-// before the include so Secrets.xcconfig wins. xcconfig treats // as a comment.
-TMDB_BASE_URL = https:/$()/api.themoviedb.org/3
+// The TMDB proxy in worker/ by default, so a fresh clone or worktree loads TMDB
+// with no Secrets.xcconfig and no TMDB_ACCESS_TOKEN. The URL is not a secret: it
+// ships in the app. Set before the include so Secrets.xcconfig can still point at
+// api.themoviedb.org/3 with a token. xcconfig treats // as a comment.
+TMDB_BASE_URL = https:/$()/silverscreen-tmdb.cbrowse13.workers.dev/3
 
 #include? "Secrets.xcconfig"
 #include "Version.xcconfig"
