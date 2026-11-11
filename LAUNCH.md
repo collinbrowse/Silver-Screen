@@ -82,9 +82,9 @@ and inserts them again (`SQLiteLibraryStore.writeLists`, `writeAnnotations`,
 
 ### Launch
 
-- [ ] Public TestFlight link for a small beta group
-- [ ] Apple featuring nomination (App Store Connect → Featuring → Nominations), at least 3 weeks before release day
-- [ ] Refresh the `fresh` screenshots in `marketing/titles.json`, then `python3 scripts/marketing.py refresh`
+- [x] Public TestFlight link for a small beta group
+- [x] Apple featuring nomination (App Store Connect → Featuring → Nominations), at least 3 weeks before release day
+- [x] Refresh the `fresh` screenshots in `marketing/titles.json`, then `python3 scripts/marketing.py refresh`
 - [ ] No pre-order and no press kit (decided)
 
 ### Decision needed: analytics
