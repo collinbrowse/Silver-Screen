@@ -48,6 +48,16 @@ class BuilderTests(unittest.TestCase):
         self.assertIn("ps:P1411 wd:Q989438", nominations)
         self.assertIn("pq:P1686 ?work", nominations)
 
+    def test_person_lookups_stay_inside_the_person_branch(self):
+        # Outside the branch, work-only rows leave ?person unbound and the
+        # label OPTIONAL matches all of Wikidata, so the response never ends.
+        query = builder.category_credits_query("Q103916", True)
+        person_branch = query[query.index("} UNION {"):query.index("pq:P585")]
+        self.assertIn("?person rdfs:label ?personLabel", person_branch)
+        self.assertIn("?person wdt:P345 ?personImdb", person_branch)
+        tail = query[query.index("pq:P585"):]
+        self.assertNotIn("?person ", tail)
+
     def test_previous_resolution_skips_find(self):
         raw = [
             {

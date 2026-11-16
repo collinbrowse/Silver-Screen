@@ -104,6 +104,10 @@ def category_credits_query(category_qid: str, won: bool) -> str:
 
     A family-wide query times out. Acting awards live on the person, with the
     film or episode in qualifier P1686, so both shapes are read together.
+
+    The person label and IMDb lookups stay inside the person branch. Outside
+    it, rows from the work branch leave ?person unbound, and the OPTIONAL then
+    matches every English label in Wikidata until the server cuts the stream.
     """
     predicate = "P166" if won else "P1411"
     return f"""
@@ -112,15 +116,15 @@ SELECT ?work ?workLabel ?imdb ?year ?person ?personLabel ?personImdb WHERE {{
     ?work p:{predicate} ?stmt .
     ?stmt ps:{predicate} wd:{category_qid} .
   }} UNION {{
-  ?person p:{predicate} ?stmt .
+    ?person p:{predicate} ?stmt .
     ?stmt ps:{predicate} wd:{category_qid} .
-  ?stmt pq:P1686 ?work .
+    ?stmt pq:P1686 ?work .
+    OPTIONAL {{ ?person rdfs:label ?personLabel . FILTER(LANG(?personLabel) = "en") }}
+    OPTIONAL {{ ?person wdt:P345 ?personImdb }}
   }}
   OPTIONAL {{ ?stmt pq:P585 ?time . BIND(YEAR(?time) AS ?year) }}
   OPTIONAL {{ ?work wdt:P345 ?imdb }}
   OPTIONAL {{ ?work rdfs:label ?workLabel . FILTER(LANG(?workLabel) = "en") }}
-  OPTIONAL {{ ?person rdfs:label ?personLabel . FILTER(LANG(?personLabel) = "en") }}
-  OPTIONAL {{ ?person wdt:P345 ?personImdb }}
 }}
 """.strip()
 
