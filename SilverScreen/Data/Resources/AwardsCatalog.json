@@ -3564,7 +3564,7 @@
           "wikidataID": "Q137855674"
         }
       ],
-      "title": "Q117085614",
+      "title": "One Battle After Another",
       "wikidataID": "Q117085614",
       "won": true,
       "work": {
@@ -3621,7 +3621,7 @@
       "family": "academy",
       "imdbID": "tt30144839",
       "key": "academy|Q103916|2026|nominated|Q117085614",
-      "title": "Q117085614",
+      "title": "One Battle After Another",
       "wikidataID": "Q117085614",
       "won": false,
       "work": {
@@ -4222,6 +4222,16 @@
       "category": "Best Actor",
       "categoryID": "Q103916",
       "family": "academy",
+      "key": "academy|Q103916|2022|nominated|Q23891",
+      "title": "Andrew Garfield",
+      "wikidataID": "Q23891",
+      "won": false,
+      "year": 2022
+    },
+    {
+      "category": "Best Actor",
+      "categoryID": "Q103916",
+      "family": "academy",
       "imdbID": "tt4995540",
       "key": "academy|Q103916|2022|nominated|Q105907125",
       "recipients": [
@@ -4308,16 +4318,6 @@
       "category": "Best Actor",
       "categoryID": "Q103916",
       "family": "academy",
-      "key": "academy|Q103916|2022|nominated|Q23891",
-      "title": "Q23891",
-      "wikidataID": "Q23891",
-      "won": false,
-      "year": 2022
-    },
-    {
-      "category": "Best Actor",
-      "categoryID": "Q103916",
-      "family": "academy",
       "key": "academy|Q103916|2022|nominated|Q42101",
       "title": "Q42101",
       "wikidataID": "Q42101",
@@ -4345,6 +4345,13 @@
       "family": "academy",
       "imdbID": "tt8721424",
       "key": "academy|Q103916|2022|nominated|Q85323361",
+      "recipients": [
+        {
+          "imdbID": "nm1940449",
+          "name": "Andrew Garfield",
+          "wikidataID": "Q23891"
+        }
+      ],
       "title": "Q85323361",
       "wikidataID": "Q85323361",
       "won": false,
@@ -5161,6 +5168,16 @@
       "category": "Best Actor",
       "categoryID": "Q103916",
       "family": "academy",
+      "key": "academy|Q103916|2017|nominated|Q23891",
+      "title": "Andrew Garfield",
+      "wikidataID": "Q23891",
+      "won": false,
+      "year": 2017
+    },
+    {
+      "category": "Best Actor",
+      "categoryID": "Q103916",
+      "family": "academy",
       "imdbID": "tt3553976",
       "key": "academy|Q103916|2017|nominated|Q18703094",
       "recipients": [
@@ -5220,6 +5237,13 @@
       "family": "academy",
       "imdbID": "tt2119532",
       "key": "academy|Q103916|2017|nominated|Q21010856",
+      "recipients": [
+        {
+          "imdbID": "nm1940449",
+          "name": "Andrew Garfield",
+          "wikidataID": "Q23891"
+        }
+      ],
       "title": "Hacksaw Ridge",
       "wikidataID": "Q21010856",
       "won": false,
@@ -5293,16 +5317,6 @@
         "kind": "movie",
         "movieID": 313369
       },
-      "year": 2017
-    },
-    {
-      "category": "Best Actor",
-      "categoryID": "Q103916",
-      "family": "academy",
-      "key": "academy|Q103916|2017|nominated|Q23891",
-      "title": "Q23891",
-      "wikidataID": "Q23891",
-      "won": false,
       "year": 2017
     },
     {
@@ -5960,6 +5974,16 @@
       "category": "Best Actor",
       "categoryID": "Q103916",
       "family": "academy",
+      "key": "academy|Q103916|2013|nominated|Q129591",
+      "title": "Hugh Jackman",
+      "wikidataID": "Q129591",
+      "won": false,
+      "year": 2013
+    },
+    {
+      "category": "Best Actor",
+      "categoryID": "Q103916",
+      "family": "academy",
       "key": "academy|Q103916|2013|nominated|Q185140",
       "title": "Joaquin Phoenix",
       "wikidataID": "Q185140",
@@ -5972,6 +5996,13 @@
       "family": "academy",
       "imdbID": "tt1707386",
       "key": "academy|Q103916|2013|nominated|Q28234",
+      "recipients": [
+        {
+          "imdbID": "nm0413168",
+          "name": "Hugh Jackman",
+          "wikidataID": "Q129591"
+        }
+      ],
       "title": "Les Mis\u00e9rables",
       "wikidataID": "Q28234",
       "won": false,
@@ -6001,16 +6032,6 @@
         "kind": "movie",
         "movieID": 82693
       },
-      "year": 2013
-    },
-    {
-      "category": "Best Actor",
-      "categoryID": "Q103916",
-      "family": "academy",
-      "key": "academy|Q103916|2013|nominated|Q129591",
-      "title": "Q129591",
-      "wikidataID": "Q129591",
-      "won": false,
       "year": 2013
     },
     {
@@ -21616,7 +21637,7 @@
       "categoryID": "Q103618",
       "family": "academy",
       "key": "academy|Q103618|2025|nominated|Q21592474",
-      "title": "Cynthia Erivo",
+      "title": "Cynthia Erivo Grande",
       "wikidataID": "Q21592474",
       "won": false,
       "year": 2025
@@ -21790,7 +21811,7 @@
       "recipients": [
         {
           "imdbID": "nm7248827",
-          "name": "Cynthia Erivo",
+          "name": "Cynthia Erivo Grande",
           "wikidataID": "Q21592474"
         }
       ],
@@ -22594,7 +22615,7 @@
       "categoryID": "Q103618",
       "family": "academy",
       "key": "academy|Q103618|2020|nominated|Q21592474",
-      "title": "Cynthia Erivo",
+      "title": "Cynthia Erivo Grande",
       "wikidataID": "Q21592474",
       "won": false,
       "year": 2020
@@ -22608,7 +22629,7 @@
       "recipients": [
         {
           "imdbID": "nm7248827",
-          "name": "Cynthia Erivo",
+          "name": "Cynthia Erivo Grande",
           "wikidataID": "Q21592474"
         }
       ],
@@ -39985,6 +40006,33 @@
       "category": "Best Animated Feature",
       "categoryID": "Q106800",
       "family": "academy",
+      "imdbID": "tt22022452",
+      "key": "academy|Q106800|2025|nominated|Q113877606",
+      "recipients": [
+        {
+          "imdbID": "nm1626375",
+          "name": "Kelsey Mann",
+          "wikidataID": "Q58640889"
+        },
+        {
+          "imdbID": "nm0630923",
+          "name": "Mark Nielsen",
+          "wikidataID": "Q84754223"
+        }
+      ],
+      "title": "Inside Out 2",
+      "wikidataID": "Q113877606",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 1022789
+      },
+      "year": 2025
+    },
+    {
+      "category": "Best Animated Feature",
+      "categoryID": "Q106800",
+      "family": "academy",
       "key": "academy|Q106800|2025|nominated|Q58640889",
       "title": "Kelsey Mann",
       "wikidataID": "Q58640889",
@@ -40076,33 +40124,6 @@
       "title": "Nick Park",
       "wikidataID": "Q336206",
       "won": false,
-      "year": 2025
-    },
-    {
-      "category": "Best Animated Feature",
-      "categoryID": "Q106800",
-      "family": "academy",
-      "imdbID": "tt22022452",
-      "key": "academy|Q106800|2025|nominated|Q113877606",
-      "recipients": [
-        {
-          "imdbID": "nm1626375",
-          "name": "Kelsey Mann",
-          "wikidataID": "Q58640889"
-        },
-        {
-          "imdbID": "nm0630923",
-          "name": "Mark Nielsen",
-          "wikidataID": "Q84754223"
-        }
-      ],
-      "title": "Q113877606",
-      "wikidataID": "Q113877606",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 1022789
-      },
       "year": 2025
     },
     {
@@ -40313,6 +40334,21 @@
       "category": "Best Animated Feature",
       "categoryID": "Q106800",
       "family": "academy",
+      "imdbID": "tt22022452",
+      "key": "academy|Q106800|2024|nominated|Q113877606",
+      "title": "Inside Out 2",
+      "wikidataID": "Q113877606",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 1022789
+      },
+      "year": 2024
+    },
+    {
+      "category": "Best Animated Feature",
+      "categoryID": "Q106800",
+      "family": "academy",
       "key": "academy|Q106800|2024|nominated|Q124815780",
       "title": "Julie Zackary",
       "wikidataID": "Q124815780",
@@ -40465,21 +40501,6 @@
       "work": {
         "kind": "movie",
         "movieID": 976573
-      },
-      "year": 2024
-    },
-    {
-      "category": "Best Animated Feature",
-      "categoryID": "Q106800",
-      "family": "academy",
-      "imdbID": "tt22022452",
-      "key": "academy|Q106800|2024|nominated|Q113877606",
-      "title": "Q113877606",
-      "wikidataID": "Q113877606",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 1022789
       },
       "year": 2024
     },
@@ -41745,55 +41766,6 @@
       "category": "Best Animated Feature",
       "categoryID": "Q106800",
       "family": "academy",
-      "imdbID": "tt2948372",
-      "key": "academy|Q106800|2021|nominated|Q64744044",
-      "recipients": [
-        {
-          "imdbID": "nm1733918",
-          "name": "Dana Murray",
-          "wikidataID": "Q49440371"
-        },
-        {
-          "imdbID": "nm0230032",
-          "name": "Pete Docter",
-          "wikidataID": "Q357627"
-        }
-      ],
-      "title": "Q64744044",
-      "wikidataID": "Q64744044",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 508442
-      },
-      "year": 2021
-    },
-    {
-      "category": "Best Animated Feature",
-      "categoryID": "Q106800",
-      "family": "academy",
-      "imdbID": "tt2948372",
-      "key": "academy|Q106800|2021|won|Q64744044",
-      "recipients": [
-        {
-          "imdbID": "nm1733918",
-          "name": "Dana Murray",
-          "wikidataID": "Q49440371"
-        }
-      ],
-      "title": "Q64744044",
-      "wikidataID": "Q64744044",
-      "won": true,
-      "work": {
-        "kind": "movie",
-        "movieID": 508442
-      },
-      "year": 2021
-    },
-    {
-      "category": "Best Animated Feature",
-      "categoryID": "Q106800",
-      "family": "academy",
       "imdbID": "tt12801262",
       "key": "academy|Q106800|2021|nominated|Q97925311",
       "title": "Q97925311",
@@ -41838,6 +41810,55 @@
       "title": "Ross Stewart",
       "wikidataID": "Q105887811",
       "won": false,
+      "year": 2021
+    },
+    {
+      "category": "Best Animated Feature",
+      "categoryID": "Q106800",
+      "family": "academy",
+      "imdbID": "tt2948372",
+      "key": "academy|Q106800|2021|nominated|Q64744044",
+      "recipients": [
+        {
+          "imdbID": "nm1733918",
+          "name": "Dana Murray",
+          "wikidataID": "Q49440371"
+        },
+        {
+          "imdbID": "nm0230032",
+          "name": "Pete Docter",
+          "wikidataID": "Q357627"
+        }
+      ],
+      "title": "Soul",
+      "wikidataID": "Q64744044",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 508442
+      },
+      "year": 2021
+    },
+    {
+      "category": "Best Animated Feature",
+      "categoryID": "Q106800",
+      "family": "academy",
+      "imdbID": "tt2948372",
+      "key": "academy|Q106800|2021|won|Q64744044",
+      "recipients": [
+        {
+          "imdbID": "nm1733918",
+          "name": "Dana Murray",
+          "wikidataID": "Q49440371"
+        }
+      ],
+      "title": "Soul",
+      "wikidataID": "Q64744044",
+      "won": true,
+      "work": {
+        "kind": "movie",
+        "movieID": 508442
+      },
       "year": 2021
     },
     {
@@ -82381,7 +82402,7 @@
       "family": "academy",
       "imdbID": "tt30144839",
       "key": "academy|Q131520|2026|nominated|Q117085614",
-      "title": "Q117085614",
+      "title": "One Battle After Another",
       "wikidataID": "Q117085614",
       "won": false,
       "work": {
@@ -89131,28 +89152,6 @@
       "category": "Best Cinematography",
       "categoryID": "Q131520",
       "family": "academy",
-      "imdbID": "tt0096438",
-      "key": "academy|Q131520|1989|nominated|Q379873",
-      "recipients": [
-        {
-          "imdbID": "nm0005678",
-          "name": "Dean Cundey",
-          "wikidataID": "Q497036"
-        }
-      ],
-      "title": "Q379873",
-      "wikidataID": "Q379873",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 856
-      },
-      "year": 1989
-    },
-    {
-      "category": "Best Cinematography",
-      "categoryID": "Q131520",
-      "family": "academy",
       "key": "academy|Q131520|1989|nominated|Q706993",
       "title": "Q706993",
       "wikidataID": "Q706993",
@@ -89247,6 +89246,28 @@
       "work": {
         "kind": "movie",
         "movieID": 10644
+      },
+      "year": 1989
+    },
+    {
+      "category": "Best Cinematography",
+      "categoryID": "Q131520",
+      "family": "academy",
+      "imdbID": "tt0096438",
+      "key": "academy|Q131520|1989|nominated|Q379873",
+      "recipients": [
+        {
+          "imdbID": "nm0005678",
+          "name": "Dean Cundey",
+          "wikidataID": "Q497036"
+        }
+      ],
+      "title": "Who Framed Roger Rabbit",
+      "wikidataID": "Q379873",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 856
       },
       "year": 1989
     },
@@ -90880,6 +90901,28 @@
       "category": "Best Cinematography",
       "categoryID": "Q131520",
       "family": "academy",
+      "imdbID": "tt0078723",
+      "key": "academy|Q131520|1980|nominated|Q207482",
+      "recipients": [
+        {
+          "imdbID": "nm0005710",
+          "name": "William A. Fraker",
+          "wikidataID": "Q489559"
+        }
+      ],
+      "title": "1941",
+      "wikidataID": "Q207482",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 11519
+      },
+      "year": 1980
+    },
+    {
+      "category": "Best Cinematography",
+      "categoryID": "Q131520",
+      "family": "academy",
       "imdbID": "tt0078754",
       "key": "academy|Q131520|1980|nominated|Q1353441",
       "recipients": [
@@ -90991,28 +91034,6 @@
       "work": {
         "kind": "movie",
         "movieID": 28
-      },
-      "year": 1980
-    },
-    {
-      "category": "Best Cinematography",
-      "categoryID": "Q131520",
-      "family": "academy",
-      "imdbID": "tt0078723",
-      "key": "academy|Q131520|1980|nominated|Q207482",
-      "recipients": [
-        {
-          "imdbID": "nm0005710",
-          "name": "William A. Fraker",
-          "wikidataID": "Q489559"
-        }
-      ],
-      "title": "Q207482",
-      "wikidataID": "Q207482",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 11519
       },
       "year": 1980
     },
@@ -127182,16 +127203,6 @@
       "category": "Best Director",
       "categoryID": "Q103360",
       "family": "academy",
-      "key": "academy|Q103360|2026|won|Q25132",
-      "title": "Paul Thomas Anderson",
-      "wikidataID": "Q25132",
-      "won": true,
-      "year": 2026
-    },
-    {
-      "category": "Best Director",
-      "categoryID": "Q103360",
-      "family": "academy",
       "imdbID": "tt30144839",
       "key": "academy|Q103360|2026|won|Q117085614",
       "recipients": [
@@ -127201,13 +127212,23 @@
           "wikidataID": "Q25132"
         }
       ],
-      "title": "Q117085614",
+      "title": "One Battle After Another",
       "wikidataID": "Q117085614",
       "won": true,
       "work": {
         "kind": "movie",
         "movieID": 1054867
       },
+      "year": 2026
+    },
+    {
+      "category": "Best Director",
+      "categoryID": "Q103360",
+      "family": "academy",
+      "key": "academy|Q103360|2026|won|Q25132",
+      "title": "Paul Thomas Anderson",
+      "wikidataID": "Q25132",
+      "won": true,
       "year": 2026
     },
     {
@@ -175737,13 +175758,6 @@
       "family": "academy",
       "imdbID": "tt0042650",
       "key": "academy|Q111332|1952|nominated|Q1758118",
-      "recipients": [
-        {
-          "imdbID": "nm0634989",
-          "name": "Olle Nordemar",
-          "wikidataID": "Q6014455"
-        }
-      ],
       "title": "Kon-Tiki",
       "wikidataID": "Q1758118",
       "won": false,
@@ -175759,13 +175773,6 @@
       "family": "academy",
       "imdbID": "tt0042650",
       "key": "academy|Q111332|1952|won|Q1758118",
-      "recipients": [
-        {
-          "imdbID": "nm0634989",
-          "name": "Olle Nordemar",
-          "wikidataID": "Q6014455"
-        }
-      ],
       "title": "Kon-Tiki",
       "wikidataID": "Q1758118",
       "won": true,
@@ -175780,7 +175787,7 @@
       "categoryID": "Q111332",
       "family": "academy",
       "key": "academy|Q111332|1952|nominated|Q6014455",
-      "title": "Olle Nordemar",
+      "title": "Q6014455",
       "wikidataID": "Q6014455",
       "won": false,
       "year": 1952
@@ -175790,7 +175797,7 @@
       "categoryID": "Q111332",
       "family": "academy",
       "key": "academy|Q111332|1952|won|Q6014455",
-      "title": "Olle Nordemar",
+      "title": "Q6014455",
       "wikidataID": "Q6014455",
       "won": true,
       "year": 1952
@@ -177151,7 +177158,7 @@
           "wikidataID": "Q109942993"
         }
       ],
-      "title": "Q117085614",
+      "title": "One Battle After Another",
       "wikidataID": "Q117085614",
       "won": true,
       "work": {
@@ -185026,50 +185033,6 @@
       "category": "Best Film Editing",
       "categoryID": "Q281939",
       "family": "academy",
-      "imdbID": "tt0096438",
-      "key": "academy|Q281939|1989|nominated|Q379873",
-      "recipients": [
-        {
-          "imdbID": "nm0772831",
-          "name": "Arthur Schmidt",
-          "wikidataID": "Q711370"
-        }
-      ],
-      "title": "Q379873",
-      "wikidataID": "Q379873",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 856
-      },
-      "year": 1989
-    },
-    {
-      "category": "Best Film Editing",
-      "categoryID": "Q281939",
-      "family": "academy",
-      "imdbID": "tt0096438",
-      "key": "academy|Q281939|1989|won|Q379873",
-      "recipients": [
-        {
-          "imdbID": "nm0772831",
-          "name": "Arthur Schmidt",
-          "wikidataID": "Q711370"
-        }
-      ],
-      "title": "Q379873",
-      "wikidataID": "Q379873",
-      "won": true,
-      "work": {
-        "kind": "movie",
-        "movieID": 856
-      },
-      "year": 1989
-    },
-    {
-      "category": "Best Film Editing",
-      "categoryID": "Q281939",
-      "family": "academy",
       "imdbID": "tt0095647",
       "key": "academy|Q281939|1989|nominated|Q918367",
       "recipients": [
@@ -185106,6 +185069,50 @@
       "title": "Stuart Baird",
       "wikidataID": "Q1715774",
       "won": false,
+      "year": 1989
+    },
+    {
+      "category": "Best Film Editing",
+      "categoryID": "Q281939",
+      "family": "academy",
+      "imdbID": "tt0096438",
+      "key": "academy|Q281939|1989|nominated|Q379873",
+      "recipients": [
+        {
+          "imdbID": "nm0772831",
+          "name": "Arthur Schmidt",
+          "wikidataID": "Q711370"
+        }
+      ],
+      "title": "Who Framed Roger Rabbit",
+      "wikidataID": "Q379873",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 856
+      },
+      "year": 1989
+    },
+    {
+      "category": "Best Film Editing",
+      "categoryID": "Q281939",
+      "family": "academy",
+      "imdbID": "tt0096438",
+      "key": "academy|Q281939|1989|won|Q379873",
+      "recipients": [
+        {
+          "imdbID": "nm0772831",
+          "name": "Arthur Schmidt",
+          "wikidataID": "Q711370"
+        }
+      ],
+      "title": "Who Framed Roger Rabbit",
+      "wikidataID": "Q379873",
+      "won": true,
+      "work": {
+        "kind": "movie",
+        "movieID": 856
+      },
       "year": 1989
     },
     {
@@ -229491,11 +229498,6 @@
           "imdbID": "nm0206015",
           "name": "Jeff Dawn",
           "wikidataID": "Q16207438"
-        },
-        {
-          "imdbID": "nm0935644",
-          "name": "Stan Winston",
-          "wikidataID": "Q320211"
         }
       ],
       "title": "Q170564",
@@ -229541,16 +229543,6 @@
       "key": "academy|Q487136|1992|nominated|Q16736208",
       "title": "Richard Snell",
       "wikidataID": "Q16736208",
-      "won": false,
-      "year": 1992
-    },
-    {
-      "category": "Best Makeup and Hairstyling",
-      "categoryID": "Q487136",
-      "family": "academy",
-      "key": "academy|Q487136|1992|nominated|Q320211",
-      "title": "Stan Winston",
-      "wikidataID": "Q320211",
       "won": false,
       "year": 1992
     },
@@ -246033,7 +246025,7 @@
       "family": "academy",
       "imdbID": "tt30144839",
       "key": "academy|Q488651|2026|nominated|Q117085614",
-      "title": "Q117085614",
+      "title": "One Battle After Another",
       "wikidataID": "Q117085614",
       "won": false,
       "work": {
@@ -246977,7 +246969,7 @@
           "wikidataID": "Q282722"
         }
       ],
-      "title": "Q64744044",
+      "title": "Soul",
       "wikidataID": "Q64744044",
       "won": false,
       "work": {
@@ -246999,7 +246991,7 @@
           "wikidataID": "Q6272528"
         }
       ],
-      "title": "Q64744044",
+      "title": "Soul",
       "wikidataID": "Q64744044",
       "won": true,
       "work": {
@@ -251638,6 +251630,50 @@
       "category": "Best Original Score",
       "categoryID": "Q488651",
       "family": "academy",
+      "imdbID": "tt0101414",
+      "key": "academy|Q488651|1992|nominated|Q179673",
+      "recipients": [
+        {
+          "imdbID": "nm0579678",
+          "name": "Alan Menken",
+          "wikidataID": "Q317272"
+        }
+      ],
+      "title": "Beauty and the Beast",
+      "wikidataID": "Q179673",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 10020
+      },
+      "year": 1992
+    },
+    {
+      "category": "Best Original Score",
+      "categoryID": "Q488651",
+      "family": "academy",
+      "imdbID": "tt0101414",
+      "key": "academy|Q488651|1992|won|Q179673",
+      "recipients": [
+        {
+          "imdbID": "nm0579678",
+          "name": "Alan Menken",
+          "wikidataID": "Q317272"
+        }
+      ],
+      "title": "Beauty and the Beast",
+      "wikidataID": "Q179673",
+      "won": true,
+      "work": {
+        "kind": "movie",
+        "movieID": 10020
+      },
+      "year": 1992
+    },
+    {
+      "category": "Best Original Score",
+      "categoryID": "Q488651",
+      "family": "academy",
       "key": "academy|Q488651|1992|nominated|Q23848",
       "title": "Ennio Morricone",
       "wikidataID": "Q23848",
@@ -251672,50 +251708,6 @@
       "title": "John Williams",
       "wikidataID": "Q131285",
       "won": false,
-      "year": 1992
-    },
-    {
-      "category": "Best Original Score",
-      "categoryID": "Q488651",
-      "family": "academy",
-      "imdbID": "tt0101414",
-      "key": "academy|Q488651|1992|nominated|Q179673",
-      "recipients": [
-        {
-          "imdbID": "nm0579678",
-          "name": "Alan Menken",
-          "wikidataID": "Q317272"
-        }
-      ],
-      "title": "Q179673",
-      "wikidataID": "Q179673",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 10020
-      },
-      "year": 1992
-    },
-    {
-      "category": "Best Original Score",
-      "categoryID": "Q488651",
-      "family": "academy",
-      "imdbID": "tt0101414",
-      "key": "academy|Q488651|1992|won|Q179673",
-      "recipients": [
-        {
-          "imdbID": "nm0579678",
-          "name": "Alan Menken",
-          "wikidataID": "Q317272"
-        }
-      ],
-      "title": "Q179673",
-      "wikidataID": "Q179673",
-      "won": true,
-      "work": {
-        "kind": "movie",
-        "movieID": 10020
-      },
       "year": 1992
     },
     {
@@ -259894,7 +259886,7 @@
       "categoryID": "Q112243",
       "family": "academy",
       "key": "academy|Q112243|2020|nominated|Q21592474",
-      "title": "Cynthia Erivo",
+      "title": "Cynthia Erivo Grande",
       "wikidataID": "Q21592474",
       "won": false,
       "year": 2020
@@ -260076,7 +260068,7 @@
       "recipients": [
         {
           "imdbID": "nm7248827",
-          "name": "Cynthia Erivo",
+          "name": "Cynthia Erivo Grande",
           "wikidataID": "Q21592474"
         },
         {
@@ -265797,6 +265789,28 @@
       "category": "Best Original Song",
       "categoryID": "Q112243",
       "family": "academy",
+      "imdbID": "tt0101414",
+      "key": "academy|Q112243|1992|won|Q179673",
+      "recipients": [
+        {
+          "imdbID": "nm0579678",
+          "name": "Alan Menken",
+          "wikidataID": "Q317272"
+        }
+      ],
+      "title": "Beauty and the Beast",
+      "wikidataID": "Q179673",
+      "won": true,
+      "work": {
+        "kind": "movie",
+        "movieID": 10020
+      },
+      "year": 1992
+    },
+    {
+      "category": "Best Original Song",
+      "categoryID": "Q112243",
+      "family": "academy",
       "key": "academy|Q112243|1992|won|Q2454384",
       "recipients": [
         {
@@ -265895,28 +265909,6 @@
       "title": "Mutt Lange",
       "wikidataID": "Q547660",
       "won": false,
-      "year": 1992
-    },
-    {
-      "category": "Best Original Song",
-      "categoryID": "Q112243",
-      "family": "academy",
-      "imdbID": "tt0101414",
-      "key": "academy|Q112243|1992|won|Q179673",
-      "recipients": [
-        {
-          "imdbID": "nm0579678",
-          "name": "Alan Menken",
-          "wikidataID": "Q317272"
-        }
-      ],
-      "title": "Q179673",
-      "wikidataID": "Q179673",
-      "won": true,
-      "work": {
-        "kind": "movie",
-        "movieID": 10020
-      },
       "year": 1992
     },
     {
@@ -281191,6 +281183,36 @@
       "category": "Best Picture",
       "categoryID": "Q102427",
       "family": "academy",
+      "imdbID": "tt30144839",
+      "key": "academy|Q102427|2026|nominated|Q117085614",
+      "title": "One Battle After Another",
+      "wikidataID": "Q117085614",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 1054867
+      },
+      "year": 2026
+    },
+    {
+      "category": "Best Picture",
+      "categoryID": "Q102427",
+      "family": "academy",
+      "imdbID": "tt30144839",
+      "key": "academy|Q102427|2026|won|Q117085614",
+      "title": "One Battle After Another",
+      "wikidataID": "Q117085614",
+      "won": true,
+      "work": {
+        "kind": "movie",
+        "movieID": 1054867
+      },
+      "year": 2026
+    },
+    {
+      "category": "Best Picture",
+      "categoryID": "Q102427",
+      "family": "academy",
       "imdbID": "tt16311594",
       "key": "academy|Q102427|2026|nominated|Q114246242",
       "recipients": [
@@ -281206,36 +281228,6 @@
       "work": {
         "kind": "movie",
         "movieID": 911430
-      },
-      "year": 2026
-    },
-    {
-      "category": "Best Picture",
-      "categoryID": "Q102427",
-      "family": "academy",
-      "imdbID": "tt30144839",
-      "key": "academy|Q102427|2026|nominated|Q117085614",
-      "title": "Q117085614",
-      "wikidataID": "Q117085614",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 1054867
-      },
-      "year": 2026
-    },
-    {
-      "category": "Best Picture",
-      "categoryID": "Q102427",
-      "family": "academy",
-      "imdbID": "tt30144839",
-      "key": "academy|Q102427|2026|won|Q117085614",
-      "title": "Q117085614",
-      "wikidataID": "Q117085614",
-      "won": true,
-      "work": {
-        "kind": "movie",
-        "movieID": 1054867
       },
       "year": 2026
     },
@@ -296024,6 +296016,28 @@
       "category": "Best Picture",
       "categoryID": "Q102427",
       "family": "academy",
+      "imdbID": "tt0101414",
+      "key": "academy|Q102427|1992|nominated|Q179673",
+      "recipients": [
+        {
+          "imdbID": "nm0353893",
+          "name": "Don Hahn",
+          "wikidataID": "Q1072843"
+        }
+      ],
+      "title": "Beauty and the Beast",
+      "wikidataID": "Q179673",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 10020
+      },
+      "year": 1992
+    },
+    {
+      "category": "Best Picture",
+      "categoryID": "Q102427",
+      "family": "academy",
       "key": "academy|Q102427|1992|nominated|Q1072843",
       "title": "Don Hahn",
       "wikidataID": "Q1072843",
@@ -296088,28 +296102,6 @@
       "title": "Oliver Stone",
       "wikidataID": "Q179497",
       "won": false,
-      "year": 1992
-    },
-    {
-      "category": "Best Picture",
-      "categoryID": "Q102427",
-      "family": "academy",
-      "imdbID": "tt0101414",
-      "key": "academy|Q102427|1992|nominated|Q179673",
-      "recipients": [
-        {
-          "imdbID": "nm0353893",
-          "name": "Don Hahn",
-          "wikidataID": "Q1072843"
-        }
-      ],
-      "title": "Q179673",
-      "wikidataID": "Q179673",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 10020
-      },
       "year": 1992
     },
     {
@@ -307252,7 +307244,7 @@
       "family": "academy",
       "imdbID": "tt30144839",
       "key": "academy|Q277751|2026|nominated|Q117085614",
-      "title": "Q117085614",
+      "title": "One Battle After Another",
       "wikidataID": "Q117085614",
       "won": false,
       "work": {
@@ -317490,28 +317482,6 @@
       "category": "Best Production Design",
       "categoryID": "Q277751",
       "family": "academy",
-      "imdbID": "tt0096438",
-      "key": "academy|Q277751|1989|nominated|Q379873",
-      "recipients": [
-        {
-          "imdbID": "nm0398184",
-          "name": "Peter Howitt",
-          "wikidataID": "Q7174758"
-        }
-      ],
-      "title": "Q379873",
-      "wikidataID": "Q379873",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 856
-      },
-      "year": 1989
-    },
-    {
-      "category": "Best Production Design",
-      "categoryID": "Q277751",
-      "family": "academy",
       "key": "academy|Q277751|1989|nominated|Q979511",
       "title": "Stuart Craig",
       "wikidataID": "Q979511",
@@ -317552,6 +317522,28 @@
       "work": {
         "kind": "movie",
         "movieID": 28176
+      },
+      "year": 1989
+    },
+    {
+      "category": "Best Production Design",
+      "categoryID": "Q277751",
+      "family": "academy",
+      "imdbID": "tt0096438",
+      "key": "academy|Q277751|1989|nominated|Q379873",
+      "recipients": [
+        {
+          "imdbID": "nm0398184",
+          "name": "Peter Howitt",
+          "wikidataID": "Q7174758"
+        }
+      ],
+      "title": "Who Framed Roger Rabbit",
+      "wikidataID": "Q379873",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 856
       },
       "year": 1989
     },
@@ -335932,6 +335924,21 @@
       "category": "Best Sound",
       "categoryID": "Q830079",
       "family": "academy",
+      "imdbID": "tt30144839",
+      "key": "academy|Q830079|2026|nominated|Q117085614",
+      "title": "One Battle After Another",
+      "wikidataID": "Q117085614",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 1054867
+      },
+      "year": 2026
+    },
+    {
+      "category": "Best Sound",
+      "categoryID": "Q830079",
+      "family": "academy",
       "imdbID": "tt16311594",
       "key": "academy|Q830079|2026|won|Q114246242",
       "recipients": [
@@ -335946,21 +335953,6 @@
       "work": {
         "kind": "movie",
         "movieID": 911430
-      },
-      "year": 2026
-    },
-    {
-      "category": "Best Sound",
-      "categoryID": "Q830079",
-      "family": "academy",
-      "imdbID": "tt30144839",
-      "key": "academy|Q830079|2026|nominated|Q117085614",
-      "title": "Q117085614",
-      "wikidataID": "Q117085614",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 1054867
       },
       "year": 2026
     },
@@ -338116,6 +338108,16 @@
       "category": "Best Sound",
       "categoryID": "Q830079",
       "family": "academy",
+      "key": "academy|Q830079|2021|nominated|Q1297272",
+      "title": "Ren Klyce",
+      "wikidataID": "Q1297272",
+      "won": false,
+      "year": 2021
+    },
+    {
+      "category": "Best Sound",
+      "categoryID": "Q830079",
+      "family": "academy",
       "imdbID": "tt2948372",
       "key": "academy|Q830079|2021|nominated|Q64744044",
       "recipients": [
@@ -338135,23 +338137,13 @@
           "wikidataID": "Q1297272"
         }
       ],
-      "title": "Q64744044",
+      "title": "Soul",
       "wikidataID": "Q64744044",
       "won": false,
       "work": {
         "kind": "movie",
         "movieID": 508442
       },
-      "year": 2021
-    },
-    {
-      "category": "Best Sound",
-      "categoryID": "Q830079",
-      "family": "academy",
-      "key": "academy|Q830079|2021|nominated|Q1297272",
-      "title": "Ren Klyce",
-      "wikidataID": "Q1297272",
-      "won": false,
       "year": 2021
     },
     {
@@ -349209,6 +349201,43 @@
       "category": "Best Sound",
       "categoryID": "Q830079",
       "family": "academy",
+      "imdbID": "tt0101414",
+      "key": "academy|Q830079|1992|nominated|Q179673",
+      "recipients": [
+        {
+          "imdbID": "nm0399812",
+          "name": "David J. Hudson",
+          "wikidataID": "Q5235439"
+        },
+        {
+          "imdbID": "nm0437301",
+          "name": "Doc Kane",
+          "wikidataID": "Q5287071"
+        },
+        {
+          "imdbID": "nm0582467",
+          "name": "Mel Metcalfe",
+          "wikidataID": "Q1918900"
+        },
+        {
+          "imdbID": "nm0692310",
+          "name": "Terry Porter",
+          "wikidataID": "Q7704924"
+        }
+      ],
+      "title": "Beauty and the Beast",
+      "wikidataID": "Q179673",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 10020
+      },
+      "year": 1992
+    },
+    {
+      "category": "Best Sound",
+      "categoryID": "Q830079",
+      "family": "academy",
       "key": "academy|Q830079|1992|nominated|Q1086864",
       "title": "Chris Newman",
       "wikidataID": "Q1086864",
@@ -349406,43 +349435,6 @@
       "work": {
         "kind": "movie",
         "movieID": 280
-      },
-      "year": 1992
-    },
-    {
-      "category": "Best Sound",
-      "categoryID": "Q830079",
-      "family": "academy",
-      "imdbID": "tt0101414",
-      "key": "academy|Q830079|1992|nominated|Q179673",
-      "recipients": [
-        {
-          "imdbID": "nm0399812",
-          "name": "David J. Hudson",
-          "wikidataID": "Q5235439"
-        },
-        {
-          "imdbID": "nm0437301",
-          "name": "Doc Kane",
-          "wikidataID": "Q5287071"
-        },
-        {
-          "imdbID": "nm0582467",
-          "name": "Mel Metcalfe",
-          "wikidataID": "Q1918900"
-        },
-        {
-          "imdbID": "nm0692310",
-          "name": "Terry Porter",
-          "wikidataID": "Q7704924"
-        }
-      ],
-      "title": "Q179673",
-      "wikidataID": "Q179673",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 10020
       },
       "year": 1992
     },
@@ -350803,43 +350795,6 @@
       "category": "Best Sound",
       "categoryID": "Q830079",
       "family": "academy",
-      "imdbID": "tt0096438",
-      "key": "academy|Q830079|1989|nominated|Q379873",
-      "recipients": [
-        {
-          "imdbID": "nm0226564",
-          "name": "Don Digirolamo",
-          "wikidataID": "Q5292521"
-        },
-        {
-          "imdbID": "nm0101815",
-          "name": "John Boyd",
-          "wikidataID": "Q16200124"
-        },
-        {
-          "imdbID": "nm0461702",
-          "name": "Robert Knudson",
-          "wikidataID": "Q1418234"
-        },
-        {
-          "imdbID": "nm0003360",
-          "name": "Tony Dawe",
-          "wikidataID": "Q7822183"
-        }
-      ],
-      "title": "Q379873",
-      "wikidataID": "Q379873",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 856
-      },
-      "year": 1989
-    },
-    {
-      "category": "Best Sound",
-      "categoryID": "Q830079",
-      "family": "academy",
       "imdbID": "tt0095647",
       "key": "academy|Q830079|1989|nominated|Q918367",
       "recipients": [
@@ -350941,6 +350896,43 @@
       "title": "Vern Poore",
       "wikidataID": "Q7921878",
       "won": true,
+      "year": 1989
+    },
+    {
+      "category": "Best Sound",
+      "categoryID": "Q830079",
+      "family": "academy",
+      "imdbID": "tt0096438",
+      "key": "academy|Q830079|1989|nominated|Q379873",
+      "recipients": [
+        {
+          "imdbID": "nm0226564",
+          "name": "Don Digirolamo",
+          "wikidataID": "Q5292521"
+        },
+        {
+          "imdbID": "nm0101815",
+          "name": "John Boyd",
+          "wikidataID": "Q16200124"
+        },
+        {
+          "imdbID": "nm0461702",
+          "name": "Robert Knudson",
+          "wikidataID": "Q1418234"
+        },
+        {
+          "imdbID": "nm0003360",
+          "name": "Tony Dawe",
+          "wikidataID": "Q7822183"
+        }
+      ],
+      "title": "Who Framed Roger Rabbit",
+      "wikidataID": "Q379873",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 856
+      },
       "year": 1989
     },
     {
@@ -354498,6 +354490,43 @@
       "category": "Best Sound",
       "categoryID": "Q830079",
       "family": "academy",
+      "imdbID": "tt0078723",
+      "key": "academy|Q830079|1980|nominated|Q207482",
+      "recipients": [
+        {
+          "imdbID": "nm0532013",
+          "name": "Don MacDougall",
+          "wikidataID": "Q5293041"
+        },
+        {
+          "imdbID": "nm0134481",
+          "name": "Gene Cantamessa",
+          "wikidataID": "Q957361"
+        },
+        {
+          "imdbID": "nm0321915",
+          "name": "Robert Glass",
+          "wikidataID": "Q7344802"
+        },
+        {
+          "imdbID": "nm0461702",
+          "name": "Robert Knudson",
+          "wikidataID": "Q1418234"
+        }
+      ],
+      "title": "1941",
+      "wikidataID": "Q207482",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 11519
+      },
+      "year": 1980
+    },
+    {
+      "category": "Best Sound",
+      "categoryID": "Q830079",
+      "family": "academy",
       "key": "academy|Q830079|1980|nominated|Q302535",
       "title": "Aaron Rochin",
       "wikidataID": "Q302535",
@@ -354762,43 +354791,6 @@
       "work": {
         "kind": "movie",
         "movieID": 28
-      },
-      "year": 1980
-    },
-    {
-      "category": "Best Sound",
-      "categoryID": "Q830079",
-      "family": "academy",
-      "imdbID": "tt0078723",
-      "key": "academy|Q830079|1980|nominated|Q207482",
-      "recipients": [
-        {
-          "imdbID": "nm0532013",
-          "name": "Don MacDougall",
-          "wikidataID": "Q5293041"
-        },
-        {
-          "imdbID": "nm0134481",
-          "name": "Gene Cantamessa",
-          "wikidataID": "Q957361"
-        },
-        {
-          "imdbID": "nm0321915",
-          "name": "Robert Glass",
-          "wikidataID": "Q7344802"
-        },
-        {
-          "imdbID": "nm0461702",
-          "name": "Robert Knudson",
-          "wikidataID": "Q1418234"
-        }
-      ],
-      "title": "Q207482",
-      "wikidataID": "Q207482",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 11519
       },
       "year": 1980
     },
@@ -369432,33 +369424,6 @@
       "category": "Best Sound Editing",
       "categoryID": "Q488645",
       "family": "academy",
-      "imdbID": "tt0371746",
-      "key": "academy|Q488645|2009|nominated|Q192724",
-      "recipients": [
-        {
-          "imdbID": "nm0102110",
-          "name": "Christopher Boyes",
-          "wikidataID": "Q541621"
-        },
-        {
-          "imdbID": "nm0262361",
-          "name": "Frank E. Eulner",
-          "wikidataID": "Q16195051"
-        }
-      ],
-      "title": "Iron Man",
-      "wikidataID": "Q192724",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 1726
-      },
-      "year": 2009
-    },
-    {
-      "category": "Best Sound Editing",
-      "categoryID": "Q488645",
-      "family": "academy",
       "key": "academy|Q488645|2009|nominated|Q459532",
       "title": "Matthew Wood",
       "wikidataID": "Q459532",
@@ -369560,6 +369525,33 @@
       "work": {
         "kind": "movie",
         "movieID": 155
+      },
+      "year": 2009
+    },
+    {
+      "category": "Best Sound Editing",
+      "categoryID": "Q488645",
+      "family": "academy",
+      "imdbID": "tt0371746",
+      "key": "academy|Q488645|2009|nominated|Q192724",
+      "recipients": [
+        {
+          "imdbID": "nm0102110",
+          "name": "Christopher Boyes",
+          "wikidataID": "Q541621"
+        },
+        {
+          "imdbID": "nm0262361",
+          "name": "Frank E. Eulner",
+          "wikidataID": "Q16195051"
+        }
+      ],
+      "title": "Q192724",
+      "wikidataID": "Q192724",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 1726
       },
       "year": 2009
     },
@@ -372558,60 +372550,6 @@
       "category": "Best Sound Editing",
       "categoryID": "Q488645",
       "family": "academy",
-      "imdbID": "tt0096438",
-      "key": "academy|Q488645|1989|nominated|Q379873",
-      "recipients": [
-        {
-          "imdbID": "nm0132287",
-          "name": "Charles L. Campbell",
-          "wikidataID": "Q1065205"
-        },
-        {
-          "imdbID": "nm0249068",
-          "name": "Louis Edemann",
-          "wikidataID": "Q1687065"
-        }
-      ],
-      "title": "Q379873",
-      "wikidataID": "Q379873",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 856
-      },
-      "year": 1989
-    },
-    {
-      "category": "Best Sound Editing",
-      "categoryID": "Q488645",
-      "family": "academy",
-      "imdbID": "tt0096438",
-      "key": "academy|Q488645|1989|won|Q379873",
-      "recipients": [
-        {
-          "imdbID": "nm0132287",
-          "name": "Charles L. Campbell",
-          "wikidataID": "Q1065205"
-        },
-        {
-          "imdbID": "nm0249068",
-          "name": "Louis Edemann",
-          "wikidataID": "Q1687065"
-        }
-      ],
-      "title": "Q379873",
-      "wikidataID": "Q379873",
-      "won": true,
-      "work": {
-        "kind": "movie",
-        "movieID": 856
-      },
-      "year": 1989
-    },
-    {
-      "category": "Best Sound Editing",
-      "categoryID": "Q488645",
-      "family": "academy",
       "imdbID": "tt0096446",
       "key": "academy|Q488645|1989|nominated|Q515931",
       "recipients": [
@@ -372663,6 +372601,60 @@
       "title": "Stephen Hunter Flick",
       "wikidataID": "Q16198562",
       "won": false,
+      "year": 1989
+    },
+    {
+      "category": "Best Sound Editing",
+      "categoryID": "Q488645",
+      "family": "academy",
+      "imdbID": "tt0096438",
+      "key": "academy|Q488645|1989|nominated|Q379873",
+      "recipients": [
+        {
+          "imdbID": "nm0132287",
+          "name": "Charles L. Campbell",
+          "wikidataID": "Q1065205"
+        },
+        {
+          "imdbID": "nm0249068",
+          "name": "Louis Edemann",
+          "wikidataID": "Q1687065"
+        }
+      ],
+      "title": "Who Framed Roger Rabbit",
+      "wikidataID": "Q379873",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 856
+      },
+      "year": 1989
+    },
+    {
+      "category": "Best Sound Editing",
+      "categoryID": "Q488645",
+      "family": "academy",
+      "imdbID": "tt0096438",
+      "key": "academy|Q488645|1989|won|Q379873",
+      "recipients": [
+        {
+          "imdbID": "nm0132287",
+          "name": "Charles L. Campbell",
+          "wikidataID": "Q1065205"
+        },
+        {
+          "imdbID": "nm0249068",
+          "name": "Louis Edemann",
+          "wikidataID": "Q1687065"
+        }
+      ],
+      "title": "Who Framed Roger Rabbit",
+      "wikidataID": "Q379873",
+      "won": true,
+      "work": {
+        "kind": "movie",
+        "movieID": 856
+      },
       "year": 1989
     },
     {
@@ -384778,7 +384770,7 @@
       "family": "academy",
       "imdbID": "tt30144839",
       "key": "academy|Q106291|2026|nominated|Q117085614",
-      "title": "Q117085614",
+      "title": "One Battle After Another",
       "wikidataID": "Q117085614",
       "won": false,
       "work": {
@@ -384800,7 +384792,7 @@
           "wikidataID": "Q44221"
         }
       ],
-      "title": "Q117085614",
+      "title": "One Battle After Another",
       "wikidataID": "Q117085614",
       "won": true,
       "work": {
@@ -401470,7 +401462,7 @@
       "family": "academy",
       "imdbID": "tt30144839",
       "key": "academy|Q106301|2026|nominated|Q117085614",
-      "title": "Q117085614",
+      "title": "One Battle After Another",
       "wikidataID": "Q117085614",
       "won": false,
       "work": {
@@ -424792,43 +424784,6 @@
       "category": "Best Visual Effects",
       "categoryID": "Q393686",
       "family": "academy",
-      "imdbID": "tt0371746",
-      "key": "academy|Q393686|2009|nominated|Q192724",
-      "recipients": [
-        {
-          "imdbID": "nm0811240",
-          "name": "Ben Snow",
-          "wikidataID": "Q816595"
-        },
-        {
-          "imdbID": "nm0837203",
-          "name": "Dan Sudick",
-          "wikidataID": "Q2673310"
-        },
-        {
-          "imdbID": "nm0625471",
-          "name": "John Nelson",
-          "wikidataID": "Q1444685"
-        },
-        {
-          "imdbID": "nm0536752",
-          "name": "Shane Mahan",
-          "wikidataID": "Q3915713"
-        }
-      ],
-      "title": "Iron Man",
-      "wikidataID": "Q192724",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 1726
-      },
-      "year": 2009
-    },
-    {
-      "category": "Best Visual Effects",
-      "categoryID": "Q393686",
-      "family": "academy",
       "key": "academy|Q393686|2009|nominated|Q1444685",
       "title": "John Nelson",
       "wikidataID": "Q1444685",
@@ -424963,6 +424918,43 @@
       "work": {
         "kind": "movie",
         "movieID": 4922
+      },
+      "year": 2009
+    },
+    {
+      "category": "Best Visual Effects",
+      "categoryID": "Q393686",
+      "family": "academy",
+      "imdbID": "tt0371746",
+      "key": "academy|Q393686|2009|nominated|Q192724",
+      "recipients": [
+        {
+          "imdbID": "nm0811240",
+          "name": "Ben Snow",
+          "wikidataID": "Q816595"
+        },
+        {
+          "imdbID": "nm0837203",
+          "name": "Dan Sudick",
+          "wikidataID": "Q2673310"
+        },
+        {
+          "imdbID": "nm0625471",
+          "name": "John Nelson",
+          "wikidataID": "Q1444685"
+        },
+        {
+          "imdbID": "nm0536752",
+          "name": "Shane Mahan",
+          "wikidataID": "Q3915713"
+        }
+      ],
+      "title": "Q192724",
+      "wikidataID": "Q192724",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 1726
       },
       "year": 2009
     },
@@ -429389,11 +429381,6 @@
           "imdbID": "nm0864138",
           "name": "Phil Tippett",
           "wikidataID": "Q1935109"
-        },
-        {
-          "imdbID": "nm0935644",
-          "name": "Stan Winston",
-          "wikidataID": "Q320211"
         }
       ],
       "title": "Q167726",
@@ -429477,16 +429464,6 @@
         "kind": "movie",
         "movieID": 9479
       },
-      "year": 1994
-    },
-    {
-      "category": "Best Visual Effects",
-      "categoryID": "Q393686",
-      "family": "academy",
-      "key": "academy|Q393686|1994|nominated|Q320211",
-      "title": "Stan Winston",
-      "wikidataID": "Q320211",
-      "won": false,
       "year": 1994
     },
     {
@@ -430529,80 +430506,6 @@
       "category": "Best Visual Effects",
       "categoryID": "Q393686",
       "family": "academy",
-      "imdbID": "tt0096438",
-      "key": "academy|Q393686|1989|nominated|Q379873",
-      "recipients": [
-        {
-          "imdbID": "nm0428000",
-          "name": "Edward Jones",
-          "wikidataID": "Q17292449"
-        },
-        {
-          "imdbID": "nm0316672",
-          "name": "George Gibbs",
-          "wikidataID": "Q15811832"
-        },
-        {
-          "imdbID": "nm0707822",
-          "name": "Ken Ralston",
-          "wikidataID": "Q8728"
-        },
-        {
-          "imdbID": "nm0931530",
-          "name": "Richard Williams",
-          "wikidataID": "Q1999598"
-        }
-      ],
-      "title": "Q379873",
-      "wikidataID": "Q379873",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 856
-      },
-      "year": 1989
-    },
-    {
-      "category": "Best Visual Effects",
-      "categoryID": "Q393686",
-      "family": "academy",
-      "imdbID": "tt0096438",
-      "key": "academy|Q393686|1989|won|Q379873",
-      "recipients": [
-        {
-          "imdbID": "nm0428000",
-          "name": "Edward Jones",
-          "wikidataID": "Q17292449"
-        },
-        {
-          "imdbID": "nm0316672",
-          "name": "George Gibbs",
-          "wikidataID": "Q15811832"
-        },
-        {
-          "imdbID": "nm0707822",
-          "name": "Ken Ralston",
-          "wikidataID": "Q8728"
-        },
-        {
-          "imdbID": "nm0931530",
-          "name": "Richard Williams",
-          "wikidataID": "Q1999598"
-        }
-      ],
-      "title": "Q379873",
-      "wikidataID": "Q379873",
-      "won": true,
-      "work": {
-        "kind": "movie",
-        "movieID": 856
-      },
-      "year": 1989
-    },
-    {
-      "category": "Best Visual Effects",
-      "categoryID": "Q393686",
-      "family": "academy",
       "imdbID": "tt0096446",
       "key": "academy|Q393686|1989|nominated|Q515931",
       "recipients": [
@@ -430674,6 +430577,80 @@
       "title": "Thaine Morris",
       "wikidataID": "Q22109579",
       "won": false,
+      "year": 1989
+    },
+    {
+      "category": "Best Visual Effects",
+      "categoryID": "Q393686",
+      "family": "academy",
+      "imdbID": "tt0096438",
+      "key": "academy|Q393686|1989|nominated|Q379873",
+      "recipients": [
+        {
+          "imdbID": "nm0428000",
+          "name": "Edward Jones",
+          "wikidataID": "Q17292449"
+        },
+        {
+          "imdbID": "nm0316672",
+          "name": "George Gibbs",
+          "wikidataID": "Q15811832"
+        },
+        {
+          "imdbID": "nm0707822",
+          "name": "Ken Ralston",
+          "wikidataID": "Q8728"
+        },
+        {
+          "imdbID": "nm0931530",
+          "name": "Richard Williams",
+          "wikidataID": "Q1999598"
+        }
+      ],
+      "title": "Who Framed Roger Rabbit",
+      "wikidataID": "Q379873",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 856
+      },
+      "year": 1989
+    },
+    {
+      "category": "Best Visual Effects",
+      "categoryID": "Q393686",
+      "family": "academy",
+      "imdbID": "tt0096438",
+      "key": "academy|Q393686|1989|won|Q379873",
+      "recipients": [
+        {
+          "imdbID": "nm0428000",
+          "name": "Edward Jones",
+          "wikidataID": "Q17292449"
+        },
+        {
+          "imdbID": "nm0316672",
+          "name": "George Gibbs",
+          "wikidataID": "Q15811832"
+        },
+        {
+          "imdbID": "nm0707822",
+          "name": "Ken Ralston",
+          "wikidataID": "Q8728"
+        },
+        {
+          "imdbID": "nm0931530",
+          "name": "Richard Williams",
+          "wikidataID": "Q1999598"
+        }
+      ],
+      "title": "Who Framed Roger Rabbit",
+      "wikidataID": "Q379873",
+      "won": true,
+      "work": {
+        "kind": "movie",
+        "movieID": 856
+      },
       "year": 1989
     },
     {
@@ -431074,11 +431051,6 @@
           "wikidataID": "Q17292271"
         },
         {
-          "imdbID": "nm0935644",
-          "name": "Stan Winston",
-          "wikidataID": "Q320211"
-        },
-        {
           "imdbID": "nm0072659",
           "name": "Suzanne M. Benson",
           "wikidataID": "Q17292257"
@@ -431158,16 +431130,6 @@
       "title": "Robert Skotak",
       "wikidataID": "Q17292271",
       "won": true,
-      "year": 1987
-    },
-    {
-      "category": "Best Visual Effects",
-      "categoryID": "Q393686",
-      "family": "academy",
-      "key": "academy|Q393686|1987|nominated|Q320211",
-      "title": "Stan Winston",
-      "wikidataID": "Q320211",
-      "won": false,
       "year": 1987
     },
     {
@@ -432299,6 +432261,38 @@
       "category": "Best Visual Effects",
       "categoryID": "Q393686",
       "family": "academy",
+      "imdbID": "tt0078723",
+      "key": "academy|Q393686|1980|nominated|Q207482",
+      "recipients": [
+        {
+          "imdbID": "nm0283166",
+          "name": "A. D. Flowers",
+          "wikidataID": "Q278612"
+        },
+        {
+          "imdbID": "nm0420474",
+          "name": "Greg Jein",
+          "wikidataID": "Q5605776"
+        },
+        {
+          "imdbID": "nm0005710",
+          "name": "William A. Fraker",
+          "wikidataID": "Q489559"
+        }
+      ],
+      "title": "1941",
+      "wikidataID": "Q207482",
+      "won": false,
+      "work": {
+        "kind": "movie",
+        "movieID": 11519
+      },
+      "year": 1980
+    },
+    {
+      "category": "Best Visual Effects",
+      "categoryID": "Q393686",
+      "family": "academy",
       "key": "academy|Q393686|1980|nominated|Q278612",
       "title": "A. D. Flowers",
       "wikidataID": "Q278612",
@@ -432616,38 +432610,6 @@
       "work": {
         "kind": "movie",
         "movieID": 348
-      },
-      "year": 1980
-    },
-    {
-      "category": "Best Visual Effects",
-      "categoryID": "Q393686",
-      "family": "academy",
-      "imdbID": "tt0078723",
-      "key": "academy|Q393686|1980|nominated|Q207482",
-      "recipients": [
-        {
-          "imdbID": "nm0283166",
-          "name": "A. D. Flowers",
-          "wikidataID": "Q278612"
-        },
-        {
-          "imdbID": "nm0420474",
-          "name": "Greg Jein",
-          "wikidataID": "Q5605776"
-        },
-        {
-          "imdbID": "nm0005710",
-          "name": "William A. Fraker",
-          "wikidataID": "Q489559"
-        }
-      ],
-      "title": "Q207482",
-      "wikidataID": "Q207482",
-      "won": false,
-      "work": {
-        "kind": "movie",
-        "movieID": 11519
       },
       "year": 1980
     },
@@ -434520,16 +434482,6 @@
       "category": "Best Writing, Adapted Screenplay",
       "categoryID": "Q107258",
       "family": "academy",
-      "key": "academy|Q107258|2026|won|Q25132",
-      "title": "Paul Thomas Anderson",
-      "wikidataID": "Q25132",
-      "won": true,
-      "year": 2026
-    },
-    {
-      "category": "Best Writing, Adapted Screenplay",
-      "categoryID": "Q107258",
-      "family": "academy",
       "imdbID": "tt30144839",
       "key": "academy|Q107258|2026|won|Q117085614",
       "recipients": [
@@ -434539,13 +434491,23 @@
           "wikidataID": "Q25132"
         }
       ],
-      "title": "Q117085614",
+      "title": "One Battle After Another",
       "wikidataID": "Q117085614",
       "won": true,
       "work": {
         "kind": "movie",
         "movieID": 1054867
       },
+      "year": 2026
+    },
+    {
+      "category": "Best Writing, Adapted Screenplay",
+      "categoryID": "Q107258",
+      "family": "academy",
+      "key": "academy|Q107258|2026|won|Q25132",
+      "title": "Paul Thomas Anderson",
+      "wikidataID": "Q25132",
+      "won": true,
       "year": 2026
     },
     {
@@ -479228,25 +479190,25 @@
       "category": "Special Achievement Academy Award",
       "categoryID": "Q2032630",
       "family": "academy",
-      "imdbID": "tt0096438",
-      "key": "academy|Q2032630|1989|won|Q379873",
-      "title": "Q379873",
-      "wikidataID": "Q379873",
+      "key": "academy|Q2032630|1989|won|Q1999598",
+      "title": "Richard Williams",
+      "wikidataID": "Q1999598",
       "won": true,
-      "work": {
-        "kind": "movie",
-        "movieID": 856
-      },
       "year": 1989
     },
     {
       "category": "Special Achievement Academy Award",
       "categoryID": "Q2032630",
       "family": "academy",
-      "key": "academy|Q2032630|1989|won|Q1999598",
-      "title": "Richard Williams",
-      "wikidataID": "Q1999598",
+      "imdbID": "tt0096438",
+      "key": "academy|Q2032630|1989|won|Q379873",
+      "title": "Who Framed Roger Rabbit",
+      "wikidataID": "Q379873",
       "won": true,
+      "work": {
+        "kind": "movie",
+        "movieID": 856
+      },
       "year": 1989
     },
     {
@@ -487835,7 +487797,7 @@
           "wikidataID": "Q44221"
         }
       ],
-      "title": "Q117085614",
+      "title": "One Battle After Another",
       "wikidataID": "Q117085614",
       "won": true,
       "work": {
@@ -496377,16 +496339,6 @@
       "category": "Best Adapted Screenplay",
       "categoryID": "Q739694",
       "family": "bafta",
-      "key": "bafta|Q739694|2026|won|Q25132",
-      "title": "Paul Thomas Anderson",
-      "wikidataID": "Q25132",
-      "won": true,
-      "year": 2026
-    },
-    {
-      "category": "Best Adapted Screenplay",
-      "categoryID": "Q739694",
-      "family": "bafta",
       "imdbID": "tt30144839",
       "key": "bafta|Q739694|2026|won|Q117085614",
       "recipients": [
@@ -496396,13 +496348,23 @@
           "wikidataID": "Q25132"
         }
       ],
-      "title": "Q117085614",
+      "title": "One Battle After Another",
       "wikidataID": "Q117085614",
       "won": true,
       "work": {
         "kind": "movie",
         "movieID": 1054867
       },
+      "year": 2026
+    },
+    {
+      "category": "Best Adapted Screenplay",
+      "categoryID": "Q739694",
+      "family": "bafta",
+      "key": "bafta|Q739694|2026|won|Q25132",
+      "title": "Paul Thomas Anderson",
+      "wikidataID": "Q25132",
+      "won": true,
       "year": 2026
     },
     {
@@ -502399,16 +502361,6 @@
       "category": "Best Direction",
       "categoryID": "Q787131",
       "family": "bafta",
-      "key": "bafta|Q787131|2026|won|Q25132",
-      "title": "Paul Thomas Anderson",
-      "wikidataID": "Q25132",
-      "won": true,
-      "year": 2026
-    },
-    {
-      "category": "Best Direction",
-      "categoryID": "Q787131",
-      "family": "bafta",
       "imdbID": "tt30144839",
       "key": "bafta|Q787131|2026|won|Q117085614",
       "recipients": [
@@ -502418,13 +502370,23 @@
           "wikidataID": "Q25132"
         }
       ],
-      "title": "Q117085614",
+      "title": "One Battle After Another",
       "wikidataID": "Q117085614",
       "won": true,
       "work": {
         "kind": "movie",
         "movieID": 1054867
       },
+      "year": 2026
+    },
+    {
+      "category": "Best Direction",
+      "categoryID": "Q787131",
+      "family": "bafta",
+      "key": "bafta|Q787131|2026|won|Q25132",
+      "title": "Paul Thomas Anderson",
+      "wikidataID": "Q25132",
+      "won": true,
       "year": 2026
     },
     {
@@ -519404,7 +519366,7 @@
       "family": "bafta",
       "imdbID": "tt0371746",
       "key": "bafta|Q787127|2009|nominated|Q192724",
-      "title": "Iron Man",
+      "title": "Q192724",
       "wikidataID": "Q192724",
       "won": false,
       "work": {
@@ -524864,6 +524826,11 @@
       "title": "Twin Peaks",
       "wikidataID": "Q23971551",
       "won": false,
+      "work": {
+        "kind": "series",
+        "seriesID": 342451,
+        "seriesName": "Twin Peaks (2017)"
+      },
       "year": 2018
     },
     {
@@ -530576,6 +530543,22 @@
         "seriesName": "Bewitched"
       },
       "year": 1966
+    },
+    {
+      "category": "Outstanding Contemporary Hairstyling",
+      "categoryID": "Q142199787",
+      "family": "emmy",
+      "imdbID": "tt9340526",
+      "key": "emmy|Q142199787|2023|nominated|Q60769439",
+      "title": "P-Valley",
+      "wikidataID": "Q60769439",
+      "won": false,
+      "work": {
+        "kind": "series",
+        "seriesID": 87017,
+        "seriesName": "P-Valley"
+      },
+      "year": 2023
     },
     {
       "category": "Outstanding Costumes for a Miniseries, Movie or a Special",
@@ -608224,5 +608207,5 @@
       "year": 1961
     }
   ],
-  "generatedAt": "2026-11-17T00:36:43Z"
+  "generatedAt": "2026-11-23T21:48:58Z"
 }
