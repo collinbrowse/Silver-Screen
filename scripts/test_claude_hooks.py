@@ -178,5 +178,145 @@ class StopHookTests(unittest.TestCase):
         self.assertEqual((result.returncode, result.stdout.strip()), (0, ""))
 
 
+FAKE_XCRUN = r"""#!/usr/bin/env python3
+import json, os, sys
+calls = os.environ["FAKE_CALLS"]
+with open(calls, "a") as f:
+    f.write("xcrun " + " ".join(sys.argv[1:]) + "\n")
+args = sys.argv[1:]
+if args[:3] == ["simctl", "list", "runtimes"]:
+    print(json.dumps({"runtimes": [{
+        "identifier": "com.apple.CoreSimulator.SimRuntime.iOS-27-0", "version": "27.0", "platform": "iOS",
+        "isAvailable": True, "supportedDeviceTypes": [
+            {"name": "iPhone 17 Pro", "identifier": "type.iPhone-17-Pro", "productFamily": "iPhone"},
+            {"name": "iPhone 17", "identifier": "type.iPhone-17", "productFamily": "iPhone"},
+            {"name": "iPhone 16", "identifier": "type.iPhone-16", "productFamily": "iPhone"}]}]}))
+elif args[:3] == ["simctl", "list", "devices"]:
+    devices = [{"name": "iPhone 17", "udid": "SHARED-UDID", "state": "Booted", "isAvailable": True}]
+    if os.environ.get("FAKE_OWN_SIM"):
+        devices.append({"name": os.environ["FAKE_OWN_SIM"], "udid": "OWN-UDID", "state": "Shutdown", "isAvailable": True})
+    print(json.dumps({"devices": {"com.apple.CoreSimulator.SimRuntime.iOS-27-0": devices}}))
+elif args[:2] == ["simctl", "create"]:
+    print("NEW-UDID")
+"""
+
+FAKE_XCODEBUILD = """#!/bin/sh
+echo "xcodebuild $*" >> "$FAKE_CALLS"
+case "$*" in *test-without-building*) [ -n "$FAKE_TESTS_FAIL" ] && { echo "Test Case '-[X test_y]' failed (0.1 seconds)."; exit 65; } ;; esac
+exit 0
+"""
+
+FAKE_SLOT = """#!/bin/sh
+echo "slot $*" >> "$FAKE_CALLS"
+while [ "$1" != "--" ]; do shift; done
+shift
+exec "$@"
+"""
+
+
+class StopHookQueueTests(unittest.TestCase):
+    """The stop hook in a fake worktree, with xcrun, xcodebuild, and slot faked on PATH."""
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.worktree = f"hooktest-{os.getpid()}"
+        self.root = os.path.join(self.tmp, "SilverScreen", ".claude", "worktrees", self.worktree)
+        os.makedirs(os.path.join(self.root, ".claude", "hooks"))
+        os.makedirs(os.path.join(self.root, "scripts"))
+        os.makedirs(os.path.join(self.root, "SilverScreen"))
+        os.makedirs(os.path.join(self.root, "SilverScreenTests"))
+        shutil.copy(os.path.join(HOOKS, "run-unit-tests.sh"), os.path.join(self.root, ".claude", "hooks"))
+        for script in ("validate-tests.py", "worktree-simulator.py"):
+            shutil.copy(os.path.join(ROOT, "scripts", script), os.path.join(self.root, "scripts"))
+        with open(os.path.join(self.root, "SilverScreen", "App.swift"), "w") as f:
+            f.write("struct App {}\n")
+        with open(os.path.join(self.root, "SilverScreenTests", "AppTests.swift"), "w") as f:
+            f.write("func test_app_exists_isTrue() { XCTAssertTrue(true) }\n")
+        bin_dir = os.path.join(self.tmp, "bin")
+        os.makedirs(bin_dir)
+        for name, body in (("xcrun", FAKE_XCRUN), ("xcodebuild", FAKE_XCODEBUILD), ("slot", FAKE_SLOT)):
+            path = os.path.join(bin_dir, name)
+            with open(path, "w") as f:
+                f.write(body)
+            os.chmod(path, 0o755)
+        self.calls = os.path.join(self.tmp, "calls.log")
+        self.env = dict(
+            os.environ,
+            PATH=bin_dir + os.pathsep + os.environ["PATH"],
+            SILVERSCREEN_SLOT=os.path.join(bin_dir, "slot"),
+            FAKE_CALLS=self.calls,
+            FAKE_OWN_SIM=f"SilverScreen {self.worktree}",
+        )
+        self.env.pop("SLOT_HELD", None)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+        for suffix in (".log", ".lock"):
+            try:
+                os.remove(f"/tmp/silverscreen-stop-tests-{self.worktree}{suffix}")
+            except OSError:
+                pass
+
+    def run_stop_hook(self, **env) -> subprocess.CompletedProcess:
+        with open(self.calls, "w"):
+            pass
+        return subprocess.run(
+            [os.path.join(self.root, ".claude", "hooks", "run-unit-tests.sh")],
+            input=json.dumps({"hook_event_name": "Stop", "stop_hook_active": False}),
+            capture_output=True, text=True, cwd=self.root, env=dict(self.env, **env), timeout=60,
+        )
+
+    def recorded(self) -> list[str]:
+        with open(self.calls) as f:
+            return f.read().splitlines()
+
+    def test_stopHook_changedSources_queuesBothStepsOnTheWorktreeSimulator(self):
+        result = self.run_stop_hook()
+
+        self.assertEqual((result.returncode, result.stdout.strip()), (0, ""))
+        calls = self.recorded()
+        slot = [c for c in calls if c.startswith("slot ")]
+        self.assertEqual(len(slot), 1)
+        self.assertIn("--credits 4", slot[0])
+        self.assertIn(f"--lock silverscreen-{self.worktree}", slot[0])
+        builds = [c for c in calls if c.startswith("xcodebuild ")]
+        self.assertEqual(len(builds), 2)
+        self.assertIn("build-for-testing", builds[0])
+        self.assertIn("test-without-building", builds[1])
+        self.assertTrue(all("id=OWN-UDID" in c for c in builds))
+
+    def test_stopHook_unchangedSinceLastPass_skipsTheQueue(self):
+        self.run_stop_hook()
+
+        result = self.run_stop_hook()
+
+        self.assertEqual((result.returncode, result.stdout.strip()), (0, ""))
+        self.assertEqual(self.recorded(), [])
+
+    def test_stopHook_failingTests_blocksWithFailuresAndNoManualXcodebuildAdvice(self):
+        result = self.run_stop_hook(FAKE_TESTS_FAIL="1")
+
+        reply = json.loads(result.stdout)
+        self.assertEqual(reply["decision"], "block")
+        self.assertIn("test_y]' failed", reply["reason"])
+        self.assertIn(f"silverscreen-stop-tests-{self.worktree}.log", reply["reason"])
+        self.assertNotIn("Re-run `xcodebuild test`", reply["reason"])
+
+    def test_worktreeSimulator_missing_createsOneNamedForTheWorktree(self):
+        env = dict(self.env)
+        env.pop("FAKE_OWN_SIM")
+        result = subprocess.run(
+            [sys.executable, os.path.join(self.root, "scripts", "worktree-simulator.py")],
+            capture_output=True, text=True, env=env, timeout=30,
+        )
+
+        self.assertEqual(result.stdout.strip(), "NEW-UDID")
+        self.assertIn(
+            f"xcrun simctl create SilverScreen {self.worktree} type.iPhone-17 "
+            "com.apple.CoreSimulator.SimRuntime.iOS-27-0",
+            "\n".join(self.recorded()),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
