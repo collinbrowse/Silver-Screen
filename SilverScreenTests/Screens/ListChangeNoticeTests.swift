@@ -38,7 +38,7 @@ final class ListChangeNoticeTests: XCTestCase {
         let change = try await lists.addToWatched(draft)
 
         notice.show(change, using: lists)
-        await waitForRatingKey(notice)
+        await waitForRatingLookup(notice)
 
         XCTAssertEqual(notice.message, "Added to Watched")
         XCTAssertEqual(notice.ratingKey, .movie(15))
@@ -62,7 +62,7 @@ final class ListChangeNoticeTests: XCTestCase {
         let change = try await lists.addToWatched(draft)
 
         notice.show(change, using: lists)
-        try await Task.sleep(for: .milliseconds(200))
+        await waitForRatingLookup(notice)
 
         XCTAssertEqual(notice.message, "Added to Watched")
         XCTAssertNil(notice.ratingKey)
@@ -87,7 +87,7 @@ final class ListChangeNoticeTests: XCTestCase {
         let change = try await lists.add(draft: draft, listID: inProgress.id)
 
         notice.show(change, using: lists)
-        await waitForRatingKey(notice)
+        await waitForRatingLookup(notice)
         XCTAssertEqual(notice.ratingKey, .series(7))
 
         await notice.openRatingEditor()
@@ -122,7 +122,7 @@ final class ListChangeNoticeTests: XCTestCase {
         let episodeKey = AnnotationKey.episode(seriesID: 42, seasonNumber: 1, episodeNumber: 3)
 
         notice.show(change, using: lists, ratingKey: episodeKey)
-        await waitForRatingKey(notice)
+        await waitForRatingLookup(notice)
         XCTAssertEqual(notice.ratingKey, episodeKey)
 
         await notice.openRatingEditor()
@@ -153,7 +153,7 @@ final class ListChangeNoticeTests: XCTestCase {
         let change = try await lists.addToInProgress(draft)
 
         notice.show(change, using: lists)
-        await waitForRatingKey(notice)
+        await waitForRatingLookup(notice)
         await notice.openRatingEditor()
         XCTAssertNotNil(notice.annotationEditor)
 
@@ -180,7 +180,7 @@ final class ListChangeNoticeTests: XCTestCase {
         )
         let change = try await lists.addToWatched(draft)
         notice.show(change, using: lists)
-        await waitForRatingKey(notice)
+        await waitForRatingLookup(notice)
 
         notice.dismiss()
 
@@ -205,7 +205,7 @@ final class ListChangeNoticeTests: XCTestCase {
         )
         let change = try await lists.addToInProgress(draft)
         notice.show(change, using: lists)
-        await waitForRatingKey(notice)
+        await waitForRatingLookup(notice)
         await notice.openRatingEditor()
 
         notice.dismiss()
@@ -236,7 +236,7 @@ final class ListChangeNoticeTests: XCTestCase {
             ),
             watchUndo: TVWatchUndo(seriesID: 42, priorState: prior)
         )
-        await waitForRatingKey(notice)
+        await waitForRatingLookup(notice)
 
         XCTAssertEqual(notice.message, "Episode watched")
         XCTAssertEqual(notice.ratingKey, episodeKey)
@@ -267,7 +267,7 @@ final class ListChangeNoticeTests: XCTestCase {
             fallbackMessage: "Episode watched",
             using: lists
         )
-        await waitForRatingKey(notice)
+        await waitForRatingLookup(notice)
         let firstPresentation = notice.presentationID
         XCTAssertEqual(notice.message, "Added to In Progress")
 
@@ -277,7 +277,7 @@ final class ListChangeNoticeTests: XCTestCase {
             fallbackMessage: "Episode watched",
             using: lists
         )
-        await waitForRatingKey(notice)
+        await waitForRatingLookup(notice)
 
         XCTAssertEqual(notice.message, "Episode watched")
         XCTAssertEqual(notice.ratingKey, episode2)
@@ -356,11 +356,11 @@ final class ListChangeNoticeTests: XCTestCase {
         let (notice, lists, _, _) = makeMovieWatchNotice()
 
         notice.offerRating(for: .series(1), message: "Watched", using: lists)
-        await waitForRatingKey(notice)
+        await waitForRatingLookup(notice)
         XCTAssertEqual(notice.ratingActionTitle, "Rate show")
 
         notice.offerRating(for: .season(seriesID: 1, seasonNumber: 2), message: "Watched", using: lists)
-        await waitForRatingKey(notice)
+        await waitForRatingLookup(notice)
         XCTAssertEqual(notice.ratingActionTitle, "Rate season")
     }
 
@@ -540,10 +540,8 @@ final class ListChangeNoticeTests: XCTestCase {
         return (ListChangeNotice(annotations: annotations, diary: context, watches: watches), lists, store, context)
     }
 
-    private func waitForRatingKey(_ notice: ListChangeNotice) async {
-        for _ in 0..<80 {
-            if notice.ratingKey != nil { return }
-            await Task.yield()
-        }
+    /// Waits for the toast to decide whether it offers Add rating, however long that takes.
+    private func waitForRatingLookup(_ notice: ListChangeNotice) async {
+        _ = await notice.ratingLookup?.value
     }
 }

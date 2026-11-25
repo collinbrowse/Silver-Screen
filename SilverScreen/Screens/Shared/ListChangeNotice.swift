@@ -62,6 +62,9 @@ final class ListChangeNotice {
     private var diaryUndo: DiaryWatchUndo?
     private let annotations: AnnotationsRepository?
     private var generation = 0
+    /// Decides whether the latest toast offers Add rating, then sets `ratingKey`.
+    /// Tests await it instead of sleeping.
+    @ObservationIgnored private(set) var ratingLookup: Task<AnnotationKey?, Never>?
     /// Title for the rating sheet (series/movie name from the list row when known).
     private var ratingTitle: String?
     /// Saves the Log sheet and tells open screens. Nil in previews and tests that skip it.
@@ -281,18 +284,24 @@ final class ListChangeNotice {
         self.annotationEditor = nil
         resetLoggedWatch()
 
-        Task {
+        let lookup = Task { () -> AnnotationKey? in
             let key = await Self.ratingKeyIfNeeded(
                 for: change,
                 preferred: preferredRatingKey,
                 lists: lists,
                 annotations: annotations
             )
-            guard !Task.isCancelled, generation == token else { return }
+            guard !Task.isCancelled, generation == token else { return key }
             ratingKey = key
             if let key {
                 ratingTitle = await Self.editorTitle(for: key, lists: lists)
             }
+            return key
+        }
+        ratingLookup = lookup
+        Task {
+            let key = await lookup.value
+            guard !Task.isCancelled, generation == token else { return }
             let seconds = key == nil && loggedWatch == nil ? 4 : Self.actionSeconds
             try? await Task.sleep(for: .seconds(seconds))
             guard !Task.isCancelled, generation == token else { return }
@@ -324,7 +333,7 @@ final class ListChangeNotice {
         self.annotationEditor = nil
         resetLoggedWatch()
 
-        Task {
+        let lookup = Task { () -> AnnotationKey? in
             let key: AnnotationKey?
             if let annotations,
                let score = try? await annotations.annotation(for: ratingKey)?.score,
@@ -333,11 +342,17 @@ final class ListChangeNotice {
             } else {
                 key = ratingKey
             }
-            guard !Task.isCancelled, generation == token else { return }
+            guard !Task.isCancelled, generation == token else { return key }
             self.ratingKey = key
             if let key {
                 ratingTitle = await Self.editorTitle(for: key, lists: lists)
             }
+            return key
+        }
+        ratingLookup = lookup
+        Task {
+            let key = await lookup.value
+            guard !Task.isCancelled, generation == token else { return }
             let seconds = key == nil && loggedWatch == nil ? 4 : Self.actionSeconds
             try? await Task.sleep(for: .seconds(seconds))
             guard !Task.isCancelled, generation == token else { return }
