@@ -6,7 +6,7 @@ paths:
 # Tests
 
 - XCTest, matching the existing target. Name tests `test_subject_condition_expectation`.
-- No network, no disk, no sleeps. Never call TMDB from a test.
+- No network, no disk, no sleeps. Never call TMDB from a test. To wait for async work, await the task or condition itself (expose the `Task` the type starts if needed); a fixed `Task.sleep` races when the Mac is loaded.
 - Cover the layers where logic lives: DTO to domain mapping, repository error translation into `AppError`, view model state transitions, and sorting.
 - Assert the state enum rather than intermediate flags.
 

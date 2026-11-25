@@ -13,7 +13,8 @@ Architecture conventions live in [`.claude/rules/architecture.md`](.claude/rules
 - Commits stay reviewable: one logical unit each — see [`.claude/rules/commits.md`](.claude/rules/commits.md).
 - **Never push to a branch that has an open PR** unless the user asks for that push or it's an Auto-fix response to a CI-monitor event — commit locally and let them push (each push burns a CI run). See [`.claude/rules/commits.md`](.claude/rules/commits.md#pushing).
 - A feature commit does not bump the version. Versions change only through `python3 scripts/release.py` — see [`.claude/rules/releases.md`](.claude/rules/releases.md).
-- Long-running shell jobs stay observable: `tee` to a log, never `… | tail -N` without `-f` — see [`.claude/rules/shell-progress.md`](.claude/rules/shell-progress.md).
+- Long-running shell jobs stay observable: `tee` to a per-worktree log, never `… | tail -N` without `-f` — see [`.claude/rules/shell-progress.md`](.claude/rules/shell-progress.md).
+- Builds and tests share the Mac with other sessions through a job queue: `slot: queued ...` means wait (long Bash timeout), not kill or retry. Use your worktree's own simulator, `python3 scripts/worktree-simulator.py` — see [`.claude/rules/shell-progress.md`](.claude/rules/shell-progress.md#the-machine-wide-job-queue) and [`.claude/rules/simulator.md`](.claude/rules/simulator.md).
 - For `xcodebuild test`, do **not** pass `-derivedDataPath` (cold rebuilds). Prefer `-only-testing:SilverScreenTests/<Class>` mid-turn; the stop hook still owns the full suite — see [`.claude/rules/shell-progress.md`](.claude/rules/shell-progress.md).
 
 ## Pointers
@@ -22,7 +23,7 @@ Architecture conventions live in [`.claude/rules/architecture.md`](.claude/rules
 - Rules in [`.claude/rules/`](.claude/rules/): architecture, commits, documentation comments, pull requests, shell progress, and simulator are always on. Concurrency, SwiftUI, UIKit, data layer, image loading, secrets, errors and logging, observability, accessibility, formatting, tests, and releases load for the files they cover.
 - Awards shelves and the weekly catalog: [`AWARDS.md`](AWARDS.md)
 - Hooks in [`.claude/settings.json`](.claude/settings.json), tested by [`scripts/test_claude_hooks.py`](scripts/test_claude_hooks.py):
-  - Stop: [`run-unit-tests.sh`](.claude/hooks/run-unit-tests.sh) runs `SilverScreenTests` on any available iPhone simulator (warm default DerivedData; skips when the source fingerprint matches the last pass) and runs again after Claude fixes a failure.
+  - Stop: [`run-unit-tests.sh`](.claude/hooks/run-unit-tests.sh) skips when the source fingerprint matches the last pass; otherwise waits in the machine job queue (`~/.claude/bin/slot`, one run per worktree) and runs `SilverScreenTests` on the worktree's own simulator (warm default DerivedData, log `/tmp/silverscreen-stop-tests-<worktree>.log`). It runs again after Claude fixes a failure.
   - PreToolUse: [`block-third-party-deps.sh`](.claude/hooks/block-third-party-deps.sh) blocks non-Sentry dependencies; [`require-code-review.sh`](.claude/hooks/require-code-review.sh) holds the first PR from each branch until a `/code-review --fix` pass; [`gate-release-actions.sh`](.claude/hooks/gate-release-actions.sh) asks the user before release cuts, tag or `main` pushes, non-auto merges, and protection edits.
   - PostToolUse: [`format-swift.sh`](.claude/hooks/format-swift.sh) applies the switch-indent rule to each Swift file Claude edits.
 - Harness gates: [`scripts/validate-rules.py`](scripts/validate-rules.py) (rule frontmatter, links, hooks, and Sentry-only SPM), [`scripts/validate-tests.py`](scripts/validate-tests.py) (empty tests banned), [`scripts/validate-pr-body.py`](scripts/validate-pr-body.py) (PR template sections required)

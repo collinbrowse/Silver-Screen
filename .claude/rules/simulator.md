@@ -4,8 +4,8 @@ Xcode 27 removed the Simulator app. Booted devices live in Device Hub. Do not la
 
 ## Which device
 
-- **Logic, build, and test runs:** any available iPhone simulator. Prefer one that is already booted so nothing waits on a boot. Find one with `xcrun simctl list devices available`.
-- **Layout or visual changes:** check more than one size. At minimum the smallest and largest available iPhones, plus an iPad when the change touches an adaptive or split layout. Say which devices you checked.
+- **Logic, build, and test runs:** your checkout's own iPhone, `UDID=$(python3 scripts/worktree-simulator.py)` (add `--boot` to boot it). It is named `SilverScreen <worktree>` and created on first use; other sessions' worktrees have their own, so never install onto, erase, or shut down a simulator that is not yours. The stop hook uses the same one.
+- **Layout or visual changes:** check more than one size. At minimum the smallest and largest available iPhones, plus an iPad when the change touches an adaptive or split layout. Say which devices you checked. A booted device you did not boot may be another session's: prefer shutdown ones for the extra sizes, and shut down what you booted when done. `python3 scripts/worktree-simulator.py --duo` gives your checkout's own iPhone Duo.
 - **A device the user names:** use that one.
 - If more than one simulator is booted, pass the UDID to `xcrun simctl`. `booted` is ambiguous.
 
