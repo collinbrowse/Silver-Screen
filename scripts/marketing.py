@@ -39,8 +39,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TITLES = os.path.join(ROOT, "marketing", "titles.json")
 OUTPUT = os.path.join(ROOT, "marketing", "output")
 # Simulator apps cannot read or write ~/Documents (macOS privacy protection), where
-# a checkout often lives. The app and test runner get a copy here instead.
-STAGE = "/tmp/ss-marketing"
+# a checkout often lives. The app and test runner get a copy here instead, one folder
+# per worktree so parallel sessions do not overwrite each other's staged files.
+_WORKTREE = ROOT.split("/.claude/worktrees/", 1)[1].split("/")[0] if "/.claude/worktrees/" in ROOT else ""
+STAGE = "/tmp/ss-marketing" + (f"-{_WORKTREE}" if _WORKTREE else "")
 TMDB_API = "https://api.themoviedb.org/3"
 
 # TMDB genres that rarely make a good screenshot: kids, news, reality, soap, talk.
